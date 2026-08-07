@@ -4,7 +4,11 @@ set -eu
 ROOT=$(CDPATH= cd "$(dirname "$0")" && pwd)
 cd "$ROOT"
 
-BASELINE_SHA=078a6dbeff4f11bc4ec277278a53b0216296619c
+BASELINE_SHA=${BASELINE_SHA:-}
+if [ -z "$BASELINE_SHA" ] && command -v git >/dev/null 2>&1 && git rev-parse --is-inside-work-tree >/dev/null 2>&1; then
+    BASELINE_SHA=$(git rev-list --max-parents=0 HEAD | head -n 1 || true)
+fi
+BASELINE_SHA=${BASELINE_SHA:-078a6dbeff4f11bc4ec277278a53b0216296619c}
 PREPARE_ALLOW_BASELINE_MISMATCH=${PREPARE_ALLOW_BASELINE_MISMATCH:-1}
 CC_COMMAND=${CC:-cc}
 PREPARE_STATE="$ROOT/.guide-prepare.env"
