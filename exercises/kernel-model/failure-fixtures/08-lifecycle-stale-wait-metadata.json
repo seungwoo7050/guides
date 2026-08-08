@@ -1,0 +1,17 @@
+{
+  "validator": "lifecycle",
+  "expected_error": "대기하지 않는 작업에 wait metadata가 남아 있습니다",
+  "snapshot": {
+    "running": null,
+    "ready": ["A"],
+    "wait_queues": {},
+    "completed": [],
+    "tasks": {
+      "A": {
+        "state": "ready",
+        "wait_channel": "disk:0",
+        "block_reason": "read"
+      }
+    }
+  }
+}

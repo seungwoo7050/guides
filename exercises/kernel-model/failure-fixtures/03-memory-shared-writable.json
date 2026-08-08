@@ -1,0 +1,11 @@
+{
+  "validator": "memory",
+  "expected_error": "공유 프레임이 쓰기 가능으로 노출되었습니다",
+  "snapshot": {
+    "frames": {"0": {"value": 7, "refcount": 2}},
+    "spaces": {
+      "parent": {"0": {"frame": 0, "present": true, "readable": true, "writable": true, "cow": false}},
+      "child": {"0": {"frame": 0, "present": true, "readable": true, "writable": false, "cow": true}}
+    }
+  }
+}

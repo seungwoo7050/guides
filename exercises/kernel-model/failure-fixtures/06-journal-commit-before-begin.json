@@ -1,0 +1,7 @@
+{
+  "validator": "journal",
+  "expected_error": "commit 순서가 잘못되었습니다",
+  "snapshot": [
+    {"txid": 1, "kind": "commit", "payload": {}}
+  ]
+}

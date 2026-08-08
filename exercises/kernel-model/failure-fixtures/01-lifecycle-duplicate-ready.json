@@ -1,0 +1,11 @@
+{
+  "validator": "lifecycle",
+  "expected_error": "실행 가능 큐에 같은 작업이 중복되었습니다",
+  "snapshot": {
+    "running": null,
+    "ready": ["A", "A"],
+    "wait_queues": {},
+    "completed": [],
+    "tasks": {"A": {"state": "ready", "wait_channel": null}}
+  }
+}

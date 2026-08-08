@@ -1,0 +1,11 @@
+{
+  "validator": "lifecycle",
+  "expected_error": "BLOCKED 작업이 정확한 대기 큐에 없습니다",
+  "snapshot": {
+    "running": null,
+    "ready": [],
+    "wait_queues": {},
+    "completed": [],
+    "tasks": {"A": {"state": "blocked", "wait_channel": "disk:0"}}
+  }
+}
