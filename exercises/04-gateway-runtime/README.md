@@ -52,3 +52,15 @@ curl -k -i https://127.0.0.1:18443/
 ### 잘못된 스크립트 경로
 
 `SCRIPT_FILENAME`의 문서 루트를 `/wrong/path`로 바꿉니다. FastCGI 연결은 되지만 PHP 파일 실행이 실패합니다.
+
+## 완료 기준
+
+- [ ] `./verify.sh skeleton`이 통과하고 `/healthz`, 정적 파일, PHP 동적 요청의 담당 구성요소를 각각 확인한다.
+- [ ] 호스트에는 gateway만 게시되고 PHP-FPM 9000은 Compose 내부 네트워크에서만 접근된다.
+- [ ] 잘못된 upstream 포트와 잘못된 `SCRIPT_FILENAME`을 주입해 연결 실패와 파일 경로 실패의 증거 차이를 기록한다.
+
+## 자기 설명
+
+1. `fastcgi_pass`의 주소와 `SCRIPT_FILENAME`의 경로는 왜 서로 다른 컨테이너 관점에서 해석되는가?
+2. Nginx `/healthz` 성공만으로 PHP 사용자 요청의 준비 상태를 보장할 수 없는 이유는 무엇인가?
+3. gateway 외 서비스를 호스트에 게시하지 않는 것이 공격 표면과 문제 진단에 어떤 영향을 주는가?

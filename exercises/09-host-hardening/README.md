@@ -45,3 +45,15 @@ cd exercises/09-host-hardening
 ```
 
 `skeleton`은 구현 전 실패합니다. 완성 뒤 secure snapshot에는 false positive가 없어야 하고, insecure snapshot의 의도된 결함을 모두 찾아야 합니다.
+
+## 완료 기준
+
+- [ ] `./verify.sh skeleton`이 통과하고 secure snapshot에는 false positive가 없으며 insecure snapshot의 의도된 경계를 모두 찾는다.
+- [ ] 모든 finding에 snapshot에서 인용한 evidence, 실행 가능한 remediation, 접근을 잃지 않는 safe order가 포함된다.
+- [ ] snapshot에 증거가 없는 위험은 finding으로 만들지 않고 추가 확인 항목으로 구분한다.
+
+## 자기 설명
+
+1. docker 그룹과 인증되지 않은 Docker TCP listener가 사실상 root 권한 경계로 취급되어야 하는 이유는 무엇인가?
+2. SSH 설정을 강화하기 전에 별도 관리 경로를 검증해야 하는 이유는 무엇인가?
+3. 정적 snapshot 감사가 찾아낼 수 없는 실행 중 상태는 무엇이며 어떤 명령이나 관측으로 보완할 것인가?

@@ -497,6 +497,40 @@ def check_dockerfiles() -> None:
 def check_exercise_contracts() -> None:
     for number, name in EXERCISES:
         directory = ROOT / "exercises" / f"{number:02d}-{name}"
+        readme = directory / "README.md"
+        if readme.is_file():
+            markdown = readme.read_text(encoding="utf-8")
+            sections: dict[str, str] = {}
+            for heading in ("완료 기준", "자기 설명"):
+                count()
+                match = re.search(
+                    rf"(?ms)^## {re.escape(heading)}\s*\n(.*?)(?=^## |\Z)",
+                    markdown,
+                )
+                if match is None:
+                    error(
+                        f"exercise 학습 {heading}이 없습니다: "
+                        f"{readme.relative_to(ROOT)}"
+                    )
+                    continue
+                sections[heading] = match.group(1)
+
+            completion = sections.get("완료 기준", "")
+            count()
+            if completion and len(re.findall(r"(?m)^- \[ \] ", completion)) < 3:
+                error(
+                    f"exercise 완료 기준은 확인 가능한 체크리스트 3개 이상이어야 합니다: "
+                    f"{readme.relative_to(ROOT)}"
+                )
+
+            explanation = sections.get("자기 설명", "")
+            count()
+            if explanation and len(re.findall(r"(?m)^\d+\. ", explanation)) < 2:
+                error(
+                    f"exercise 자기 설명에는 설명 질문이 2개 이상이어야 합니다: "
+                    f"{readme.relative_to(ROOT)}"
+                )
+
         if number != 7:
             for implementation in ("skeleton", "reference"):
                 count()
@@ -546,6 +580,9 @@ def check_repository_contract() -> None:
 
     makefile_path = ROOT / "Makefile"
     makefile = makefile_path.read_text(encoding="utf-8") if makefile_path.is_file() else ""
+    count()
+    if "PREPARED_PYTHON := .verify/venv/bin/python" not in makefile:
+        error("Makefile이 prepare.sh의 고정 Python 환경을 기본으로 사용하지 않습니다.")
     for target in (
         "prepare",
         "check",

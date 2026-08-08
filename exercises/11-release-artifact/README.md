@@ -38,3 +38,15 @@ cd exercises/11-release-artifact
 ```
 
 실습 digest는 형식 검사용 합성 값입니다. 실제 운영에서는 registry push 결과로 얻은 digest와 attestation을 사용합니다.
+
+## 완료 기준
+
+- [ ] `./verify.sh skeleton`이 통과하고 release, rollback, SBOM, provenance가 모두 의도한 exact image digest를 가리킨다.
+- [ ] Dockerfile이 고정 base version, 비root 사용자, exec entrypoint와 OCI source·version·created label을 갖는다.
+- [ ] 이미지와 manifest 어디에도 secret 값이 없고 필요한 secret은 이름과 공급 경계만 기록된다.
+
+## 자기 설명
+
+1. 사람이 읽기 쉬운 image tag만으로 동일한 rollback 산출물을 보장할 수 없는 이유는 무엇인가?
+2. SBOM과 provenance의 subject가 배포 digest와 일치해야 어떤 질문에 답할 수 있는가?
+3. secret 이름을 release 계약에 기록하는 것과 secret 값을 이미지에 넣는 것은 어떻게 다른가?

@@ -27,3 +27,15 @@ cd exercises/12-deployment-rollback
 ```
 
 검증기는 정상 v2, schema 4 migration 뒤 smoke 실패, schema 비호환과 이미 획득된 lock을 각각 독립 환경에서 확인합니다. smoke 실패에서는 v1 release가 계속 current이지만 database schema는 이미 4임을 검사합니다.
+
+## 완료 기준
+
+- [ ] `./verify.sh skeleton`이 정상 배포, smoke 실패, schema 비호환, lock 충돌 시나리오를 모두 통과한다.
+- [ ] readiness와 smoke 성공 전에는 `current`가 바뀌지 않고 실패 뒤 후보 staged 상태만 제거되며 이전 release가 유지된다.
+- [ ] 각 전이가 append-only event에 남고 `current` 공개는 임시 파일을 거친 원자 교체임을 확인한다.
+
+## 자기 설명
+
+1. migration 뒤 candidate가 실패했을 때 release는 돌아가도 schema가 자동으로 돌아가지 않는 이유는 무엇인가?
+2. readiness 통과와 사용자 smoke 통과 중 어느 시점에 `current`를 확정해야 하며 그 이유는 무엇인가?
+3. 환경별 lock이 없으면 두 배포가 어떤 중간 상태를 서로 덮어쓸 수 있는가?

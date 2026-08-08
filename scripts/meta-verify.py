@@ -101,6 +101,25 @@ def main() -> int:
     if error:
         errors.append(error)
 
+    exercise_readme = ROOT / "exercises" / "01-request-and-process" / "README.md"
+
+    def remove_self_explanation_contract(path: Path) -> None:
+        path.write_text(
+            path.read_text(encoding="utf-8").replace(
+                "## 자기 설명", "## 설명 메모", 1
+            ),
+            encoding="utf-8",
+        )
+
+    error = assert_rejected(
+        "학습 자기 설명 계약 제거",
+        exercise_readme,
+        remove_self_explanation_contract,
+        "exercise 학습 자기 설명이 없습니다",
+    )
+    if error:
+        errors.append(error)
+
     leaked_key = ROOT / "exercises" / "10-public-tls" / "reference" / "leaked.key"
     error = assert_rejected(
         "추적된 개인키 부산물",
@@ -145,7 +164,10 @@ def main() -> int:
             print(f"- {item}", file=sys.stderr)
         return 1
 
-    print("검증기 meta-test 통과: 필수 파일, 링크, 개인키, 실행 권한, 구형 경로")
+    print(
+        "검증기 meta-test 통과: 필수 파일, 링크, 학습 루브릭, "
+        "개인키, 실행 권한, 구형 경로"
+    )
     return 0
 
 

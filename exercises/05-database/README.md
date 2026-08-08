@@ -47,3 +47,15 @@ docker compose down
 docker compose up -d
 docker compose down -v
 ```
+
+## 완료 기준
+
+- [ ] `./verify.sh skeleton`이 통과하고 같은 volume으로 재시작할 때 시스템 테이블과 초기 사용자가 중복 생성되지 않는다.
+- [ ] 컨테이너 재생성 뒤 데이터를 읽고, 논리 backup으로 삭제한 테이블을 복원하며, `EXPLAIN`의 선택 인덱스 변화를 확인한다.
+- [ ] 실제 secret과 backup 산출물이 Git 대상이 아니고 초기화 중 TCP가 열리지 않았다는 증거를 남긴다.
+
+## 자기 설명
+
+1. 데이터 디렉터리의 어떤 상태를 근거로 최초 초기화와 일반 시작을 구분하는가?
+2. 초기 SQL 적용 중 `--skip-networking`을 쓰는 것이 어떤 노출 시간을 줄이는가?
+3. volume 지속성과 논리 backup은 서로 어떤 장애를 복구하며 왜 둘 다 필요한가?

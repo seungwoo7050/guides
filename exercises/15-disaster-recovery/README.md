@@ -46,3 +46,15 @@ cd exercises/15-disaster-recovery
 - symlink나 특수 파일이 섞인 source 거부
 - 실패한 복원이 부분 결과를 공개하지 않음
 - source snapshot을 변경하지 않음
+
+## 완료 기준
+
+- [ ] `./verify.sh skeleton`이 정상 복원뿐 아니라 checksum 손상, 비어 있지 않은 대상, 경로 탈출, 특수 파일 입력을 모두 안전하게 거부한다.
+- [ ] manifest의 size·SHA-256·release·schema·최신 record 시각을 실제 artifact와 대조하고 복원 뒤 사용자 읽기·쓰기 smoke를 수행한다.
+- [ ] 실패한 backup·restore는 부분 결과나 새 `CURRENT`를 공개하지 않으며 source snapshot을 변경하지 않는다.
+
+## 자기 설명
+
+1. backup 파일 생성 성공만으로 복구 가능성을 증명할 수 없고 별도 대상 복원이 필요한 이유는 무엇인가?
+2. staging에서 완성한 뒤 directory와 `CURRENT`를 순서대로 공개해야 하는 이유는 무엇인가?
+3. manifest의 최신 record 시각을 이용해 실제 RPO를 어떻게 계산할 수 있는가?

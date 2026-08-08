@@ -38,3 +38,15 @@ cd exercises/10-public-tls
 검증기는 올바른 hostname 성공, 잘못된 hostname 거부, 짧은 인증서 거부와 renewal 뒤 serial 변경을 확인합니다. 공개 운영에서 `curl -k`로 성공을 만들면 안 되는 이유를 설명할 수 있어야 합니다.
 
 이 실습의 root CA는 인증서 검증 흐름을 로컬에서 재현하기 위한 임시 자산입니다. 실제 공개 서비스에서는 임의의 로컬 CA를 브라우저 신뢰 저장소에 배포하는 방식으로 대체하지 않으며, CA 개인키를 gateway나 application host에 복사하지 않습니다.
+
+## 완료 기준
+
+- [ ] `./verify.sh skeleton`이 통과하고 올바른 hostname·충분한 유효기간만 허용하며 잘못된 hostname·짧은 인증서를 거부한다.
+- [ ] server key mode가 600이고 명령 출력에 key나 passphrase가 없으며 CA key와 service key의 소유 경계가 분리된다.
+- [ ] renewal 성공 시 serial이 바뀌고 후보 검증 실패 시 기존 인증서가 그대로 유지되는 원자 교체를 확인한다.
+
+## 자기 설명
+
+1. CA chain, hostname, 남은 유효기간 검사는 각각 어떤 서로 다른 신뢰 조건을 확인하는가?
+2. 인증서와 key를 임시 경로에서 검증한 뒤 함께 전환해야 하는 이유는 무엇인가?
+3. `curl -k`가 연결 문제를 숨기면서도 운영 TLS 검증을 완료한 증거가 될 수 없는 이유는 무엇인가?

@@ -27,3 +27,15 @@ cd exercises/14-observability
 ```
 
 검증기는 실제 loopback HTTP 요청을 보내 로그와 metric을 함께 확인합니다.
+
+## 완료 기준
+
+- [ ] `./verify.sh skeleton`이 통과하고 `/healthz`와 `/readyz`가 dependency 실패에서 서로 다른 상태를 반환한다.
+- [ ] 한 요청을 request ID로 응답·JSON log·metric 결과까지 추적할 수 있고 Authorization·Cookie 값은 어디에도 남지 않는다.
+- [ ] item별 ID가 아닌 안정된 route label로 요청 수와 duration이 집계되어 label 집합이 입력 수에 따라 늘지 않는다.
+
+## 자기 설명
+
+1. liveness와 readiness를 같은 dependency 검사로 구현하면 장애와 재시작 동작이 어떻게 악화될 수 있는가?
+2. 실제 item ID를 metric label로 쓰면 저장·질의 비용과 경보 신뢰도에 어떤 문제가 생기는가?
+3. 외부 `X-Request-ID`를 무조건 신뢰하지 않고 형식을 제한해야 하는 이유는 무엇인가?

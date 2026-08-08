@@ -41,3 +41,15 @@ docker compose up -d app
 docker compose exec app cat /data/counter.txt
 docker compose down -v
 ```
+
+## 완료 기준
+
+- [ ] `./verify.sh skeleton`이 통과하고 client가 고정 IP가 아닌 `app:8080` 서비스 이름으로 요청한다.
+- [ ] app의 상태 검사가 준비되기 전 client가 실행되지 않으며 호스트 공개 포트와 내부 포트를 각각 확인한다.
+- [ ] `down` 뒤 counter가 유지되고 `down -v` 뒤에는 초기화되는 관찰 결과를 기록한다.
+
+## 자기 설명
+
+1. 호스트의 `127.0.0.1:18083`, app의 `0.0.0.0:8080`, client의 `app:8080`은 각각 어느 네트워크 관점의 주소인가?
+2. 컨테이너 재생성과 volume 삭제가 상태에 서로 다른 결과를 만드는 이유는 무엇인가?
+3. 단순 시작 순서와 `service_healthy` 의존성이 보장하는 조건은 어떻게 다른가?

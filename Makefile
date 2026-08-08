@@ -1,5 +1,6 @@
 SHELL := /bin/sh
-PYTHON ?= python3
+PREPARED_PYTHON := .verify/venv/bin/python
+PYTHON ?= $(if $(wildcard $(PREPARED_PYTHON)),$(PREPARED_PYTHON),python3)
 
 .PHONY: prepare check static meta verify verify-foundations verify-production \
 	verify-repeatability clean
