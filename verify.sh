@@ -1,6 +1,32 @@
 #!/bin/sh
 
-LOG="make-out.txt"
+ROOT=$(CDPATH= cd "$(dirname "$0")" && pwd -P)
+cd "$ROOT" || exit 2
+
+TIMESTAMP=$(date +%Y%m%d-%H%M%S)
+LOG=${VERIFY_LOG:-${TMPDIR:-/tmp}/guide-web-app-verify-${TIMESTAMP}-$$.log}
+case "$LOG" in
+    /*) ;;
+    *)
+        printf 'VERIFY ERROR: VERIFY_LOG는 저장소 밖의 절대 경로여야 합니다: %s\n' "$LOG" >&2
+        exit 2
+        ;;
+esac
+mkdir -p "$(dirname "$LOG")" 2>/dev/null || {
+    printf 'VERIFY ERROR: 로그 디렉터리를 만들 수 없습니다: %s\n' "$(dirname "$LOG")" >&2
+    exit 2
+}
+LOG_DIRECTORY=$(CDPATH= cd "$(dirname "$LOG")" && pwd -P) || {
+    printf 'VERIFY ERROR: 로그 디렉터리를 확인할 수 없습니다: %s\n' "$(dirname "$LOG")" >&2
+    exit 2
+}
+LOG="$LOG_DIRECTORY/$(basename "$LOG")"
+case "$LOG" in
+    "$ROOT"|"$ROOT"/*)
+        printf 'VERIFY ERROR: VERIFY_LOG는 저장소 밖의 경로여야 합니다: %s\n' "$LOG" >&2
+        exit 2
+        ;;
+esac
 FAILED=0
 CLEANED=0
 
@@ -86,6 +112,7 @@ handle_signal()
     cleanup
 
     trap - EXIT HUP INT TERM
+    printf 'VERIFY LOG: %s\n' "$LOG" | tee -a "$LOG"
     exit "$code"
 }
 
@@ -178,8 +205,10 @@ printf '\n============================================================\n' >> "$L
 if [ "$FAILED" -eq 0 ]
 then
     printf 'RESULT: PASS\n' | tee -a "$LOG"
+    printf 'VERIFY LOG: %s\n' "$LOG" | tee -a "$LOG"
     exit 0
 fi
 
 printf 'RESULT: FAIL\n' | tee -a "$LOG"
+printf 'VERIFY LOG: %s\n' "$LOG" | tee -a "$LOG"
 exit 1

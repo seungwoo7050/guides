@@ -41,6 +41,7 @@ const requiredExercises = [
   "exercises/collaboration-board/README.md"
 ];
 const requiredSupport = [
+  ".nvmrc",
   "reference/prerequisites.md",
   "reference/glossary.md",
   "reference/troubleshooting.md",
@@ -115,6 +116,11 @@ for (const phrase of ["대상 독자", "선행지식", "지원 환경", "종료 
 }
 
 const packageJson = JSON.parse(await readFile(path.join(root, "package.json"), "utf8"));
+const nvmrc = (await readFile(path.join(root, ".nvmrc"), "utf8")).trim();
+if (nvmrc !== "22.16.0") errors.push(`.nvmrc 버전 불일치: ${nvmrc}`);
+if (packageJson.engines?.node !== ">=22.16.0 <23") {
+  errors.push(`Node.js engines 계약 불일치: ${packageJson.engines?.node ?? "<missing>"}`);
+}
 for (const name of requiredScripts) {
   if (!packageJson.scripts?.[name]) errors.push(`package script 누락: ${name}`);
 }

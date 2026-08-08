@@ -63,6 +63,12 @@ pnpm --dir projects/collaboration-board exec playwright install chromium
 pnpm verify
 ```
 
+표준 전체 검증은 `./prepare.sh` 다음 `./verify.sh` 순서로 실행합니다. 전체 로그는 성공·실패와 관계없이 저장소 밖의 임시 디렉터리에 남고 마지막에 `VERIFY LOG` 경로가 출력됩니다. 다른 위치가 필요하면 저장소 밖의 절대 경로를 지정합니다.
+
+```sh
+VERIFY_LOG=/tmp/guide-web-app.log ./verify.sh
+```
+
 협업 보드는 `skeleton/`의 실제 workspace에서 시작하고 `node exercises/collaboration-board/checks/verify-work.mjs work N`으로 단계별 누적 검증을 실행합니다. 누적 patch는 직접 구현을 대신하지 않습니다. 완성 뒤 변화 순서를 비교하는 walkthrough 자료이며 별도 명령으로만 검사합니다.
 
 ```sh

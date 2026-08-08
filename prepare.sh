@@ -29,6 +29,7 @@ pnpm_run()
 }
 
 [ -f package.json ] || die "저장소 루트에서 실행해야 합니다."
+[ -f .nvmrc ] || die ".nvmrc가 없습니다."
 [ -f scripts/verify-guide-structure.mjs ] || die "guide-web-applications 저장소로 보이지 않습니다."
 
 say "1/7 시스템 도구 확인"
@@ -37,9 +38,11 @@ GIT_ROOT=$(git rev-parse --show-toplevel 2>/dev/null) || die "Git 저장소 안�
 GIT_ROOT=$(CDPATH= cd -- "$GIT_ROOT" && pwd -P)
 [ "$GIT_ROOT" = "$SCRIPT_DIR" ] || die "저장소 루트의 prepare.sh를 실행해야 합니다: $GIT_ROOT"
 
-command_exists node || die "Node.js를 찾을 수 없습니다. Node.js 22 이상을 설치한 뒤 다시 실행하십시오."
-NODE_MAJOR=$(node -p 'Number(process.versions.node.split(".")[0])')
-[ "$NODE_MAJOR" -ge 22 ] || die "Node.js 22 이상이 필요합니다. 현재 버전: $(node --version)"
+command_exists node || die "Node.js를 찾을 수 없습니다. Node.js 22.16.0 이상 23 미만을 설치한 뒤 다시 실행하십시오."
+node - <<'NODE' || die "Node.js 22.16.0 이상 23 미만이 필요합니다. 현재 버전: $(node --version)"
+const [major, minor] = process.versions.node.split(".").map(Number);
+if (major !== 22 || minor < 16) process.exit(1);
+NODE
 
 command_exists docker || die "docker를 찾을 수 없습니다. Docker Engine 또는 Docker Desktop을 설치하십시오."
 docker info >/dev/null 2>&1 || die "Docker daemon에 연결할 수 없습니다. Docker를 시작한 뒤 다시 실행하십시오."
@@ -83,6 +86,7 @@ printf '[OK] %s\n' "$(docker compose version)"
 
 say "2/7 최종 파일 구조 준비"
 REQUIRED_NEW_PATHS='
+.nvmrc
 docs/00-roadmap.md
 docs/01-web-foundations/01-how-the-web-works.md
 docs/01-web-foundations/08-node-packages-workspaces.md
@@ -175,5 +179,6 @@ node scripts/verify-guide-structure.mjs
 node scripts/verify-links.mjs
 
 say "7/7 완료"
+printf 'PREPARE RESULT: PASS\n'
 printf '저장소가 전체 검증 가능한 상태로 준비되었습니다.\n'
 printf '다음 명령을 실행하십시오:\n\n    ./verify.sh\n\n'

@@ -11,7 +11,7 @@ node --version
 corepack --version
 ```
 
-기준은 Node.js 22 계열입니다. package 실습을 시작할 때 저장소가 선언한 pnpm을 활성화합니다.
+기준은 Node.js 22.16.0 이상 23 미만이며 `.nvmrc`는 재현 가능한 시작 버전인 22.16.0을 가리킵니다. package 실습을 시작할 때 저장소가 선언한 pnpm을 활성화합니다.
 
 ```sh
 corepack enable
