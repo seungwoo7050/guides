@@ -375,5 +375,5 @@ marker.write_text(
 marker.chmod(0o600)
 PY
 
-printf '[PASS] 준비 완료\n'
+printf 'PREPARE RESULT: PASS\n'
 printf '\n다음 명령을 실행하세요:\n  ./verify.sh\n'

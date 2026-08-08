@@ -41,7 +41,7 @@ make check
 ./verify.sh
 ```
 
-`verify.sh`는 격리된 작업공간에서 정적 검사, 검증기 meta-test, 모든 reference·skeleton, 반복 실행성과 자원 정리를 확인합니다. 실패한 경우 기본 로그 파일인 `make-out.txt`를 먼저 확인합니다.
+`verify.sh`는 격리된 작업공간에서 정적 검사, 검증기 meta-test, 모든 reference·skeleton, 반복 실행성과 자원 정리를 확인합니다. 성공·실패와 관계없이 마지막에 출력되는 저장소 밖 `VERIFY LOG` 경로에서 전체 기록을 확인합니다.
 
 커밋 전에는 추적 범위와 공백 오류를 다시 확인합니다.
 

@@ -1,25 +1,33 @@
 #!/bin/sh
 set -u
 
-ROOT=$(CDPATH='' cd -- "$(dirname -- "$0")" && pwd)
-LOG=${VERIFY_LOG:-"$ROOT/make-out.txt"}
+ROOT=$(CDPATH='' cd -- "$(dirname -- "$0")" && pwd -P)
+TIMESTAMP=$(date +%Y%m%d-%H%M%S)
+LOG=${VERIFY_LOG:-${TMPDIR:-/tmp}/guide-web-infra-verify-${TIMESTAMP}-$$.log}
 case "$LOG" in
     /*) ;;
-    *) LOG="$ROOT/$LOG" ;;
-esac
-case "$LOG" in
-    "$ROOT/make-out.txt") ;;
-    "$ROOT"/*)
-        printf '[FAIL] 저장소 내부의 사용자 지정 로그는 소스 파일을 덮어쓸 수 있습니다. 기본 make-out.txt 또는 저장소 밖의 절대 경로를 사용하세요: %s\n' "$LOG" >&2
+    *)
+        printf '[FAIL] VERIFY_LOG는 저장소 밖의 절대 경로여야 합니다: %s\n' "$LOG" >&2
         exit 2
         ;;
 esac
 LOG_PARENT=${LOG%/*}
 [ "$LOG_PARENT" != "$LOG" ] || LOG_PARENT="$ROOT"
-[ -d "$LOG_PARENT" ] || {
-    printf '[FAIL] 로그 디렉터리가 없습니다: %s\n' "$LOG_PARENT" >&2
+mkdir -p "$LOG_PARENT" 2>/dev/null || {
+    printf '[FAIL] 로그 디렉터리를 만들 수 없습니다: %s\n' "$LOG_PARENT" >&2
     exit 2
 }
+LOG_DIRECTORY=$(CDPATH='' cd -- "$LOG_PARENT" && pwd -P) || {
+    printf '[FAIL] 로그 디렉터리를 확인할 수 없습니다: %s\n' "$LOG_PARENT" >&2
+    exit 2
+}
+LOG="$LOG_DIRECTORY/${LOG##*/}"
+case "$LOG" in
+    "$ROOT"|"$ROOT"/*)
+        printf '[FAIL] VERIFY_LOG는 저장소 밖의 경로여야 합니다: %s\n' "$LOG" >&2
+        exit 2
+        ;;
+esac
 if ! : > "$LOG"
 then
     printf '[FAIL] 검증 로그를 쓸 수 없습니다: %s\n' "$LOG" >&2
@@ -71,7 +79,7 @@ fail_preflight()
     cleanup
     trap - EXIT HUP INT TERM
     emit "RESULT: FAIL"
-    printf 'LOG: %s\n' "$LOG"
+    printf 'VERIFY LOG: %s\n' "$LOG"
     exit 2
 }
 
@@ -488,6 +496,7 @@ on_signal()
     signal=$1
     INTERRUPTED=1
     emit "[INTERRUPTED] signal=$signal"
+    printf 'VERIFY LOG: %s\n' "$LOG"
     trap - HUP INT TERM
     case "$signal" in
         HUP) exit 129 ;;
@@ -524,10 +533,10 @@ section "RESULT"
 if [ "$FAILED" -eq 0 ]
 then
     emit "RESULT: PASS"
-    printf 'LOG: %s\n' "$LOG"
+    printf 'VERIFY LOG: %s\n' "$LOG"
     exit 0
 fi
 
 emit "RESULT: FAIL"
-printf 'LOG: %s\n' "$LOG"
+printf 'VERIFY LOG: %s\n' "$LOG"
 exit 1
