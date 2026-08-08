@@ -1,0 +1,27 @@
+From fd106b8a740951c49d34e1c61b756fcc8baa3713 Mon Sep 17 00:00:00 2001
+From: Seungwoo Kim <seungwoo7050@naver.com>
+Date: Tue, 26 Aug 2025 19:12:00 +0900
+Subject: [PATCH] feat(runtime): 실행 환경과 작업 공간 구성
+
+diff --git a/packages/math/src/index.ts b/packages/math/src/index.ts
+index b448488..aef00b2 100644
+--- a/packages/math/src/index.ts
++++ b/packages/math/src/index.ts
+@@ -1,9 +1,11 @@
+ export function sum(values: readonly number[]): number {
+-  // TODO: 배열을 순회해 합계를 반환해 주세요.
+-  throw new Error("TODO");
++  return values.reduce((total, value) => total + value, 0);
+ }
+
+ export function parsePort(input: unknown): number {
+-  // TODO: 문자열이나 숫자를 1~65535 범위의 정수로 검증해 주세요.
+-  throw new Error("TODO");
++  const value = typeof input === "string" ? Number(input) : input;
++  if (typeof value !== "number" || !Number.isInteger(value) || value < 1 || value > 65535) {
++    throw new Error("포트는 1부터 65535 사이의 정수여야 합니다.");
++  }
++  return value;
+ }
+--
+2.47.3

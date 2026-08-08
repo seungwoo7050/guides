@@ -1,0 +1,11 @@
+{
+  "name": "@exercise/demo",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "start": "tsx src/index.ts"
+  },
+  "dependencies": { "@exercise/math": "workspace:*" },
+  "devDependencies": { "@types/node": "^22.15.3", "typescript": "^5.8.3", "tsx": "^4.19.2" }
+}
