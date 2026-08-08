@@ -1,0 +1,77 @@
+{
+  "schema_version": 1,
+  "cases": {
+    "01-command-resolution": {
+      "layer": "TODO",
+      "primary_cause": "TODO",
+      "observation_commands": [],
+      "expected_evidence": "TODO",
+      "safe_fix": "TODO",
+      "regression_checks": []
+    },
+    "02-dangling-symlink": {
+      "layer": "TODO",
+      "primary_cause": "TODO",
+      "observation_commands": [],
+      "expected_evidence": "TODO",
+      "safe_fix": "TODO",
+      "regression_checks": []
+    },
+    "03-waiting-for-input": {
+      "layer": "TODO",
+      "primary_cause": "TODO",
+      "observation_commands": [],
+      "expected_evidence": "TODO",
+      "safe_fix": "TODO",
+      "regression_checks": []
+    },
+    "04-deleted-open-file": {
+      "layer": "TODO",
+      "primary_cause": "TODO",
+      "observation_commands": [],
+      "expected_evidence": "TODO",
+      "safe_fix": "TODO",
+      "regression_checks": []
+    },
+    "05-working-directory": {
+      "layer": "TODO",
+      "primary_cause": "TODO",
+      "observation_commands": [],
+      "expected_evidence": "TODO",
+      "safe_fix": "TODO",
+      "regression_checks": []
+    },
+    "06-address-family-mismatch": {
+      "layer": "TODO",
+      "primary_cause": "TODO",
+      "observation_commands": [],
+      "expected_evidence": "TODO",
+      "safe_fix": "TODO",
+      "regression_checks": []
+    },
+    "07-running-not-ready": {
+      "layer": "TODO",
+      "primary_cause": "TODO",
+      "observation_commands": [],
+      "expected_evidence": "TODO",
+      "safe_fix": "TODO",
+      "regression_checks": []
+    },
+    "08-signal-not-forwarded": {
+      "layer": "TODO",
+      "primary_cause": "TODO",
+      "observation_commands": [],
+      "expected_evidence": "TODO",
+      "safe_fix": "TODO",
+      "regression_checks": []
+    },
+    "09-reserved-not-resident": {
+      "layer": "TODO",
+      "primary_cause": "TODO",
+      "observation_commands": [],
+      "expected_evidence": "TODO",
+      "safe_fix": "TODO",
+      "regression_checks": []
+    }
+  }
+}

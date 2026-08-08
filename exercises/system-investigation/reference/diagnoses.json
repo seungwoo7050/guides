@@ -1,0 +1,140 @@
+{
+  "schema_version": 1,
+  "cases": {
+    "01-command-resolution": {
+      "layer": "execution-context",
+      "primary_cause": "path-precedence",
+      "observation_commands": [
+        "command -v unix-guide-tool",
+        "type -a unix-guide-tool",
+        "printf '%s\\n' \"$PATH\""
+      ],
+      "expected_evidence": "PATH의 앞쪽 stale-bin 실행 파일이 선택되어 stderr에 stale tool을 남기고 42로 종료하며, trusted-bin 후보는 뒤에 존재한다.",
+      "safe_fix": "select-trusted-executable",
+      "regression_checks": [
+        "새 shell 문맥에서도 command -v가 trusted-bin을 선택한다.",
+        "정상 명령은 stdout에 ready를 쓰고 종료 상태 0을 반환한다."
+      ]
+    },
+    "02-dangling-symlink": {
+      "layer": "filesystem-path",
+      "primary_cause": "dangling-symlink",
+      "observation_commands": [
+        "ls -ld current",
+        "readlink current",
+        "test -e current"
+      ],
+      "expected_evidence": "current 링크 객체는 존재하지만 releases/missing을 가리키며, 링크를 따라간 최종 대상은 존재하지 않는다.",
+      "safe_fix": "atomically-repoint-link",
+      "regression_checks": [
+        "current/config.ini가 읽히고 예상한 version 값을 반환한다.",
+        "기존 release 디렉터리의 내용은 변경되지 않는다."
+      ]
+    },
+    "03-waiting-for-input": {
+      "layer": "process-io",
+      "primary_cause": "waiting-for-input",
+      "observation_commands": [
+        "ps -p READER_PID -o pid=,ppid=,state=,etime=,command=",
+        "lsof -p READER_PID",
+        "ls -l input.fifo"
+      ],
+      "expected_evidence": "reader 프로세스는 계속 존재하고 CPU 작업 결과는 없으며 FIFO read를 기다린다. holder가 FIFO의 반대 끝을 열어 EOF도 오지 않는다.",
+      "safe_fix": "provide-or-close-input",
+      "regression_checks": [
+        "유효한 한 줄을 쓰면 reader가 결과를 남기고 종료한다.",
+        "조사 종료 뒤 reader와 holder 프로세스가 모두 남지 않는다."
+      ]
+    },
+    "04-deleted-open-file": {
+      "layer": "file-descriptor-lifetime",
+      "primary_cause": "unlinked-open-file",
+      "observation_commands": [
+        "test ! -e live.log",
+        "lsof -p WRITER_PID",
+        "ls -l /proc/WRITER_PID/fd"
+      ],
+      "expected_evidence": "live.log 경로는 사라졌지만 writer PID는 같은 파일 객체의 열린 FD를 유지하고 계속 쓰므로 마지막 close 전까지 객체가 회수되지 않는다.",
+      "safe_fix": "close-or-reopen-owner",
+      "regression_checks": [
+        "owner가 FD를 닫은 뒤 삭제된 객체가 더 이상 열린 목록에 나타나지 않는다.",
+        "로그를 계속 써야 한다면 새 경로를 연 뒤 새 파일 크기가 증가한다."
+      ]
+    },
+    "05-working-directory": {
+      "layer": "execution-context",
+      "primary_cause": "working-directory-mismatch",
+      "observation_commands": [
+        "pwd",
+        "ps -p APP_PID -o pid=,ppid=,command=",
+        "lsof -a -p APP_PID -d cwd"
+      ],
+      "expected_evidence": "프로그램은 config/service.json을 상대 경로로 열며 wrong-run-dir에서 실행할 때 해당 경로가 없어 실패하고 app 디렉터리에서는 성공한다.",
+      "safe_fix": "use-explicit-config-or-cwd",
+      "regression_checks": [
+        "supervisor와 수동 실행이 같은 절대 설정 경로 또는 명시한 working directory를 사용한다.",
+        "설정 파일이 없거나 잘못됐을 때 startup이 명확한 non-zero로 실패한다."
+      ]
+    },
+    "06-address-family-mismatch": {
+      "layer": "network-endpoint",
+      "primary_cause": "address-family-mismatch",
+      "observation_commands": [
+        "python3 -c 'import socket; print(socket.getaddrinfo(\"localhost\", 0))'",
+        "ss -lnt or lsof -nP -iTCP -sTCP:LISTEN",
+        "compare 127.0.0.1 and ::1 connections"
+      ],
+      "expected_evidence": "server는 IPv4 127.0.0.1의 임시 port에만 listen하며 같은 port의 IPv6 ::1 연결은 거부되고 IPv4 연결은 성공한다.",
+      "safe_fix": "match-bind-and-client-family",
+      "regression_checks": [
+        "지원하기로 한 address family의 연결이 성공한다.",
+        "지원하지 않는 interface나 외부 주소로 의도치 않게 노출되지 않는다."
+      ]
+    },
+    "07-running-not-ready": {
+      "layer": "service-readiness",
+      "primary_cause": "dependency-not-ready",
+      "observation_commands": [
+        "ps -p SERVICE_PID -o pid=,ppid=,state=,etime=,command=",
+        "ss -lnt or lsof listener",
+        "request /health and inspect status"
+      ],
+      "expected_evidence": "service 프로세스와 listener는 존재하지만 dependency.ready 조건이 없어서 /health는 503을 반환한다. 준비 파일을 만들면 같은 프로세스가 200으로 전환한다.",
+      "safe_fix": "satisfy-readiness-dependency",
+      "regression_checks": [
+        "의존 조건이 충족된 뒤 /health가 200을 반환한다.",
+        "의존 조건을 제거하면 process 존재 여부와 무관하게 다시 503을 반환한다."
+      ]
+    },
+    "08-signal-not-forwarded": {
+      "layer": "process-ownership",
+      "primary_cause": "signal-not-forwarded",
+      "observation_commands": [
+        "ps -p WRAPPER_PID,WORKER_PID -o pid=,ppid=,pgid=,state=,command=",
+        "cat wrapper-events.log",
+        "inspect child after TERM"
+      ],
+      "expected_evidence": "SIGTERM을 받은 wrapper는 종료 기록만 남기고 worker에 전달하거나 wait하지 않아 wrapper가 사라진 뒤 worker가 계속 실행된다.",
+      "safe_fix": "exec-or-forward-and-wait",
+      "regression_checks": [
+        "TERM 한 번으로 wrapper와 worker가 제한 시간 안에 모두 종료한다.",
+        "supervisor가 실제 worker의 종료 상태를 관찰하고 남은 child가 없다."
+      ]
+    },
+    "09-reserved-not-resident": {
+      "layer": "memory-observation",
+      "primary_cause": "virtual-reservation-not-resident",
+      "observation_commands": [
+        "ps -p MEMORY_PID -o pid=,vsz=,rss=,etime=,command=",
+        "cat /proc/MEMORY_PID/status or vmmap MEMORY_PID",
+        "repeat measurement under the same workload"
+      ],
+      "expected_evidence": "프로세스는 큰 익명 mapping을 예약했지만 일부 page만 접근해 virtual size 증가가 RSS 증가보다 훨씬 크며 시간에 따라 RSS가 계속 증가하지 않는다.",
+      "safe_fix": "measure-residency-before-action",
+      "regression_checks": [
+        "같은 workload를 반복해 RSS와 private resident가 안정 범위에 머무는지 확인한다.",
+        "실제 page를 더 접근했을 때만 RSS가 증가하는 비교 실험을 수행한다."
+      ]
+    }
+  }
+}
