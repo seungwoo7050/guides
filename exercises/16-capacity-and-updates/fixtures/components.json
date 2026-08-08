@@ -1,0 +1,29 @@
+{
+  "as_of": "2026-08-07",
+  "components": [
+    {
+      "name": "base-image",
+      "current_version": "runtime-3.12.1",
+      "latest_approved_version": "runtime-3.12.5",
+      "support_end": "2027-10-01",
+      "last_rebuilt": "2026-04-20",
+      "owner": "release-owner"
+    },
+    {
+      "name": "database",
+      "current_version": "db-10.6",
+      "latest_approved_version": "db-11.4",
+      "support_end": "2026-07-01",
+      "last_rebuilt": "2026-02-01",
+      "owner": "data-owner"
+    },
+    {
+      "name": "docker-engine",
+      "current_version": "engine-27",
+      "latest_approved_version": "engine-28",
+      "support_end": "2026-09-30",
+      "last_rebuilt": "2026-06-20",
+      "owner": "operations-owner"
+    }
+  ]
+}

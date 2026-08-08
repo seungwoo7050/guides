@@ -1,0 +1,14 @@
+{
+  "memory_headroom_percent_min": 20,
+  "disk_alert_percent": 90,
+  "disk_horizon_days": 30,
+  "base_rebuild_max_age_days": 60,
+  "support_end_warning_days": 90,
+  "owners": {
+    "capacity": "operations-owner",
+    "database": "data-owner",
+    "release": "release-owner"
+  },
+  "p95_ms_max": 450,
+  "error_rate_max": 0.01
+}
