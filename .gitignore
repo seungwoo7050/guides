@@ -32,6 +32,3 @@ htmlcov/
 **/backups/*
 **/*.crt
 **/*.key
-# prepare/verify 산출물(루트 임시 스크립트)
-before-verify.sh
-prepare-verify.sh
