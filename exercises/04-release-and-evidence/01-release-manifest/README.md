@@ -49,6 +49,10 @@ python3 tests/verify_manifest.py reference/manifest_check.py
 
 검사에 통과한 작업 디렉터리에서는 빌드가 끝날 때까지 다음이 고정되어야 합니다.
 
+- manifest의 저장소 경로·origin·commit이 실제 checkout과 일치합니다.
+- annotated tag의 peeled commit과 detached HEAD가 같은 SHA를 가리킵니다.
+- tracked·untracked 변경이 없는 상태에서만 릴리스 입력 승인이 기록됩니다.
+
 ```text
 repository name, path and remote
 annotated tag
@@ -57,3 +61,14 @@ clean detached worktree
 ```
 
 빌드 산출물의 digest와 배포 환경 조합은 이 명세를 소비하는 다음 단계에서 추가합니다.
+
+## 자기 설명
+
+- branch 이름보다 peeled commit SHA를 입력으로 고정해야 하는 이유는 무엇입니까?
+- clean detached worktree가 재현 가능한 릴리스 근거에 필요한 이유는 무엇입니까?
+
+## 검증
+
+- reference는 정상 manifest와 각 오류 fixture를 정확히 구분합니다.
+- skeleton은 commit 일치만으로 불완전한 manifest를 승인하지 못합니다.
+- 저장소 전체 검증은 임시 저장소만 사용하고 학습자 checkout을 변경하지 않습니다.

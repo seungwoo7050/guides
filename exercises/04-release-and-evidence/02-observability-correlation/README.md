@@ -21,6 +21,17 @@
 
 skeleton은 hop마다 새 correlation ID를 만들고, operation ID를 metric tag에 넣습니다. 이 경우 로그를 연결하기 어렵고 metric 시계열 수가 요청 수에 비례해 늘어납니다.
 
+## 완료 기준
+
+- 명령·이벤트·구독 로그가 하나의 trace와 correlation 흐름으로 연결됩니다.
+- causation ID가 직접 원인을, operation ID가 재시도 전체의 업무 명령을 가리킵니다.
+- metric tag 검사기가 고카디널리티 식별자를 거절하고 중복 효과는 하나로 유지합니다.
+
+## 자기 설명
+
+- trace ID와 operation ID를 같은 값으로 고정하면 어떤 분석이 어려워집니까?
+- 고카디널리티 ID를 metric label로 쓰면 운영 비용과 질의에 어떤 영향이 있습니까?
+
 ## 검증
 
 reference는 다음을 만족합니다.

@@ -21,6 +21,17 @@
 
 `Projection.onEvent`에 계약·중복·sequence 검사를 추가하고, aggregate별 buffer를 사용해 gap을 처리합니다.
 
+## 완료 기준
+
+- 예상 밖 channel과 지원하지 않는 schema version이 적용 전에 거절·격리됩니다.
+- aggregate별 gap은 buffer에 남고 앞 sequence 도착 뒤 연속 적용됩니다.
+- 같은 sequence의 다른 event ID와 같은 ID의 다른 payload가 계약 충돌로 드러납니다.
+
+## 자기 설명
+
+- aggregate 순서와 시스템 전체 전역 순서를 구분해야 하는 이유는 무엇입니까?
+- buffer가 sequence 하나당 이벤트 하나만 허용해야 하는 이유는 무엇입니까?
+
 ## 검증
 
 ```sh

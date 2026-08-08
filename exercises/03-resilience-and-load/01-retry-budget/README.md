@@ -20,6 +20,17 @@
 
 `Executor.execute`에서 실패 분류, deadline 검사와 키 보존을 구현합니다. 실제 sleep 대신 `VirtualClock`을 사용합니다.
 
+## 완료 기준
+
+- 모든 재시도가 같은 operation ID와 하나의 전체 deadline을 사용합니다.
+- 업무 거절은 재시도·breaker 실패 횟수에서 제외되고 transient 실패만 집계됩니다.
+- open 뒤 반개방 probe가 성공하면 닫히며, 실패 메시지는 같은 ID로 DLQ에서 재생됩니다.
+
+## 자기 설명
+
+- 시도별 timeout 합계와 업무 전체 deadline은 어떻게 다릅니까?
+- backoff와 breaker가 있어도 업무 거절을 재시도해서는 안 되는 이유는 무엇입니까?
+
 ## 검증
 
 ```sh

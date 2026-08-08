@@ -19,7 +19,18 @@ KAFKA_TRANSACTION_STATE_LOG_MIN_ISR=2
 
 `reference/compose.yaml`은 학습용 단일 브로커라는 제한을 명시하고 모두 1로 맞춥니다. 운영 클러스터에서도 복제 수를 1로 사용하라는 뜻이 아닙니다.
 
-## 직접 검증
+## 완료 기준
+
+- direct partition consumer가 두 구성에서 모두 같은 메시지를 읽어 broker 기본 동작을 증명합니다.
+- skeleton의 group consumer만 내부 토픽 복제 계약 때문에 실패하고 reference는 성공합니다.
+- 검증 뒤 해당 실행의 container·network·volume만 사라지고 다른 Docker 자원은 유지됩니다.
+
+## 자기 설명
+
+- direct consumer 성공을 먼저 확인해야 group consumer 실패 원인을 특정할 수 있는 이유는 무엇입니까?
+- replication factor 1이 단일 broker 학습 환경에만 적합한 이유는 무엇입니까?
+
+## 검증
 
 저장소 루트에서 `./prepare.sh`가 Kafka 이미지를 준비한 뒤 다음 명령을 실행할 수 있습니다.
 
@@ -48,4 +59,4 @@ KAFKA_TRANSACTION_STATE_LOG_MIN_ISR=2
 - 디스크 보존·복제 성능
 - 운영 클러스터의 적절한 replication factor
 
-그 영역은 실제 클러스터 요구사항과 `guide-web-infrastructure`의 운영 경계를 함께 검토해야 합니다.
+그 영역은 실제 클러스터 요구사항과 [`web-infra`](https://github.com/seungwoo7050/guides/tree/web-infra)의 운영 경계를 함께 검토해야 합니다.
