@@ -85,6 +85,12 @@ pnpm test:e2e
 pnpm verify
 ```
 
+표준 전체 검증은 `./prepare.sh` 다음 `./verify.sh` 순서로 실행합니다. 전체 로그는 성공·실패와 관계없이 저장소 밖의 임시 디렉터리에 남고 마지막에 `VERIFY LOG` 경로가 출력됩니다. 다른 위치가 필요하면 저장소 밖의 절대 경로를 지정합니다.
+
+```sh
+VERIFY_LOG=/tmp/guide-web-front.log ./verify.sh
+```
+
 - `check`는 reference의 형·단위 검사와 skeleton의 의도된 미완성 상태를 확인합니다.
 - `build`는 운영 빌드를 만듭니다.
 - `test:e2e`는 빌드한 운영 서버를 실제 브라우저로 검사합니다.

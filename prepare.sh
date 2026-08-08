@@ -289,6 +289,7 @@ printf 'commit: %s\n' "$(git rev-parse HEAD)"
 printf '\n[INFO] 준비 후 Git 상태\n'
 git status --short
 
-printf '\n[READY] 저장소가 검증 가능한 최종 상태로 준비되었습니다.\n'
+printf '\nPREPARE RESULT: PASS\n'
+printf '저장소가 검증 가능한 최종 상태로 준비되었습니다.\n'
 printf '다음 명령을 실행하십시오:\n\n'
 printf '    ./verify.sh\n\n'

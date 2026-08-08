@@ -11,7 +11,7 @@
 # 학습자가 작성한 exercises/project-catalog/workspace/는
 # 생성·수정·삭제하지 않습니다.
 #
-# 결과 로그: make-out.txt
+# 결과 로그는 저장소 밖의 임시 경로에 남고 VERIFY_LOG로 바꿀 수 있습니다.
 
 command -v git >/dev/null 2>&1 || {
     printf 'ERROR: git을 찾을 수 없습니다.\n' >&2
@@ -25,7 +25,30 @@ REPO_ROOT=$(git rev-parse --show-toplevel 2>/dev/null) || {
 
 cd "$REPO_ROOT"
 
-LOG="make-out.txt"
+TIMESTAMP=$(date +%Y%m%d-%H%M%S)
+LOG=${VERIFY_LOG:-${TMPDIR:-/tmp}/guide-web-front-react-nextjs-verify-${TIMESTAMP}-$$.log}
+case "$LOG" in
+    /*) ;;
+    *)
+        printf 'VERIFY ERROR: VERIFY_LOG는 저장소 밖의 절대 경로여야 합니다: %s\n' "$LOG" >&2
+        exit 2
+        ;;
+esac
+mkdir -p "$(dirname "$LOG")" 2>/dev/null || {
+    printf 'VERIFY ERROR: 로그 디렉터리를 만들 수 없습니다: %s\n' "$(dirname "$LOG")" >&2
+    exit 2
+}
+LOG_DIRECTORY=$(CDPATH= cd "$(dirname "$LOG")" && pwd -P) || {
+    printf 'VERIFY ERROR: 로그 디렉터리를 확인할 수 없습니다: %s\n' "$(dirname "$LOG")" >&2
+    exit 2
+}
+LOG="$LOG_DIRECTORY/$(basename "$LOG")"
+case "$LOG" in
+    "$REPO_ROOT"|"$REPO_ROOT"/*)
+        printf 'VERIFY ERROR: VERIFY_LOG는 저장소 밖의 경로여야 합니다: %s\n' "$LOG" >&2
+        exit 2
+        ;;
+esac
 FAILED=0
 CLEANED=0
 
@@ -155,6 +178,7 @@ handle_signal()
     cleanup
 
     trap - EXIT HUP INT TERM
+    printf 'VERIFY LOG: %s\n' "$LOG" | tee -a "$LOG"
     exit "$code"
 }
 
@@ -230,8 +254,10 @@ printf '\n============================================================\n' >> "$L
 if [ "$FAILED" -eq 0 ]
 then
     printf 'RESULT: PASS\n' | tee -a "$LOG"
+    printf 'VERIFY LOG: %s\n' "$LOG" | tee -a "$LOG"
     exit 0
 fi
 
 printf 'RESULT: FAIL\n' | tee -a "$LOG"
+printf 'VERIFY LOG: %s\n' "$LOG" | tee -a "$LOG"
 exit 1
