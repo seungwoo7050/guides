@@ -1,0 +1,15 @@
+schema_version: 1
+exercise_id: TODO
+objectives:
+  rto_minutes: 0
+  rpo_minutes: 0
+inputs:
+  release: {}
+  backup: {}
+  secrets: []
+stages: []
+external_smoke: {}
+observability: {}
+measurements: {}
+failure_drills: []
+followups: []
