@@ -1,0 +1,9 @@
+schema_version: 1
+release_id: bad
+image: registry.example/notes@sha256:3333333333333333333333333333333333333333333333333333333333333333
+available: true
+schema_min: 3
+schema_max: 4
+migration_target: 4
+readiness: true
+smoke: false
