@@ -1,0 +1,33 @@
+schema_version: 1
+service:
+  name: notes
+  user_capability: TODO
+  owner: TODO
+
+endpoints:
+  public: []
+  management: []
+
+data: []
+
+objectives:
+  rto_minutes: 0
+  rpo_minutes: 0
+  availability:
+    path: /healthz
+    measurement_location: host
+    target_percent: 0
+    window_days: 0
+
+threat_model:
+  trust_boundaries: []
+  risks: []
+
+residual_risks: []
+
+readiness:
+  immutable_release: false
+  external_backup: false
+  rollback_tested: false
+  certificate_monitored: false
+  restore_drill_tested: false
