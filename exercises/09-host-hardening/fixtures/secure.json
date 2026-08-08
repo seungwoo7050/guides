@@ -1,0 +1,26 @@
+{
+  "users": [
+    {"name": "ops-a", "roles": ["administrator"], "ssh_key_fingerprints": ["SHA256:ops-a"]},
+    {"name": "app", "roles": ["service"], "ssh_key_fingerprints": []}
+  ],
+  "ssh": {
+    "password_authentication": false,
+    "permit_root_login": "no",
+    "source_restriction": "203.0.113.0/28"
+  },
+  "docker": {
+    "remote_listeners": ["unix:///var/run/docker.sock"],
+    "group_members": ["ops-a"],
+    "socket_mount_consumers": []
+  },
+  "network": {
+    "public_tcp_ports": [22, 80, 443],
+    "ipv6_enabled": true,
+    "ipv6_firewall_reviewed": true
+  },
+  "time": {"synchronized": true},
+  "storage": {
+    "disk_alert_percent": 80,
+    "backup_locations": ["s3://separate-backup-account/notes"]
+  }
+}
