@@ -1,0 +1,270 @@
+From 8ca5e8887d49a10ec410699cbb033778d2a78b32 Mon Sep 17 00:00:00 2001
+From: Seungwoo Kim <seungwoo7050@naver.com>
+Date: Sun, 7 Sep 2025 17:07:00 +0900
+Subject: [PATCH] feat(board): 보드 목록과 화면 상태 추가
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+---
+ README.md                         |  3 +-
+ apps/web/app/activity/page.tsx    | 11 +++++
+ apps/web/app/page.tsx             |  6 +++
+ apps/web/components/BoardList.tsx | 74 +++++++++++++++++++++++++++++
+ apps/web/components/LoginForm.tsx | 35 ++++++++++++++
+ apps/web/lib/api.ts               | 77 +++++++++++++++++++++++++++++++
+ 6 files changed, 205 insertions(+), 1 deletion(-)
+ create mode 100644 apps/web/app/activity/page.tsx
+ create mode 100644 apps/web/app/page.tsx
+ create mode 100644 apps/web/components/BoardList.tsx
+ create mode 100644 apps/web/components/LoginForm.tsx
+ create mode 100644 apps/web/lib/api.ts
+
+diff --git a/README.md b/README.md
+index 9673211..82c52d3 100644
+--- a/README.md
++++ b/README.md
+@@ -1,8 +1,9 @@
+ # 실시간 협업 보드
+ 
+-Fastify API와 Next.js 화면을 한 pnpm 작업 공간에서 개발합니다. 공통 레이아웃은 키보드로 건너뛸 수 있는 링크와 현재 위치를 알리는 탐색 구조를 제공합니다.
++Next.js 화면에서 보드 목록과 활동 내역을 조회합니다. 서버 응답은 별도 어댑터에서 읽으며, 로딩 중인 화면과 찾을 수 없는 경로를 구분합니다.
+ 
+ ```sh
+ pnpm install --frozen-lockfile
++pnpm --filter @board/web typecheck
+ pnpm --filter @board/web dev
+ ```
+diff --git a/apps/web/app/activity/page.tsx b/apps/web/app/activity/page.tsx
+new file mode 100644
+index 0000000..910abb2
+--- /dev/null
++++ b/apps/web/app/activity/page.tsx
+@@ -0,0 +1,11 @@
++import { AppShell } from "../../components/AppShell";
++
++export default function ActivityPage() {
++  return <AppShell>
++    <h1 className="text-3xl font-black">활동 기록</h1>
++    <p className="mt-4 text-slate-600">
++      각 보드의 활동 기록은 <code>GET /boards/:id/activity</code>로 조회합니다.
++      편집 완료 이벤트만 영속화하므로 드래그 중간 좌표는 기록을 불필요하게 늘리지 않습니다.
++    </p>
++  </AppShell>;
++}
+diff --git a/apps/web/app/page.tsx b/apps/web/app/page.tsx
+new file mode 100644
+index 0000000..d10cea6
+--- /dev/null
++++ b/apps/web/app/page.tsx
+@@ -0,0 +1,6 @@
++import { AppShell } from "../components/AppShell";
++import { BoardList } from "../components/BoardList";
++
++export default function Page() {
++  return <AppShell><BoardList /></AppShell>;
++}
+diff --git a/apps/web/components/BoardList.tsx b/apps/web/components/BoardList.tsx
+new file mode 100644
+index 0000000..5abad2b
+--- /dev/null
++++ b/apps/web/components/BoardList.tsx
+@@ -0,0 +1,74 @@
++"use client";
++import Link from "next/link";
++import { FormEvent, useEffect, useState } from "react";
++import type { BoardSummary, SessionUser } from "@board/contracts";
++import { createBoard, getMe, listBoards } from "../lib/api";
++import { LoginForm } from "./LoginForm";
++
++export function BoardList() {
++  const [me, setMe] = useState<SessionUser | null>(null);
++  const [boards, setBoards] = useState<BoardSummary[]>([]);
++  const [title, setTitle] = useState("");
++  const [status, setStatus] = useState("보드 목록을 불러오는 중입니다.");
++
++  async function load() {
++    const user = await getMe();
++    setMe(user);
++    if (!user) {
++      setStatus("로그인이 필요합니다.");
++      return;
++    }
++    const result = await listBoards();
++    setBoards(result);
++    setStatus(result.length ? "" : "참여 중인 보드가 없습니다.");
++  }
++  useEffect(() => { void load(); }, []);
++
++  async function submit(event: FormEvent) {
++    event.preventDefault();
++    const board = await createBoard(title.trim());
++    setBoards((current) => [board, ...current]);
++    setTitle("");
++  }
++
++  if (!me) {
++    return <div className="grid gap-6 lg:grid-cols-2">
++      <LoginForm onLogin={() => void load()} />
++      <section className="card p-6">
++        <h1 className="text-3xl font-black">실시간 협업 보드</h1>
++        <p className="mt-3 text-slate-600">초대, 역할, 재연결, 충돌 복구를 한 예제에서 다룹니다.</p>
++      </section>
++    </div>;
++  }
++
++  return <>
++    <section className="card p-6">
++      <p className="text-sm font-bold text-blue-700">내 작업 공간</p>
++      <h1 className="mt-2 text-3xl font-black">{me.displayName}님의 보드</h1>
++      <form className="mt-5 flex gap-2" onSubmit={submit}>
++        <label className="sr-only" htmlFor="board-title">새 보드 제목</label>
++        <input
++          className="min-w-0 flex-1 rounded border p-2"
++          id="board-title"
++          value={title}
++          onChange={(event) => setTitle(event.target.value)}
++          placeholder="새 보드 제목"
++          required
++        />
++        <button className="rounded bg-blue-700 px-4 py-2 font-bold text-white">만들기</button>
++      </form>
++    </section>
++    {status ? <p role="status" className="my-4">{status}</p> : null}
++    <section className="mt-5 grid gap-4 md:grid-cols-2">
++      {boards.map((board) => <article className="card p-5" key={board.id}>
++        <h2 className="text-xl font-black">{board.title}</h2>
++        <p className="my-2 text-sm text-slate-600">역할: {roleLabel(board.role)} · 버전 {board.version}</p>
++        <Link className="font-bold text-blue-700" href={`/boards/${board.id}`}>보드 열기</Link>
++      </article>)}
++    </section>
++  </>;
++}
++
++function roleLabel(role: BoardSummary["role"]) {
++  return role === "owner" ? "소유자" : role === "editor" ? "편집자" : "읽기 전용";
++}
+diff --git a/apps/web/components/LoginForm.tsx b/apps/web/components/LoginForm.tsx
+new file mode 100644
+index 0000000..a30f0aa
+--- /dev/null
++++ b/apps/web/components/LoginForm.tsx
+@@ -0,0 +1,35 @@
++"use client";
++import React, { FormEvent, useState } from "react";
++import type { SessionUser } from "@board/contracts";
++import { login } from "../lib/api";
++
++export function LoginForm({ onLogin }: { onLogin(user: SessionUser): void }) {
++  const [handle, setHandle] = useState("");
++  const [displayName, setDisplayName] = useState("");
++  const [error, setError] = useState("");
++
++  async function submit(event: FormEvent) {
++    event.preventDefault();
++    setError("");
++    try {
++      onLogin(await login({ handle: handle.trim(), displayName: displayName.trim() }));
++    } catch {
++      setError("로그인하지 못했습니다.");
++    }
++  }
++
++  return <form className="card grid gap-3 p-5" onSubmit={submit}>
++    <h2 className="text-xl font-black">로그인</h2>
++    <label htmlFor="handle">핸들</label>
++    <input className="rounded border p-2" id="handle" value={handle} onChange={(event) => setHandle(event.target.value)} required />
++    <label htmlFor="displayName">표시 이름</label>
++    <input className="rounded border p-2" id="displayName" value={displayName} onChange={(event) => setDisplayName(event.target.value)} required />
++    {error ? <p role="alert">{error}</p> : null}
++    <button
++      className="focus-ring rounded bg-blue-700 px-4 py-2 font-bold text-white disabled:opacity-40"
++      disabled={!handle.trim() || !displayName.trim()}
++    >
++      로그인
++    </button>
++  </form>;
++}
+diff --git a/apps/web/lib/api.ts b/apps/web/lib/api.ts
+new file mode 100644
+index 0000000..53b46c3
+--- /dev/null
++++ b/apps/web/lib/api.ts
+@@ -0,0 +1,77 @@
++import {
++  BoardSnapshotSchema,
++  BoardSummarySchema,
++  SessionUserSchema,
++  type LoginRequest,
++  type SessionUser
++} from "@board/contracts";
++
++const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:4000";
++
++async function request(path: string, init: RequestInit = {}) {
++  const headers = new Headers(init.headers);
++  if (init.body && !headers.has("content-type")) headers.set("content-type", "application/json");
++  const response = await fetch(`${API_BASE}${path}`, { ...init, headers, credentials: "include" });
++  if (!response.ok) throw new Error(await response.text());
++  if (response.status === 204) return null;
++  return response.json() as Promise<unknown>;
++}
++
++export async function login(input: LoginRequest): Promise<SessionUser> {
++  const data = await request("/auth/login", {
++    method: "POST",
++    body: JSON.stringify(input)
++  }) as { user: unknown };
++  return SessionUserSchema.parse(data.user);
++}
++export async function logout() {
++  await request("/auth/logout", { method: "POST" });
++}
++export async function getMe() {
++  try {
++    const data = await request("/me") as { user: unknown };
++    return SessionUserSchema.parse(data.user);
++  } catch {
++    return null;
++  }
++}
++export async function listBoards(signal?: AbortSignal) {
++  const data = await request("/boards", { signal }) as { boards: unknown[] };
++  return data.boards.map((board) => BoardSummarySchema.parse(board));
++}
++export async function createBoard(title: string) {
++  const data = await request("/boards", {
++    method: "POST",
++    body: JSON.stringify({ title })
++  }) as { board: unknown };
++  return BoardSummarySchema.parse(data.board);
++}
++export async function getBoard(boardId: string) {
++  const data = await request(`/boards/${encodeURIComponent(boardId)}`) as { board: unknown };
++  return BoardSnapshotSchema.parse(data.board);
++}
++export async function getActivity(boardId: string) {
++  const data = await request(`/boards/${encodeURIComponent(boardId)}/activity`) as { events: unknown[] };
++  return data.events;
++}
++export async function inviteMember(boardId: string, handle: string, role: "editor" | "viewer") {
++  await request(`/boards/${encodeURIComponent(boardId)}/invitations`, {
++    method: "POST",
++    body: JSON.stringify({ handle, role })
++  });
++}
++export async function getAdminUsers() {
++  return (await request("/admin/users") as {
++    users: Array<{ id: string; displayName: string; handle: string; status: "active" | "suspended" }>
++  }).users;
++}
++export async function setUserStatus(
++  id: string,
++  status: "active" | "suspended",
++  reason: string
++) {
++  await request(`/admin/users/${id}/status`, {
++    method: "PATCH",
++    body: JSON.stringify({ status, reason })
++  });
++}

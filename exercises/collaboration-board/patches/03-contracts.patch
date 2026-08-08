@@ -1,0 +1,187 @@
+From 9fc37b7aae1dccb9c2fbb3b12b23225d89cc471e Mon Sep 17 00:00:00 2001
+From: Seungwoo Kim <seungwoo7050@naver.com>
+Date: Sat, 6 Sep 2025 12:00:00 +0900
+Subject: [PATCH] feat(contracts): 보드 HTTP와 WebSocket 계약 추가
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+---
+ packages/contracts/src/board.ts | 34 +++++++++++++++++
+ packages/contracts/src/http.ts  | 40 ++++++++++++++++++++
+ packages/contracts/src/index.ts |  3 ++
+ packages/contracts/src/ws.ts    | 67 +++++++++++++++++++++++++++++++++
+ 4 files changed, 144 insertions(+)
+ create mode 100644 packages/contracts/src/board.ts
+ create mode 100644 packages/contracts/src/http.ts
+ create mode 100644 packages/contracts/src/index.ts
+ create mode 100644 packages/contracts/src/ws.ts
+
+diff --git a/packages/contracts/src/board.ts b/packages/contracts/src/board.ts
+new file mode 100644
+index 0000000..690b1dc
+--- /dev/null
++++ b/packages/contracts/src/board.ts
+@@ -0,0 +1,34 @@
++import { z } from "zod";
++
++export const BOARD_WIDTH = 1_600;
++export const BOARD_HEIGHT = 900;
++
++export const BoardRoleSchema = z.enum(["owner", "editor", "viewer"]);
++export const ItemKindSchema = z.enum(["note", "shape"]);
++
++export const BoardItemSchema = z.object({
++  id: z.string().uuid(),
++  boardId: z.string().uuid(),
++  kind: ItemKindSchema,
++  content: z.string().max(2_000),
++  x: z.number().finite().min(0).max(BOARD_WIDTH),
++  y: z.number().finite().min(0).max(BOARD_HEIGHT),
++  width: z.number().finite().min(40).max(800),
++  height: z.number().finite().min(40).max(600),
++  version: z.number().int().nonnegative()
++});
++
++export const BoardSnapshotSchema = z.object({
++  boardId: z.string().uuid(),
++  title: z.string(),
++  version: z.number().int().nonnegative(),
++  sequence: z.number().int().nonnegative(),
++  closed: z.boolean(),
++  role: BoardRoleSchema,
++  items: z.array(BoardItemSchema),
++  serverTime: z.string().datetime()
++});
++
++export type BoardRole = z.infer<typeof BoardRoleSchema>;
++export type BoardItem = z.infer<typeof BoardItemSchema>;
++export type BoardSnapshot = z.infer<typeof BoardSnapshotSchema>;
+diff --git a/packages/contracts/src/http.ts b/packages/contracts/src/http.ts
+new file mode 100644
+index 0000000..34245f9
+--- /dev/null
++++ b/packages/contracts/src/http.ts
+@@ -0,0 +1,40 @@
++import { z } from "zod";
++import { BoardRoleSchema } from "./board";
++
++export const UserRoleSchema = z.enum(["user", "admin"]);
++export const UserStatusSchema = z.enum(["active", "suspended"]);
++export const PublicUserSchema = z.object({
++  id: z.string().uuid(),
++  handle: z.string(),
++  displayName: z.string()
++});
++export const SessionUserSchema = PublicUserSchema.extend({
++  role: UserRoleSchema,
++  status: UserStatusSchema
++});
++export const LoginRequestSchema = z.object({
++  handle: z.string().trim().min(2).max(24).regex(/^[a-z0-9-]+$/),
++  displayName: z.string().trim().min(1).max(40)
++});
++export const BoardSummarySchema = z.object({
++  id: z.string().uuid(),
++  title: z.string(),
++  role: BoardRoleSchema,
++  version: z.number().int().nonnegative(),
++  closed: z.boolean()
++});
++export const CreateBoardSchema = z.object({
++  title: z.string().trim().min(1).max(80)
++});
++export const InviteMemberSchema = z.object({
++  handle: z.string().trim().min(2).max(24),
++  role: z.enum(["editor", "viewer"])
++});
++export const ChangeMemberRoleSchema = z.object({
++  role: z.enum(["editor", "viewer"])
++});
++
++export type PublicUser = z.infer<typeof PublicUserSchema>;
++export type SessionUser = z.infer<typeof SessionUserSchema>;
++export type LoginRequest = z.infer<typeof LoginRequestSchema>;
++export type BoardSummary = z.infer<typeof BoardSummarySchema>;
+diff --git a/packages/contracts/src/index.ts b/packages/contracts/src/index.ts
+new file mode 100644
+index 0000000..b3c24fd
+--- /dev/null
++++ b/packages/contracts/src/index.ts
+@@ -0,0 +1,3 @@
++export * from "./http";
++export * from "./board";
++export * from "./ws";
+diff --git a/packages/contracts/src/ws.ts b/packages/contracts/src/ws.ts
+new file mode 100644
+index 0000000..d2866f9
+--- /dev/null
++++ b/packages/contracts/src/ws.ts
+@@ -0,0 +1,67 @@
++import { z } from "zod";
++import { BoardItemSchema, BoardSnapshotSchema, ItemKindSchema } from "./board";
++
++const boardId = z.string().uuid();
++const itemId = z.string().uuid();
++const coordinate = z.number().finite();
++
++export const ClientEventSchema = z.discriminatedUnion("type", [
++  z.object({ type: z.literal("board.join"), boardId }),
++  z.object({ type: z.literal("cursor.move"), boardId, x: coordinate, y: coordinate }),
++  z.object({
++    type: z.literal("item.create"),
++    boardId,
++    kind: ItemKindSchema,
++    content: z.string().max(2_000),
++    x: coordinate,
++    y: coordinate
++  }),
++  z.object({
++    type: z.literal("item.update"),
++    boardId,
++    itemId,
++    content: z.string().max(2_000),
++    baseVersion: z.number().int().nonnegative()
++  }),
++  z.object({
++    type: z.literal("item.move"),
++    boardId,
++    itemId,
++    x: coordinate,
++    y: coordinate,
++    baseVersion: z.number().int().nonnegative(),
++    final: z.boolean()
++  }),
++  z.object({ type: z.literal("snapshot.request"), boardId })
++]);
++
++export const BoardPatchSchema = z.object({
++  boardId,
++  sequence: z.number().int().positive(),
++  version: z.number().int().nonnegative(),
++  operation: z.enum(["cursor", "item.create", "item.update", "item.move"]),
++  actorId: z.string().uuid(),
++  item: BoardItemSchema.optional(),
++  cursor: z.object({ x: coordinate, y: coordinate }).optional(),
++  final: z.boolean().optional()
++});
++
++export const ServerEventSchema = z.discriminatedUnion("type", [
++  z.object({ type: z.literal("board.snapshot"), snapshot: BoardSnapshotSchema }),
++  z.object({ type: z.literal("board.patch"), patch: BoardPatchSchema }),
++  z.object({
++    type: z.literal("presence.changed"),
++    boardId,
++    members: z.array(z.object({
++      userId: z.string().uuid(),
++      displayName: z.string(),
++      connected: z.boolean(),
++      cursor: z.object({ x: coordinate, y: coordinate }).nullable()
++    }))
++  }),
++  z.object({ type: z.literal("board.closed"), boardId, reason: z.string() })
++]);
++
++export type ClientEvent = z.infer<typeof ClientEventSchema>;
++export type ServerEvent = z.infer<typeof ServerEventSchema>;
++export type BoardPatch = z.infer<typeof BoardPatchSchema>;

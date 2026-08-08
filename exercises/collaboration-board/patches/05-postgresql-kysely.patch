@@ -1,0 +1,588 @@
+From 299e29587e0a0dbfacbe62eda08cd790e420887e Mon Sep 17 00:00:00 2001
+From: Seungwoo Kim <seungwoo7050@naver.com>
+Date: Tue, 30 Sep 2025 20:54:00 +0900
+Subject: [PATCH] feat(data): PostgreSQL 영속화와 트랜잭션 추가
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+---
+ .env.example                           |   6 +
+ README.md                              |   9 +-
+ compose.dev.yml                        |  13 ++
+ packages/db/migrations/001_initial.sql |  71 ++++++
+ packages/db/src/cli.ts                 |   8 +
+ packages/db/src/db-types.ts            |  74 ++++++
+ packages/db/src/migrate.ts             |  17 ++
+ packages/db/src/postgres.ts            | 310 +++++++++++++++++++++++++
+ 8 files changed, 505 insertions(+), 3 deletions(-)
+ create mode 100644 .env.example
+ create mode 100644 compose.dev.yml
+ create mode 100644 packages/db/migrations/001_initial.sql
+ create mode 100644 packages/db/src/cli.ts
+ create mode 100644 packages/db/src/db-types.ts
+ create mode 100644 packages/db/src/migrate.ts
+ create mode 100644 packages/db/src/postgres.ts
+
+diff --git a/.env.example b/.env.example
+new file mode 100644
+index 0000000..b92b43e
+--- /dev/null
++++ b/.env.example
+@@ -0,0 +1,6 @@
++PORT=4000
++DATABASE_URL=postgres://board:board@localhost:5432/board
++WEB_ORIGINS=http://localhost:3000,http://localhost:8080
++NEXT_PUBLIC_API_BASE_URL=http://localhost:4000
++NEXT_PUBLIC_WS_URL=ws://localhost:4000/ws
++LOG_LEVEL=info
+diff --git a/README.md b/README.md
+index 00adfe0..a3041f3 100644
+--- a/README.md
++++ b/README.md
+@@ -1,10 +1,13 @@
+ # 실시간 협업 보드
+ 
+-Fastify API와 Next.js 화면이 같은 Zod 스키마를 사용합니다. 메모리 저장소로 로그인과 보드 생성·조회 흐름을 실행할 수 있습니다.
++Fastify와 Next.js로 구성한 협업 보드입니다. PostgreSQL 변경은 Kysely 트랜잭션으로 저장합니다.
+ 
+ ```sh
++docker compose -f compose.dev.yml up -d
++cp .env.example .env
+ pnpm install --frozen-lockfile
+-pnpm typecheck
+-pnpm test
++pnpm --filter @board/db migrate
+ pnpm dev
+ ```
++
++마이그레이션은 사용자, 보드, 항목, 활동 내역을 함께 준비합니다. 저장소 단위 검사는 실제 PostgreSQL 주소가 있을 때 트랜잭션 경로도 실행합니다.
+diff --git a/compose.dev.yml b/compose.dev.yml
+new file mode 100644
+index 0000000..53c87f2
+--- /dev/null
++++ b/compose.dev.yml
+@@ -0,0 +1,13 @@
++services:
++  db:
++    image: postgres:16-alpine
++    environment:
++      POSTGRES_DB: board
++      POSTGRES_USER: board
++      POSTGRES_PASSWORD: board
++    ports: ["5432:5432"]
++    healthcheck:
++      test: ["CMD-SHELL", "pg_isready -U board -d board"]
++      interval: 2s
++      timeout: 2s
++      retries: 20
+diff --git a/packages/db/migrations/001_initial.sql b/packages/db/migrations/001_initial.sql
+new file mode 100644
+index 0000000..24cfa8e
+--- /dev/null
++++ b/packages/db/migrations/001_initial.sql
+@@ -0,0 +1,71 @@
++create extension if not exists pgcrypto;
++
++create table if not exists schema_migrations (
++  version text primary key,
++  applied_at timestamptz not null default now()
++);
++create table if not exists users (
++  id uuid primary key default gen_random_uuid(),
++  handle text not null unique,
++  display_name text not null,
++  role text not null default 'user' check (role in ('user', 'admin')),
++  status text not null default 'active' check (status in ('active', 'suspended')),
++  created_at timestamptz not null default now()
++);
++create table if not exists sessions (
++  token text primary key,
++  user_id uuid not null references users(id) on delete cascade,
++  expires_at timestamptz not null,
++  created_at timestamptz not null default now()
++);
++create table if not exists boards (
++  id uuid primary key default gen_random_uuid(),
++  owner_id uuid not null references users(id),
++  title text not null,
++  version integer not null default 0,
++  closed_at timestamptz,
++  created_at timestamptz not null default now()
++);
++create table if not exists board_members (
++  board_id uuid not null references boards(id) on delete cascade,
++  user_id uuid not null references users(id) on delete cascade,
++  role text not null check (role in ('owner', 'editor', 'viewer')),
++  joined_at timestamptz not null default now(),
++  primary key (board_id, user_id)
++);
++create table if not exists board_items (
++  id uuid primary key default gen_random_uuid(),
++  board_id uuid not null references boards(id) on delete cascade,
++  kind text not null check (kind in ('note', 'shape')),
++  content text not null default '',
++  x double precision not null,
++  y double precision not null,
++  width double precision not null default 240,
++  height double precision not null default 140,
++  version integer not null default 0,
++  updated_by uuid not null references users(id),
++  updated_at timestamptz not null default now()
++);
++create table if not exists board_events (
++  id uuid primary key default gen_random_uuid(),
++  board_id uuid not null references boards(id) on delete cascade,
++  sequence bigint not null,
++  actor_id uuid not null references users(id),
++  event_type text not null,
++  payload jsonb not null,
++  created_at timestamptz not null default now(),
++  unique (board_id, sequence)
++);
++create table if not exists admin_actions (
++  id uuid primary key default gen_random_uuid(),
++  actor_id uuid not null references users(id),
++  target_user_id uuid not null references users(id),
++  action text not null check (action in ('suspend', 'restore')),
++  reason text not null,
++  created_at timestamptz not null default now()
++);
++
++create index if not exists board_members_user_idx on board_members (user_id);
++create index if not exists board_items_board_idx on board_items (board_id);
++create index if not exists board_events_board_sequence_idx on board_events (board_id, sequence desc);
++create index if not exists admin_actions_created_at_idx on admin_actions (created_at desc);
+diff --git a/packages/db/src/cli.ts b/packages/db/src/cli.ts
+new file mode 100644
+index 0000000..a48e7c2
+--- /dev/null
++++ b/packages/db/src/cli.ts
+@@ -0,0 +1,8 @@
++import { createPostgresRepository } from "./postgres";
++import { migrate } from "./migrate";
++const url = process.env.DATABASE_URL;
++if (!url) throw new Error("DATABASE_URL이 필요합니다.");
++const command = process.argv[2];
++if (command === "migrate") await migrate(url);
++else if (command === "seed") { const repo = createPostgresRepository(url); try { await repo.seed(); } finally { await repo.close(); } }
++else throw new Error("사용법: tsx src/cli.ts migrate|seed");
+diff --git a/packages/db/src/db-types.ts b/packages/db/src/db-types.ts
+new file mode 100644
+index 0000000..ed2c272
+--- /dev/null
++++ b/packages/db/src/db-types.ts
+@@ -0,0 +1,74 @@
++import type { Generated } from "kysely";
++
++export interface UserTable {
++  id: Generated<string>;
++  handle: string;
++  display_name: string;
++  role: Generated<"user" | "admin">;
++  status: Generated<"active" | "suspended">;
++  created_at: Generated<Date>;
++}
++export interface SessionTable {
++  token: string;
++  user_id: string;
++  expires_at: Date;
++  created_at: Generated<Date>;
++}
++export interface BoardTable {
++  id: Generated<string>;
++  owner_id: string;
++  title: string;
++  version: Generated<number>;
++  closed_at: Date | null;
++  created_at: Generated<Date>;
++}
++export interface BoardMemberTable {
++  board_id: string;
++  user_id: string;
++  role: "owner" | "editor" | "viewer";
++  joined_at: Generated<Date>;
++}
++export interface BoardItemTable {
++  id: Generated<string>;
++  board_id: string;
++  kind: "note" | "shape";
++  content: string;
++  x: number;
++  y: number;
++  width: number;
++  height: number;
++  version: Generated<number>;
++  updated_by: string;
++  updated_at: Generated<Date>;
++}
++export interface BoardEventTable {
++  id: Generated<string>;
++  board_id: string;
++  sequence: number;
++  actor_id: string;
++  event_type: string;
++  payload: unknown;
++  created_at: Generated<Date>;
++}
++export interface AdminActionTable {
++  id: Generated<string>;
++  actor_id: string;
++  target_user_id: string;
++  action: "suspend" | "restore";
++  reason: string;
++  created_at: Generated<Date>;
++}
++export interface SchemaMigrationTable {
++  version: string;
++  applied_at: Generated<Date>;
++}
++export interface Database {
++  users: UserTable;
++  sessions: SessionTable;
++  boards: BoardTable;
++  board_members: BoardMemberTable;
++  board_items: BoardItemTable;
++  board_events: BoardEventTable;
++  admin_actions: AdminActionTable;
++  schema_migrations: SchemaMigrationTable;
++}
+diff --git a/packages/db/src/migrate.ts b/packages/db/src/migrate.ts
+new file mode 100644
+index 0000000..f568290
+--- /dev/null
++++ b/packages/db/src/migrate.ts
+@@ -0,0 +1,17 @@
++import { readFile } from "node:fs/promises";
++import { Kysely, PostgresDialect, sql } from "kysely";
++import { Pool } from "pg";
++import type { Database } from "./db-types";
++export async function migrate(url: string) {
++  const pool = new Pool({ connectionString: url });
++  const db = new Kysely<Database>({ dialect: new PostgresDialect({ pool }) });
++  try {
++    const version = "001_initial";
++    await sql`create table if not exists schema_migrations (version text primary key, applied_at timestamptz not null default now())`.execute(db);
++    const applied = await db.selectFrom("schema_migrations").select("version").where("version", "=", version).executeTakeFirst();
++    if (!applied) {
++      const source = await readFile(new URL("../migrations/001_initial.sql", import.meta.url), "utf8");
++      await db.transaction().execute(async (trx) => { await sql.raw(source).execute(trx); await trx.insertInto("schema_migrations").values({ version }).execute(); });
++    }
++  } finally { await db.destroy(); await pool.end().catch(() => undefined); }
++}
+diff --git a/packages/db/src/postgres.ts b/packages/db/src/postgres.ts
+new file mode 100644
+index 0000000..5b99423
+--- /dev/null
++++ b/packages/db/src/postgres.ts
+@@ -0,0 +1,310 @@
++import { randomUUID } from "node:crypto";
++import { Kysely, PostgresDialect, sql, type Transaction } from "kysely";
++import { Pool } from "pg";
++import type {
++  BoardItem,
++  BoardRole,
++  BoardSnapshot,
++  BoardSummary,
++  LoginRequest,
++  PublicUser,
++  SessionUser
++} from "@board/contracts";
++import type { AdminAction, AppRepository, BoardEventRecord } from "./index";
++import type { Database } from "./db-types";
++
++export function createPostgresRepository(url: string): AppRepository {
++  const pool = new Pool({ connectionString: url });
++  const db = new Kysely<Database>({ dialect: new PostgresDialect({ pool }) });
++  return new PostgresRepository(db, pool);
++}
++
++class PostgresRepository implements AppRepository {
++  constructor(private readonly db: Kysely<Database>, private readonly pool: Pool) {}
++
++  async close() {
++    await this.db.destroy();
++    await this.pool.end().catch(() => undefined);
++  }
++  async seed() {
++    for (const input of [
++      { handle: "owner", displayName: "보드 소유자" },
++      { handle: "editor", displayName: "편집자" },
++      { handle: "viewer", displayName: "읽기 전용 사용자" },
++      { handle: "admin", displayName: "운영자" }
++    ]) await this.upsertUser(input);
++    await this.db.updateTable("users").set({ role: "admin" }).where("handle", "=", "admin").execute();
++  }
++  async upsertUser(input: LoginRequest) {
++    const row = await this.db.insertInto("users")
++      .values({ handle: input.handle, display_name: input.displayName })
++      .onConflict((conflict) => conflict.column("handle").doUpdateSet({ display_name: input.displayName }))
++      .returningAll()
++      .executeTakeFirstOrThrow();
++    return sessionUser(row);
++  }
++  async createSession(userId: string) {
++    const token = randomUUID();
++    await this.db.insertInto("sessions").values({
++      token,
++      user_id: userId,
++      expires_at: new Date(Date.now() + 14 * 24 * 60 * 60 * 1_000)
++    }).execute();
++    return token;
++  }
++  async getSessionUser(token: string | undefined) {
++    if (!token) return null;
++    const row = await this.db.selectFrom("sessions as s")
++      .innerJoin("users as u", "u.id", "s.user_id")
++      .select(["u.id", "u.handle", "u.display_name", "u.role", "u.status"])
++      .where("s.token", "=", token)
++      .where("s.expires_at", ">", new Date())
++      .executeTakeFirst();
++    return row ? sessionUser(row) : null;
++  }
++  async deleteSession(token: string | undefined) {
++    if (token) await this.db.deleteFrom("sessions").where("token", "=", token).execute();
++  }
++  async listBoards(userId: string): Promise<BoardSummary[]> {
++    const rows = await this.db.selectFrom("board_members as m")
++      .innerJoin("boards as b", "b.id", "m.board_id")
++      .select(["b.id", "b.title", "b.version", "b.closed_at", "m.role"])
++      .where("m.user_id", "=", userId)
++      .orderBy("b.created_at", "desc")
++      .execute();
++    return rows.map((row) => ({
++      id: row.id,
++      title: row.title,
++      role: row.role,
++      version: row.version,
++      closed: row.closed_at !== null
++    }));
++  }
++  async createBoard(ownerId: string, title: string) {
++    return this.db.transaction().execute(async (trx) => {
++      const board = await trx.insertInto("boards")
++        .values({ owner_id: ownerId, title, closed_at: null })
++        .returningAll()
++        .executeTakeFirstOrThrow();
++      await trx.insertInto("board_members")
++        .values({ board_id: board.id, user_id: ownerId, role: "owner" })
++        .execute();
++      return { id: board.id, title, role: "owner" as const, version: board.version, closed: false };
++    });
++  }
++  async getBoardSnapshot(boardId: string, userId: string): Promise<BoardSnapshot | null> {
++    const board = await this.db.selectFrom("boards as b")
++      .innerJoin("board_members as m", "m.board_id", "b.id")
++      .select(["b.id", "b.title", "b.version", "b.closed_at", "m.role"])
++      .where("b.id", "=", boardId)
++      .where("m.user_id", "=", userId)
++      .executeTakeFirst();
++    if (!board) return null;
++    const items = await this.db.selectFrom("board_items").selectAll().where("board_id", "=", boardId).execute();
++    const latest = await this.db.selectFrom("board_events")
++      .select(({ fn }) => fn.max<number>("sequence").as("sequence"))
++      .where("board_id", "=", boardId)
++      .executeTakeFirst();
++    return {
++      boardId,
++      title: board.title,
++      version: board.version,
++      sequence: Number(latest?.sequence ?? 0),
++      closed: board.closed_at !== null,
++      role: board.role,
++      items: items.map(boardItem),
++      serverTime: new Date().toISOString()
++    };
++  }
++  async getBoardRole(boardId: string, userId: string): Promise<BoardRole | null> {
++    const row = await this.db.selectFrom("board_members")
++      .select("role")
++      .where("board_id", "=", boardId)
++      .where("user_id", "=", userId)
++      .executeTakeFirst();
++    return row?.role ?? null;
++  }
++  async inviteMember(boardId: string, actorId: string, handle: string, role: Exclude<BoardRole, "owner">) {
++    await this.assertOwner(boardId, actorId);
++    const user = await this.db.selectFrom("users").select("id").where("handle", "=", handle).executeTakeFirstOrThrow();
++    await this.db.insertInto("board_members")
++      .values({ board_id: boardId, user_id: user.id, role })
++      .onConflict((conflict) => conflict.columns(["board_id", "user_id"]).doUpdateSet({ role }))
++      .execute();
++  }
++  async changeMemberRole(boardId: string, actorId: string, userId: string, role: Exclude<BoardRole, "owner">) {
++    await this.assertOwner(boardId, actorId);
++    const result = await this.db.updateTable("board_members")
++      .set({ role })
++      .where("board_id", "=", boardId)
++      .where("user_id", "=", userId)
++      .where("role", "!=", "owner")
++      .executeTakeFirst();
++    if (Number(result.numUpdatedRows) !== 1) throw new Error("member_not_found");
++  }
++  async listBoardEvents(boardId: string, userId: string): Promise<BoardEventRecord[]> {
++    if (!await this.getBoardRole(boardId, userId)) throw new Error("forbidden");
++    const rows = await this.db.selectFrom("board_events")
++      .selectAll()
++      .where("board_id", "=", boardId)
++      .orderBy("sequence", "desc")
++      .limit(100)
++      .execute();
++    return rows.map((row) => ({
++      id: row.id,
++      boardId: row.board_id,
++      sequence: Number(row.sequence),
++      actorId: row.actor_id,
++      eventType: row.event_type,
++      payload: row.payload,
++      createdAt: row.created_at.toISOString()
++    }));
++  }
++  async createItem(boardId: string, actorId: string, input: Pick<BoardItem, "kind" | "content" | "x" | "y">) {
++    await this.assertWritable(boardId, actorId);
++    return this.db.transaction().execute(async (trx) => {
++      const item = await trx.insertInto("board_items").values({
++        board_id: boardId,
++        kind: input.kind,
++        content: input.content,
++        x: input.x,
++        y: input.y,
++        width: 240,
++        height: 140,
++        version: 1,
++        updated_by: actorId
++      }).returningAll().executeTakeFirstOrThrow();
++      return this.record(trx, boardId, actorId, "item.create", boardItem(item), boardItem(item));
++    });
++  }
++  async updateItem(boardId: string, actorId: string, itemId: string, content: string, baseVersion: number) {
++    await this.assertWritable(boardId, actorId);
++    return this.db.transaction().execute(async (trx) => {
++      const row = await trx.updateTable("board_items")
++        .set({ content, version: baseVersion + 1, updated_by: actorId, updated_at: new Date() })
++        .where("id", "=", itemId)
++        .where("board_id", "=", boardId)
++        .where("version", "=", baseVersion)
++        .returningAll()
++        .executeTakeFirst();
++      if (!row) return null;
++      return this.record(trx, boardId, actorId, "item.update", { itemId, content }, boardItem(row));
++    });
++  }
++  async persistItemMove(boardId: string, actorId: string, itemId: string, x: number, y: number, baseVersion: number) {
++    await this.assertWritable(boardId, actorId);
++    return this.db.transaction().execute(async (trx) => {
++      const row = await trx.updateTable("board_items")
++        .set({ x, y, version: baseVersion + 1, updated_by: actorId, updated_at: new Date() })
++        .where("id", "=", itemId)
++        .where("board_id", "=", boardId)
++        .where("version", "=", baseVersion)
++        .returningAll()
++        .executeTakeFirst();
++      if (!row) return null;
++      return this.record(trx, boardId, actorId, "item.move", { itemId, x, y }, boardItem(row));
++    });
++  }
++  async listAdminUsers() {
++    const rows = await this.db.selectFrom("users").selectAll().orderBy("created_at", "desc").execute();
++    return rows.map((row) => ({ ...publicUser(row), status: row.status }));
++  }
++  async listAdminActions(): Promise<AdminAction[]> {
++    const rows = await this.db.selectFrom("admin_actions").selectAll().orderBy("created_at", "desc").execute();
++    return rows.map((row) => ({
++      id: row.id,
++      actorId: row.actor_id,
++      targetUserId: row.target_user_id,
++      action: row.action,
++      reason: row.reason,
++      createdAt: row.created_at.toISOString()
++    }));
++  }
++  async setUserStatus(actorId: string, targetUserId: string, status: "active" | "suspended", reason: string) {
++    await this.db.transaction().execute(async (trx) => {
++      await trx.updateTable("users").set({ status }).where("id", "=", targetUserId).executeTakeFirstOrThrow();
++      await trx.insertInto("admin_actions").values({
++        actor_id: actorId,
++        target_user_id: targetUserId,
++        action: status === "suspended" ? "suspend" : "restore",
++        reason
++      }).execute();
++      if (status === "suspended") {
++        await trx.deleteFrom("sessions").where("user_id", "=", targetUserId).execute();
++      }
++    });
++  }
++
++  private async assertOwner(boardId: string, actorId: string) {
++    if (await this.getBoardRole(boardId, actorId) !== "owner") throw new Error("forbidden");
++  }
++  private async assertWritable(boardId: string, actorId: string) {
++    const role = await this.getBoardRole(boardId, actorId);
++    if (role !== "owner" && role !== "editor") throw new Error("read_only");
++  }
++  private async record(
++    trx: Transaction<Database>,
++    boardId: string,
++    actorId: string,
++    eventType: string,
++    payload: unknown,
++    item: BoardItem
++  ) {
++    const board = await trx.updateTable("boards")
++      .set(({ eb }) => ({ version: eb("version", "+", 1) }))
++      .where("id", "=", boardId)
++      .returning("version")
++      .executeTakeFirstOrThrow();
++    const latest = await trx.selectFrom("board_events")
++      .select(({ fn }) => fn.max<number>("sequence").as("sequence"))
++      .where("board_id", "=", boardId)
++      .executeTakeFirst();
++    const sequence = Number(latest?.sequence ?? 0) + 1;
++    await trx.insertInto("board_events").values({
++      board_id: boardId,
++      sequence,
++      actor_id: actorId,
++      event_type: eventType,
++      payload
++    }).execute();
++    return { item, sequence, boardVersion: board.version };
++  }
++}
++
++type UserRow = {
++  id: string;
++  handle: string;
++  display_name: string;
++  role: "user" | "admin";
++  status: "active" | "suspended";
++};
++type ItemRow = {
++  id: string;
++  board_id: string;
++  kind: "note" | "shape";
++  content: string;
++  x: number;
++  y: number;
++  width: number;
++  height: number;
++  version: number;
++};
++function publicUser(row: UserRow): PublicUser {
++  return { id: row.id, handle: row.handle, displayName: row.display_name };
++}
++function sessionUser(row: UserRow): SessionUser {
++  return { ...publicUser(row), role: row.role, status: row.status };
++}
++function boardItem(row: ItemRow): BoardItem {
++  return {
++    id: row.id,
++    boardId: row.board_id,
++    kind: row.kind,
++    content: row.content,
++    x: Number(row.x),
++    y: Number(row.y),
++    width: Number(row.width),
++    height: Number(row.height),
++    version: row.version
++  };
++}

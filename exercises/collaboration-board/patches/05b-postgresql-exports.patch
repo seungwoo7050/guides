@@ -1,0 +1,22 @@
+From 53b1c6279ffe8223b287c9068debb5a5e341f413 Mon Sep 17 00:00:00 2001
+From: Seungwoo Kim <seungwoo7050@naver.com>
+Date: Thu, 2 Oct 2025 20:00:00 +0900
+Subject: [PATCH] refactor(data): PostgreSQL 저장소 공개 경계 연결
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+---
+ packages/db/src/index.ts | 2 ++
+ 1 file changed, 2 insertions(+)
+
+diff --git a/packages/db/src/index.ts b/packages/db/src/index.ts
+index e86f6b3..c0e222e 100644
+--- a/packages/db/src/index.ts
++++ b/packages/db/src/index.ts
+@@ -232,3 +232,5 @@ export class MemoryRepository implements AppRepository {
+ export function createMemoryRepository(): AppRepository {
+   return new MemoryRepository();
+ }
++export { createPostgresRepository } from "./postgres";
++export type { Database } from "./db-types";

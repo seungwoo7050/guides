@@ -1,0 +1,12 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root { color: #172033; background: #f4f7fb; font-family: system-ui, sans-serif; }
+* { box-sizing: border-box; }
+body { margin: 0; }
+a { color: inherit; }
+.focus-ring:focus-visible { outline: 3px solid #f59e0b; outline-offset: 3px; }
+.card { border: 1px solid #dbe3ee; border-radius: .75rem; background: white; box-shadow: 0 8px 24px rgb(15 23 42 / .06); }
+.skip-link { position: fixed; left: 1rem; top: 1rem; z-index: 50; transform: translateY(-200%); background: #111827; color: white; padding: .75rem; }
+.skip-link:focus { transform: none; }

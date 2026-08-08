@@ -1,0 +1,292 @@
+From 26c855f8c4755c14bea739c1803b5bb77fb209f1 Mon Sep 17 00:00:00 2001
+From: Seungwoo Kim <seungwoo7050@naver.com>
+Date: Tue, 7 Oct 2025 20:49:00 +0900
+Subject: [PATCH] feat(security): 세션과 역할 기반 권한 추가
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+---
+ README.md                   |  11 +--
+ apps/api/src/app.ts         | 181 ++++++++++++++++++++++++++++++++++++
+ apps/api/src/index.ts       |  13 +++
+ apps/web/app/admin/page.tsx |  39 ++++++++
+ 4 files changed, 238 insertions(+), 6 deletions(-)
+ create mode 100644 apps/api/src/app.ts
+ create mode 100644 apps/api/src/index.ts
+ create mode 100644 apps/web/app/admin/page.tsx
+
+diff --git a/README.md b/README.md
+index a3041f3..8ef28e8 100644
+--- a/README.md
++++ b/README.md
+@@ -1,13 +1,12 @@
+ # 실시간 협업 보드
+ 
+-Fastify와 Next.js로 구성한 협업 보드입니다. PostgreSQL 변경은 Kysely 트랜잭션으로 저장합니다.
++쿠키 세션과 역할 기반 권한을 적용한 협업 보드입니다. 로그인하지 않은 요청과 권한이 없는 요청은 각각 `401`, `403`으로 구분하며, 관리 작업은 별도 기록으로 남깁니다.
+ 
+ ```sh
+-docker compose -f compose.dev.yml up -d
+-cp .env.example .env
+ pnpm install --frozen-lockfile
+-pnpm --filter @board/db migrate
+-pnpm dev
++pnpm typecheck
++pnpm test
++pnpm build
+ ```
+ 
+-마이그레이션은 사용자, 보드, 항목, 활동 내역을 함께 준비합니다. 저장소 단위 검사는 실제 PostgreSQL 주소가 있을 때 트랜잭션 경로도 실행합니다.
++PostgreSQL 경로는 `docker compose -f compose.dev.yml up -d`로 준비한 뒤 `.env.example`을 `.env`로 복사해 실행합니다.
+diff --git a/apps/api/src/app.ts b/apps/api/src/app.ts
+new file mode 100644
+index 0000000..e67e6d4
+--- /dev/null
++++ b/apps/api/src/app.ts
+@@ -0,0 +1,181 @@
++import cookie from "@fastify/cookie";
++import cors from "@fastify/cors";
++import Fastify, { type FastifyReply, type FastifyRequest } from "fastify";
++import { z } from "zod";
++import {
++  ChangeMemberRoleSchema,
++  CreateBoardSchema,
++  InviteMemberSchema,
++  LoginRequestSchema
++} from "@board/contracts";
++import type { AppRepository } from "@board/db";
++
++const SESSION_COOKIE = "board_session";
++
++export function buildApp(
++  repo: AppRepository,
++  options: { allowedOrigins: string[] } = { allowedOrigins: ["http://localhost:3000"] }
++) {
++  const app = Fastify({
++    logger: {
++      level: process.env.LOG_LEVEL ?? "info",
++      redact: ["req.headers.authorization", "req.headers.cookie"]
++    }
++  });
++  app.register(cors, {
++    origin: options.allowedOrigins,
++    credentials: true,
++    methods: ["GET", "POST", "PATCH", "OPTIONS"],
++    allowedHeaders: ["content-type"]
++  });
++  app.register(cookie);
++  app.addHook("preHandler", async (request, reply) => {
++    if (["POST", "PATCH", "PUT", "DELETE"].includes(request.method)) {
++      const origin = request.headers.origin;
++      if (origin && !options.allowedOrigins.includes(origin)) {
++        return reply.code(403).send({ code: "origin_forbidden", message: "허용되지 않은 출처입니다." });
++      }
++    }
++  });
++
++  app.get("/health", async () => ({ ok: true, service: "board-api" }));
++  app.post("/auth/login", async (request, reply) => {
++    const parsed = LoginRequestSchema.safeParse(request.body);
++    if (!parsed.success) return invalid(reply, parsed.error.issues);
++    const user = await repo.upsertUser(parsed.data);
++    if (user.status !== "active") return forbidden(reply);
++    const token = await repo.createSession(user.id);
++    reply.setCookie(SESSION_COOKIE, token, {
++      path: "/",
++      httpOnly: true,
++      sameSite: "lax",
++      secure: process.env.NODE_ENV === "production",
++      maxAge: 14 * 24 * 60 * 60
++    });
++    return { user };
++  });
++  app.post("/auth/logout", async (request, reply) => {
++    await repo.deleteSession(readSessionToken(request));
++    reply.clearCookie(SESSION_COOKIE, { path: "/" });
++    return { ok: true };
++  });
++  app.get("/me", async (request, reply) => {
++    const user = await currentUser(repo, request);
++    return user ? { user } : unauthorized(reply);
++  });
++  app.get("/boards", async (request, reply) => {
++    const user = await requireUser(repo, request, reply);
++    return user ? { boards: await repo.listBoards(user.id) } : undefined;
++  });
++  app.post("/boards", async (request, reply) => {
++    const user = await requireUser(repo, request, reply);
++    if (!user) return;
++    const parsed = CreateBoardSchema.safeParse(request.body);
++    if (!parsed.success) return invalid(reply, parsed.error.issues);
++    return reply.code(201).send({ board: await repo.createBoard(user.id, parsed.data.title) });
++  });
++  app.get("/boards/:id", async (request, reply) => {
++    const user = await requireUser(repo, request, reply);
++    if (!user) return;
++    const { id } = request.params as { id: string };
++    const board = await repo.getBoardSnapshot(id, user.id);
++    return board ? { board } : reply.code(404).send({ code: "not_found", message: "보드를 찾을 수 없습니다." });
++  });
++  app.get("/boards/:id/activity", async (request, reply) => {
++    const user = await requireUser(repo, request, reply);
++    if (!user) return;
++    const { id } = request.params as { id: string };
++    try {
++      return { events: await repo.listBoardEvents(id, user.id) };
++    } catch {
++      return forbidden(reply);
++    }
++  });
++  app.post("/boards/:id/invitations", async (request, reply) => {
++    const user = await requireUser(repo, request, reply);
++    if (!user) return;
++    const parsed = InviteMemberSchema.safeParse(request.body);
++    if (!parsed.success) return invalid(reply, parsed.error.issues);
++    const { id } = request.params as { id: string };
++    try {
++      await repo.inviteMember(id, user.id, parsed.data.handle, parsed.data.role);
++      return reply.code(204).send();
++    } catch {
++      return forbidden(reply);
++    }
++  });
++  app.patch("/boards/:id/members/:userId/role", async (request, reply) => {
++    const user = await requireUser(repo, request, reply);
++    if (!user) return;
++    const parsed = ChangeMemberRoleSchema.safeParse(request.body);
++    if (!parsed.success) return invalid(reply, parsed.error.issues);
++    const { id, userId } = request.params as { id: string; userId: string };
++    try {
++      await repo.changeMemberRole(id, user.id, userId, parsed.data.role);
++      return reply.code(204).send();
++    } catch {
++      return forbidden(reply);
++    }
++  });
++  app.get("/admin/users", async (request, reply) => {
++    const actor = await requireAdmin(repo, request, reply);
++    return actor ? { users: await repo.listAdminUsers() } : undefined;
++  });
++  app.get("/admin/actions", async (request, reply) => {
++    const actor = await requireAdmin(repo, request, reply);
++    return actor ? { actions: await repo.listAdminActions() } : undefined;
++  });
++  app.patch("/admin/users/:id/status", async (request, reply) => {
++    const actor = await requireAdmin(repo, request, reply);
++    if (!actor) return;
++    const parsed = z.object({
++      status: z.enum(["active", "suspended"]),
++      reason: z.string().trim().min(1).max(200)
++    }).safeParse(request.body);
++    if (!parsed.success) return invalid(reply, parsed.error.issues);
++    const { id } = request.params as { id: string };
++    await repo.setUserStatus(actor.id, id, parsed.data.status, parsed.data.reason);
++    return reply.code(204).send();
++  });
++
++  app.addHook("onClose", async () => {
++    await repo.close();
++  });
++  return app;
++}
++
++export function readSessionToken(request: FastifyRequest) {
++  return request.cookies?.[SESSION_COOKIE];
++}
++export async function currentUser(repo: AppRepository, request: FastifyRequest) {
++  return repo.getSessionUser(readSessionToken(request));
++}
++async function requireUser(repo: AppRepository, request: FastifyRequest, reply: FastifyReply) {
++  const user = await currentUser(repo, request);
++  if (!user) {
++    unauthorized(reply);
++    return null;
++  }
++  if (user.status !== "active") {
++    forbidden(reply);
++    return null;
++  }
++  return user;
++}
++async function requireAdmin(repo: AppRepository, request: FastifyRequest, reply: FastifyReply) {
++  const user = await requireUser(repo, request, reply);
++  if (!user || user.role !== "admin") {
++    if (user) forbidden(reply);
++    return null;
++  }
++  return user;
++}
++function invalid(reply: FastifyReply, issues: unknown) {
++  return reply.code(400).send({ code: "invalid_request", message: "요청 형식이 올바르지 않습니다.", issues });
++}
++function unauthorized(reply: FastifyReply) {
++  return reply.code(401).send({ code: "unauthorized", message: "로그인이 필요합니다." });
++}
++function forbidden(reply: FastifyReply) {
++  return reply.code(403).send({ code: "forbidden", message: "권한이 없습니다." });
++}
+diff --git a/apps/api/src/index.ts b/apps/api/src/index.ts
+new file mode 100644
+index 0000000..bc974f7
+--- /dev/null
++++ b/apps/api/src/index.ts
+@@ -0,0 +1,13 @@
++import { createMemoryRepository, createPostgresRepository } from "@board/db";
++import { buildApp } from "./app";
++
++const repo = process.env.DATABASE_URL
++  ? createPostgresRepository(process.env.DATABASE_URL)
++  : createMemoryRepository();
++await repo.seed();
++const allowedOrigins = (process.env.WEB_ORIGINS ?? "http://localhost:3000,http://localhost:8080")
++  .split(",")
++  .map((value) => value.trim())
++  .filter(Boolean);
++const app = buildApp(repo, { allowedOrigins });
++await app.listen({ host: "0.0.0.0", port: Number(process.env.PORT ?? 4000) });
+diff --git a/apps/web/app/admin/page.tsx b/apps/web/app/admin/page.tsx
+new file mode 100644
+index 0000000..b0b18cb
+--- /dev/null
++++ b/apps/web/app/admin/page.tsx
+@@ -0,0 +1,39 @@
++"use client";
++import { useEffect, useState } from "react";
++import { AppShell } from "../../components/AppShell";
++import { getAdminUsers, setUserStatus } from "../../lib/api";
++
++export default function AdminPage() {
++  const [users, setUsers] = useState<Awaited<ReturnType<typeof getAdminUsers>>>([]);
++  const [reason, setReason] = useState("운영 정책 검토");
++  const [message, setMessage] = useState("");
++  const load = () => getAdminUsers().then(setUsers).catch(() => setMessage("운영자 권한이 필요합니다."));
++  useEffect(() => { void load(); }, []);
++
++  async function toggle(user: Awaited<ReturnType<typeof getAdminUsers>>[number]) {
++    const status = user.status === "active" ? "suspended" : "active";
++    await setUserStatus(user.id, status, reason);
++    setMessage("계정 상태와 감사 기록을 함께 변경했습니다.");
++    await load();
++  }
++
++  return <AppShell>
++    <h1 className="text-3xl font-black">관리 작업</h1>
++    <label htmlFor="reason">조치 사유</label>
++    <input
++      id="reason"
++      className="m-3 rounded border p-2"
++      value={reason}
++      onChange={(event) => setReason(event.target.value)}
++    />
++    {message ? <p role="status">{message}</p> : null}
++    <div className="mt-4 grid gap-3">
++      {users.map((user) => <article className="card flex items-center justify-between p-4" key={user.id}>
++        <span>{user.displayName} · {user.status === "active" ? "활성" : "정지"}</span>
++        <button className="rounded bg-slate-800 px-3 py-2 text-white" onClick={() => toggle(user)}>
++          {user.status === "active" ? "정지" : "복구"}
++        </button>
++      </article>)}
++    </div>
++  </AppShell>;
++}

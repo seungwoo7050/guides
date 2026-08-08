@@ -1,0 +1,35 @@
+"use client";
+import React, { FormEvent, useState } from "react";
+import type { SessionUser } from "@board/contracts";
+import { login } from "../lib/api";
+
+export function LoginForm({ onLogin }: { onLogin(user: SessionUser): void }) {
+  const [handle, setHandle] = useState("");
+  const [displayName, setDisplayName] = useState("");
+  const [error, setError] = useState("");
+
+  async function submit(event: FormEvent) {
+    event.preventDefault();
+    setError("");
+    try {
+      onLogin(await login({ handle: handle.trim(), displayName: displayName.trim() }));
+    } catch {
+      setError("로그인하지 못했습니다.");
+    }
+  }
+
+  return <form className="card grid gap-3 p-5" onSubmit={submit}>
+    <h2 className="text-xl font-black">로그인</h2>
+    <label htmlFor="handle">핸들</label>
+    <input className="rounded border p-2" id="handle" value={handle} onChange={(event) => setHandle(event.target.value)} required />
+    <label htmlFor="displayName">표시 이름</label>
+    <input className="rounded border p-2" id="displayName" value={displayName} onChange={(event) => setDisplayName(event.target.value)} required />
+    {error ? <p role="alert">{error}</p> : null}
+    <button
+      className="focus-ring rounded bg-blue-700 px-4 py-2 font-bold text-white disabled:opacity-40"
+      disabled={!handle.trim() || !displayName.trim()}
+    >
+      로그인
+    </button>
+  </form>;
+}
