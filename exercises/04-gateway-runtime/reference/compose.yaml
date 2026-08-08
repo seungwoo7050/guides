@@ -1,0 +1,46 @@
+services:
+  app:
+    build:
+      context: ./app
+    volumes:
+      - type: bind
+        source: ./app/public
+        target: /var/www/html
+        read_only: true
+    networks:
+      - app-net
+    healthcheck:
+      test: ["CMD-SHELL", "REQUEST_METHOD=GET SCRIPT_NAME=/ping SCRIPT_FILENAME=/ping cgi-fcgi -bind -connect 127.0.0.1:9000 | grep -q pong"]
+      interval: 3s
+      timeout: 2s
+      retries: 20
+      start_period: 3s
+
+  gateway:
+    build:
+      context: ./gateway
+    environment:
+      APP_UPSTREAM: "${APP_UPSTREAM:-app:9000}"
+      CERT_CN: localhost
+    ports:
+      - "127.0.0.1:${TLS_PORT:-18443}:443"
+    volumes:
+      - type: bind
+        source: ./app/public
+        target: /var/www/html
+        read_only: true
+    depends_on:
+      app:
+        condition: service_healthy
+    networks:
+      - app-net
+    healthcheck:
+      test: ["CMD", "curl", "-kfsS", "https://127.0.0.1/healthz"]
+      interval: 3s
+      timeout: 2s
+      retries: 20
+      start_period: 3s
+
+networks:
+  app-net:
+    driver: bridge

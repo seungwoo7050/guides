@@ -1,0 +1,14 @@
+server {
+    # TODO: TLS 443 포트에서 연결을 받고 현재 HTTP/2 문법을 사용합니다.
+    server_name _;
+    root /var/www/html;
+    index index.php index.html;
+
+    ssl_certificate /etc/nginx/tls/development.crt;
+    ssl_certificate_key /etc/nginx/tls/development.key;
+    ssl_protocols TLSv1.2 TLSv1.3;
+
+    # TODO: /healthz의 정확한 응답을 작성합니다.
+    # TODO: 정적 파일을 우선하고 /index.php를 대체 경로로 사용합니다.
+    # TODO: ${APP_UPSTREAM}과 올바른 SCRIPT_FILENAME을 사용하는 PHP FastCGI 블록을 작성합니다.
+}
