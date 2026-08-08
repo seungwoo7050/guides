@@ -1,0 +1,7 @@
+packages:
+  - exercises/01-runtime/reference/apps/*
+  - exercises/01-runtime/reference/packages/*
+  - exercises/0[3-8]-*/reference
+  - projects/collaboration-board
+  - projects/collaboration-board/apps/*
+  - projects/collaboration-board/packages/*

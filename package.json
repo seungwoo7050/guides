@@ -1,0 +1,22 @@
+{
+  "name": "developer-guides-web-applications",
+  "private": true,
+  "type": "module",
+  "packageManager": "pnpm@10.32.1",
+  "scripts": {
+    "check": "node scripts/verify-guide-structure.mjs && node scripts/verify-links.mjs && node scripts/verify-snippets.mjs && node exercises/collaboration-board/checks/verify-stage-specs.mjs && node scripts/verify-collaboration-board.mjs",
+    "check:walkthrough": "node scripts/verify-patches.mjs",
+    "verify:foundations": "node exercises/00-first-web-app/tests/verify.mjs reference && node exercises/02-browser/tests/verify.mjs reference",
+    "verify:runtime": "pnpm --dir exercises/01-runtime/reference typecheck && pnpm --dir exercises/01-runtime/reference demo",
+    "verify:react": "pnpm --dir exercises/03-react-nextjs/reference typecheck && pnpm --dir exercises/03-react-nextjs/reference build && node exercises/03-react-nextjs/tests/run.mjs reference",
+    "verify:api": "pnpm --dir exercises/04-fastify-zod-api/reference typecheck && pnpm --dir exercises/04-fastify-zod-api/reference test",
+    "verify:database": "node scripts/verify-postgresql-exercise.mjs",
+    "verify:security": "pnpm --dir exercises/06-security/reference typecheck && pnpm --dir exercises/06-security/reference test",
+    "verify:realtime": "pnpm --dir exercises/07-websocket/reference typecheck && pnpm --dir exercises/07-websocket/reference test",
+    "verify:testing": "pnpm --dir exercises/08-testing/reference typecheck && pnpm --dir exercises/08-testing/reference test && pnpm --dir exercises/08-testing/reference test:e2e",
+    "verify:collaboration": "pnpm --dir projects/collaboration-board typecheck && pnpm --dir projects/collaboration-board test && pnpm --dir projects/collaboration-board build && pnpm --dir projects/collaboration-board test:e2e",
+    "verify": "pnpm check && pnpm verify:foundations && pnpm verify:runtime && pnpm verify:react && pnpm verify:api && pnpm verify:database && pnpm verify:security && pnpm verify:realtime && pnpm verify:testing && pnpm verify:collaboration",
+    "serve:static": "node scripts/serve-static.mjs",
+    "clean": "node scripts/clean-generated.mjs"
+  }
+}
