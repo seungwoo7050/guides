@@ -157,6 +157,9 @@ cleanup()
             -type f \
             \( -name '*.tsbuildinfo' -o -name '.eslintcache' \) \
             -exec rm -f {} + \
+            >> "$LOG" 2>&1 \
+        && \
+        rm -f ./exercises/project-catalog/reference/next-env.d.ts \
             >> "$LOG" 2>&1
     then
         printf '[PASS] clean\n' | tee -a "$LOG"

@@ -58,7 +58,7 @@ pnpm install --frozen-lockfile
 pnpm exercise:create
 ```
 
-`nvm`을 사용하지 않는 환경에서는 `.nvmrc`와 같은 Node.js 22.16.x를 준비합니다.
+`nvm`을 사용하지 않는 환경에서는 `.nvmrc` 계약과 같은 Node.js 24.19.0 이상 25 미만을 준비합니다.
 
 ```sh
 pnpm exercise:verify:01

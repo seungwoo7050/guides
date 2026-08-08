@@ -182,7 +182,7 @@ do
         die "이전 경로가 남아 있습니다: $path"
 done
 
-command_exists node || die "node를 찾을 수 없습니다. Node.js 22.16.x가 필요합니다."
+command_exists node || die "node를 찾을 수 없습니다. Node.js 24.19.0 이상 25 미만이 필요합니다."
 node scripts/clean-generated.mjs
 printf '[OK] 이전 build/test 산출물을 제거했습니다.\n'
 
@@ -194,8 +194,8 @@ say "3/6 Node.js와 pnpm 준비"
 
 node <<'NODE'
 const [major, minor] = process.versions.node.split(".").map(Number);
-if (major !== 22 || minor < 16) {
-  console.error(`ERROR: Node.js 22.16.0 이상 23 미만이 필요합니다. 현재: ${process.version}`);
+if (major !== 24 || minor < 19) {
+  console.error(`ERROR: Node.js 24.19.0 이상 25 미만이 필요합니다. 현재: ${process.version}`);
   process.exit(1);
 }
 const pkg = JSON.parse(require("node:fs").readFileSync("package.json", "utf8"));

@@ -5,6 +5,7 @@ import {
   KeyboardEvent,
   useCallback,
   useEffect,
+  useLayoutEffect,
   useRef,
   useState
 } from "react";
@@ -219,6 +220,7 @@ function ProjectEditor({
   const [saving, setSaving] = useState(false);
   const editButton = useRef<HTMLButtonElement>(null);
   const titleInput = useRef<HTMLInputElement>(null);
+  const shouldRestoreEditButtonFocus = useRef(false);
   const articleLabel = getArticleAccessibleLabel(project.title);
 
   useEffect(() => {
@@ -229,14 +231,16 @@ function ProjectEditor({
     if (editing) titleInput.current?.focus();
   }, [editing]);
 
-  function returnFocusToEditButton() {
-    requestAnimationFrame(() => editButton.current?.focus());
-  }
+  useLayoutEffect(() => {
+    if (editing || !shouldRestoreEditButtonFocus.current) return;
+    shouldRestoreEditButtonFocus.current = false;
+    editButton.current?.focus();
+  }, [editing]);
 
   function cancelEditing() {
     setDraftTitle(project.title);
+    shouldRestoreEditButtonFocus.current = true;
     setEditing(false);
-    returnFocusToEditButton();
   }
 
   async function save(event: FormEvent<HTMLFormElement>) {
@@ -248,8 +252,8 @@ function ProjectEditor({
     setSaving(false);
     if (outcome.kind === "success") {
       setDraftTitle(outcome.project.title);
+      shouldRestoreEditButtonFocus.current = true;
       setEditing(false);
-      returnFocusToEditButton();
     } else {
       requestAnimationFrame(() => titleInput.current?.focus());
     }

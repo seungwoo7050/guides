@@ -4,12 +4,14 @@ import { fileURLToPath } from "node:url";
 
 const repositoryRoot = path.resolve(fileURLToPath(new URL("..", import.meta.url)));
 const exerciseRoot = path.join(repositoryRoot, "exercises", "project-catalog");
+const reference = path.join(exerciseRoot, "reference");
 const projects = [
-  path.join(exerciseRoot, "reference"),
+  reference,
   path.join(exerciseRoot, "workspace")
 ];
 
 await rm(path.join(repositoryRoot, "node_modules"), { recursive: true, force: true });
+await rm(path.join(reference, "next-env.d.ts"), { force: true });
 for (const project of projects) {
   for (const relative of [
     "node_modules",

@@ -1,9 +1,12 @@
 import { lstat, readFile, readdir, stat } from "node:fs/promises";
+import { execFileSync } from "node:child_process";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 const repositoryRoot = path.resolve(fileURLToPath(new URL("..", import.meta.url)));
 const failures = [];
+const generatedNextEnvironmentDeclaration =
+  "exercises/project-catalog/reference/next-env.d.ts";
 
 const requiredPaths = [
   ".gitignore",
@@ -74,7 +77,8 @@ await verifyVersions();
 await verifyStageMarkers();
 await verifyMarkdownLinks();
 await verifyTextHygiene();
-await verifyGeneratedOutputIsAbsent();
+await verifyNextEnvironmentDeclarationContract();
+await verifyTrackedGeneratedOutputIsAbsent();
 
 if (failures.length > 0) {
   console.error("저장소 계약 검증에 실패했습니다.");
@@ -142,11 +146,11 @@ async function verifyPackageContracts() {
   }
 
   const makefile = await readText("Makefile");
-  if (makefile && !/prepare:\n\t\.\/prepare\.sh/u.test(makefile)) {
-    failures.push("Makefile prepare target이 ./prepare.sh를 실행하지 않습니다.");
+  if (makefile && !/check:\n\tpnpm check/u.test(makefile)) {
+    failures.push("Makefile check target이 pnpm check를 실행하지 않습니다.");
   }
-  if (makefile && !/verify:\n\t\.\/verify\.sh/u.test(makefile)) {
-    failures.push("Makefile verify target이 ./verify.sh를 실행하지 않습니다.");
+  if (makefile && !/verify:\n\tpnpm verify/u.test(makefile)) {
+    failures.push("Makefile verify target이 pnpm verify를 실행하지 않습니다.");
   }
 
   const readme = await readText("README.md");
@@ -165,7 +169,6 @@ async function verifyPackageContracts() {
     "test:stage:02",
     "test:stage:03",
     "test:stage:04",
-    "test:stage:05",
     "build",
     "test:e2e:stage:03",
     "test:e2e:stage:04",
@@ -177,11 +180,28 @@ async function verifyPackageContracts() {
       failures.push(`reference package.json script가 없습니다: ${name}`);
     }
   }
-  for (const name of ["test:e2e:stage:03", "test:e2e:stage:04", "test:e2e"]) {
-    const command = referencePackage.scripts?.[name];
-    if (typeof command === "string" && !command.includes("scripts/run-playwright.mjs")) {
-      failures.push(`${name}이 고유 port 실행기를 사용하지 않습니다.`);
+  const expectedE2EScripts = {
+    "test:e2e:stage:03": "node scripts/run-playwright.mjs tests/e2e/03-data-concurrency.spec.ts",
+    "test:e2e:stage:04":
+      "node scripts/run-playwright.mjs tests/e2e/03-data-concurrency.spec.ts tests/e2e/04-accessibility-performance.spec.ts",
+    "test:e2e": "node scripts/run-playwright.mjs"
+  };
+  for (const [name, expected] of Object.entries(expectedE2EScripts)) {
+    const actual = referencePackage.scripts?.[name];
+    if (actual !== expected) {
+      failures.push(`${name}의 고유 port 실행 계약이 예상과 다릅니다: ${actual ?? "<missing>"}`);
     }
+  }
+
+  const playwrightRunner = await readText(
+    "exercises/project-catalog/reference/scripts/run-playwright.mjs"
+  );
+  if (
+    playwrightRunner &&
+    (!playwrightRunner.includes("CATALOG_E2E_PORT") ||
+      !playwrightRunner.includes("server.listen(0, host"))
+  ) {
+    failures.push("Playwright 실행기가 임시 port를 할당해 CATALOG_E2E_PORT로 전달하지 않습니다.");
   }
 
   const playwrightConfig = await readText("exercises/project-catalog/reference/playwright.config.ts");
@@ -205,16 +225,16 @@ async function verifyVersions() {
   const roadmap = await readText("docs/00-roadmap-and-prerequisites.md");
   if (!rootPackage || !referencePackage || roadmap === null) return;
 
-  if (nvm !== "22.16.0") failures.push(`.nvmrc 기준이 22.16.0이 아닙니다: ${nvm ?? "<missing>"}`);
+  if (nvm !== "24.19.0") failures.push(`.nvmrc 기준이 24.19.0이 아닙니다: ${nvm ?? "<missing>"}`);
   if (rootPackage.packageManager !== "pnpm@10.32.1") {
     failures.push(`packageManager 기준이 pnpm@10.32.1이 아닙니다: ${rootPackage.packageManager ?? "<missing>"}`);
   }
-  if (rootPackage.engines?.node !== ">=22.16.0 <23") {
+  if (rootPackage.engines?.node !== ">=24.19.0 <25") {
     failures.push(`Node.js engine 범위가 예상과 다릅니다: ${rootPackage.engines?.node ?? "<missing>"}`);
   }
 
   const expectedDependencies = {
-    next: ["dependencies", "15.5.21"],
+    next: ["dependencies", "16.3.0"],
     react: ["dependencies", "19.2.8"],
     "react-dom": ["dependencies", "19.2.8"],
     typescript: ["devDependencies", "5.9.3"],
@@ -302,27 +322,46 @@ async function verifyTextHygiene() {
   }
 }
 
-async function verifyGeneratedOutputIsAbsent() {
-  const findings = [];
-  await scan(repositoryRoot);
-  for (const finding of findings) failures.push(`검증 시작 전에 생성물이 남아 있습니다: ${finding}`);
+async function verifyNextEnvironmentDeclarationContract() {
+  const gitignore = await readText(".gitignore");
+  const ignored = gitignore
+    ?.split("\n")
+    .map((line) => line.trim())
+    .includes(generatedNextEnvironmentDeclaration);
+  if (!ignored) {
+    failures.push(
+      `${generatedNextEnvironmentDeclaration}가 .gitignore에 정확한 경로로 등록되지 않았습니다.`
+    );
+  }
+}
 
-  async function scan(directory) {
-    for (const entry of await readdir(directory, { withFileTypes: true })) {
-      const target = path.join(directory, entry.name);
-      if (entry.isDirectory()) {
-        if (entry.name === ".git" || entry.name === "node_modules") continue;
-        if (generatedDirectoryNames.has(entry.name) || entry.name.startsWith(".workspace-")) {
-          findings.push(relative(target));
-          continue;
-        }
-        await scan(target);
-      } else if (
-        entry.isFile() &&
-        (entry.name.endsWith(".tsbuildinfo") || entry.name === ".eslintcache" || entry.name.endsWith(".pid"))
-      ) {
-        findings.push(relative(target));
-      }
+async function verifyTrackedGeneratedOutputIsAbsent() {
+  let tracked;
+  try {
+    tracked = execFileSync("git", ["ls-files", "-z"], {
+      cwd: repositoryRoot,
+      encoding: "utf8"
+    })
+      .split("\0")
+      .filter(Boolean);
+  } catch (error) {
+    failures.push(`Git 추적 파일을 확인하지 못했습니다: ${error.message}`);
+    return;
+  }
+
+  for (const file of tracked) {
+    const parts = file.split("/");
+    const basename = parts.at(-1) ?? file;
+    const generatedDirectory = parts
+      .slice(0, -1)
+      .some((part) => generatedDirectoryNames.has(part) || part.startsWith(".workspace-"));
+    const generatedFile =
+      basename.endsWith(".tsbuildinfo") ||
+      basename === ".eslintcache" ||
+      basename.endsWith(".pid") ||
+      file === generatedNextEnvironmentDeclaration;
+    if (generatedDirectory || generatedFile) {
+      failures.push(`Git이 생성물을 추적하고 있습니다: ${file}`);
     }
   }
 }

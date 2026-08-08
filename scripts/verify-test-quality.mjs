@@ -1,6 +1,5 @@
 import { cp, lstat, mkdtemp, readFile, rm, symlink, writeFile } from "node:fs/promises";
 import { spawnSync } from "node:child_process";
-import { tmpdir } from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -12,6 +11,13 @@ if (!(await exists(referenceModules))) {
   throw new Error("reference 의존성이 없습니다. 먼저 ./prepare.sh를 실행하세요.");
 }
 
+try {
+  await verifyTestQuality();
+} finally {
+  await cleanReferenceGeneratedOutput();
+}
+
+async function verifyTestQuality() {
 console.log("검사기 기준 구현을 먼저 확인합니다.");
 runRequired(reference, "test", "기준 unit test");
 runRequired(reference, "build", "기준 production build");
@@ -78,12 +84,12 @@ await mutation(
 );
 
 await mutation(
-  "Stage 04 browser 검사가 사용자 제목을 바꾼 accessible name을 거절합니다",
+  "Stage 04 browser 검사가 사용자 제목을 제거한 accessible name을 거절합니다",
   async (project) => {
     await replaceOnce(
       path.join(project, "app", "project-catalog.tsx"),
-      "const articleLabel = `${project.title} 프로젝트`;",
-      "const articleLabel = `${project.title.replace(\"상태\", \"스테이터스\")} 프로젝트`;"
+      "const articleLabel = getArticleAccessibleLabel(project.title);",
+      'const articleLabel = "프로젝트";'
     );
   },
   [required("typecheck"), required("build"), expectedFailure("test:e2e:stage:04")]
@@ -98,13 +104,30 @@ await mutation(
       'release: process.env.APP_RELEASE ?? "local",\n      secret: process.env.CATALOG_SERVER_ONLY_CANARY'
     );
   },
-  [required("typecheck"), expectedFailure("test:stage:05")]
+  [required("typecheck"), expectedFailure("test")]
 );
 
 console.log("Stage 01–05 검사기가 대표적인 잘못된 구현을 실제로 거절했습니다.");
+}
+
+async function cleanReferenceGeneratedOutput() {
+  for (const relative of [
+    "next-env.d.ts",
+    ".next",
+    "coverage",
+    "playwright-report",
+    "test-results",
+    "tsconfig.tsbuildinfo"
+  ]) {
+    await rm(path.join(reference, relative), { recursive: true, force: true });
+  }
+}
 
 async function mutation(label, mutate, steps) {
-  const temporary = await mkdtemp(path.join(tmpdir(), "project-catalog-mutation-"));
+  // Next.js 16의 Turbopack은 프로젝트 filesystem root 밖을 가리키는
+  // node_modules symlink를 거절한다. 저장소 안에 격리 디렉터리를 만들면
+  // pnpm workspace root와 reference 의존성이 같은 filesystem root에 남는다.
+  const temporary = await mkdtemp(path.join(repositoryRoot, ".project-catalog-mutation-"));
   try {
     await cp(reference, temporary, {
       recursive: true,

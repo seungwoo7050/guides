@@ -73,14 +73,16 @@ HTML·CSS·JavaScript·TypeScript·React와 App Router의 기초가 아직 익�
 실습은 저장소의 `package.json`, `pnpm-lock.yaml`, `.nvmrc`가 고정한 버전으로 실행한다.
 
 ```text
-Node.js       22.16.x
+Node.js       24.19.0
 pnpm          10.32.1
-Next.js       15.5.21
+Next.js       16.3.0
 React         19.2.8
 TypeScript    5.9.3
 Playwright    1.61.1
 Vitest        3.2.7
 ```
+
+Node.js 24는 현재 LTS 계열이고 Next.js 16은 Active LTS다. 수명주기 기준은 [Node.js release schedule](https://nodejs.org/en/about/previous-releases)과 [Next.js support policy](https://nextjs.org/support-policy)에서 다시 확인한다.
 
 버전 번호 자체를 외우지 않는다. 대신 다음 두 종류를 분리한다.
 

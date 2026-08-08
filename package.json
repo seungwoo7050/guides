@@ -3,9 +3,11 @@
   "private": true,
   "packageManager": "pnpm@10.32.1",
   "scripts": {
+    "check:repository": "node scripts/verify-repository.mjs",
     "check:reference": "pnpm --dir exercises/project-catalog/reference typecheck && pnpm --dir exercises/project-catalog/reference test",
     "check:skeleton": "node scripts/verify-skeleton.mjs",
-    "check": "pnpm check:reference && pnpm check:skeleton",
+    "check:test-quality": "node scripts/verify-test-quality.mjs",
+    "check": "pnpm check:repository && pnpm check:reference && pnpm check:skeleton && pnpm check:test-quality",
     "build": "pnpm --dir exercises/project-catalog/reference build",
     "test:e2e": "pnpm --dir exercises/project-catalog/reference test:e2e",
     "smoke": "pnpm --dir exercises/project-catalog/reference smoke",
@@ -24,6 +26,6 @@
     "clean": "node scripts/clean-generated.mjs"
   },
   "engines": {
-    "node": ">=22.16.0 <23"
+    "node": ">=24.19.0 <25"
   }
 }

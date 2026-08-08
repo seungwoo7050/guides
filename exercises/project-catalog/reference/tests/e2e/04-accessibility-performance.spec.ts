@@ -19,7 +19,7 @@ test.beforeEach(async ({ request }) => {
   expect(response.status()).toBe(200);
 });
 
-test("@stage-04 keyboard 취소와 성공 뒤 시작 button으로 focus를 복구합니다", async ({ page }) => {
+test("@stage-04 keyboard 취소와 연속 저장 뒤 시작 button으로 focus를 복구합니다", async ({ page }) => {
   await page.goto("/");
   const article = page.getByRole("article", { name: "네트워크 흐름 분석 프로젝트" });
   const editButton = article.getByRole("button", { name: "제목 수정" });
@@ -32,12 +32,19 @@ test("@stage-04 keyboard 취소와 성공 뒤 시작 button으로 focus를 복�
   await page.keyboard.press("Escape");
   await expect(editButton).toBeFocused();
 
-  await page.keyboard.press("Enter");
-  await input.fill("키보드 저장 제목");
-  await page.getByRole("button", { name: "저장", exact: true }).click();
-  await expect(page.getByRole("status")).toContainText("제목을 저장했습니다");
-  const savedArticle = page.getByRole("article", { name: "키보드 저장 제목 프로젝트" });
-  await expect(savedArticle.getByRole("button", { name: "제목 수정" })).toBeFocused();
+  for (const title of ["첫 번째 키보드 저장 제목", "두 번째 키보드 저장 제목"]) {
+    await page.keyboard.press("Enter");
+    await expect(input).toBeFocused();
+    await input.fill(title);
+    await page.getByRole("button", { name: "저장", exact: true }).click();
+    await expect(page.getByRole("article", { name: `${title} 프로젝트` })).toBeVisible();
+    await expect(page.getByRole("status")).toContainText("제목을 저장했습니다");
+    await expect(
+      page
+        .getByRole("article", { name: `${title} 프로젝트` })
+        .getByRole("button", { name: "제목 수정" })
+    ).toBeFocused();
+  }
 });
 
 test("@stage-04 의미 구조와 focus-visible 표시가 존재합니다", async ({ page }) => {

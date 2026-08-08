@@ -25,6 +25,7 @@ playwright-report/
 test-results/
 **/test-results/
 *.tsbuildinfo
+exercises/project-catalog/reference/next-env.d.ts
 
 # 생성한 실습 작업 공간
 workspace/
