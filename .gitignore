@@ -16,6 +16,7 @@
 # Node.js와 브라우저 검사
 node_modules/
 **/node_modules/
+**/next-env.d.ts
 .next/
 **/.next/
 coverage/

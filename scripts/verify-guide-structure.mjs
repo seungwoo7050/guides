@@ -1,4 +1,5 @@
 import { access, readFile } from "node:fs/promises";
+import { spawnSync } from "node:child_process";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -49,7 +50,12 @@ const requiredSupport = [
   "scripts/serve-static.mjs",
   "scripts/verify-links.mjs",
   "scripts/verify-snippets.mjs",
+  "scripts/capture-source-state.mjs",
   "scripts/verify-postgresql-exercise.mjs",
+  "exercises/03-react-nextjs/reference/.gitignore",
+  "exercises/03-react-nextjs/reference/next.config.mjs",
+  "exercises/03-react-nextjs/skeleton/.gitignore",
+  "exercises/03-react-nextjs/skeleton/next.config.mjs",
   "exercises/00-first-web-app/tests/verify.mjs",
   "exercises/02-browser/tests/verify.mjs",
   "exercises/03-react-nextjs/tests/run.mjs",
@@ -57,10 +63,15 @@ const requiredSupport = [
   "exercises/collaboration-board/checks/verify-stage-specs.mjs",
   "exercises/collaboration-board/checks/verify-work.mjs",
   "exercises/collaboration-board/walkthrough-base/README.md",
+  "exercises/collaboration-board/walkthrough-base/.gitignore",
   "scripts/verify-patches.mjs",
   "exercises/collaboration-board/skeleton/package.json",
+  "exercises/collaboration-board/skeleton/.gitignore",
   "exercises/collaboration-board/skeleton/pnpm-workspace.yaml",
   "exercises/collaboration-board/skeleton/apps/web/app/page.tsx",
+  "exercises/collaboration-board/skeleton/apps/web/next.config.mjs",
+  "projects/collaboration-board/apps/web/next.config.mjs",
+  "projects/collaboration-board/.gitignore",
   "exercises/collaboration-board/skeleton/apps/api/src/app.test.ts"
 ];
 const obsoleteDocs = [
@@ -117,9 +128,79 @@ for (const phrase of ["대상 독자", "선행지식", "지원 환경", "종료 
 
 const packageJson = JSON.parse(await readFile(path.join(root, "package.json"), "utf8"));
 const nvmrc = (await readFile(path.join(root, ".nvmrc"), "utf8")).trim();
-if (nvmrc !== "22.16.0") errors.push(`.nvmrc 버전 불일치: ${nvmrc}`);
-if (packageJson.engines?.node !== ">=22.16.0 <23") {
+if (nvmrc !== "24.19.0") errors.push(`.nvmrc 버전 불일치: ${nvmrc}`);
+if (packageJson.engines?.node !== ">=24.19.0 <25") {
   errors.push(`Node.js engines 계약 불일치: ${packageJson.engines?.node ?? "<missing>"}`);
+}
+const gitignore = await readFile(path.join(root, ".gitignore"), "utf8");
+if (!gitignore.split(/\r?\n/).includes("**/next-env.d.ts")) {
+  errors.push("Next.js 생성 파일 ignore 계약 누락: **/next-env.d.ts");
+}
+const trackedFiles = spawnSync("git", ["ls-files", "-z"], {
+  cwd: root,
+  encoding: "utf8",
+  maxBuffer: 16 * 1024 * 1024
+});
+if (trackedFiles.status !== 0) {
+  errors.push(`Git tracked 파일 계약을 확인할 수 없음: ${trackedFiles.stderr.trim()}`);
+} else {
+  for (const relative of trackedFiles.stdout.split("\0").filter(Boolean)) {
+    if (path.basename(relative) === "next-env.d.ts") {
+      errors.push(`Next.js 생성 파일을 추적하면 안 됨: ${relative}`);
+    }
+  }
+}
+for (const relative of [
+  "exercises/03-react-nextjs/reference/.gitignore",
+  "exercises/03-react-nextjs/skeleton/.gitignore",
+  "exercises/collaboration-board/skeleton/.gitignore",
+  "exercises/collaboration-board/walkthrough-base/.gitignore",
+  "projects/collaboration-board/.gitignore"
+]) {
+  const source = await readFile(path.join(root, relative), "utf8");
+  if (!source.split(/\r?\n/).includes("next-env.d.ts")) {
+    errors.push(`Next.js 독립 실습 ignore 계약 누락: ${relative}`);
+  }
+}
+for (const relative of [
+  "exercises/03-react-nextjs/reference/next.config.mjs",
+  "exercises/03-react-nextjs/skeleton/next.config.mjs",
+  "exercises/collaboration-board/skeleton/apps/web/next.config.mjs",
+  "projects/collaboration-board/apps/web/next.config.mjs"
+]) {
+  const source = await readFile(path.join(root, relative), "utf8");
+  if (!/\bagentRules\s*:\s*false\b/.test(source)) {
+    errors.push(`Next.js agent 파일 생성 방지 계약 누락: ${relative}`);
+  }
+}
+for (const relative of [
+  "exercises/03-react-nextjs/reference/package.json",
+  "exercises/03-react-nextjs/skeleton/package.json",
+  "exercises/collaboration-board/skeleton/apps/web/package.json",
+  "projects/collaboration-board/apps/web/package.json"
+]) {
+  const manifest = JSON.parse(await readFile(path.join(root, relative), "utf8"));
+  if (manifest.dependencies?.next !== "^16.3.0") {
+    errors.push(`Next.js 16 계약 불일치: ${relative} -> ${manifest.dependencies?.next ?? "<missing>"}`);
+  }
+  if (manifest.scripts?.typecheck !== "next typegen && tsc --noEmit") {
+    errors.push(`Next.js 생성 타입 계약 불일치: ${relative} -> ${manifest.scripts?.typecheck ?? "<missing>"}`);
+  }
+}
+for (const relative of [
+  "exercises/01-runtime/reference/apps/demo/package.json",
+  "exercises/01-runtime/skeleton/apps/demo/package.json",
+  "exercises/03-react-nextjs/reference/package.json",
+  "exercises/03-react-nextjs/skeleton/package.json",
+  "exercises/collaboration-board/skeleton/apps/api/package.json",
+  "exercises/collaboration-board/skeleton/apps/web/package.json",
+  "projects/collaboration-board/package.json",
+  "projects/collaboration-board/apps/web/package.json"
+]) {
+  const manifest = JSON.parse(await readFile(path.join(root, relative), "utf8"));
+  if (manifest.devDependencies?.["@types/node"] !== "^24.13.3") {
+    errors.push(`Node.js 24 타입 계약 불일치: ${relative} -> ${manifest.devDependencies?.["@types/node"] ?? "<missing>"}`);
+  }
 }
 for (const name of requiredScripts) {
   if (!packageJson.scripts?.[name]) errors.push(`package script 누락: ${name}`);

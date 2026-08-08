@@ -26,10 +26,10 @@
 
 명령 예시는 Linux, macOS 또는 Windows의 WSL처럼 POSIX shell을 기준으로 합니다. 기준 저장소는 다음 계열을 사용합니다.
 
-- Node.js 22.16.0 이상 23 미만 (`.nvmrc` 기준 22.16.0)
+- Node.js 24.19.0 이상 25 미만 (`.nvmrc` 기준 24.19.0)
 - pnpm 10 계열
 - TypeScript 5 계열
-- React 19와 Next.js 15 계열
+- React 19와 Next.js 16 계열
 - Fastify 5와 Zod 3 계열
 - PostgreSQL 16 계열
 - Chrome 또는 Chromium
@@ -52,7 +52,7 @@ docker compose version
 
 브라우저 검사가 실행 파일을 자동으로 찾지 못하면 `CHROMIUM_PATH`에 경로를 지정합니다. 특정 minor 버전의 API를 외우지 않고, 실제 버전은 lockfile과 각 package manifest를 기준으로 합니다.
 
-도구가 설치되어 있지 않다면 `.nvmrc`와 `package.json`의 범위에 맞는 Node.js 22 배포판과 Chrome·Chromium을 먼저 설치합니다. 임의의 최신 버전으로 바꾸기보다 위 명령의 실제 결과를 기록하고, Part별 설치 범위는 [`시작 전 준비`](../reference/prerequisites.md)에서 확인합니다.
+도구가 설치되어 있지 않다면 `.nvmrc`와 `package.json`의 범위에 맞는 Node.js 24 LTS 배포판과 Chrome·Chromium을 먼저 설치합니다. 임의의 최신 버전으로 바꾸기보다 위 명령의 실제 결과를 기록하고, Part별 설치 범위는 [`시작 전 준비`](../reference/prerequisites.md)에서 확인합니다.
 
 ## 종료 능력
 

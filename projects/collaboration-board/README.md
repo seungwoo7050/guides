@@ -4,7 +4,7 @@ Fastify와 Next.js로 구성한 실시간 보드의 완성 구현입니다. HTTP
 
 ## 실행
 
-Node.js 22와 pnpm 10이 필요합니다. 의존성 버전은 프로젝트 안의 잠금 파일로 고정되어 있습니다.
+Node.js 24와 pnpm 10이 필요합니다. 의존성 버전은 프로젝트 안의 잠금 파일로 고정되어 있습니다.
 
 ```sh
 pnpm install --frozen-lockfile

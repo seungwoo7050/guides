@@ -38,10 +38,10 @@ GIT_ROOT=$(git rev-parse --show-toplevel 2>/dev/null) || die "Git 저장소 안�
 GIT_ROOT=$(CDPATH= cd -- "$GIT_ROOT" && pwd -P)
 [ "$GIT_ROOT" = "$SCRIPT_DIR" ] || die "저장소 루트의 prepare.sh를 실행해야 합니다: $GIT_ROOT"
 
-command_exists node || die "Node.js를 찾을 수 없습니다. Node.js 22.16.0 이상 23 미만을 설치한 뒤 다시 실행하십시오."
-node - <<'NODE' || die "Node.js 22.16.0 이상 23 미만이 필요합니다. 현재 버전: $(node --version)"
+command_exists node || die "Node.js를 찾을 수 없습니다. Node.js 24.19.0 이상 25 미만을 설치한 뒤 다시 실행하십시오."
+node - <<'NODE' || die "Node.js 24.19.0 이상 25 미만이 필요합니다. 현재 버전: $(node --version)"
 const [major, minor] = process.versions.node.split(".").map(Number);
-if (major !== 22 || minor < 16) process.exit(1);
+if (major !== 24 || minor < 19) process.exit(1);
 NODE
 
 command_exists docker || die "docker를 찾을 수 없습니다. Docker Engine 또는 Docker Desktop을 설치하십시오."
@@ -144,8 +144,12 @@ node scripts/clean-generated.mjs
 say "3/7 workspace 의존성 설치"
 pnpm_run install --frozen-lockfile
 
+(
+    cd exercises/01-runtime/reference
+    pnpm_run --filter @exercise/demo exec tsc --version >/dev/null
+)
+
 for project in \
-    exercises/01-runtime/reference \
     exercises/03-react-nextjs/reference \
     exercises/04-fastify-zod-api/reference \
     exercises/05-postgresql-kysely/reference \

@@ -29,7 +29,7 @@ const collaborationBoardMetadata = [
 const collaborationBoardReadmes = [
   `# 실시간 협업 보드
 
-Fastify API와 Next.js 화면을 한 pnpm 작업 공간에서 개발하기 위한 골격을 구성했습니다. Node.js 22와 pnpm 10을 사용합니다.
+Fastify API와 Next.js 화면을 한 pnpm 작업 공간에서 개발하기 위한 골격을 구성했습니다. Node.js 24와 pnpm 10을 사용합니다.
 
 \`\`\`sh
 pnpm install --frozen-lockfile
@@ -168,7 +168,6 @@ function stageFor(relative) {
   if (
     [".gitignore", "package.json", "pnpm-lock.yaml", "pnpm-workspace.yaml", "tsconfig.base.json"].includes(relative) ||
     /^(apps|packages)\/[^/]+\/(package|tsconfig)\.json$/.test(relative) ||
-    relative === "apps/web/next-env.d.ts" ||
     relative === "apps/web/next.config.mjs"
   ) return 1;
   if (
@@ -215,7 +214,7 @@ function patchName(stage) {
 }
 
 function includeSource(source) {
-  return !source.endsWith(".tsbuildinfo") &&
+  return !source.endsWith(".tsbuildinfo") && path.basename(source) !== "next-env.d.ts" &&
     !source.split(path.sep).some((part) =>
       ["node_modules", ".next", "coverage", "playwright-report", "test-results"].includes(part)
     );

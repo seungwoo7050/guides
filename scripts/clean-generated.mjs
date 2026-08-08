@@ -30,7 +30,7 @@ async function clean(directory) {
       await clean(target);
       continue;
     }
-    if (entry.isFile() && entry.name.endsWith(".tsbuildinfo")) {
+    if (entry.isFile() && (entry.name.endsWith(".tsbuildinfo") || entry.name === "next-env.d.ts")) {
       await rm(target, { force: true });
       removed += 1;
     }

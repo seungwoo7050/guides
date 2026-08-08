@@ -32,6 +32,19 @@ CLEANED=0
 
 : > "$LOG"
 
+SOURCE_STATE_DIRECTORY=$(mktemp -d "${TMPDIR:-/tmp}/guide-web-app-source-state.XXXXXX") || {
+    printf 'VERIFY ERROR: 소스 상태를 기록할 임시 디렉터리를 만들 수 없습니다.\n' >&2
+    exit 2
+}
+SOURCE_STATE_BEFORE="$SOURCE_STATE_DIRECTORY/source-before.sha256"
+SOURCE_STATE_AFTER="$SOURCE_STATE_DIRECTORY/source-after.sha256"
+if ! node scripts/capture-source-state.mjs > "$SOURCE_STATE_BEFORE" 2>> "$LOG"
+then
+    rm -rf -- "$SOURCE_STATE_DIRECTORY"
+    printf 'VERIFY ERROR: 검증 전 tracked source 상태를 기록할 수 없습니다.\n' >&2
+    exit 2
+fi
+
 run()
 {
     name=$1
@@ -89,7 +102,7 @@ cleanup()
             \( -path './.git' -o -path '*/node_modules' -o -path '*/.pnpm-store' \) \
             -prune -o \
             -type f \
-            -name '*.tsbuildinfo' \
+            \( -name '*.tsbuildinfo' -o -name 'next-env.d.ts' \) \
             -exec rm -f {} + \
             >> "$LOG" 2>&1
     then
@@ -99,6 +112,25 @@ cleanup()
         printf '[FAIL] clean (exit=%d)\n' "$status" | tee -a "$LOG"
         FAILED=1
     fi
+
+    if \
+        node scripts/capture-source-state.mjs > "$SOURCE_STATE_AFTER" 2>> "$LOG" \
+        && cmp -s "$SOURCE_STATE_BEFORE" "$SOURCE_STATE_AFTER"
+    then
+        printf '[PASS] source-stability\n' | tee -a "$LOG"
+    else
+        printf '[FAIL] source-stability (source worktree changed during verification)\n' | tee -a "$LOG"
+        {
+            printf '\n--- source state before/after ---\n'
+            printf 'before: %s\n' "$(cat "$SOURCE_STATE_BEFORE")"
+            printf 'after:  %s\n' "$(cat "$SOURCE_STATE_AFTER")"
+            printf '\n--- current source changes ---\n'
+            git status --short --untracked-files=all
+            git --no-pager diff --stat HEAD --
+        } >> "$LOG" 2>&1
+        FAILED=1
+    fi
+    rm -rf -- "$SOURCE_STATE_DIRECTORY"
 }
 
 handle_signal()

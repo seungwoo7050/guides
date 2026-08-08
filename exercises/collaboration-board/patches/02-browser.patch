@@ -25,13 +25,13 @@ Content-Transfer-Encoding: 8bit
  create mode 100644 apps/web/tailwind.config.ts
 
 diff --git a/README.md b/README.md
-index 555c871..9673211 100644
+index 74dd633..9673211 100644
 --- a/README.md
 +++ b/README.md
 @@ -1,7 +1,8 @@
  # 실시간 협업 보드
  
--Fastify API와 Next.js 화면을 한 pnpm 작업 공간에서 개발하기 위한 골격을 구성했습니다. Node.js 22와 pnpm 10을 사용합니다.
+-Fastify API와 Next.js 화면을 한 pnpm 작업 공간에서 개발하기 위한 골격을 구성했습니다. Node.js 24와 pnpm 10을 사용합니다.
 +Fastify API와 Next.js 화면을 한 pnpm 작업 공간에서 개발합니다. 공통 레이아웃은 키보드로 건너뛸 수 있는 링크와 현재 위치를 알리는 탐색 구조를 제공합니다.
  
  ```sh

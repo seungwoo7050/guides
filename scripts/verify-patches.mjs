@@ -234,7 +234,7 @@ async function walk(directory) {
   const output = [];
   for (const entry of await readdir(directory, { withFileTypes: true })) {
     if ([".git", "node_modules", ".next", "coverage", "playwright-report", "test-results"].includes(entry.name)) continue;
-    if (entry.isFile() && entry.name.endsWith(".tsbuildinfo")) continue;
+    if (entry.isFile() && (entry.name.endsWith(".tsbuildinfo") || entry.name === "next-env.d.ts")) continue;
     const full = path.join(directory, entry.name);
     if (entry.isDirectory()) output.push(...await walk(full));
     else if (entry.isSymbolicLink()) {
