@@ -57,6 +57,10 @@ cd exercises/system-investigation
 
 기존 `workspace/`는 덮어쓰지 않습니다.
 
+기존 schema 1 답안도 자동 변경하지 않습니다. `schema_version` 오류가 나오면 파일을
+먼저 백업하고, 아래 계약 조회 결과를 보며 `evidence_facts`와
+`regression_targets`를 사례별로 추가해 schema 2로 옮깁니다.
+
 사례 목록:
 
 ```sh
@@ -116,21 +120,36 @@ python3 lab.py destroy workspace/case-01
     "상태를 바꾸지 않는 명령 2"
   ],
   "expected_evidence": "각 명령에서 어떤 사실이 보여야 가설이 지지되는지",
+  "evidence_facts": [
+    "관찰로 확정한 사실 enum"
+  ],
   "safe_fix": "가장 작은 수정 enum",
   "regression_checks": [
     "정상 조건",
     "실패 또는 수명 조건"
+  ],
+  "regression_targets": [
+    "회귀 검사로 보장할 결과 enum"
   ]
 }
 ```
 
-`layer`, `primary_cause`, `safe_fix`는 자동 검사 가능한 계약입니다. 명령과 근거 설명은 그대로 복사하기보다 실제로 관찰한 경로·PID·port를 반영합니다.
+`layer`, `primary_cause`, `safe_fix`, `evidence_facts`, `regression_targets`는 자동 검사 가능한 계약입니다. 검사기는 안전을 위해 학습자가 쓴 명령을 실행하지 않고 읽기 전용 명령 형태와 필요한 관찰 종류만 검사합니다. `expected_evidence`와 `regression_checks` 문장의 인과 관계는 실제 출력 및 조사가 끝난 뒤의 기준 답안과 직접 대조합니다. 명령과 설명은 그대로 복사하기보다 실제로 관찰한 경로·PID·port를 반영합니다.
+
+사례별 enum과 필요한 관찰 종류는 답안 source를 열지 않고 조회할 수 있습니다.
+
+```sh
+python3 check_answers.py --show-contract 01-command-resolution
+```
 
 작업 답안 검사:
 
 ```sh
 ./check.sh workspace
 ```
+
+성공 출력의 `STRUCTURE PASS`는 구조화된 계약만 통과했다는 뜻입니다.
+`SEMANTIC REVIEW REQUIRED`에 따라 실제 출력과 기준 답안을 대조해야 완료입니다.
 
 기준 답안은 조사가 끝난 뒤 확인합니다.
 
@@ -144,8 +163,8 @@ python3 lab.py destroy workspace/case-01
 
 ```sh
 command -v unix-guide-tool
-type -a unix-guide-tool 2>/dev/null || true
-printf '%s\n' "$PATH"
+type -a unix-guide-tool
+printenv PATH
 ```
 
 ### 경로와 링크
@@ -160,7 +179,7 @@ file path
 
 ```sh
 ps -p PID -o pid=,ppid=,state=,etime=,command=
-lsof -p PID 2>/dev/null || true
+lsof -p PID
 ```
 
 Linux에서는 필요하면 다음을 보조적으로 사용합니다.
@@ -174,10 +193,10 @@ cat /proc/PID/status
 
 ```sh
 # Linux
-ss -lnt 2>/dev/null || true
+ss -lnt
 
 # macOS
-lsof -nP -iTCP -sTCP:LISTEN 2>/dev/null || true
+lsof -nP -iTCP -sTCP:LISTEN
 ```
 
 ### 메모리

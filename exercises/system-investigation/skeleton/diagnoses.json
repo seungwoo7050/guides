@@ -1,77 +1,95 @@
 {
-  "schema_version": 1,
+  "schema_version": 2,
   "cases": {
     "01-command-resolution": {
       "layer": "TODO",
       "primary_cause": "TODO",
       "observation_commands": [],
       "expected_evidence": "TODO",
+      "evidence_facts": [],
       "safe_fix": "TODO",
-      "regression_checks": []
+      "regression_checks": [],
+      "regression_targets": []
     },
     "02-dangling-symlink": {
       "layer": "TODO",
       "primary_cause": "TODO",
       "observation_commands": [],
       "expected_evidence": "TODO",
+      "evidence_facts": [],
       "safe_fix": "TODO",
-      "regression_checks": []
+      "regression_checks": [],
+      "regression_targets": []
     },
     "03-waiting-for-input": {
       "layer": "TODO",
       "primary_cause": "TODO",
       "observation_commands": [],
       "expected_evidence": "TODO",
+      "evidence_facts": [],
       "safe_fix": "TODO",
-      "regression_checks": []
+      "regression_checks": [],
+      "regression_targets": []
     },
     "04-deleted-open-file": {
       "layer": "TODO",
       "primary_cause": "TODO",
       "observation_commands": [],
       "expected_evidence": "TODO",
+      "evidence_facts": [],
       "safe_fix": "TODO",
-      "regression_checks": []
+      "regression_checks": [],
+      "regression_targets": []
     },
     "05-working-directory": {
       "layer": "TODO",
       "primary_cause": "TODO",
       "observation_commands": [],
       "expected_evidence": "TODO",
+      "evidence_facts": [],
       "safe_fix": "TODO",
-      "regression_checks": []
+      "regression_checks": [],
+      "regression_targets": []
     },
     "06-address-family-mismatch": {
       "layer": "TODO",
       "primary_cause": "TODO",
       "observation_commands": [],
       "expected_evidence": "TODO",
+      "evidence_facts": [],
       "safe_fix": "TODO",
-      "regression_checks": []
+      "regression_checks": [],
+      "regression_targets": []
     },
     "07-running-not-ready": {
       "layer": "TODO",
       "primary_cause": "TODO",
       "observation_commands": [],
       "expected_evidence": "TODO",
+      "evidence_facts": [],
       "safe_fix": "TODO",
-      "regression_checks": []
+      "regression_checks": [],
+      "regression_targets": []
     },
     "08-signal-not-forwarded": {
       "layer": "TODO",
       "primary_cause": "TODO",
       "observation_commands": [],
       "expected_evidence": "TODO",
+      "evidence_facts": [],
       "safe_fix": "TODO",
-      "regression_checks": []
+      "regression_checks": [],
+      "regression_targets": []
     },
     "09-reserved-not-resident": {
       "layer": "TODO",
       "primary_cause": "TODO",
       "observation_commands": [],
       "expected_evidence": "TODO",
+      "evidence_facts": [],
       "safe_fix": "TODO",
-      "regression_checks": []
+      "regression_checks": [],
+      "regression_targets": []
     }
   }
 }

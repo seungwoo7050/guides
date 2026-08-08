@@ -1025,6 +1025,7 @@ server.serve_forever()
 def create_signal_wrapper(root: Path, state: dict[str, Any]) -> None:
     worker_script = root / "worker.py"
     wrapper_script = root / "wrapper.py"
+    exec_wrapper_script = root / "exec_wrapper.py"
     child_file = root / "worker.pid"
     wrapper_ready = root / "wrapper.ready"
     events = root / "wrapper-events.log"
@@ -1033,12 +1034,21 @@ def create_signal_wrapper(root: Path, state: dict[str, Any]) -> None:
         """#!/usr/bin/env python3
 import pathlib, signal, sys, time
 ready = pathlib.Path(sys.argv[1])
+term_exit = int(sys.argv[2]) if len(sys.argv) > 2 else 0
 ready.write_text('ready\\n', encoding='utf-8')
 def stop(signum, frame):
-    raise SystemExit(0)
+    raise SystemExit(term_exit)
 signal.signal(signal.SIGTERM, stop)
 while True:
     time.sleep(1)
+""",
+        True,
+    )
+    write_text(
+        exec_wrapper_script,
+        """#!/usr/bin/env python3
+import os, sys
+os.execv(sys.executable, [sys.executable, *sys.argv[1:]])
 """,
         True,
     )
@@ -1113,6 +1123,8 @@ while True:
     state["data"] = {
         "wrapper_pid": wrapper["pid"],
         "worker_pid": child_pid,
+        "worker_script": str(worker_script),
+        "exec_wrapper_script": str(exec_wrapper_script),
         "events": str(events),
     }
 
@@ -1401,7 +1413,7 @@ def hold_for_top_level_signal_fixture(case_id: str, root: Path, state: dict[str,
         time.sleep(1)
 
 
-def selftest_case(case_id: str, root: Path) -> None:
+def selftest_case(case_id: str, root: Path, *, fixed_worker_term_exit: int = 0) -> None:
     create_case(case_id, root, keep_active=True)
     state = load_state(root)
     data = state["data"]
@@ -1465,6 +1477,30 @@ def selftest_case(case_id: str, root: Path) -> None:
             assert_true("did not forward" in events, "wrapper 사건 기록이 없습니다.")
             record = next(item for item in state["processes"] if int(item["pid"]) == worker)
             terminate_process(worker, root, record.get("start_token"))
+            fixed_ready = root / "fixed-worker.ready"
+            fixed = start_script(
+                root,
+                Path(data["exec_wrapper_script"]),
+                data["worker_script"],
+                str(fixed_ready),
+                str(fixed_worker_term_exit),
+                role="fixed-exec-wrapper",
+            )
+            state["processes"].append(fixed)
+            wait_for_path(fixed_ready)
+            fixed_pid = int(fixed["pid"])
+            fixed_proc = _OWNED_GROUPS[root.resolve()][fixed_pid]
+            os.kill(fixed_pid, signal.SIGTERM)
+            try:
+                fixed_exit = fixed_proc.wait(timeout=2)
+            except subprocess.TimeoutExpired as exc:
+                raise LabError("exec 수정 뒤 TERM으로 worker가 종료하지 않았습니다.") from exc
+            assert_true(fixed_exit == 0, f"exec 수정 뒤 worker 종료 상태가 0이 아닙니다: {fixed_exit}")
+            assert_true(
+                not process_group_alive(fixed_pid),
+                "exec 수정 뒤 남은 child process group이 있습니다.",
+            )
+            unregister_owned_group(root, fixed_pid)
         elif case_id == "09-reserved-not-resident":
             pid = int(data["memory_pid"])
             vsz, rss = memory_stats(pid)

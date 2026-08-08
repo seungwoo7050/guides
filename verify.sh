@@ -319,7 +319,7 @@ export PYTHONDONTWRITEBYTECODE=1
 
 run 'exact layout, links and pedagogy' python3 -B "$COPY/scripts/validate.py"
 run 'fifteen layout-validator mutants' python3 -B "$COPY/scripts/test-validator.py"
-run 'five independent answer mutants' python3 -B "$COPY/scripts/test_answer_mutants.py"
+run 'fifteen independent answer mutants and semantic boundary' python3 -B "$COPY/scripts/test_answer_mutants.py"
 run 'shell entrypoint syntax' sh -n "$COPY/prepare.sh" "$COPY/verify.sh" \
     "$COPY/scripts/test-prepare-safety.sh" \
     "$COPY/exercises/system-investigation/check.sh" \

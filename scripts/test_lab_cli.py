@@ -264,10 +264,28 @@ def check_process_identity_races() -> None:
             raise RuntimeError(f"scenario08 partial failure process residue: {observed_pids}")
         if module._OWNED_GROUPS or module._ACTIVE_ROOTS:
             raise RuntimeError("scenario08 partial failure registry/root residue가 남았습니다.")
+
+    with tempfile.TemporaryDirectory(prefix="unix-lab-wrapper-exit-") as directory:
+        exit_root = Path(directory) / "case"
+        try:
+            module.selftest_case(
+                "08-signal-not-forwarded",
+                exit_root,
+                fixed_worker_term_exit=7,
+            )
+        except module.LabError as error:
+            detail = str(error)
+        else:
+            raise RuntimeError("scenario08 수정 fixture의 non-zero 종료 상태를 놓쳤습니다.")
+        if "종료 상태가 0이 아닙니다: 7" not in detail:
+            raise RuntimeError(f"scenario08 non-zero 종료 상태 진단이 없습니다: {detail}")
+        if exit_root.exists() or module._OWNED_GROUPS or module._ACTIVE_ROOTS:
+            raise RuntimeError("scenario08 non-zero 종료 실패 경로에 자원·registry가 남았습니다.")
     print("PASS process identity disappearance/reuse safety")
     print("PASS native birth token and bounded fallback probe safety")
     print("PASS long-lived fixture immediate-exit startup failure safety")
-    print("PASS permanent-token-unavailable and scenario08 partial cleanup safety")
+    print("PASS permanent-token-unavailable and scenario08 failure cleanup safety")
+    print("PASS scenario08 fixed-worker exit-status contract")
 
 
 def run(*arguments: str, timeout: float = 15) -> subprocess.CompletedProcess[str]:
