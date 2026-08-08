@@ -1,12 +1,31 @@
 #!/bin/sh
 set -u
 
-ROOT=$(CDPATH= cd "$(dirname "$0")" && pwd)
+ROOT=$(CDPATH= cd "$(dirname "$0")" && pwd -P)
 STATE_FILE="$ROOT/.guide-prepare.env"
-case ${VERIFY_LOG:-} in
-    '') FINAL_LOG="$ROOT/verify.log" ;;
-    /*) FINAL_LOG=$VERIFY_LOG ;;
-    *) FINAL_LOG="$ROOT/$VERIFY_LOG" ;;
+TIMESTAMP=$(date +%Y%m%d-%H%M%S)
+FINAL_LOG=${VERIFY_LOG:-${TMPDIR:-/tmp}/guide-c-verify-${TIMESTAMP}-$$.log}
+case "$FINAL_LOG" in
+    /*) ;;
+    *)
+        printf 'verify.sh 실패: VERIFY_LOG는 저장소 밖의 절대 경로여야 합니다: %s\n' "$FINAL_LOG" >&2
+        exit 2
+        ;;
+esac
+mkdir -p "$(dirname "$FINAL_LOG")" 2>/dev/null || {
+    printf 'verify.sh 실패: 로그 디렉터리를 만들 수 없습니다: %s\n' "$(dirname "$FINAL_LOG")" >&2
+    exit 2
+}
+LOG_DIRECTORY=$(CDPATH= cd "$(dirname "$FINAL_LOG")" && pwd -P) || {
+    printf 'verify.sh 실패: 로그 디렉터리를 확인할 수 없습니다: %s\n' "$(dirname "$FINAL_LOG")" >&2
+    exit 2
+}
+FINAL_LOG="$LOG_DIRECTORY/$(basename "$FINAL_LOG")"
+case "$FINAL_LOG" in
+    "$ROOT"|"$ROOT"/*)
+        printf 'verify.sh 실패: VERIFY_LOG는 저장소 밖의 경로여야 합니다: %s\n' "$FINAL_LOG" >&2
+        exit 2
+        ;;
 esac
 REQUIRE_OPTIONAL=${VERIFY_REQUIRE_OPTIONAL:-0}
 WORK_ROOT=
@@ -54,8 +73,8 @@ on_signal()
     name=$2
     printf '\nverify.sh가 %s 신호로 중단되었습니다. 임시 산출물을 정리합니다.\n' "$name" >&2
     if [ -n "${LOG_TEMP:-}" ] && [ -f "$LOG_TEMP" ]; then
-        mkdir -p "$(dirname "$FINAL_LOG")" 2>/dev/null || true
         cp "$LOG_TEMP" "$FINAL_LOG" 2>/dev/null || true
+        printf 'VERIFY LOG: %s\n' "$FINAL_LOG" >&2
     fi
     exit "$code"
 }
@@ -215,16 +234,11 @@ fi
     printf '============================================================\n'
 } | tee -a "$LOG_TEMP"
 
-if [ "$FAILED" -ne 0 ]; then
-    log_parent=$(dirname "$FINAL_LOG")
-    mkdir -p "$log_parent" 2>/dev/null || true
-    if cp "$LOG_TEMP" "$FINAL_LOG"; then
-        printf '전체 로그: %s\n' "$FINAL_LOG" >&2
-    else
-        printf '전체 로그를 복사하지 못했습니다: %s\n' "$FINAL_LOG" >&2
-    fi
+if ! cp "$LOG_TEMP" "$FINAL_LOG"; then
+    printf '전체 로그를 복사하지 못했습니다: %s\n' "$FINAL_LOG" >&2
     exit 1
 fi
 
-rm -f "$FINAL_LOG"
+printf 'VERIFY LOG: %s\n' "$FINAL_LOG"
+[ "$FAILED" -eq 0 ] || exit 1
 exit 0

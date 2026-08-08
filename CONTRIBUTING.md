@@ -102,7 +102,7 @@ git diff --check
 git diff --staged
 ```
 
-`make-out.txt`, `tree.txt`, 빌드 산출물과 일회성 작업 로그는 커밋하지 않습니다.
+검증 로그는 `verify.sh`가 출력하는 저장소 밖 `VERIFY LOG` 경로에서 확인합니다. `make-out.txt`, `tree.txt`, 빌드 산출물과 일회성 작업 로그는 커밋하지 않습니다.
 
 ## 커밋
 

@@ -406,7 +406,7 @@ chmod 600 "$PREPARE_STATE"
 python3 scripts/validate_repository.py --clean
 
 say ''
-say 'prepare.sh 완료'
+say 'PREPARE RESULT: PASS'
 say "  compiler: $CC_COMMAND"
 say "  ASan/UBSan: $HAVE_SANITIZERS (leak detection=$ASAN_DETECT_LEAKS)"
 say "  TSan: $HAVE_TSAN"
