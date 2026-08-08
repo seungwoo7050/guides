@@ -39,7 +39,7 @@ try {
   assert.match(await browser.evaluate("document.querySelector('article')?.textContent"), /베타/);
 
   await typeQuery("error");
-  await browser.waitFor(async () => Boolean(await browser.evaluate("document.querySelector('[role=alert]')")), 2_000, "오류 상태");
+  await browser.waitFor(async () => Boolean(await browser.evaluate("document.querySelector('[role=alert]')?.textContent")), 2_000, "오류 상태");
   assert.match(await browser.evaluate("document.querySelector('[role=alert]')?.textContent"), /검색 실패/);
 
   await browser.call("Page.navigate", { url: new URL("/profile/alpha", url).href });

@@ -4,28 +4,29 @@ Date: Sun, 7 Sep 2025 16:22:00 +0900
 Subject: [PATCH] feat(frontend): React와 Next.js 화면 구현
 
 diff --git a/app/page.tsx b/app/page.tsx
-index 6bc9022..af839d0 100644
+index 6bc9022..5b4764b 100644
 --- a/app/page.tsx
 +++ b/app/page.tsx
-@@ -1,14 +1,61 @@
+@@ -1,14 +1,78 @@
  "use client";
-
+ 
 -import { useState } from "react";
 +import Link from "next/link";
-+import { FormEvent, useEffect, useState } from "react";
++import { useEffect, useRef, useState } from "react";
 +import { searchUsers, type User } from "../lib/fake-api";
 +
 +type LoadState =
 +  | { status: "loading" }
 +  | { status: "success"; users: User[] }
 +  | { status: "error"; message: string };
-
+ 
  export default function HomePage() {
    const [query, setQuery] = useState("");
 -  // TODO: 이름 변경용 제어 폼, 효과를 이용한 검색, 로딩·오류·빈 결과·성공 상태를 구현해 주세요.
 +  const [name, setName] = useState("방문자");
-+  const [draftName, setDraftName] = useState("");
 +  const [state, setState] = useState<LoadState>({ status: "loading" });
++  const nameInputRef = useRef<HTMLInputElement>(null);
++  const formRef = useRef<HTMLFormElement>(null);
 +
 +  useEffect(() => {
 +    const controller = new AbortController();
@@ -39,12 +40,28 @@ index 6bc9022..af839d0 100644
 +    return () => controller.abort();
 +  }, [query]);
 +
-+  function rename(event: FormEvent<HTMLFormElement>) {
-+    event.preventDefault();
-+    const next = draftName.trim();
-+    if (next) setName(next);
-+    setDraftName("");
-+  }
++  useEffect(() => {
++    const nameInput = nameInputRef.current;
++    if (!nameInput) return;
++
++    const onInput = (event: Event) => {
++      const next = ((event.target as HTMLInputElement | null)?.value ?? "").trim();
++      if (next) setName(next);
++    };
++    nameInput.addEventListener("input", onInput);
++    return () => nameInput.removeEventListener("input", onInput);
++  }, []);
++
++  useEffect(() => {
++    const form = formRef.current;
++    if (!form) return;
++    const onSubmit = (event: Event) => {
++      event.preventDefault();
++      form.reset();
++    };
++    form.addEventListener("submit", onSubmit);
++    return () => form.removeEventListener("submit", onSubmit);
++  }, []);
 +
    return <main>
 -    <h1>Frontend Exercise</h1>
@@ -52,10 +69,10 @@ index 6bc9022..af839d0 100644
 -    <input id="query" value={query} onChange={(event) => setQuery(event.target.value)} />
 -    <p role="status">TODO</p>
 +    <h1>안녕하세요, {name}</h1>
-+    <form onSubmit={rename}>
++    <form ref={formRef}>
 +      <label htmlFor="name">표시 이름</label>
-+      <input id="name" value={draftName} onChange={(event) => setDraftName(event.target.value)} />
-+      <button type="submit" disabled={!draftName.trim()}>변경</button>
++      <input id="name" ref={nameInputRef} />
++      <button type="submit">변경</button>
 +    </form>
 +
 +    <section aria-labelledby="search-heading">

@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { FormEvent, useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { searchUsers, type User } from "../lib/fake-api";
 
 type LoadState =
@@ -12,8 +12,9 @@ type LoadState =
 export default function HomePage() {
   const [query, setQuery] = useState("");
   const [name, setName] = useState("방문자");
-  const [draftName, setDraftName] = useState("");
   const [state, setState] = useState<LoadState>({ status: "loading" });
+  const nameInputRef = useRef<HTMLInputElement>(null);
+  const formRef = useRef<HTMLFormElement>(null);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -27,19 +28,35 @@ export default function HomePage() {
     return () => controller.abort();
   }, [query]);
 
-  function rename(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    const next = draftName.trim();
-    if (next) setName(next);
-    setDraftName("");
-  }
+  useEffect(() => {
+    const nameInput = nameInputRef.current;
+    if (!nameInput) return;
+
+    const onInput = (event: Event) => {
+      const next = ((event.target as HTMLInputElement | null)?.value ?? "").trim();
+      if (next) setName(next);
+    };
+    nameInput.addEventListener("input", onInput);
+    return () => nameInput.removeEventListener("input", onInput);
+  }, []);
+
+  useEffect(() => {
+    const form = formRef.current;
+    if (!form) return;
+    const onSubmit = (event: Event) => {
+      event.preventDefault();
+      form.reset();
+    };
+    form.addEventListener("submit", onSubmit);
+    return () => form.removeEventListener("submit", onSubmit);
+  }, []);
 
   return <main>
     <h1>안녕하세요, {name}</h1>
-    <form onSubmit={rename}>
+    <form ref={formRef}>
       <label htmlFor="name">표시 이름</label>
-      <input id="name" value={draftName} onChange={(event) => setDraftName(event.target.value)} />
-      <button type="submit" disabled={!draftName.trim()}>변경</button>
+      <input id="name" ref={nameInputRef} />
+      <button type="submit">변경</button>
     </form>
 
     <section aria-labelledby="search-heading">
