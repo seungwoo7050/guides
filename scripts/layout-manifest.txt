@@ -77,11 +77,13 @@ exercises/04-execution-and-optimization/03-safe-migration-and-backfill/skeleton/
 exercises/04-execution-and-optimization/03-safe-migration-and-backfill/tests/verify.sh
 exercises/04-execution-and-optimization/03-safe-migration-and-backfill/tests/verify.sql
 exercises/05-capstones/01-application-database-review/README.md
+exercises/05-capstones/01-application-database-review/reference/concurrency-review.md
 exercises/05-capstones/01-application-database-review/reference/indexes.sql
 exercises/05-capstones/01-application-database-review/reference/migration.sql
 exercises/05-capstones/01-application-database-review/reference/queries.sql
 exercises/05-capstones/01-application-database-review/reference/schema.sql
 exercises/05-capstones/01-application-database-review/seed.sql
+exercises/05-capstones/01-application-database-review/skeleton/concurrency-review.md
 exercises/05-capstones/01-application-database-review/skeleton/indexes.sql
 exercises/05-capstones/01-application-database-review/skeleton/migration.sql
 exercises/05-capstones/01-application-database-review/skeleton/queries.sql
@@ -102,6 +104,7 @@ scripts/new-workspace.sh
 scripts/run-postgres-exercises.sh
 scripts/run_examples.py
 scripts/test-validator.py
+scripts/test-verify-preflight.py
 scripts/test-workspace-tools.py
 scripts/tree-fingerprint.py
 scripts/validate.py

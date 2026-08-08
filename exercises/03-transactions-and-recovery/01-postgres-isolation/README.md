@@ -28,4 +28,10 @@
 
 ## 검증
 
-`./prepare.sh` 뒤 `make postgres-check`를 실행해 실제 두 session의 동시 결과를 검사한다.
+`make prepare` 뒤 workspace의 함수를 실제 PostgreSQL 두 session으로 검사한다.
+
+```bash
+./scripts/check-workspace.sh exercises/03-transactions-and-recovery/01-postgres-isolation
+```
+
+초기 skeleton은 `GUIDE_SEMANTIC:isolation-lost-update`에서 실패하고, 두 불변식을 모두 동시성 안전하게 만들면 같은 명령이 통과해야 한다.

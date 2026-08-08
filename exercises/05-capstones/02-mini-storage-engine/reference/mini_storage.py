@@ -247,8 +247,8 @@ class BufferPool:
             self._flush_frame(frame)
 
 
-class BPlusTreeIndex:
-    """Capstone용 ordered index. leaf split과 range scan 계약만 유지한다."""
+class OrderedLeafIndex:
+    """정렬된 leaf 배열의 split과 range scan만 제공하는 축소 index."""
 
     def __init__(self, leaf_capacity: int = 4) -> None:
         self.leaf_capacity = leaf_capacity
@@ -295,14 +295,14 @@ class MiniStorageEngine:
         self.disk = disk or DiskManager()
         self.log = log or LogManager()
         self.buffer = BufferPool(self.disk, self.log, buffer_capacity)
-        self.index = BPlusTreeIndex()
+        self.index = OrderedLeafIndex()
         self._next_txid = 1
         if not self.disk.page_ids:
             self.disk.allocate()
         self._rebuild_index()
 
     def _rebuild_index(self) -> None:
-        self.index = BPlusTreeIndex()
+        self.index = OrderedLeafIndex()
         for page_id in self.disk.page_ids:
             page = self.disk.read(page_id)
             for slot_id, key, _ in page.records():

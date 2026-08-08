@@ -5,8 +5,9 @@ IFS=$'\n\t'
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd -P)"
 MANIFEST="$ROOT/scripts/exercises.txt"
 [[ $# -eq 1 ]] || { printf '사용법: %s exercises/<경로>\n' "$0" >&2; exit 2; }
+requested="$1"
 
-python3 - "$ROOT" "$MANIFEST" "$1" <<'PY'
+workspace="$(python3 - "$ROOT" "$MANIFEST" "$requested" <<'PY'
 import os
 import pathlib
 import stat
@@ -47,5 +48,22 @@ actual = inspect_tree(workspace)
 missing = sorted(required - actual)
 if missing:
     raise SystemExit("workspace 필수 파일 누락: " + ", ".join(missing))
-print(f"[PASS] workspace: {requested} ({len(actual)} files)")
+print(workspace)
 PY
+)"
+
+base="$ROOT/$requested"
+if find "$base/tests" -maxdepth 1 -type f -name 'test_*.py' | grep -q .; then
+    printf '[workspace] Python 공용 계약 검증: %s\n' "$requested"
+    PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONPATH="$workspace" \
+        python3 -m unittest discover -s "$base/tests" -v
+elif [[ -x "$base/tests/verify.sh" ]]; then
+    printf '[workspace] PostgreSQL 공용 계약 검증: %s\n' "$requested"
+    "$ROOT/scripts/run-postgres-exercises.sh" --workspace "$requested"
+else
+    printf '실행할 공용 테스트를 찾지 못했습니다: %s\n' "$requested" >&2
+    exit 2
+fi
+
+printf '[PASS] learner workspace: %s\n' "$requested"

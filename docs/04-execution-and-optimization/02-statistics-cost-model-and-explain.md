@@ -323,7 +323,7 @@ EXPLAIN cost가 줄었다.
 더 나은 기록:
 
 ```text
-PostgreSQL 16, 100만 row, warm cache 환경에서
+PostgreSQL 18.4, 100만 row, warm cache 환경에서
 tenant별 최근 50개 event query의 p95가 120ms에서 18ms로 줄었다.
 실제 읽은 block은 8,000에서 140으로 줄었고,
 insert p95는 3ms 증가했으며 index 크기는 280MB다.

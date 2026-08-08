@@ -19,7 +19,7 @@ class LogManager:
         pass
 
     def update(self, txid: int, page_id: int, before: int, after: int) -> int:
-        raise NotImplementedError
+        raise NotImplementedError("GUIDE_SEMANTIC:wal-update-record")
 
     def commit(self, txid: int) -> int:
         raise NotImplementedError

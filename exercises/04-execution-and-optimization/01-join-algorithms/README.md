@@ -37,4 +37,8 @@ PYTHONPATH=exercises/04-execution-and-optimization/01-join-algorithms/workspace 
 
 ## 검증
 
-workspace 테스트와 `make python-check`를 실행해 세 구현의 결과 다중집합을 대조한다.
+```bash
+./scripts/check-workspace.sh exercises/04-execution-and-optimization/01-join-algorithms
+```
+
+초기 skeleton은 `GUIDE_SEMANTIC:join-bag-semantics`에서 실패하고, 세 구현이 같은 bag 결과를 만들면 같은 workspace 검사가 통과해야 한다.

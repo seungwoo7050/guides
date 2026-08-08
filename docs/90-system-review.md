@@ -221,9 +221,9 @@ Recovery 중 강제 재시작은 진행을 되돌리거나 반복 작업을 늘�
 
 다음 단계는 목적에 따라 선택한다.
 
-- 애플리케이션 통합: `guide-backend-spring-boot`
-- 공개 DB 운영·backup·monitoring: `guide-web-infrastructure`
-- 서비스별 데이터 소유권·Outbox·Saga: `guide-distributed-services`
+- 애플리케이션 통합: [`backend-spring-boot`](https://github.com/seungwoo7050/guides/tree/backend-spring-boot)
+- 공개 DB 운영·backup·monitoring: [`web-infra`](https://github.com/seungwoo7050/guides/tree/web-infra)
+- 서비스별 데이터 소유권·Outbox·Saga: [`distributed-services`](https://github.com/seungwoo7050/guides/tree/distributed-services)
 - DBMS source·research paper: 별도 심화 과정
 
 ## 연결 연습
@@ -236,11 +236,14 @@ Recovery 중 강제 재시작은 진행을 되돌리거나 반복 작업을 늘�
 그리고 저장소 루트에서 다음을 실행한다.
 
 ```bash
-./prepare.sh
-./verify.sh
+make prepare
+make check
+VERIFY_LOG=/tmp/database-systems-verify.log make verify
+make clean
 ```
 
 `verify.sh`는 문서 링크, reference/skeleton 계약, Python 내부구조와 실제 PostgreSQL 통합 연습을 한 번에 검사한다.
+`VERIFY_LOG`를 생략한 기본 로그도 저장소 밖 `/tmp`에 기록된다.
 
 ## 완료 기준
 

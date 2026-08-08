@@ -31,4 +31,10 @@
 
 ## 검증
 
-`./prepare.sh` 뒤 `make postgres-check`를 실행하고 각 음성 사례가 특정 제약에서 실패하는지 확인한다.
+`make prepare` 뒤 학습자 workspace에 구현한 제약을 공용 fixture로 검사한다.
+
+```bash
+./scripts/check-workspace.sh exercises/01-relational-semantics-and-design/02-schema-and-constraints
+```
+
+초기 skeleton은 `GUIDE_SEMANTIC:schema-email-constraint`에서 실패하고, 정상·음성 insert 계약을 모두 구현하면 같은 명령이 통과해야 한다.

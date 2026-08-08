@@ -28,7 +28,7 @@ class BufferPool:
 
 class MiniStorageEngine:
     def __init__(self, disk: DiskManager | None = None, log: LogManager | None = None, *, buffer_capacity: int = 2) -> None:
-        raise NotImplementedError
+        raise NotImplementedError("GUIDE_SEMANTIC:mini-storage-engine")
 
     def insert(self, key: int, value: bytes) -> None:
         raise NotImplementedError

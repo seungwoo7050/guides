@@ -15,7 +15,8 @@ LAYOUT_MANIFEST = ROOT / "scripts/layout-manifest.txt"
 EXERCISE_MANIFEST = ROOT / "scripts/exercises.txt"
 LINK_RE = re.compile(r"(?<!!)\[[^\]]*\]\(([^)]+)\)")
 FENCE_RE = re.compile(r"^```")
-GENERATED_PARTS = {".git", ".guide", ".verify", "workspace", "__pycache__", ".pytest_cache"}
+GENERATED_ROOTS = {".git", ".guide", ".verify"}
+GENERATED_PARTS = {"__pycache__", ".pytest_cache"}
 DOCS = [
     "docs/00-roadmap.md",
     "docs/01-relational-semantics-and-design/01-relational-model-and-algebra.md",
@@ -64,7 +65,18 @@ def load_lines(path: Path) -> list[str]:
 
 
 def should_ignore(relative: Path) -> bool:
-    return any(part in GENERATED_PARTS for part in relative.parts) or relative.suffix in {".pyc", ".pyo"}
+    parts = relative.parts
+    if parts and parts[0] in GENERATED_ROOTS:
+        return True
+    if any(part in GENERATED_PARTS for part in parts) or relative.suffix in {".pyc", ".pyo"}:
+        return True
+    # Learner workspaces are generated only at
+    # exercises/<stage>/<exercise>/workspace (or its atomic temporary peer).
+    return (
+        len(parts) >= 4
+        and parts[0] == "exercises"
+        and (parts[3] == "workspace" or parts[3].startswith("workspace.tmp."))
+    )
 
 
 def check_exact_tree(errors: list[str]) -> None:
@@ -153,9 +165,11 @@ def check_required_and_pedagogy(errors: list[str], exercise_paths: list[str]) ->
         verification = section(text, "## 검증")
         if len(re.findall(r"(?m)^- ", completion)) < 3:
             fail(errors, f"관찰 가능한 완료 기준 3개 미만: {relative}")
-        if len(re.findall(r"(?m)^\d+\. ", explanation)) < 2:
+        questions = re.findall(r"(?m)^\d+\. (.+)$", explanation)
+        if len(questions) < 2 or not all(question.rstrip().endswith("?") for question in questions):
             fail(errors, f"자기 설명 질문 2개 미만: {relative}")
-        if not any(token in verification for token in ("make ", "python3 ", "./prepare.sh")):
+        canonical_command = f"./scripts/check-workspace.sh {relative}"
+        if canonical_command not in verification:
             fail(errors, f"실행 가능한 검증 명령 누락: {relative}")
         normalized_completion = re.sub(r"\s+", " ", completion).casefold()
         normalized_explanation = re.sub(r"\s+", " ", explanation).casefold()
@@ -283,6 +297,135 @@ def check_version_contract(errors: list[str]) -> None:
                 fail(errors, f"legacy prepare 계약 잔존 ({token}): {path.relative_to(ROOT)}")
 
 
+def require_tokens(errors: list[str], relative: str, tokens: tuple[str, ...], contract: str) -> None:
+    path = ROOT / relative
+    if not path.is_file():
+        return
+    text = path.read_text(encoding="utf-8")
+    for token in tokens:
+        if token not in text:
+            fail(errors, f"{contract} 누락 ({token}): {relative}")
+
+
+def check_public_and_capstone_contract(errors: list[str]) -> None:
+    require_tokens(
+        errors,
+        "README.md",
+        ("make prepare", "make check", "make verify", "make clean"),
+        "공개 make 명령 계약",
+    )
+    require_tokens(
+        errors,
+        "CONTRIBUTING.md",
+        (
+            "make prepare\n",
+            "make check\n",
+            "VERIFY_LOG=/tmp/database-systems-verify.log make verify\n",
+            "make clean\n",
+        ),
+        "기여 안내 공개 make 명령 계약",
+    )
+    require_tokens(
+        errors,
+        "scripts/check-workspace.sh",
+        (
+            'PYTHONPATH="$workspace"',
+            "python3 -m unittest discover",
+            '"$ROOT/scripts/run-postgres-exercises.sh" --workspace "$requested"',
+            "[PASS] learner workspace",
+        ),
+        "workspace checker 계약",
+    )
+    require_tokens(
+        errors,
+        "scripts/run-postgres-exercises.sh",
+        (
+            "exercises/01-relational-semantics-and-design/01-sql-semantics",
+            "exercises/01-relational-semantics-and-design/02-schema-and-constraints",
+            "exercises/03-transactions-and-recovery/01-postgres-isolation",
+            "exercises/04-execution-and-optimization/02-query-plans-and-indexes",
+            "exercises/04-execution-and-optimization/03-safe-migration-and-backfill",
+            "exercises/05-capstones/01-application-database-review",
+            "--workspace",
+            "learner workspace designated start-state",
+            "run_capstone_index_runtime_mutant",
+            "queue index definition mismatch",
+        ),
+        "PostgreSQL workspace dispatcher 계약",
+    )
+    require_tokens(
+        errors,
+        "exercises/05-capstones/01-application-database-review/reference/queries.sql",
+        ("q_org_open_tickets", "q_assignee_queue", "q_project_backlog"),
+        "application capstone workload 계약",
+    )
+    require_tokens(
+        errors,
+        "exercises/05-capstones/01-application-database-review/reference/indexes.sql",
+        (
+            "ON tickets(org_id, priority DESC, created_at DESC, id DESC)",
+            "ON tickets(org_id, assignee_id, priority DESC, created_at, id)",
+            "ON tickets(org_id, project_id, created_at, id)",
+            "WHERE status <> 'DONE'",
+        ),
+        "application capstone index 계약",
+    )
+    require_tokens(
+        errors,
+        "exercises/05-capstones/01-application-database-review/tests/verify.sh",
+        (
+            "pg_get_indexdef",
+            "EXPLAIN (ANALYZE, COSTS OFF, TIMING OFF, SUMMARY OFF)",
+            "tickets_org_open_priority_created_idx",
+            "tickets_assignee_queue_idx",
+            "tickets_project_open_created_idx",
+            "plan contains an explicit Sort",
+            "concurrency review remains scaffold",
+            "concurrency review SQL evidence fewer than 3 lines",
+        ),
+        "application capstone plan 계약",
+    )
+    require_tokens(
+        errors,
+        "exercises/05-capstones/01-application-database-review/tests/verify.sql",
+        (
+            "ORDER BY priority DESC, created_at DESC, id DESC",
+            "(priority, created_at, id)",
+            "ORDER BY priority DESC, created_at, id",
+            "organization keyset page mismatch",
+        ),
+        "application capstone result 계약",
+    )
+    require_tokens(
+        errors,
+        "exercises/05-capstones/01-application-database-review/reference/concurrency-review.md",
+        ("자동 SQL fixture가 보장하는 범위", "두 session 순서", "bounded retry", "application 책임"),
+        "application capstone concurrency 산출물",
+    )
+    require_tokens(
+        errors,
+        "exercises/05-capstones/02-mini-storage-engine/reference/mini_storage.py",
+        ("class OrderedLeafIndex", "self.index = OrderedLeafIndex()"),
+        "ordered leaf index 명칭 계약",
+    )
+
+    forbidden_docs = (
+        "guide-web-applications",
+        "guide-backend-spring-boot",
+        "guide-distributed-services",
+        "guide-web-infrastructure",
+        "PostgreSQL 16",
+    )
+    for path in markdown_files():
+        text = path.read_text(encoding="utf-8")
+        for token in forbidden_docs:
+            if token in text:
+                fail(errors, f"stale guides/버전 참조 ({token}): {path.relative_to(ROOT)}")
+    mini_reference = ROOT / "exercises/05-capstones/02-mini-storage-engine/reference/mini_storage.py"
+    if mini_reference.is_file() and "BPlusTreeIndex" in mini_reference.read_text(encoding="utf-8"):
+        fail(errors, "ordered leaf index를 B+ tree로 과장함: exercises/05-capstones/02-mini-storage-engine/reference/mini_storage.py")
+
+
 def main() -> int:
     errors: list[str] = []
     check_exact_tree(errors)
@@ -292,6 +435,7 @@ def main() -> int:
     check_reference_and_tests(errors, exercise_paths)
     check_files_and_modes(errors)
     check_version_contract(errors)
+    check_public_and_capstone_contract(errors)
     if errors:
         for message in errors:
             print(f"[FAIL] {message}", file=sys.stderr)

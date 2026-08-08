@@ -216,7 +216,7 @@ serialization failure와 deadlock victim은 전체 transaction을 처음부터 �
 - 요청 전체에 deadline이 있다.
 - idempotency 또는 unique key로 중복 효과를 막는다.
 
-DB transaction 재시도와 분산 메시지 재전달은 관련 있지만 같은 문제가 아니다. 서비스 간 전달은 `guide-distributed-services`의 소유 영역이다.
+DB transaction 재시도와 분산 메시지 재전달은 관련 있지만 같은 문제가 아니다. 서비스 간 전달은 [`distributed-services`](https://github.com/seungwoo7050/guides/tree/distributed-services)의 소유 영역이다.
 
 ## Long transaction의 비용
 

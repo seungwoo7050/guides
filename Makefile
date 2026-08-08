@@ -15,6 +15,7 @@ docs-check:
 
 validator-check:
 	python3 scripts/test-validator.py
+	python3 scripts/test-verify-preflight.py
 	python3 scripts/test-workspace-tools.py
 
 examples-check:

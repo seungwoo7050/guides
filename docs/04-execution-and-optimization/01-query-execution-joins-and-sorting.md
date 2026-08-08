@@ -285,6 +285,8 @@ spill bytes
 
 ## 연결 연습
 
+먼저 [`Join 알고리즘 예제`](../../examples/join_algorithms.py)로 nested-loop, hash, sort-merge의 결과 동등성과 비용 차이를 관찰한다.
+
 [`Join algorithms`](../../exercises/04-execution-and-optimization/01-join-algorithms/README.md)에서 같은 equi-join 계약을 다음 세 방식으로 구현한다.
 
 - nested-loop join

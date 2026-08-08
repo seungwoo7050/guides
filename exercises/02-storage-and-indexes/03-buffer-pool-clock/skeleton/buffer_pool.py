@@ -11,7 +11,7 @@ class DiskManager:
         # TODO: persistent page map과 I/O counters를 초기화한다.
 
     def allocate(self, initial: bytes = b"") -> int:
-        raise NotImplementedError
+        raise NotImplementedError("GUIDE_SEMANTIC:buffer-pool-allocation")
 
     def read(self, page_id: int) -> bytes:
         raise NotImplementedError

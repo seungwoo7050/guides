@@ -40,12 +40,21 @@ def main() -> int:
         if created.returncode != 0:
             raise AssertionError(created.stdout + created.stderr)
         checked = run(root, "check-workspace.sh", VALID_EXERCISE)
-        if checked.returncode != 0 or "[PASS] workspace" not in checked.stdout:
+        initial_output = checked.stdout + checked.stderr
+        if checked.returncode == 0 or "GUIDE_SEMANTIC:slotted-page-insert" not in initial_output:
             raise AssertionError(checked.stdout + checked.stderr)
+        workspace = root / VALID_EXERCISE / "workspace"
+        reference = root / VALID_EXERCISE / "reference"
+        for source in reference.iterdir():
+            if source.is_file():
+                shutil.copy2(source, workspace / source.name)
+        completed = run(root, "check-workspace.sh", VALID_EXERCISE)
+        if completed.returncode != 0 or "[PASS] learner workspace" not in completed.stdout:
+            raise AssertionError(completed.stdout + completed.stderr)
         traversal = run(root, "new-workspace.sh", "exercises/../docs")
         if traversal.returncode == 0 or "manifest에 없는" not in traversal.stderr:
             raise AssertionError("path traversal mutant was not rejected")
-        print("[PASS] workspace: valid copy and traversal rejection")
+        print("[PASS] workspace: designated start failure, completed PASS, traversal rejection")
 
     with tempfile.TemporaryDirectory(prefix="guide-db-workspace-symlink-") as temporary:
         root = Path(temporary) / "repo"

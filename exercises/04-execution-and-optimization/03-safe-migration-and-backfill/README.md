@@ -34,4 +34,10 @@ reference의 migration은 중단 뒤 다시 적용해도 같은 최종 상태를
 
 ## 검증
 
-`./prepare.sh` 뒤 `make postgres-check`로 두 번 적용과 음성 insert를 실제 PostgreSQL에서 검사한다.
+`make prepare` 뒤 workspace migration의 두 번 적용과 음성 insert를 실제 PostgreSQL에서 검사한다.
+
+```bash
+./scripts/check-workspace.sh exercises/04-execution-and-optimization/03-safe-migration-and-backfill
+```
+
+초기 skeleton은 `GUIDE_SEMANTIC:migration-backfill-order`에서 실패하고, expand·backfill·validate·contract 순서를 완성하면 같은 명령이 통과해야 한다.

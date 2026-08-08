@@ -11,7 +11,7 @@ class SlottedPage:
         self.page_size = page_size
 
     def insert(self, payload: bytes) -> int:
-        raise NotImplementedError
+        raise NotImplementedError("GUIDE_SEMANTIC:slotted-page-insert")
 
     def read(self, slot_id: int) -> bytes:
         raise NotImplementedError

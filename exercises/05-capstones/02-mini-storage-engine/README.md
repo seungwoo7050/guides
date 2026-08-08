@@ -1,6 +1,6 @@
 # Mini storage engine capstone
 
-앞선 내부구조 연습을 하나의 작은 key-value 저장 엔진으로 통합한다. 페이지에 레코드를 넣고, buffer pool로 캐시하며, B+ tree index로 찾고, WAL을 이용해 crash 뒤 committed insert를 복구한다.
+앞선 내부구조 연습을 하나의 작은 key-value 저장 엔진으로 통합한다. 페이지에 레코드를 넣고, buffer pool로 캐시하며, 정렬된 leaf index로 찾고, WAL을 이용해 crash 뒤 committed insert를 복구한다.
 
 ## 완료 계약
 
@@ -8,12 +8,14 @@
 - `(page_id, slot_id)`가 index의 record identifier다.
 - 고정 크기 buffer pool이 dirty page를 교체한다.
 - page flush 전에 해당 page LSN까지 WAL이 durable해야 한다.
-- 고유 integer key를 B+ tree index에서 찾고 범위 조회한다.
+- 고유 integer key를 정렬된 leaf index에서 찾고 범위 조회한다.
 - committed log만 recovery 대상이 된다.
 - committed log는 남았지만 data page가 없는 crash를 redo한다.
 - uncommitted insert는 recovery 결과에 나타나지 않는다.
 - recovery를 반복해도 결과가 달라지지 않는다.
 - recovery 뒤 transaction ID는 durable WAL의 최대 ID 다음에서 재개되어 과거 `COMMIT`과 충돌하지 않는다.
+
+이 capstone의 index는 leaf 배열의 split과 ordered range scan만 구현하며 root·internal node·separator를 가진 완전한 B+ tree가 아니다. 완전한 구조는 앞선 [`B+ tree 구현`](../../02-storage-and-indexes/02-bplus-tree/README.md)이 소유한다.
 
 ## 실행
 
@@ -42,4 +44,8 @@ append-only heap, buffer pool, ordered index와 truncate하지 않은 WAL을 연
 
 ## 검증
 
-workspace 테스트와 `make python-check`를 실행해 WAL ordering, crash 경계, 반복 recovery를 모두 확인한다.
+```bash
+./scripts/check-workspace.sh exercises/05-capstones/02-mini-storage-engine
+```
+
+초기 skeleton은 `GUIDE_SEMANTIC:mini-storage-engine`에서 실패하고, WAL ordering·crash 경계·반복 recovery를 완성하면 같은 workspace 검사가 통과해야 한다.

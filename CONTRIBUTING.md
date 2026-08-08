@@ -32,20 +32,17 @@
 
 ## 변경 확인
 
-Docker 없이 실행 가능한 빠른 검사는 다음과 같다.
+저장소 루트의 공개 명령 네 가지는 다음과 같다.
 
 ```bash
+make prepare
 make check
+VERIFY_LOG=/tmp/database-systems-verify.log make verify
+make clean
 ```
 
-최종 검증은 기준 저장소에 overlay를 적용한 뒤 루트에서 실행한다.
-
-```bash
-./prepare.sh
-./verify.sh
-```
-
-`prepare.sh`는 구조 정리와 의존성 준비만 수행한다. `verify.sh`는 구조, 예제, Python exercise와 실제 PostgreSQL exercise를 모두 검사한다.
+`make prepare`는 source를 변경하지 않고 고정 이미지와 fingerprint marker만 준비한다. `make check`는 Docker 없이 가능한 빠른 검사를, `make verify`는 외부 임시 복사본에서 구조, 예제, Python exercise와 실제 PostgreSQL exercise를 모두 검사한다. `make clean`은 명시된 생성물만 지우며 준비 cache와 learner workspace는 보존한다.
+`VERIFY_LOG`를 생략하면 저장소 밖 `/tmp`에 실행별 로그를 만들며, 직접 지정한 경로는 저장소 밖 절대 경로여야 한다.
 
 커밋 전에는 추적 범위와 공백 오류를 확인한다.
 

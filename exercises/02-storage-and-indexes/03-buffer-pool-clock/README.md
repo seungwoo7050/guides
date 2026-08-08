@@ -38,4 +38,8 @@ page table, pin count, dirty bit와 Clock hand를 하나의 frame 수명 계약�
 
 ## 검증
 
-workspace 단위 테스트를 반복하고 `make python-check`에서 reference와 의도적으로 불완전한 skeleton을 대조한다.
+```bash
+./scripts/check-workspace.sh exercises/02-storage-and-indexes/03-buffer-pool-clock
+```
+
+초기 skeleton은 `GUIDE_SEMANTIC:buffer-pool-allocation`에서 실패하고, cache·pin·dirty eviction 계약을 완성한 뒤 같은 workspace 검사가 통과해야 한다.

@@ -38,4 +38,9 @@ leaf와 internal node의 서로 다른 split 규칙을 보존하면서 point loo
 
 ## 검증
 
-workspace 단위 테스트와 `make python-check`를 모두 실행해 깊은 split과 skeleton 실패를 관찰한다.
+
+```bash
+./scripts/check-workspace.sh exercises/02-storage-and-indexes/02-bplus-tree
+```
+
+초기 skeleton은 `GUIDE_SEMANTIC:bplus-tree-insert`에서 실패하고, leaf/internal split과 range scan을 완성하면 같은 workspace 검사가 통과해야 한다.

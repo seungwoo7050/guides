@@ -11,7 +11,7 @@ class BPlusTree(Generic[V]):
         self.order = order
 
     def insert(self, key: int, value: V) -> None:
-        raise NotImplementedError
+        raise NotImplementedError("GUIDE_SEMANTIC:bplus-tree-insert")
 
     def get(self, key: int) -> V:
         raise NotImplementedError

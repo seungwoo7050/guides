@@ -10,34 +10,118 @@ RUN_ID="database-systems-$(date +%s)-$$-$RANDOM"
 RUN_DIR=""
 PASS_COUNT=0
 FAIL_COUNT=0
+ACTIVE_CHILD=""
 
-preflight_die() { printf '[verify] ERROR: %s\n' "$*" >&2; exit 2; }
+default_log="/tmp/guide-database-systems-verify-$(date -u +%Y%m%dT%H%M%SZ)-$$.log"
+VERIFY_LOG="${VERIFY_LOG:-$default_log}"
+PREFLIGHT_LOG="$default_log"
 
-[[ -n "${VERIFY_LOG:-}" ]] || preflight_die "저장소 밖 절대 경로를 VERIFY_LOG로 지정하십시오."
+preflight_die() {
+    local message="$*"
+    {
+        printf '[verify] ERROR: %s\n' "$message"
+        printf '[verify] SUMMARY: pass=%d fail=%d skipped=0\n' "$PASS_COUNT" 1
+        printf 'RESULT: FAIL\n'
+        printf 'VERIFY LOG: %s\n' "$PREFLIGHT_LOG"
+    } | tee -a "$PREFLIGHT_LOG" >&2
+    exit 2
+}
+
 [[ "$VERIFY_LOG" == /* ]] || preflight_die "VERIFY_LOG는 절대 경로여야 합니다: $VERIFY_LOG"
-python3 - "$ROOT" "$VERIFY_LOG" <<'PY' || preflight_die "VERIFY_LOG는 저장소 밖이어야 합니다."
-import pathlib
+canonical_log="$(python3 - "$ROOT" "$VERIFY_LOG" <<'PY'
+import os
 import sys
 
-root = pathlib.Path(sys.argv[1]).resolve()
-log = pathlib.Path(sys.argv[2])
-parent = log.parent.resolve(strict=True)
-resolved = parent / log.name
-try:
-    resolved.relative_to(root)
-except ValueError:
-    raise SystemExit(0)
-raise SystemExit(1)
+root = os.path.realpath(sys.argv[1])
+log = os.path.realpath(sys.argv[2])
+if log == root or log.startswith(root + os.sep):
+    raise SystemExit(1)
+print(log)
 PY
-[[ -w "$(dirname "$VERIFY_LOG")" ]] || preflight_die "VERIFY_LOG 디렉터리에 쓸 수 없습니다."
+)" || preflight_die "VERIFY_LOG는 저장소 밖이어야 합니다."
+VERIFY_LOG="$canonical_log"
+PREFLIGHT_LOG="$VERIFY_LOG"
+[[ -d "$(dirname "$VERIFY_LOG")" && -w "$(dirname "$VERIFY_LOG")" ]] \
+    || preflight_die "VERIFY_LOG 디렉터리에 쓸 수 없습니다."
 : > "$VERIFY_LOG"
 exec > >(tee -a "$VERIFY_LOG") 2>&1
 
 log() { printf '[verify] %s\n' "$*"; }
 
+terminate_process_tree() {
+    local root_pid="$1"
+    python3 - "$root_pid" <<'PY'
+import os
+import signal
+import subprocess
+import sys
+import time
+
+root = int(sys.argv[1])
+table: dict[int, list[int]] = {}
+for line in subprocess.run(
+    ["ps", "-axo", "pid=,ppid="],
+    check=True,
+    capture_output=True,
+    text=True,
+).stdout.splitlines():
+    pid_text, parent_text = line.split()
+    table.setdefault(int(parent_text), []).append(int(pid_text))
+
+targets: list[int] = []
+stack = [root]
+while stack:
+    pid = stack.pop()
+    targets.append(pid)
+    stack.extend(table.get(pid, ()))
+
+for pid in reversed(targets):
+    try:
+        os.kill(pid, signal.SIGTERM)
+    except ProcessLookupError:
+        pass
+
+deadline = time.monotonic() + 1.0
+alive = targets
+while alive and time.monotonic() < deadline:
+    remaining: list[int] = []
+    for pid in alive:
+        try:
+            os.kill(pid, 0)
+        except ProcessLookupError:
+            continue
+        remaining.append(pid)
+    alive = remaining
+    if alive:
+        time.sleep(0.05)
+
+for pid in reversed(alive):
+    try:
+        os.kill(pid, signal.SIGKILL)
+    except ProcessLookupError:
+        pass
+PY
+}
+
+signal_exit() {
+    local code="$1"
+    trap - HUP INT TERM
+    if [[ -n "$ACTIVE_CHILD" ]]; then
+        terminate_process_tree "$ACTIVE_CHILD" || true
+        wait "$ACTIVE_CHILD" 2>/dev/null || true
+        ACTIVE_CHILD=""
+    fi
+    exit "$code"
+}
+
 cleanup() {
     local status=$?
     trap - EXIT INT TERM HUP
+    if [[ -n "$ACTIVE_CHILD" ]]; then
+        terminate_process_tree "$ACTIVE_CHILD" || true
+        wait "$ACTIVE_CHILD" 2>/dev/null || true
+        ACTIVE_CHILD=""
+    fi
     while IFS= read -r container; do
         [[ -n "$container" ]] && docker rm -f "$container" >/dev/null 2>&1 || true
     done < <(docker ps -aq --filter "label=guide.database-systems.verify=$RUN_ID" 2>/dev/null || true)
@@ -51,10 +135,13 @@ cleanup() {
     else
         printf 'RESULT: FAIL\n'
     fi
-    printf '[verify] LOG: %s\n' "$VERIFY_LOG"
+    printf 'VERIFY LOG: %s\n' "$VERIFY_LOG"
     exit "$status"
 }
-trap cleanup EXIT INT TERM HUP
+trap cleanup EXIT
+trap 'signal_exit 129' HUP
+trap 'signal_exit 130' INT
+trap 'signal_exit 143' TERM
 
 fail() {
     FAIL_COUNT=$((FAIL_COUNT + 1))
@@ -64,9 +151,18 @@ fail() {
 
 run_step() {
     local name="$1"
+    local step_status
     shift
     printf '\n[verify] === %s ===\n' "$name"
-    if "$@"; then
+    "$@" &
+    ACTIVE_CHILD=$!
+    if wait "$ACTIVE_CHILD"; then
+        step_status=0
+    else
+        step_status=$?
+    fi
+    ACTIVE_CHILD=""
+    if [[ $step_status -eq 0 ]]; then
         PASS_COUNT=$((PASS_COUNT + 1))
         log "PASS: $name"
     else
@@ -159,6 +255,7 @@ export GUIDE_VERIFY_RUN_ID="$RUN_ID"
 cd "$WORK_ROOT"
 run_step "저장소 구조·문서·버전 계약" python3 scripts/validate.py
 run_step "validator mutant suite" python3 scripts/test-validator.py
+run_step "verify preflight regression" python3 scripts/test-verify-preflight.py
 run_step "workspace path/symlink safety" python3 scripts/test-workspace-tools.py
 run_step "Shell 문법" bash -c 'while IFS= read -r -d "" script; do bash -n "$script"; done < <(find prepare.sh verify.sh scripts exercises -type f -name "*.sh" -print0)'
 run_step "Python 예제" python3 scripts/run_examples.py

@@ -38,4 +38,10 @@ slot directory와 record 영역을 분리해 가변 길이 bytes가 이동해도
 
 ## 검증
 
-위 실행 명령으로 workspace 테스트를 통과시키고, 루트의 `make python-check`로 reference/skeleton 계약을 확인한다.
+학습자 workspace를 공용 테스트에 직접 연결한다.
+
+```bash
+./scripts/check-workspace.sh exercises/02-storage-and-indexes/01-slotted-page
+```
+
+초기 skeleton은 `GUIDE_SEMANTIC:slotted-page-insert`에서 실패하고, 구현 후 같은 명령이 통과해야 한다. `make python-check`는 배포본 자체의 reference/skeleton 계약을 검사한다.

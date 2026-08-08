@@ -7,12 +7,18 @@
 ## 시작
 
 ```bash
-./prepare.sh
-./verify.sh
+make prepare
+make check
+VERIFY_LOG=/tmp/database-systems-verify.log make verify
+make clean
 ```
 
-- `prepare.sh`는 기존 평면 구조를 최종 구조로 정리하고, 검증에 필요한 도구와 PostgreSQL 이미지를 준비한다.
-- `verify.sh`는 문서 링크, Python 예제·연습, skeleton/reference 계약, PostgreSQL 통합 실습과 capstone을 저장소 루트에서 한 번에 검사한다.
+- `make prepare`는 source와 Git index를 바꾸지 않고 Python·Docker를 확인하고 digest로 고정한 PostgreSQL 18.4 이미지를 준비한다.
+- `make check`는 네트워크나 PostgreSQL container 없이 문서·Python·validator 계약을 빠르게 검사한다.
+- `make verify`는 저장소 밖 임시 복사본과 외부 절대 로그에서 문서, Python, skeleton/reference, PostgreSQL 통합 실습과 capstone을 검사한다.
+- `make clean`은 명시된 생성물만 지우며 준비 cache와 learner workspace는 보존한다.
+- `VERIFY_LOG`를 생략하면 `/tmp/guide-database-systems-verify-*.log`를 사용하며, 직접 지정할 때도 저장소 밖 절대 경로만 허용한다.
+- 준비 상태는 `.guide/database-systems/prepared.json`에 guide ID, source/index fingerprint와 이미지 ID로 기록된다.
 
 학습 순서와 두 개의 권장 경로는 [`docs/00-roadmap.md`](docs/00-roadmap.md)에 있다.
 
@@ -32,3 +38,10 @@
 ```
 
 생성된 `workspace/`는 Git에서 제외된다.
+
+```bash
+./scripts/check-workspace.sh exercises/02-storage-and-indexes/01-slotted-page
+```
+
+workspace 도구는 manifest에 등록된 exercise만 허용하고 경로 탈출, symlink와 필수 파일 누락을 거부한다.
+새 workspace는 의도된 학습 계약에서 실패한다. 구현을 고친 뒤 같은 `check-workspace.sh` 명령이 공용 `tests/`를 통과해야 완료다.

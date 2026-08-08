@@ -21,7 +21,7 @@
 - 내부구조 연습을 진행한다면 Python 함수·클래스·리스트·딕셔너리의 기본 사용
 - PostgreSQL 통합 연습을 위해 Docker를 실행할 수 있는 환경
 
-이 저장소는 SQL 문법 입문과 애플리케이션 연결법을 다시 처음부터 가르치지 않는다. 그 범위는 `guide-web-applications`가 소유한다.
+이 저장소는 SQL 문법 입문과 애플리케이션 연결법을 다시 처음부터 가르치지 않는다. 그 범위는 [`web-app`](https://github.com/seungwoo7050/guides/tree/web-app)이 소유한다.
 
 ## 이 가이드가 소유하는 범위
 
@@ -40,10 +40,10 @@ schema·index·migration 튜닝 루프
 
 다음은 의도적으로 다른 가이드에 남긴다.
 
-- 애플리케이션에서 필요한 첫 SQL과 connection pool: `guide-web-applications`
-- JPA, `@Transactional`, Flyway 연결법: `guide-backend-spring-boot`
-- 서비스별 데이터 소유권, Outbox, Saga, 재전달: `guide-distributed-services`
-- PostgreSQL 호스트 운영, 백업 자동화, 모니터링 인프라: `guide-web-infrastructure`
+- 애플리케이션에서 필요한 첫 SQL과 connection pool: [`web-app`](https://github.com/seungwoo7050/guides/tree/web-app)
+- JPA, `@Transactional`, Flyway 연결법: [`backend-spring-boot`](https://github.com/seungwoo7050/guides/tree/backend-spring-boot)
+- 서비스별 데이터 소유권, Outbox, Saga, 재전달: [`distributed-services`](https://github.com/seungwoo7050/guides/tree/distributed-services)
+- PostgreSQL 호스트 운영, 백업 자동화, 모니터링 인프라: [`web-infra`](https://github.com/seungwoo7050/guides/tree/web-infra)
 
 주제가 겹치더라도 목적이 다르다. 예를 들어 이 가이드의 WAL은 DBMS의 복구 계약을 다루고, 분산 서비스 가이드의 Outbox는 서로 다른 서비스 사이의 전달 계약을 다룬다.
 
@@ -106,28 +106,32 @@ schema·index·migration 튜닝 루프
 
 ## 실행 계약
 
-overlay를 저장소 루트에 푼 뒤 다음 두 명령을 순서대로 실행한다.
+저장소 루트의 공개 명령은 다음 네 개다.
 
 ```bash
-./prepare.sh
-./verify.sh
+make prepare
+make check
+VERIFY_LOG=/tmp/database-systems-verify.log make verify
+make clean
 ```
 
 `prepare.sh`는 다음만 담당한다.
 
-- 이전 평면 문서와 연습 경로를 안전하게 삭제한다.
 - Python과 Docker 환경을 확인한다.
-- PostgreSQL 이미지를 내려받고 image ID를 고정한다.
-- 최종 검증에 필요한 실행 권한과 상태 파일을 준비한다.
+- PostgreSQL 18.4 이미지를 immutable digest로 내려받고 image ID를 고정한다.
+- source bytes·mode·symlink와 Git index가 바뀌지 않았음을 확인한다.
+- namespaced JSON marker에 입력 fingerprint와 도구 판본을 기록한다.
 
 `verify.sh`는 준비된 최종 저장소를 읽기 전용 검증 대상으로 취급한다.
+로그 경로를 생략하면 `/tmp/guide-database-systems-verify-*.log`를 사용하고, `VERIFY_LOG`를 지정할 때는 저장소 밖 절대 경로만 허용한다.
 
 - 구조와 Markdown 링크
 - Python 예제
 - reference가 통과하고 skeleton이 실패하는지
 - 실제 PostgreSQL에서 SQL 의미·제약·동시성·실행 계획·migration
 - 두 capstone
-- 검증 전후 tracked file 무변경
+- 검증 전후 source와 Git index의 byte-for-byte 무변경
+- 저장소 밖 절대 로그와 실행별 Docker label을 이용한 격리·정리
 
 ## 연습 사용법
 
@@ -153,8 +157,8 @@ reference를 먼저 복사해 통과시키는 것은 학습 완료가 아니다.
 ## 버전 기준과 이식성
 
 - Python 3.11 이상
-- Docker Engine
-- PostgreSQL 16 계열 공식 이미지
-- Bash 4 이상
+- PostgreSQL 18.4 Alpine image(immutable digest)
+- Docker daemon
+- Bash 3.2 이상
 
 내부구조 Python 구현은 DBMS의 전체 구현이 아니라 계약을 관찰하기 위한 축소 모델이다. PostgreSQL 실습은 실제 SQL 의미와 동시성·계획을 확인하지만, 특정 데이터 규모에서의 plan을 모든 환경에 일반화하지 않는다.

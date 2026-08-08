@@ -38,4 +38,8 @@ LSN, durable boundary, page LSN과 transaction 상태를 사용해 redo/undo의 
 
 ## 검증
 
-workspace 테스트와 `make python-check`를 실행해 WAL 선행 규칙 및 반복 recovery를 함께 확인한다.
+```bash
+./scripts/check-workspace.sh exercises/03-transactions-and-recovery/02-wal-recovery
+```
+
+초기 skeleton은 `GUIDE_SEMANTIC:wal-update-record`에서 실패하고, WAL 선행·redo·undo·반복 recovery를 구현한 뒤 같은 workspace 검사가 통과해야 한다.

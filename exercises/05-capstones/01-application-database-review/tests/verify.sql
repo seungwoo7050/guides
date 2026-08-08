@@ -10,20 +10,50 @@ BEGIN
 
     SELECT string_agg(format('%s:%s', id, priority), ',' ORDER BY id)
     INTO actual FROM tickets;
-    IF actual IS DISTINCT FROM '100:5,101:4,102:3,103:2,200:4' THEN
+    IF actual IS DISTINCT FROM '100:5,101:4,102:3,103:2,104:3,200:4' THEN
         RAISE EXCEPTION 'priority backfill mismatch: %', actual;
     END IF;
 
-    SELECT string_agg(format('%s:%s', project_id, open_count), ',' ORDER BY project_id)
+    SELECT string_agg(format('%s:%s:%s', org_id, project_id, open_count), ',' ORDER BY org_id, project_id)
     INTO actual FROM q_project_backlog;
-    IF actual IS DISTINCT FROM '10:3,20:1' THEN
+    IF actual IS DISTINCT FROM '1:10:4,2:20:1' THEN
         RAISE EXCEPTION 'backlog mismatch: %', actual;
     END IF;
 
     SELECT string_agg(id::text, ',' ORDER BY priority DESC, created_at, id)
-    INTO actual FROM q_assignee_queue;
-    IF actual IS DISTINCT FROM '100,200,101' THEN
+    INTO actual
+    FROM q_assignee_queue
+    WHERE org_id = 1 AND assignee_id = 2;
+    IF actual IS DISTINCT FROM '100,101' THEN
         RAISE EXCEPTION 'assignee queue mismatch: %', actual;
+    END IF;
+
+    SELECT string_agg(id::text, ',' ORDER BY priority DESC, created_at DESC, id DESC)
+    INTO actual
+    FROM (
+        SELECT id, priority, created_at
+        FROM q_org_open_tickets
+        WHERE org_id = 1
+        ORDER BY priority DESC, created_at DESC, id DESC
+        LIMIT 2
+    ) AS first_page;
+    IF actual IS DISTINCT FROM '100,101' THEN
+        RAISE EXCEPTION 'organization first page mismatch: %', actual;
+    END IF;
+
+    SELECT string_agg(id::text, ',' ORDER BY priority DESC, created_at DESC, id DESC)
+    INTO actual
+    FROM (
+        SELECT id, priority, created_at
+        FROM q_org_open_tickets
+        WHERE org_id = 1
+          AND (priority, created_at, id)
+              < (4, TIMESTAMPTZ '2025-01-02 00:00:00+00', 101)
+        ORDER BY priority DESC, created_at DESC, id DESC
+        LIMIT 2
+    ) AS next_page;
+    IF actual IS DISTINCT FROM '104,102' THEN
+        RAISE EXCEPTION 'organization keyset page mismatch: %', actual;
     END IF;
 
     BEGIN

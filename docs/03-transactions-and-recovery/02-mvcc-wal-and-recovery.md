@@ -275,6 +275,8 @@ Checkpoint는 복구 최적화다. WAL flush 규칙이나 backup을 대체하지
 
 ## 연결 연습
 
+먼저 [`WAL recovery 예제`](../../examples/wal_recovery.py)에서 update/commit 로그와 redo·undo 경계를 작은 상태로 관찰한다.
+
 [`WAL recovery`](../../exercises/03-transactions-and-recovery/02-wal-recovery/README.md)에서 다음을 구현한다.
 
 - update·commit WAL record

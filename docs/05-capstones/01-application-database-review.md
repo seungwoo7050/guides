@@ -30,9 +30,9 @@ ticket 담당자
 
 - project slug는 조직 안에서 유일하다.
 - ticket 번호는 project 안에서 유일하다.
-- 담당자는 해당 조직의 활성 membership을 가져야 한다.
+- 담당자는 해당 조직의 membership을 가져야 한다. 활성 상태 수명 주기를 추가한다면 그 경쟁은 별도 transaction 계약으로 검토한다.
 - 닫힌 ticket을 일반 수정 경로로 다시 열 수 없다.
-- 조직별 OPEN ticket 목록은 우선순위와 최근 갱신순으로 안정적으로 page된다.
+- 조직별 OPEN ticket 목록은 우선순위와 생성 시각, `id` 순으로 안정적으로 page된다.
 - 담당자별 미완료 queue를 빠르게 조회한다.
 - 새 column을 추가해 기존 ticket을 안전하게 backfill한다.
 
@@ -110,7 +110,7 @@ updated_at 갱신
 - serializable retry가 필요한가
 - 외부 알림은 transaction 밖에서 어떻게 전달하는가
 
-Capstone exercise는 모든 분산 효과를 구현하지 않지만, DB transaction이 보장하는 범위와 보장하지 않는 범위를 명시해야 한다.
+자동 SQL fixture는 membership 존재와 tenant foreign key를 검사하지만, 축소 schema에는 membership 활성 상태나 activity table이 없다. 따라서 비활성화와 담당자 변경 경쟁을 자동 검증했다고 주장하지 않는다. Exercise의 `concurrency-review.md`에 두 session 순서, 허용·금지 결과, 일관된 lock 순서, bounded retry와 DB/application 책임 경계를 수동 근거로 남긴다.
 
 ## 5단계: 대표 workload와 index
 
@@ -121,6 +121,8 @@ Capstone exercise는 모든 분산 효과를 구현하지 않지만, DB transact
 담당자별 미완료 queue
 project별 상태 집계
 ```
+
+조직 목록의 canonical 순서는 `priority DESC, created_at DESC, id DESC`다. 다음 page는 마지막 row와 같은 tuple을 cursor로 삼아 `(priority, created_at, id) < (...)`를 적용한다. `id`까지 넣어 동률의 중복·누락을 막고, `ORDER BY`는 view 밖의 실제 호출 query에도 항상 명시한다. 담당자 queue는 `priority DESC, created_at, id`를 사용한다.
 
 각 query에 대해 다음을 기록한다.
 
@@ -183,10 +185,11 @@ migration 단계
 
 - 조직 경계를 가진 key·foreign key·constraint
 - 대표 조회 view/query
-- composite·partial index
+- 세 workload에 대응하는 정확한 composite·partial index와 실제 `EXPLAIN (ANALYZE)` 사용 근거
 - 안전한 schema migration
 - 잘못된 cross-tenant·중복 상태 거부
 - 결과 정렬과 집계 검증
+- 자동화 밖의 membership 경쟁을 위한 두-session 수동 검토 산출물
 
 해당 연습은 reference 정답 하나를 외우기보다, 최소 계약을 자동 검사하는 형태다. 자신의 대안 schema가 같은 불변식과 query 계약을 만족하면 비교 가능한 설계가 될 수 있다.
 

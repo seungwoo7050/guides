@@ -35,4 +35,10 @@
 
 ## 검증
 
-`./prepare.sh` 뒤 `make postgres-check`를 실행해 catalog, `EXPLAIN`, 실제 결과를 모두 확인한다.
+`make prepare` 뒤 workspace의 index를 catalog, `EXPLAIN`, 실제 결과로 확인한다.
+
+```bash
+./scripts/check-workspace.sh exercises/04-execution-and-optimization/02-query-plans-and-indexes
+```
+
+초기 skeleton은 `GUIDE_SEMANTIC:query-plan-index-contract`에서 실패하고, 두 workload의 정의·plan·결과 계약을 완성하면 같은 명령이 통과해야 한다.

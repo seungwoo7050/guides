@@ -34,4 +34,10 @@
 
 ## 검증
 
-`./prepare.sh` 뒤 `make postgres-check`를 실행해 reference 통과와 skeleton의 의미적 실패를 함께 확인한다.
+`make prepare` 뒤 학습자 workspace를 공용 PostgreSQL fixture에서 검사한다.
+
+```bash
+./scripts/check-workspace.sh exercises/01-relational-semantics-and-design/01-sql-semantics
+```
+
+처음 복사한 skeleton은 `GUIDE_SEMANTIC:sql-three-valued-logic`에서 실패하고, 네 view를 완성한 뒤 같은 명령이 통과해야 한다. `make postgres-check`는 배포된 reference/skeleton 계약을 검사하는 가이드 무결성 명령이다.

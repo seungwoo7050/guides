@@ -47,5 +47,5 @@ trap 'rm -rf -- "$temporary"' EXIT INT TERM HUP
 cp -R "$base/skeleton" "$temporary"
 mv "$temporary" "$base/workspace"
 trap - EXIT INT TERM HUP
-"$ROOT/scripts/check-workspace.sh" "$requested"
 printf '생성됨: %s/workspace\n' "$requested"
+printf '초기 semantic failure 확인: ./scripts/check-workspace.sh %s\n' "$requested"
