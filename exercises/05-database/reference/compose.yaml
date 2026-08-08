@@ -1,0 +1,35 @@
+services:
+  db:
+    build:
+      context: ./db
+    environment:
+      MARIADB_DATABASE: appdb
+      MARIADB_USER: appuser
+      MARIADB_ROOT_PASSWORD_FILE: /run/secrets/db_root_password
+      MARIADB_PASSWORD_FILE: /run/secrets/db_password
+    secrets:
+      - db_root_password
+      - db_password
+    volumes:
+      - db-data:/var/lib/mysql
+    networks:
+      - db-net
+    healthcheck:
+      test: ["CMD-SHELL", "mariadb-admin --protocol=socket --socket=/run/mysqld/mysqld.sock -uroot -p\"$$(cat /run/secrets/db_root_password)\" ping --silent"]
+      interval: 3s
+      timeout: 2s
+      retries: 30
+      start_period: 10s
+
+networks:
+  db-net:
+    driver: bridge
+
+volumes:
+  db-data:
+
+secrets:
+  db_root_password:
+    file: ./secrets/db_root_password.txt
+  db_password:
+    file: ./secrets/db_password.txt
