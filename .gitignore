@@ -1,0 +1,8 @@
+__pycache__/
+*.py[cod]
+.venv/
+.guide/
+.verify/
+.coverage
+.pytest_cache/
+exercises/**/workspace/

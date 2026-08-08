@@ -1,0 +1,56 @@
+# 기여 안내
+
+문서, 예제와 검사는 같은 계약을 가리켜야 한다. 설명만 추가하거나 reference만 통과시키지 말고, 학습자가 출발하는 skeleton과 실패·경계 검사를 함께 확인한다.
+
+## 구조 원칙
+
+- 학습 경로와 범위는 `docs/00-roadmap.md`에서 시작한다.
+- 필수 설명은 `docs/`, 실행 가능한 관찰 코드는 `examples/`, 직접 구현할 문제는 `exercises/`에 둔다.
+- 각 exercise는 `README.md`, `skeleton/`, `reference/`, `tests/`를 가진다.
+- `skeleton`은 최소 한 개의 필수 검사에 실패해야 하고, `reference`는 전체 검사에 통과해야 한다.
+- 애플리케이션 DB 경로와 DBMS 내부구조 경로가 공유하는 용어는 같은 의미로 사용한다.
+- 웹 애플리케이션의 첫 SQL, Spring 연결법, 분산 transaction과 호스트 운영을 이 저장소에서 다시 완전하게 가르치지 않는다.
+
+## 문서를 고칠 때
+
+- 한국어 `-다체`를 사용한다.
+- 명령, API, 타입과 식별자는 원래 표기를 유지하고 백틱으로 구분한다.
+- 새 문서는 최소한 `학습 목표`, `연결 연습`, `완료 기준`을 포함한다.
+- 정상 경로뿐 아니라 실패 후 상태, 소유권과 비보장 범위를 설명한다.
+- 성능 수치는 DBMS 버전, 데이터 규모, parameter 분포와 cache 조건 없이 일반화하지 않는다.
+- 다른 문서에서 소유한 개념은 짧게 연결하고 같은 설명을 복제하지 않는다.
+- 내부 링크는 저장소 상대경로로 작성하고 `python3 scripts/validate.py`로 검사한다.
+
+## Exercise를 고칠 때
+
+- 검사는 소스 문자열보다 실제 결과와 상태를 우선 확인한다.
+- SQL exercise는 별도 임시 PostgreSQL database에서 실행되어야 한다.
+- Python reference는 표준 라이브러리만으로 재현 가능해야 한다.
+- 임시 파일, container와 database는 성공·실패 경로 모두에서 정리한다.
+- concurrency 검사는 `sleep`에만 의존하지 말고 공유 conflict 지점과 최종 불변식을 검사한다.
+- skeleton이 우연히 통과하지 않도록 알려진 잘못된 구현을 실제로 거부하는지 확인한다.
+
+## 변경 확인
+
+Docker 없이 실행 가능한 빠른 검사는 다음과 같다.
+
+```bash
+make check
+```
+
+최종 검증은 기준 저장소에 overlay를 적용한 뒤 루트에서 실행한다.
+
+```bash
+./prepare.sh
+./verify.sh
+```
+
+`prepare.sh`는 구조 정리와 의존성 준비만 수행한다. `verify.sh`는 구조, 예제, Python exercise와 실제 PostgreSQL exercise를 모두 검사한다.
+
+커밋 전에는 추적 범위와 공백 오류를 확인한다.
+
+```bash
+git status --short
+git diff --check
+git diff --staged
+```
