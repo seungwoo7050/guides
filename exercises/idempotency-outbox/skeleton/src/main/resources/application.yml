@@ -1,0 +1,13 @@
+spring:
+  datasource:
+    url: jdbc:postgresql://localhost:5432/idempotency
+    username: idempotency
+    password: idempotency
+    hikari:
+      maximum-pool-size: 20
+  jpa:
+    open-in-view: false
+    hibernate:
+      ddl-auto: validate
+  flyway:
+    enabled: true
