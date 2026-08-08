@@ -1,0 +1,75 @@
+package dev.guides.java.executor;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+
+import java.time.Duration;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.RejectedExecutionException;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
+import org.junit.jupiter.api.Test;
+
+class BoundedTaskRunnerTest {
+  @Test
+  void rejectsWorkWhenWorkerAndQueueAreOccupied() throws Exception {
+    CountDownLatch started = new CountDownLatch(1);
+    CountDownLatch release = new CountDownLatch(1);
+    try (BoundedTaskRunner runner = new BoundedTaskRunner(1, 1, Duration.ofSeconds(1))) {
+      runner.submit(
+          () -> {
+            started.countDown();
+            release.await();
+            return "running";
+          });
+      assertThat(started.await(1, TimeUnit.SECONDS)).isTrue();
+      runner.submit(() -> "queued");
+      try {
+        assertThatThrownBy(() -> runner.submit(() -> "rejected"))
+            .isInstanceOf(RejectedExecutionException.class);
+      } finally {
+        release.countDown();
+      }
+    }
+  }
+
+  @Test
+  void exposesTaskFailureThroughFuture() throws Exception {
+    try (BoundedTaskRunner runner = new BoundedTaskRunner(1, 1, Duration.ofSeconds(1))) {
+      var future =
+          runner.submit(
+              () -> {
+                throw new IllegalStateException("작업 실패");
+              });
+      assertThatThrownBy(future::get)
+          .isInstanceOf(ExecutionException.class)
+          .hasCauseInstanceOf(IllegalStateException.class);
+    }
+  }
+
+  @Test
+  void cancelsTimedOutTaskWithInterrupt() throws Exception {
+    CountDownLatch started = new CountDownLatch(1);
+    CountDownLatch interrupted = new CountDownLatch(1);
+    try (BoundedTaskRunner runner = new BoundedTaskRunner(1, 1, Duration.ofSeconds(1))) {
+      assertThatThrownBy(
+              () ->
+                  runner.run(
+                      () -> {
+                        started.countDown();
+                        try {
+                          new CountDownLatch(1).await();
+                        } catch (InterruptedException exception) {
+                          interrupted.countDown();
+                          throw exception;
+                        }
+                        return "unreachable";
+                      },
+                      Duration.ofMillis(50)))
+          .isInstanceOf(TimeoutException.class);
+      assertThat(started.await(1, TimeUnit.SECONDS)).isTrue();
+      assertThat(interrupted.await(1, TimeUnit.SECONDS)).isTrue();
+    }
+  }
+}
