@@ -1,0 +1,14 @@
+exercises/path-diagnosis/skeleton/path_diagnosis/__init__.py
+exercises/path-diagnosis/skeleton/path_diagnosis/__main__.py
+exercises/path-diagnosis/skeleton/path_diagnosis/cli.py
+exercises/path-diagnosis/skeleton/path_diagnosis/diagnose.py
+exercises/path-diagnosis/skeleton/path_diagnosis/model.py
+exercises/protocol-inspector/skeleton/protocol_inspector/__init__.py
+exercises/protocol-inspector/skeleton/protocol_inspector/__main__.py
+exercises/protocol-inspector/skeleton/protocol_inspector/checksum.py
+exercises/protocol-inspector/skeleton/protocol_inspector/cli.py
+exercises/protocol-inspector/skeleton/protocol_inspector/errors.py
+exercises/protocol-inspector/skeleton/protocol_inspector/packet.py
+exercises/protocol-inspector/skeleton/protocol_inspector/pcap.py
+exercises/protocol-inspector/skeleton/protocol_inspector/routing.py
+exercises/protocol-inspector/skeleton/protocol_inspector/tcp_state.py

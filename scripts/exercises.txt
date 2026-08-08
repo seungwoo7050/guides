@@ -1,0 +1,2 @@
+exercises/path-diagnosis
+exercises/protocol-inspector
