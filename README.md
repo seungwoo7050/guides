@@ -2,7 +2,7 @@
 
 이 저장소는 알고리즘 이름을 외우는 대신 문제를 계약으로 바꾸고, 정확성을 증명하며, 입력 규모에 맞는 비용을 계산하고, 작은 독립 기준 구현으로 후보 구현을 검증하는 방법을 다룬다. 검증 도구의 기준 환경은 Python 3.12 이상이며 외부 Python 패키지는 필요하지 않다.
 
-핵심 문서는 특정 언어에 종속되지 않는다. 의사코드와 상태·불변식을 중심으로 설명하며, 실제 구현 환경은 [Python 프로필](docs/90-implementation-profiles/python.md) 또는 [C++20 프로필](docs/90-implementation-profiles/cpp20.md)에서 선택한다.
+핵심 문서는 특정 언어에 종속되지 않는다. 의사코드와 상태·불변식을 중심으로 설명한다. 저장소가 바로 실행할 수 있는 capstone과 checker는 [Python 프로필](docs/90-implementation-profiles/python.md)을 기준으로 하며, [C++20 프로필](docs/90-implementation-profiles/cpp20.md)은 같은 계약을 별도 harness로 옮길 때의 경계를 설명한다.
 
 ## 시작
 

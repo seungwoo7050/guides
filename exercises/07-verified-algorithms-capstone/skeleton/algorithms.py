@@ -73,7 +73,11 @@ def kmp_find(text: str, pattern: str) -> int:
     return _missing("kmp_find")
 
 
-def max_flow(capacity: Sequence[Sequence[int]], source: int, sink: int) -> int:
+def max_flow(
+    capacity: Sequence[Sequence[int]],
+    source: int,
+    sink: int,
+) -> tuple[int, list[list[int]]]:
     return _missing("max_flow")
 
 

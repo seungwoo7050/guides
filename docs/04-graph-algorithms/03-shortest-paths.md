@@ -87,7 +87,8 @@ dist[i][j] = min(dist[i][j], dist[i][k] + dist[k][j])
 
 loop 순서에서 `k`가 가장 바깥이어야 해당 상태 의미가 유지된다.
 
-`dist[v][v] < 0`이면 `v`를 포함하는 음수 cycle이 존재한다.
+`dist[v][v] < 0`이면 `v`에서 도달할 수 있고 그곳에서 다시 `v`로 돌아올 수 있는
+음수 cycle이 존재한다. 그 음수 cycle 자체가 반드시 `v`를 포함하는 것은 아니다.
 
 ## 7. overflow와 무한대
 

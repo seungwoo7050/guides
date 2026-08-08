@@ -3,14 +3,18 @@
 
 from __future__ import annotations
 
+from collections.abc import Iterator
+from contextlib import contextmanager
 import os
 from pathlib import Path
 import subprocess
 import sys
+import tempfile
 
 ROOT = Path(__file__).resolve().parents[1]
 CAPSTONE = ROOT / "exercises/07-verified-algorithms-capstone"
 CHECKER = CAPSTONE / "check.py"
+REFERENCE = CAPSTONE / "reference/algorithms.py"
 
 
 def run(
@@ -42,6 +46,20 @@ def require(condition: bool, label: str, result: subprocess.CompletedProcess[str
 def expected_success(label: str, *arguments: str, **kwargs: object) -> None:
     result = run(*arguments, **kwargs)
     require(result.returncode == 0, label, result)
+
+
+@contextmanager
+def semantic_mutant(replacements: tuple[tuple[str, str], ...]) -> Iterator[str]:
+    source = REFERENCE.read_text(encoding="utf-8")
+    for original, replacement in replacements:
+        if source.count(original) != 1:
+            raise AssertionError(f"semantic mutant 대상이 정확히 하나가 아닙니다: {original!r}")
+        source = source.replace(original, replacement)
+
+    with tempfile.TemporaryDirectory(prefix=".semantic-", dir=CAPSTONE / "broken") as directory:
+        path = Path(directory)
+        (path / "algorithms.py").write_text(source, encoding="utf-8")
+        yield path.relative_to(CAPSTONE).as_posix()
 
 
 def main() -> int:
@@ -77,6 +95,45 @@ def main() -> int:
             "--expect",
             "fail",
         )
+        cases += 1
+
+    semantic_cases = (
+        (
+            "interval 결정적 tie-break 위반",
+            "design-techniques",
+            (("key=lambda item: (item[1], item[0])", "key=lambda item: (item[1], -item[0])"),),
+        ),
+        (
+            "MST 원본 edge·연결·acyclic certificate 위반",
+            "graphs",
+            (("    return total, chosen", "    return total, [(0, 0, 0)] * (vertex_count - 1)"),),
+        ),
+        (
+            "max-flow capacity·conservation certificate 위반",
+            "graphs",
+            (("            return total, flow", "            return total, [[0] * size for _ in range(size)]"),),
+        ),
+        (
+            "interval·MST·max-flow 결합 semantic 계약 위반",
+            "all",
+            (
+                ("key=lambda item: (item[1], item[0])", "key=lambda item: (item[1], -item[0])"),
+                ("    return total, chosen", "    return total, [(0, 0, 0)] * (vertex_count - 1)"),
+                ("            return total, flow", "            return total, [[0] * size for _ in range(size)]"),
+            ),
+        ),
+    )
+    for label, stage, replacements in semantic_cases:
+        with semantic_mutant(replacements) as implementation:
+            expected_success(
+                label,
+                "--impl",
+                implementation,
+                "--stage",
+                stage,
+                "--expect",
+                "fail",
+            )
         cases += 1
 
     expected_success(

@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from collections import Counter
 from itertools import combinations, product
 import importlib.util
 import os
@@ -57,6 +58,19 @@ def brute_interval_count(intervals: list[tuple[int, int]]) -> int:
             if all(left[1] <= right[0] for left, right in zip(ordered, ordered[1:])):
                 best = max(best, count)
     return best
+
+
+def deterministic_interval_selection(
+    intervals: list[tuple[int, int]],
+) -> list[tuple[int, int]]:
+    selected: list[tuple[int, int]] = []
+    last_stop: int | None = None
+    for interval in sorted(intervals, key=lambda item: (item[1], item[0])):
+        start, stop = interval
+        if last_stop is None or start >= last_stop:
+            selected.append(interval)
+            last_stop = stop
+    return selected
 
 
 def brute_knapsack(items: list[tuple[int, int]], capacity: int) -> int:
@@ -138,6 +152,37 @@ def brute_mst_weight(
     return best
 
 
+def canonical_undirected_edge(edge: tuple[int, int, int]) -> tuple[int, int, int]:
+    source, target, weight = edge
+    return min(source, target), max(source, target), weight
+
+
+def is_spanning_tree(
+    vertex_count: int,
+    chosen: list[tuple[int, int, int]],
+) -> bool:
+    if vertex_count == 0:
+        return chosen == []
+    if len(chosen) != vertex_count - 1:
+        return False
+
+    groups = list(range(vertex_count))
+
+    def find(vertex: int) -> int:
+        while groups[vertex] != vertex:
+            vertex = groups[vertex]
+        return vertex
+
+    for source, target, _weight in chosen:
+        if not 0 <= source < vertex_count or not 0 <= target < vertex_count:
+            return False
+        left, right = find(source), find(target)
+        if left == right:
+            return False
+        groups[right] = left
+    return len({find(vertex) for vertex in range(vertex_count)}) == 1
+
+
 def brute_min_cut(capacity: list[list[int]], source: int, sink: int) -> int:
     vertices = [vertex for vertex in range(len(capacity)) if vertex not in {source, sink}]
     best: int | None = None
@@ -155,6 +200,49 @@ def brute_min_cut(capacity: list[list[int]], source: int, sink: int) -> int:
         best = cut if best is None else min(best, cut)
     assert best is not None
     return best
+
+
+def flow_certificate_errors(
+    capacity: list[list[int]],
+    source: int,
+    sink: int,
+    value: int,
+    flow: list[list[int]],
+) -> list[str]:
+    size = len(capacity)
+    errors: list[str] = []
+    if not isinstance(value, int):
+        errors.append("value가 정수가 아님")
+    if not isinstance(flow, list) or len(flow) != size:
+        return errors + ["flow row 수가 capacity와 다름"]
+    if any(not isinstance(row, list) or len(row) != size for row in flow):
+        return errors + ["flow가 정사각 matrix가 아님"]
+
+    for left in range(size):
+        for right in range(size):
+            amount = flow[left][right]
+            if not isinstance(amount, int):
+                errors.append(f"flow[{left}][{right}]가 정수가 아님")
+            elif not 0 <= amount <= capacity[left][right]:
+                errors.append(f"flow[{left}][{right}]가 capacity를 위반함")
+
+    if errors:
+        return errors
+    if source == sink:
+        if value != 0 or any(amount for row in flow for amount in row):
+            errors.append("source와 sink가 같을 때 zero flow가 아님")
+        return errors
+
+    incoming = [sum(flow[left][vertex] for left in range(size)) for vertex in range(size)]
+    outgoing = [sum(flow[vertex]) for vertex in range(size)]
+    if outgoing[source] - incoming[source] != value:
+        errors.append("source 순유출이 value와 다름")
+    if incoming[sink] - outgoing[sink] != value:
+        errors.append("sink 순유입이 value와 다름")
+    for vertex in range(size):
+        if vertex not in {source, sink} and incoming[vertex] != outgoing[vertex]:
+            errors.append(f"정점 {vertex}에서 conservation 위반")
+    return errors
 
 
 def brute_lcs_length(left: str, right: str) -> int:
@@ -261,6 +349,8 @@ class DesignTechniqueTests(unittest.TestCase):
         source = random.Random(20250201)
         specific = [(0, 100), (1, 2), (2, 3), (3, 4)]
         self.assertEqual(len(subject.select_intervals(specific)), 3)
+        tied = [(1, 3), (0, 3), (3, 4)]
+        self.assertEqual(subject.select_intervals(tied), [(0, 3), (3, 4)])
         for _ in range(80):
             intervals: list[tuple[int, int]] = []
             for _ in range(8):
@@ -268,6 +358,7 @@ class DesignTechniqueTests(unittest.TestCase):
                 intervals.append((start, start + source.randrange(1, 5)))
             selected = subject.select_intervals(intervals)
             self.assertEqual(len(selected), brute_interval_count(intervals))
+            self.assertEqual(selected, deterministic_interval_selection(intervals))
             self.assertTrue(all(left[1] <= right[0] for left, right in zip(selected, selected[1:])))
 
     def test_interval_selection_rejects_empty_or_reversed_ranges(self) -> None:
@@ -370,13 +461,27 @@ class GraphTests(unittest.TestCase):
             weight, chosen = subject.kruskal_mst(size, iter(edges))
             self.assertEqual(weight, brute_mst_weight(size, edges))
             self.assertEqual(len(chosen), size - 1)
+            available = Counter(canonical_undirected_edge(edge) for edge in edges)
+            returned = Counter(canonical_undirected_edge(edge) for edge in chosen)
+            self.assertFalse(returned - available)
+            self.assertEqual(weight, sum(edge[2] for edge in chosen))
+            self.assertTrue(is_spanning_tree(size, chosen))
 
     def test_kruskal_rejects_disconnected_graph(self) -> None:
         with self.assertRaises(ValueError):
             subject.kruskal_mst(4, [(0, 1, 1), (2, 3, 1)])
 
-    def test_max_flow_matches_all_cuts(self) -> None:
+    def test_max_flow_value_and_certificate_match_all_cuts(self) -> None:
         source = random.Random(20250222)
+        specific = [
+            [0, 3, 2, 0],
+            [0, 0, 1, 2],
+            [0, 0, 0, 3],
+            [0, 0, 0, 0],
+        ]
+        value, flow = subject.max_flow(specific, 0, 3)
+        self.assertEqual(value, 5)
+        self.assertEqual(flow_certificate_errors(specific, 0, 3, value, flow), [])
         for _ in range(50):
             size = 6
             capacity = [
@@ -388,14 +493,19 @@ class GraphTests(unittest.TestCase):
                 ]
                 for left in range(size)
             ]
-            self.assertEqual(subject.max_flow(capacity, 0, size - 1), brute_min_cut(capacity, 0, size - 1))
+            value, flow = subject.max_flow(capacity, 0, size - 1)
+            self.assertEqual(value, brute_min_cut(capacity, 0, size - 1))
+            self.assertEqual(
+                flow_certificate_errors(capacity, 0, size - 1, value, flow),
+                [],
+            )
 
     def test_max_flow_contract_errors(self) -> None:
         with self.assertRaises(ValueError):
             subject.max_flow([[0, 1], [0]], 0, 1)
         with self.assertRaises(ValueError):
             subject.max_flow([[0, -1], [0, 0]], 0, 1)
-        self.assertEqual(subject.max_flow([[0]], 0, 0), 0)
+        self.assertEqual(subject.max_flow([[0]], 0, 0), (0, [[0]]))
 
 
 class StringTests(unittest.TestCase):

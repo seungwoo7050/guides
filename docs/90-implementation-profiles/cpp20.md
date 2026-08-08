@@ -4,6 +4,15 @@
 
 이 문서는 C++ 문법 과정이 아니다. 현대 C++의 전체 객체·수명·빌드 모델은 `guide-cpp`가 소유한다. 여기서는 알고리즘 계약을 C++20으로 옮길 때 자주 발생하는 비용·경계 문제만 다룬다.
 
+## 지원 경계
+
+저장소가 제공하는 실행형 skeleton·reference·oracle과 `check.py`는 Python 3.12
+전용이다. 이 프로필은 C++20 구현 지침과 compiler/sanitizer 명령을 제공하지만,
+C++용 API adapter나 fixture 직렬화 형식까지 제공하지는 않는다. 따라서 저장소의
+필수 capstone 완료 증거가 필요하면 Python workspace 검사를 실행해야 한다. C++로
+옮기는 경우에는 아래 기준으로 별도 test harness를 만들고 그 결과를 선택 확장
+증거로 취급한다.
+
 ## 빌드 기준
 
 ```sh
@@ -85,4 +94,7 @@ Result solve(const Input& input);
 
 ## Python capstone과의 관계
 
-공식 executable checker는 Python으로 제공되지만 API와 검증 방법은 언어 중립이다. C++ 구현은 같은 고정 fixture를 읽는 별도 adapter를 만들거나, 작은 입력을 JSON/text로 교환해 Python oracle과 비교할 수 있다.
+공식 executable checker는 Python으로만 제공된다. C++ 구현은 같은 계약의 작은
+입력을 자체 test에서 전수 계산과 비교하거나, 학습자가 명시한 JSON/text adapter로
+Python oracle과 교환할 수 있다. 이 adapter는 저장소가 검증하는 공개 인터페이스가
+아니므로 Python capstone의 PASS와 동등하다고 표시하지 않는다.

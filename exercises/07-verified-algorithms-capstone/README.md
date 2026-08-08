@@ -54,7 +54,7 @@ python3 check.py --impl workspace --stage data-structures --expect pass
 | `kruskal_mst` | MST 가중치와 edge | disconnected graph |
 | `bellman_ford` | shortest paths | reachable negative cycle |
 | `kmp_find` | 첫 일치 위치 | 빈 패턴은 0 |
-| `max_flow` | 최대 유량 값 | 음수·비정사각 capacity |
+| `max_flow` | 최대 유량 값과 directed flow matrix | 음수·비정사각 capacity |
 | `lcs_length` | LCS 길이 | 빈 문자열 허용 |
 
 ## 검사 철학
@@ -69,6 +69,11 @@ python3 check.py --impl workspace --stage data-structures --expect pass
 
 무작위 입력은 고정 시드를 사용한다. 실패를 발견하면 시드를 바꾸기 전에 입력을 최소화하고 regression 사례로 남긴다.
 
+`max_flow`는 `(value, flow)`를 반환한다. `flow[u][v]`는 원본 directed edge
+`u→v`에 보낸 nonnegative 정수이며 `0 <= flow[u][v] <= capacity[u][v]`를
+만족한다. 중간 정점의 유입과 유출은 같고 source의 순유출 및 sink의 순유입은
+`value`와 같아야 한다.
+
 ## Skeleton과 결함 fixture
 
 ```sh
@@ -81,6 +86,8 @@ EXERCISE_TIMEOUT=1 python3 check.py --impl broken/non-terminating --stage string
 ```
 
 검사가 결함 fixture를 통과시키면 구현이 아니라 test가 불충분한 것이다.
+루트 `make checker-check`는 여기에 더해 interval 동점, MST edge certificate와
+max-flow certificate를 각각 깨뜨린 임시 semantic mutant도 거부한다.
 
 ## 완료 기준
 

@@ -24,7 +24,8 @@ graph 입력 전조건, 최적화 불변식, 오류 결과를 독립 oracle과 �
 - Dijkstra는 음수 edge를 거부한다.
 - Bellman–Ford는 시작점에서 도달 가능한 음수 cycle을 `ValueError`로 보고한다.
 - Kruskal은 연결되지 않은 graph를 거부하고 `(total_weight, chosen_edges)`를 반환한다.
-- 최대 유량은 정사각 nonnegative capacity matrix를 요구한다.
+- 최대 유량은 정사각 nonnegative capacity matrix를 요구하고 `(value, flow)`를
+  반환한다. `flow[u][v]`는 원본 `u→v` capacity 안의 directed flow다.
 
 ## 독립 기준
 
@@ -47,7 +48,8 @@ python3 check.py --impl workspace --stage graphs --expect pass
 
 - BFS·Dijkstra·Bellman–Ford가 정점 범위와 도달 불가능 표현을 일관되게 처리한다.
 - Kruskal 결과가 작은 graph의 모든 spanning tree 중 최소이며 disconnected 입력을 거부한다.
-- 최대 유량 값이 작은 network의 최소 cut과 같고 잘못된 capacity matrix를 거부한다.
+- 최대 유량 값이 작은 network의 최소 cut과 같고, 반환 flow가 capacity와
+  conservation을 만족하며, 잘못된 capacity matrix를 거부한다.
 
 ## 자기 설명
 

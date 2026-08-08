@@ -289,7 +289,11 @@ def kmp_find(text: str, pattern: str) -> int:
     return -1
 
 
-def max_flow(capacity: Sequence[Sequence[int]], source: int, sink: int) -> int:
+def max_flow(
+    capacity: Sequence[Sequence[int]],
+    source: int,
+    sink: int,
+) -> tuple[int, list[list[int]]]:
     size = len(capacity)
     if any(len(row) != size for row in capacity):
         raise ValueError("capacity matrix는 정사각형이어야 합니다.")
@@ -297,10 +301,10 @@ def max_flow(capacity: Sequence[Sequence[int]], source: int, sink: int) -> int:
         raise ValueError("capacity는 음수일 수 없습니다.")
     _validate_vertex(size, source)
     _validate_vertex(size, sink)
+    flow = [[0] * size for _ in range(size)]
     if source == sink:
-        return 0
+        return 0, flow
 
-    residual = [list(row) for row in capacity]
     total = 0
     while True:
         parent: list[int | None] = [None] * size
@@ -308,21 +312,30 @@ def max_flow(capacity: Sequence[Sequence[int]], source: int, sink: int) -> int:
         queue: deque[int] = deque([source])
         while queue and parent[sink] is None:
             vertex = queue.popleft()
-            for target, remaining in enumerate(residual[vertex]):
+            for target in range(size):
+                remaining = (
+                    capacity[vertex][target]
+                    - flow[vertex][target]
+                    + flow[target][vertex]
+                )
                 if remaining > 0 and parent[target] is None:
                     parent[target] = vertex
                     queue.append(target)
                     if target == sink:
                         break
         if parent[sink] is None:
-            return total
+            return total, flow
 
         amount: int | None = None
         vertex = sink
         while vertex != source:
             previous = parent[vertex]
             assert previous is not None
-            edge_capacity = residual[previous][vertex]
+            edge_capacity = (
+                capacity[previous][vertex]
+                - flow[previous][vertex]
+                + flow[vertex][previous]
+            )
             amount = edge_capacity if amount is None else min(amount, edge_capacity)
             vertex = previous
         assert amount is not None
@@ -331,8 +344,9 @@ def max_flow(capacity: Sequence[Sequence[int]], source: int, sink: int) -> int:
         while vertex != source:
             previous = parent[vertex]
             assert previous is not None
-            residual[previous][vertex] -= amount
-            residual[vertex][previous] += amount
+            cancelled = min(amount, flow[vertex][previous])
+            flow[vertex][previous] -= cancelled
+            flow[previous][vertex] += amount - cancelled
             vertex = previous
         total += amount
 

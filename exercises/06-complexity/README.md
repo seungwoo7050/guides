@@ -41,6 +41,23 @@ Hamiltonian Cycle decision problem의 certificate와 verifier를 정의한다.
 
 자동 채점은 하지 않는다. 환원은 코드 출력 형식보다 변환의 의미 보존과 방향을 사람이 검토해야 한다.
 
+## 자가 검수 체크포인트
+
+답을 먼저 작성한 뒤 다음 필수 연결이 실제 문장으로 증명됐는지 확인한다. 용어만
+나열하거나 check box만 표시한 답은 통과로 보지 않는다. 독학 중이라면 틀린 항목을
+고친 뒤 자기 설명 질문에 자료를 보지 않고 다시 답한다.
+
+- 비교 정렬: decision tree가 서로 다른 `n!`개 순열을 구분하므로 leaf가 최소
+  `n!`개이고, 높이 `h`인 이진 tree의 leaf가 최대 `2^h`개라서
+  `h >= log2(n!) = Omega(n log n)`이다. 이 주장은 key를 비교해서만 정보를 얻는
+  알고리즘에 한정되므로 counting/radix sort와 모순되지 않는다.
+- NP membership: certificate는 모든 정점을 정확히 한 번 나열한 뒤 첫 정점으로
+  돌아오는 순서다. 길이는 입력에 대해 다항식이고, 중복·누락과 연속 edge 및 마지막
+  edge를 다항 시간에 검사해야 한다.
+- 환원: 새 문제 `B`의 NP-hardness에는 알려진 어려운 문제에서 출발하는
+  `A <=p B`가 필요하다. 변환 시간·출력 크기와 `x in A` iff `f(x) in B`를 모두
+  보여야 하며, NP-complete 결론에는 별도로 `B in NP`도 필요하다.
+
 ## 완료 기준
 
 - comparison tree leaf 수에서 최악 `Ω(n log n)` 비교 하한을 단계별로 유도한다.

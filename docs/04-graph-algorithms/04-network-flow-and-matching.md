@@ -95,12 +95,12 @@ vertex capacity는 정점을 `in`과 `out`으로 나누고 사이 edge에 capaci
 
 ## 연결 실습
 
-[그래프 exercise](../../exercises/04-graphs/README.md)에서 Edmonds–Karp 구현의 최대 유량 값을 모든 source-side cut의 최소 capacity와 대조한다.
+[그래프 exercise](../../exercises/04-graphs/README.md)에서 Edmonds–Karp 구현의 최대 유량 값을 모든 source-side cut의 최소 capacity와 대조하고, 함께 반환한 directed flow matrix의 capacity와 conservation을 독립적으로 검사한다.
 
 ## 완료 기준
 
 - 모든 forward edge에 대응하는 reverse residual edge를 유지한다.
-- 반환 flow가 capacity와 conservation을 만족하는지 값과 별도로 검사한다.
+- `(value, flow)`를 반환하고 flow가 capacity와 conservation을 만족하는지 값과 별도로 검사한다.
 - matching 또는 vertex-capacity 문제를 network로 바꿀 때 정점·edge 대응을 설명한다.
 
 ## 실패 조건
