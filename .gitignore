@@ -25,3 +25,15 @@ playwright-report/
 test-results/
 **/test-results/
 *.tsbuildinfo
+
+# prepare/verify 산출물
+/.guide-tools/
+.guide-tools/
+/.guide-prepare.env
+/.pnpm-store/
+.pnpm-store/
+/.turbo/
+.turbo/
+/make-out.txt
+/verify.log
+/tree.txt
