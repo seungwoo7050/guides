@@ -65,6 +65,27 @@ class MiniStorageEngineTests(unittest.TestCase):
         with self.assertRaises(KeyError):
             recovered.get(9)
 
+    def test_removes_uncommitted_insert_that_reached_disk(self) -> None:
+        disk = DiskManager(160)
+        engine = MiniStorageEngine(disk)
+        engine.insert(1, b"committed")
+        engine.checkpoint()
+
+        page_id = disk.page_ids[0]
+        txid = engine._next_txid
+        lsn = engine.log.insert(txid, page_id, 2, b"uncommitted-on-disk")
+        engine.log.flush(lsn)
+        page = engine.buffer.fetch(page_id)
+        page.insert(2, b"uncommitted-on-disk")
+        page.page_lsn = lsn
+        engine.buffer.unpin(page_id, dirty=True)
+        engine.buffer.flush(page_id)
+
+        recovered = MiniStorageEngine.recover(disk, engine.log.durable_records())
+        self.assertEqual(recovered.get(1), b"committed")
+        with self.assertRaises(KeyError):
+            recovered.get(2)
+
     def test_recovery_is_idempotent(self) -> None:
         disk = DiskManager(160)
         engine = MiniStorageEngine(disk)
@@ -75,6 +96,26 @@ class MiniStorageEngineTests(unittest.TestCase):
         second = MiniStorageEngine.recover(disk, durable)
         self.assertEqual(disk.pages, snapshot)
         self.assertEqual(first.get(1), second.get(1))
+
+    def test_recovery_advances_transaction_id_past_durable_history(self) -> None:
+        disk = DiskManager(160)
+        original = MiniStorageEngine(disk)
+        original.insert(1, b"committed")
+        recovered = MiniStorageEngine.recover(disk, original.log.durable_records())
+
+        next_txid = recovered._next_txid
+        durable_max = max(record.txid for record in recovered.log.durable_records())
+        self.assertEqual(next_txid, durable_max + 1)
+
+        # 다음 transaction이 INSERT WAL만 durable하게 만들고 crash한 상황이다.
+        page_id = disk.allocate()
+        lsn = recovered.log.insert(next_txid, page_id, 2, b"uncommitted-after-recovery")
+        recovered.log.flush(lsn)
+        restarted = MiniStorageEngine.recover(disk, recovered.log.durable_records())
+
+        self.assertEqual(restarted.get(1), b"committed")
+        with self.assertRaises(KeyError):
+            restarted.get(2)
 
 
 if __name__ == "__main__":

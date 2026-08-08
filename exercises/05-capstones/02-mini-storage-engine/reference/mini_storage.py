@@ -367,8 +367,29 @@ class MiniStorageEngine:
     ) -> "MiniStorageEngine":
         durable_lsn = max((record.lsn for record in durable_records), default=0)
         log = LogManager(durable_records, durable_lsn)
-        engine = cls(disk, log, buffer_capacity=buffer_capacity)
         committed = {record.txid for record in durable_records if record.kind == "COMMIT"}
+
+        # 이 축소 엔진은 WAL을 heap의 source of truth로 유지하며 truncate하지 않는다.
+        # 따라서 recovery는 durable committed INSERT만으로 page들을 다시 만들어
+        # disk까지 도달한 미완료 transaction의 effect도 제거한다.
+        page_ids = set(disk.page_ids)
+        page_ids.update(
+            record.page_id
+            for record in durable_records
+            if record.kind == "INSERT" and record.page_id is not None
+        )
+        if not page_ids:
+            page_ids.add(0)
+        disk.pages = {
+            page_id: SlottedPage(page_id, disk.page_size).serialize()
+            for page_id in sorted(page_ids)
+        }
+        disk._next_page_id = max(page_ids) + 1
+
+        engine = cls(disk, log, buffer_capacity=buffer_capacity)
+        # Recovery 뒤 txid를 1부터 다시 쓰면 과거 COMMIT이 새 미완료 INSERT를
+        # committed로 오인하게 만든다. Durable WAL의 namespace 다음부터 재개한다.
+        engine._next_txid = max((record.txid for record in durable_records), default=0) + 1
 
         for record in durable_records:
             if record.kind != "INSERT" or record.txid not in committed:
