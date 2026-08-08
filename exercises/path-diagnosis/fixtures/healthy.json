@@ -1,0 +1,12 @@
+{
+  "request": {"name": "api.example.test", "port": 443, "transport": "tcp", "application": "https"},
+  "stages": [
+    {"stage": "dns", "status": "ok", "observation": "A 응답에서 주소 후보를 얻었습니다.", "facts": {"rcode": "NOERROR", "addresses": ["203.0.113.10"]}},
+    {"stage": "route", "status": "ok", "observation": "기본 경로가 출력 인터페이스와 다음 홉을 선택했습니다.", "facts": {"selected": true, "prefix": "0.0.0.0/0", "next_hop": "192.0.2.1", "interface": "eth0"}},
+    {"stage": "neighbor", "status": "ok", "observation": "다음 홉의 링크 계층 주소를 확인했습니다.", "facts": {"state": "REACHABLE", "link_address": "02:00:00:00:00:01"}},
+    {"stage": "path", "status": "ok", "observation": "작은 패킷과 큰 패킷이 모두 종단 경계에 도착했습니다.", "facts": {"small_packet_ok": true, "large_packet_ok": true, "icmp_too_big_seen": false}},
+    {"stage": "transport", "status": "ok", "observation": "TCP 3단계 핸드셰이크가 완료되었습니다.", "facts": {"syn_sent": 1, "syn_ack_received": true, "rst_received": false}},
+    {"stage": "tls", "status": "ok", "observation": "호스트 이름과 인증서가 일치하고 h2를 협상했습니다.", "facts": {"certificate_name_match": true, "version": "TLSv1.3", "alpn": "h2"}},
+    {"stage": "http", "status": "ok", "observation": "HTTP 성공 응답을 받았습니다.", "facts": {"status": 200, "content_type": "application/json"}}
+  ]
+}

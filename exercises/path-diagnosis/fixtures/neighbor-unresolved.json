@@ -1,0 +1,12 @@
+{
+  "request": {"name": "api.example.test", "port": 443, "transport": "tcp", "application": "https"},
+  "stages": [
+    {"stage": "dns", "status": "ok", "observation": "목적지 주소 후보를 얻었습니다.", "facts": {"rcode": "NOERROR", "addresses": ["203.0.113.10"]}},
+    {"stage": "route", "status": "ok", "observation": "게이트웨이 경로를 선택했습니다.", "facts": {"selected": true, "prefix": "0.0.0.0/0", "next_hop": "192.0.2.1", "interface": "eth0"}},
+    {"stage": "neighbor", "status": "failed", "observation": "다음 홉에 대한 ARP 요청 뒤 응답을 받지 못했습니다.", "facts": {"state": "FAILED", "probes": 3, "next_hop": "192.0.2.1"}},
+    {"stage": "path", "status": "not-run", "observation": "링크 프레임을 만들지 못했습니다.", "facts": {}},
+    {"stage": "transport", "status": "not-run", "observation": "전송 연결을 시도하지 않았습니다.", "facts": {}},
+    {"stage": "tls", "status": "not-run", "observation": "TLS 협상을 시도하지 않았습니다.", "facts": {}},
+    {"stage": "http", "status": "not-run", "observation": "HTTP 요청을 보내지 않았습니다.", "facts": {}}
+  ]
+}
