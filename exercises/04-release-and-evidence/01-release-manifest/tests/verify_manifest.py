@@ -80,7 +80,10 @@ def expect(implementation: Path, manifest: Path, success: bool, fragment: str | 
             f"valid manifest was rejected\nstdout:\n{process.stdout}\nstderr:\n{process.stderr}"
         )
     if not success and process.returncode == 0:
-        raise AssertionError("invalid manifest was accepted")
+        detail = fragment or "rejection"
+        raise AssertionError(
+            f"GUIDE_SEMANTIC: invalid manifest was accepted (expected {detail})"
+        )
     if fragment is not None:
         combined = process.stdout + process.stderr
         if fragment not in combined:

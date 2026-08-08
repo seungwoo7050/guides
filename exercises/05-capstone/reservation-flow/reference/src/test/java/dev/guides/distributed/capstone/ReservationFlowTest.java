@@ -1,6 +1,8 @@
 package dev.guides.distributed.capstone;
 
 import dev.guides.distributed.testing.Checks;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 public final class ReservationFlowTest {
@@ -14,13 +16,246 @@ public final class ReservationFlowTest {
         conflictingEventIdentitiesAreRejectedBeforeMutation();
         contradictoryTerminalTransitionsAreRejected();
         reconciliationDeadlineAndSchemaIsolationAreVerified();
+        dispatcherQueueDeadlineAndRetryAreBounded();
+        outboxAgeReconciliationAndReplayAreObservable();
+    }
+
+    private static void dispatcherQueueDeadlineAndRetryAreBounded() {
+        ReservationFlow.SystemUnderTest system =
+            new ReservationFlow.SystemUnderTest(4, 2);
+        ReservationFlow.Dispatcher dispatcher =
+            new ReservationFlow.Dispatcher(system, 1, 1);
+        ReservationFlow.DispatchTask first = new ReservationFlow.DispatchTask(
+            "op-dispatch",
+            "corr-dispatch",
+            1,
+            100
+        );
+        dispatcher.enqueue(first, 10);
+        Checks.throwsType(
+            ReservationFlow.Overloaded.class,
+            () -> dispatcher.enqueue(
+                new ReservationFlow.DispatchTask("op-overflow", "corr-overflow", 1, 100),
+                10
+            ),
+            "queue 상한을 넘은 작업은 상태 변경 전에 거절해야 합니다"
+        );
+        Checks.equals(0, system.reservations().reservationCount(), "queue 거절은 예약을 만들면 안 됩니다");
+
+        ReservationFlow.DispatchTask running = dispatcher.beginNext(20);
+        dispatcher.enqueue(
+            new ReservationFlow.DispatchTask("op-expired", "corr-expired", 1, 50),
+            20
+        );
+        Checks.throwsType(
+            ReservationFlow.Overloaded.class,
+            () -> dispatcher.beginNext(20),
+            "동시 실행 상한을 넘겨 시작하면 안 됩니다"
+        );
+        ReservationFlow.CommandResult accepted = dispatcher.execute(running, 20);
+        ReservationFlow.CommandResult retry = dispatcher.execute(running, 20);
+        Checks.equals(accepted, retry, "dispatch 재시도는 같은 operation ID와 deadline을 사용해야 합니다");
+        dispatcher.complete(running);
+        Checks.throwsType(
+            ReservationFlow.DeadlineExceeded.class,
+            () -> dispatcher.beginNext(50),
+            "queue에서 deadline이 지난 작업을 실행하면 안 됩니다"
+        );
+        Checks.equals(1, system.reservations().reservationCount(), "만료된 queue 작업은 상태를 만들면 안 됩니다");
+        Checks.equals(0, dispatcher.runningCount(), "완료 뒤 running slot을 반환해야 합니다");
+        Checks.equals(0, dispatcher.queuedCount(), "만료된 작업을 queue에서 제거해야 합니다");
+
+        ReservationFlow.Dispatcher duplicateOperations =
+            new ReservationFlow.Dispatcher(system, 2, 3);
+        ReservationFlow.DispatchTask duplicate = new ReservationFlow.DispatchTask(
+            "op-duplicate-running",
+            "corr-duplicate-running",
+            1,
+            100
+        );
+        duplicateOperations.enqueue(duplicate, 10);
+        duplicateOperations.enqueue(duplicate, 10);
+        duplicateOperations.enqueue(
+            new ReservationFlow.DispatchTask("op-third", "corr-third", 1, 100),
+            10
+        );
+        ReservationFlow.DispatchTask duplicateFirst = duplicateOperations.beginNext(20);
+        ReservationFlow.DispatchTask duplicateSecond = duplicateOperations.beginNext(20);
+        Checks.equals(2, duplicateOperations.runningCount(), "같은 operation의 실행도 각각 slot을 차지해야 합니다");
+        Checks.throwsType(
+            ReservationFlow.Overloaded.class,
+            () -> duplicateOperations.beginNext(20),
+            "같은 operation ID가 running 상한 계산을 우회하면 안 됩니다"
+        );
+        Checks.equals(1, duplicateOperations.queuedCount(), "상한 거절은 다음 queue 작업을 보존해야 합니다");
+        duplicateOperations.complete(duplicateFirst);
+        ReservationFlow.DispatchTask third = duplicateOperations.beginNext(20);
+        Checks.equals("op-third", third.operationId(), "slot 반환 뒤 보존한 queue 작업을 시작해야 합니다");
+        duplicateOperations.complete(duplicateSecond);
+        duplicateOperations.complete(third);
+        Checks.equals(0, duplicateOperations.runningCount(), "중복 operation 실행의 slot을 모두 반환해야 합니다");
+    }
+
+    private static void outboxAgeReconciliationAndReplayAreObservable() {
+        ReservationFlow.SystemUnderTest ageSystem =
+            new ReservationFlow.SystemUnderTest(3, 2);
+        ageSystem.submit("op-newer", "corr-newer", 1, 25, 100);
+        ageSystem.submit("op-older", "corr-older", 1, 10, 100);
+        Checks.equals(
+            30L,
+            ageSystem.reservations().oldestPendingOutboxAge(40).orElseThrow(),
+            "가장 오래된 Outbox 대기 시간을 모든 pending 레코드에서 계산해야 합니다"
+        );
+        ageSystem.publishPending(false);
+        Checks.isTrue(
+            ageSystem.reservations().oldestPendingOutboxAge(40).isEmpty(),
+            "발행 완료 뒤 pending Outbox age가 없어야 합니다"
+        );
+
+        ReservationFlow.SystemUnderTest system =
+            new ReservationFlow.SystemUnderTest(3, 2);
+        ReservationFlow.CommandResult command =
+            system.submit("op-authoritative", "corr-authoritative", 1, 10, 100);
+        system.publishPending(false);
+        system.consumeInventoryRequests();
+
+        system.inventory().setLookupAvailable(false);
+        List<ReservationFlow.ReconciliationRecord> unavailable =
+            system.reconcilePending(50, 25);
+        Checks.equals(
+            ReservationFlow.ReconciliationOutcome.PENDING_SOURCE_UNAVAILABLE,
+            unavailable.get(0).outcome(),
+            "정본 조회 실패를 자동 성공이나 보상으로 숨기면 안 됩니다"
+        );
+        Checks.equals(75L, unavailable.get(0).nextAttemptAtMillis(), "다음 재조정 시각을 남겨야 합니다");
+        Checks.equals(
+            ReservationFlow.Status.UNKNOWN,
+            system.reservations().status(command.reservationId()),
+            "확정할 수 없는 결과를 UNKNOWN으로 드러내야 합니다"
+        );
+
+        system.inventory().setLookupAvailable(true);
+        List<ReservationFlow.ReconciliationRecord> applied =
+            system.reconcilePending(75, 25);
+        Checks.equals(
+            ReservationFlow.ReconciliationOutcome.APPLIED,
+            applied.get(0).outcome(),
+            "다음 재조정은 inventory 정본 결과를 적용해야 합니다"
+        );
+        Checks.equals(
+            List.of("op-authoritative", "op-authoritative"),
+            system.inventory().lookupOperations(),
+            "재조정은 처음 operation ID로 정본을 조회해야 합니다"
+        );
+        system.publishPending(false);
+
+        List<ReservationFlow.EventEnvelope> replay = new ArrayList<>();
+        for (ReservationFlow.Event event : system.brokerMessages()) {
+            replay.add(new ReservationFlow.EventEnvelope(1, event));
+        }
+        ReservationFlow.Event replayedUnsupported = new ReservationFlow.Event(
+            "rebuild-future-schema",
+            ReservationFlow.Kind.RESERVATION_REQUESTED,
+            "rebuild-future-reservation",
+            1,
+            1,
+            "rebuild-future-correlation",
+            "rebuild-future-operation"
+        );
+        replay.add(new ReservationFlow.EventEnvelope(2, replayedUnsupported));
+        Collections.reverse(replay);
+        ReservationFlow.QueryService rebuilt = new ReservationFlow.QueryService();
+        ReservationFlow.Event requested = replay.stream()
+            .map(ReservationFlow.EventEnvelope::event)
+            .filter(event -> event.kind() == ReservationFlow.Kind.RESERVATION_REQUESTED
+                && event.reservationId().equals(command.reservationId()))
+            .findFirst()
+            .orElseThrow();
+        rebuilt.consume(requested);
+        rebuilt.consume(new ReservationFlow.Event(
+            "old-gap",
+            ReservationFlow.Kind.RESERVATION_ACCEPTED,
+            "old-reservation",
+            2,
+            1,
+            "old-correlation",
+            "old-operation"
+        ));
+        rebuilt.consume(2, new ReservationFlow.Event(
+            "old-isolated",
+            ReservationFlow.Kind.RESERVATION_REQUESTED,
+            "isolated-reservation",
+            1,
+            1,
+            "isolated-correlation",
+            "isolated-operation"
+        ));
+        rebuilt.rebuild(replay);
+        Checks.equals(
+            ReservationFlow.Status.ACCEPTED,
+            rebuilt.status(command.reservationId()),
+            "전체 replay가 순서 역전 뒤에도 projection을 재구축해야 합니다"
+        );
+        Checks.equals(0, rebuilt.pendingCount(command.reservationId()), "replay 뒤 gap이 남으면 안 됩니다");
+        Checks.equals(null, rebuilt.status("old-reservation"), "rebuild는 기존 projection 상태를 비워야 합니다");
+        Checks.equals(0, rebuilt.pendingCount("old-reservation"), "rebuild는 기존 sequence gap을 비워야 합니다");
+        Checks.equals(1, rebuilt.isolatedCount(), "rebuild 이력의 지원하지 않는 schema를 다시 격리해야 합니다");
+        Checks.equals(
+            null,
+            rebuilt.status(replayedUnsupported.reservationId()),
+            "rebuild가 schema envelope를 잃고 지원하지 않는 이벤트를 적용하면 안 됩니다"
+        );
+        Checks.throwsType(
+            IllegalArgumentException.class,
+            () -> rebuilt.consume(3, replayedUnsupported),
+            "rebuild는 격리한 이벤트의 schema-version identity도 복구해야 합니다"
+        );
+        rebuilt.consume(new ReservationFlow.Event(
+            "new-old-sequence",
+            ReservationFlow.Kind.RESERVATION_REQUESTED,
+            "old-reservation",
+            1,
+            1,
+            "new-correlation",
+            "new-operation"
+        ));
+        Checks.equals(
+            ReservationFlow.Status.PENDING,
+            rebuilt.status("old-reservation"),
+            "rebuild 뒤 과거 sequence claim이 새 replay를 막으면 안 됩니다"
+        );
+
+        ReservationFlow.SystemUnderTest notFound =
+            new ReservationFlow.SystemUnderTest(1, 1);
+        ReservationFlow.CommandResult pending =
+            notFound.submit("op-not-found", "corr-not-found", 1, 5, 100);
+        notFound.inventory().setLookupAvailable(false);
+        notFound.reconcilePending(15, 5);
+        Checks.equals(
+            ReservationFlow.Status.UNKNOWN,
+            notFound.reservations().status(pending.reservationId()),
+            "정본 조회 실패는 UNKNOWN을 드러내야 합니다"
+        );
+        notFound.inventory().setLookupAvailable(true);
+        List<ReservationFlow.ReconciliationRecord> absent =
+            notFound.reconcilePending(20, 10);
+        Checks.equals(
+            ReservationFlow.ReconciliationOutcome.PENDING_NOT_FOUND,
+            absent.get(0).outcome(),
+            "정본에 결과가 없으면 PENDING과 다음 행동을 보존해야 합니다"
+        );
+        Checks.equals(
+            ReservationFlow.Status.PENDING,
+            notFound.reservations().status(pending.reservationId()),
+            "조회 결과 없음은 자동 성공이나 자동 보상이 아니어야 합니다"
+        );
     }
 
     private static void reconciliationDeadlineAndSchemaIsolationAreVerified() {
         ReservationFlow.SystemUnderTest system =
             new ReservationFlow.SystemUnderTest(2, 1);
         Checks.throwsType(
-            IllegalArgumentException.class,
+            ReservationFlow.DeadlineExceeded.class,
             () -> system.submit("op-late", "corr-late", 1, 50, 50),
             "deadline이 지난 요청을 dispatch하면 안 됩니다"
         );
@@ -35,7 +270,7 @@ public final class ReservationFlowTest {
         );
 
         ReservationFlow.QueryService query = new ReservationFlow.QueryService();
-        query.consume(2, new ReservationFlow.Event(
+        ReservationFlow.Event future = new ReservationFlow.Event(
             "future-schema",
             ReservationFlow.Kind.RESERVATION_REQUESTED,
             "reservation-future",
@@ -43,8 +278,28 @@ public final class ReservationFlowTest {
             1,
             "corr-future",
             "op-future"
-        ));
+        );
+        query.consume(2, future);
+        query.consume(2, future);
         Checks.equals(1, query.isolatedCount(), "지원하지 않는 schema를 격리해야 합니다");
+        Checks.throwsType(
+            IllegalArgumentException.class,
+            () -> query.consume(2, new ReservationFlow.Event(
+                "future-schema",
+                ReservationFlow.Kind.RESERVATION_REQUESTED,
+                "reservation-future",
+                1,
+                2,
+                "corr-future",
+                "op-future"
+            )),
+            "격리된 event ID의 다른 payload도 충돌로 거절해야 합니다"
+        );
+        Checks.throwsType(
+            IllegalArgumentException.class,
+            () -> query.consume(3, future),
+            "같은 event ID를 다른 schema envelope로 재사용하면 안 됩니다"
+        );
         Checks.equals(null, query.status("reservation-future"), "격리 이벤트를 projection에 적용하면 안 됩니다");
     }
 
@@ -230,7 +485,34 @@ public final class ReservationFlowTest {
             "corr-conflict",
             "op-conflict"
         );
-        inventory.handle(request);
+        ReservationFlow.Event firstResult = inventory.handle(request);
+        ReservationFlow.Event retryResult = inventory.handle(
+            new ReservationFlow.Event(
+                "request-retry",
+                ReservationFlow.Kind.RESERVATION_REQUESTED,
+                "reservation-conflict",
+                1,
+                1,
+                "corr-conflict",
+                "op-conflict"
+            )
+        );
+        Checks.equals(firstResult, retryResult, "같은 inventory operation 재시도는 기존 결과를 반환해야 합니다");
+        Checks.throwsType(
+            IllegalArgumentException.class,
+            () -> inventory.handle(
+                new ReservationFlow.Event(
+                    "request-retry",
+                    ReservationFlow.Kind.RESERVATION_REQUESTED,
+                    "reservation-conflict",
+                    1,
+                    1,
+                    "corr-conflict",
+                    "op-alias-conflict"
+                )
+            ),
+            "같은 operation의 alias event ID도 claim해 이후 다른 operation 재사용을 막아야 합니다"
+        );
         Checks.throwsType(
             IllegalArgumentException.class,
             () -> inventory.handle(
@@ -245,6 +527,21 @@ public final class ReservationFlowTest {
                 )
             ),
             "같은 request event ID의 다른 payload를 중복으로 숨기면 안 됩니다"
+        );
+        Checks.throwsType(
+            IllegalArgumentException.class,
+            () -> inventory.handle(
+                new ReservationFlow.Event(
+                    "request-other",
+                    ReservationFlow.Kind.RESERVATION_REQUESTED,
+                    "reservation-conflict",
+                    1,
+                    2,
+                    "corr-conflict",
+                    "op-conflict"
+                )
+            ),
+            "같은 inventory operation ID의 다른 payload를 새 event로 숨기면 안 됩니다"
         );
         Checks.equals(4, inventory.available(), "충돌 요청은 재고를 더 줄이면 안 됩니다");
         Checks.equals(1, inventory.allocationEffects(), "충돌 요청은 효과를 추가하면 안 됩니다");
@@ -273,6 +570,35 @@ public final class ReservationFlowTest {
             "같은 projection sequence의 다른 이벤트를 덮어쓰면 안 됩니다"
         );
         Checks.equals(1, query.pendingCount("reservation-q"), "충돌은 기존 보류 이벤트를 보존해야 합니다");
+
+        ReservationFlow.QueryService applied = new ReservationFlow.QueryService();
+        applied.consume(new ReservationFlow.Event(
+            "projection-applied",
+            ReservationFlow.Kind.RESERVATION_REQUESTED,
+            "reservation-applied",
+            1,
+            1,
+            "corr-applied",
+            "op-applied"
+        ));
+        Checks.throwsType(
+            IllegalArgumentException.class,
+            () -> applied.consume(new ReservationFlow.Event(
+                "projection-late-conflict",
+                ReservationFlow.Kind.RESERVATION_REQUESTED,
+                "reservation-applied",
+                1,
+                1,
+                "corr-applied",
+                "op-applied"
+            )),
+            "이미 적용된 projection sequence를 다른 event가 다시 주장하면 안 됩니다"
+        );
+        Checks.equals(
+            ReservationFlow.Status.PENDING,
+            applied.status("reservation-applied"),
+            "적용 뒤 sequence 충돌은 기존 projection을 바꾸면 안 됩니다"
+        );
     }
 
     private static void contradictoryTerminalTransitionsAreRejected() {
@@ -329,6 +655,99 @@ public final class ReservationFlowTest {
             ReservationFlow.Status.ACCEPTED,
             reservations.status(command.reservationId()),
             "모순 결과는 확정 상태를 바꾸면 안 됩니다"
+        );
+
+        ReservationFlow.QueryService query = new ReservationFlow.QueryService();
+        query.consume(new ReservationFlow.Event(
+            "query-requested",
+            ReservationFlow.Kind.RESERVATION_REQUESTED,
+            "query-terminal",
+            1,
+            1,
+            "query-correlation",
+            "query-operation"
+        ));
+        query.consume(new ReservationFlow.Event(
+            "query-accepted",
+            ReservationFlow.Kind.RESERVATION_ACCEPTED,
+            "query-terminal",
+            2,
+            1,
+            "query-correlation",
+            "query-requested"
+        ));
+        ReservationFlow.Event contradictory = new ReservationFlow.Event(
+            "query-rejected",
+            ReservationFlow.Kind.RESERVATION_REJECTED,
+            "query-terminal",
+            2,
+            1,
+            "query-correlation",
+            "query-accepted"
+        );
+        Checks.throwsType(
+            IllegalArgumentException.class,
+            () -> query.consume(contradictory),
+            "projection 모순을 event ledger에 기록하기 전에 거절해야 합니다"
+        );
+        Checks.throwsType(
+            IllegalArgumentException.class,
+            () -> query.consume(contradictory),
+            "같은 모순 projection 재시도도 duplicate로 숨기면 안 됩니다"
+        );
+        Checks.equals(
+            ReservationFlow.Status.ACCEPTED,
+            query.status("query-terminal"),
+            "모순 projection 재시도가 확정 상태를 바꾸면 안 됩니다"
+        );
+
+        ReservationFlow.QueryService outOfOrder = new ReservationFlow.QueryService();
+        ReservationFlow.Event impossibleBufferedTerminal = new ReservationFlow.Event(
+            "query-impossible-buffered-terminal",
+            ReservationFlow.Kind.RESERVATION_REJECTED,
+            "query-out-of-order-terminal",
+            3,
+            1,
+            "query-out-of-order-correlation",
+            "query-out-of-order-operation"
+        );
+        Checks.throwsType(
+            IllegalArgumentException.class,
+            () -> outOfOrder.consume(impossibleBufferedTerminal),
+            "순서 역전으로 보이는 잘못된 terminal sequence를 ledger나 buffer에 기록하면 안 됩니다"
+        );
+        Checks.throwsType(
+            IllegalArgumentException.class,
+            () -> outOfOrder.consume(impossibleBufferedTerminal),
+            "잘못된 terminal sequence 재시도도 duplicate로 숨기면 안 됩니다"
+        );
+        outOfOrder.consume(new ReservationFlow.Event(
+            "query-out-of-order-requested",
+            ReservationFlow.Kind.RESERVATION_REQUESTED,
+            "query-out-of-order-terminal",
+            1,
+            1,
+            "query-out-of-order-correlation",
+            "query-out-of-order-operation"
+        ));
+        outOfOrder.consume(new ReservationFlow.Event(
+            "query-out-of-order-accepted",
+            ReservationFlow.Kind.RESERVATION_ACCEPTED,
+            "query-out-of-order-terminal",
+            2,
+            1,
+            "query-out-of-order-correlation",
+            "query-out-of-order-requested"
+        ));
+        Checks.equals(
+            ReservationFlow.Status.ACCEPTED,
+            outOfOrder.status("query-out-of-order-terminal"),
+            "거절한 잘못된 buffer 후보가 뒤의 유효한 생성·terminal projection을 막으면 안 됩니다"
+        );
+        Checks.equals(
+            0,
+            outOfOrder.pendingCount("query-out-of-order-terminal"),
+            "거절한 잘못된 sequence가 pending buffer에 남으면 안 됩니다"
         );
     }
 }

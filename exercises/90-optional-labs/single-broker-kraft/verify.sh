@@ -90,6 +90,7 @@ run_case() {
   local file="$3"
   local expect_success="$4"
   local direct_output
+  local broker_logs
   local output
   local status
 
@@ -154,6 +155,14 @@ run_case() {
   else
     if [[ $status -eq 0 && "$output" == *"$MESSAGE"* ]]; then
       printf 'skeleton unexpectedly supported a group consumer\n' >&2
+      return 1
+    fi
+    broker_logs="$(compose "$project" "$file" logs kafka 2>&1 || true)"
+    if [[ "$broker_logs" != *"__consumer_offsets"* \
+      || "$broker_logs" != *"INVALID_REPLICATION_FACTOR"* ]]; then
+      printf '%s\n' "$output" >&2
+      printf '%s\n' "$broker_logs" >&2
+      printf 'skeleton group consumer did not fail at the designated internal-topic replication contract\n' >&2
       return 1
     fi
   fi

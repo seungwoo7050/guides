@@ -8,13 +8,14 @@ prepare:
 check:
 	python3 scripts/validate.py
 	python3 scripts/test-validator.py
-	@while IFS= read -r script; do bash -n "$$script"; done < <(find . -type f -name '*.sh' -not -path '*/target/*' -not -path './.guide/*' | sort)
+	@while IFS= read -r script; do bash -n "$$script"; done < <(find . -type f -name '*.sh' -not -path '*/target/*' -not -path './.guide/*' -not -path './.workspace/*' | sort)
 	@printf '[PASS] 빠른 구조 검사\n'
 
 verify:
 	./verify.sh
 
 clean:
-	find . -type d -name target -prune -exec rm -rf {} +
-	find . -type d -name __pycache__ -not -path './.guide/*' -prune -exec rm -rf {} +
-	find . -type f -name '*.pyc' -not -path './.guide/*' -delete
+	rm -rf target
+	find exercises -type d \( -path '*/reference/target' -o -path '*/skeleton/target' -o -path 'exercises/test-support/target' \) -prune -exec rm -rf {} +
+	find scripts exercises -type d -name __pycache__ -prune -exec rm -rf {} +
+	find scripts exercises -type f -name '*.pyc' -delete

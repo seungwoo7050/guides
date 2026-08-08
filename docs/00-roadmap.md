@@ -23,7 +23,7 @@
 - Outbox, Saga, Circuit Breaker 같은 패턴을 이름이 아니라 실패 조건과 검증으로 배우려는 개발자
 - 여러 저장소와 서비스가 함께 배포되는 시스템의 릴리스·장애 근거를 정리하려는 개발자
 
-Java 문법과 Maven이 처음이라면 `guide-java`의 언어, 빌드와 테스트 부분을 먼저 보는 편이 좋습니다. 트랜잭션 격리와 WAL 자체를 깊게 배우려면 `guide-database-systems`가 선행 또는 병행 과정입니다.
+Java 문법과 Maven이 처음이라면 [`java`](https://github.com/seungwoo7050/guides/tree/java)의 언어, 빌드와 테스트 부분을 먼저 보는 편이 좋습니다. 트랜잭션 격리와 WAL 자체를 깊게 배우려면 [`database-systems`](https://github.com/seungwoo7050/guides/tree/database-systems)가 선행 또는 병행 과정입니다.
 
 ## 범위와 소유권
 
@@ -45,10 +45,10 @@ Outbox, Saga와 재조정
 
 다음은 필요한 접점만 설명합니다.
 
-- Java 객체 모델, 동시성, Maven: `guide-java`
-- SQL, 격리 수준, MVCC, WAL: `guide-database-systems`
-- Spring Boot와 Spring Kafka 구현: `guide-backend-spring-boot`
-- Docker, 호스트, 배포, 로그·지표 수집기: `guide-web-infrastructure`
+- Java 객체 모델, 동시성, Maven: [`java`](https://github.com/seungwoo7050/guides/tree/java)
+- SQL, 격리 수준, MVCC, WAL: [`database-systems`](https://github.com/seungwoo7050/guides/tree/database-systems)
+- Spring Boot와 Spring Kafka 구현: [`backend-spring-boot`](https://github.com/seungwoo7050/guides/tree/backend-spring-boot)
+- Docker, 호스트, 배포, 로그·지표 수집기: [`web-infra`](https://github.com/seungwoo7050/guides/tree/web-infra)
 
 ## 읽기 경로
 

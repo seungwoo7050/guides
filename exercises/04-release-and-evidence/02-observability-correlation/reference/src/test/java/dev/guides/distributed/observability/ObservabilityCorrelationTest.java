@@ -8,6 +8,7 @@ public final class ObservabilityCorrelationTest {
     public static void main(String[] args) {
         identifiersRemainConnectedAcrossHops();
         duplicateDeliveryIsVisibleWithoutDuplicateEffect();
+        conflictingIdentifiersAreRejectedBeforeEvidence();
         metricsUseBoundedTagKeys();
         traceAndMetricContractsAreExplicit();
     }
@@ -60,6 +61,30 @@ public final class ObservabilityCorrelationTest {
             1,
             flow.metricCount("inventory", "duplicate"),
             "중복 처리 시도는 별도 결과로 관찰해야 합니다"
+        );
+    }
+
+    private static void conflictingIdentifiersAreRejectedBeforeEvidence() {
+        ObservabilityCorrelation.Flow flow = new ObservabilityCorrelation.Flow();
+        ObservabilityCorrelation.Event original = new ObservabilityCorrelation.Event(
+            "evt-shared", "op-50", "trace-a", "req-a", "op-50", "reservation-20"
+        );
+        ObservabilityCorrelation.Event conflict = new ObservabilityCorrelation.Event(
+            "evt-shared", "op-51", "trace-b", "req-b", "op-51", "reservation-21"
+        );
+        flow.consume(original);
+        int observationsBefore = flow.observations().size();
+
+        Checks.throwsType(
+            IllegalArgumentException.class,
+            () -> flow.consume(conflict),
+            "같은 event ID의 다른 식별자 연결은 관찰값을 남기기 전에 거부해야 합니다"
+        );
+        Checks.equals(1, flow.effects(), "충돌 이벤트가 업무 효과를 추가하면 안 됩니다");
+        Checks.equals(
+            observationsBefore,
+            flow.observations().size(),
+            "충돌 이벤트가 잘못된 trace/correlation 관찰값을 남기면 안 됩니다"
         );
     }
 

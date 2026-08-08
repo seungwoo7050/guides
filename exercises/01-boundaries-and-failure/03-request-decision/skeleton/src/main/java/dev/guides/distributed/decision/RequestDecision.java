@@ -29,6 +29,9 @@ public final class RequestDecision {
     public record Decision(Status status, String reason) {
     }
 
+    private record Submission(Request request, Mode mode) {
+    }
+
     @FunctionalInterface
     public interface Policy {
         PolicyResult evaluate(Request request);
@@ -53,25 +56,41 @@ public final class RequestDecision {
         private final CapacityLedger ledger;
         private final Queue<Request> pending = new ArrayDeque<>();
         private final Map<String, Decision> results = new HashMap<>();
+        private final Map<String, Submission> submissions = new HashMap<>();
 
         public Coordinator(CapacityLedger ledger) {
             this.ledger = ledger;
         }
 
         public synchronized Decision submit(Request request, Mode mode, Policy policy) {
+            if (request == null || request.operationId() == null
+                || request.operationId().isBlank() || request.units() <= 0
+                || mode == null || policy == null) {
+                throw new IllegalArgumentException("valid request, mode, and policy are required");
+            }
+            Submission input = new Submission(request, mode);
+            Submission previousInput = submissions.get(request.operationId());
             Decision existing = results.get(request.operationId());
-            if (existing != null) {
+            if (previousInput != null) {
+                if (!previousInput.equals(input)) {
+                    throw new IllegalArgumentException(
+                        "operation ID was reused with a different decision input"
+                    );
+                }
                 return existing;
             }
 
             if (mode == Mode.ASYNCHRONOUS) {
                 Decision result = new Decision(Status.PENDING, "queued");
+                submissions.put(request.operationId(), input);
                 pending.add(request);
                 results.put(request.operationId(), result);
                 return result;
             }
 
-            return decideNow(request, policy);
+            Decision result = decideNow(request, policy);
+            submissions.put(request.operationId(), input);
+            return result;
         }
 
         public synchronized Decision processNext(Policy policy) {

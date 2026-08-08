@@ -23,23 +23,16 @@
 
 ## 변경 확인
 
-저장소를 처음 준비할 때 실행합니다.
+저장소 루트의 공개 명령 네 가지를 사용합니다.
 
 ```sh
-./prepare.sh
+make prepare
+make check
+VERIFY_LOG=/tmp/guide-distributed-services-verify.log make verify
+make clean
 ```
 
-모든 변경 뒤에는 루트에서 전체 검증을 실행합니다.
-
-```sh
-./verify.sh
-```
-
-빠른 구조 검사만 확인할 때는 다음 명령을 사용할 수 있습니다.
-
-```sh
-python3 scripts/validate.py
-```
+`make prepare`의 Maven cache 준비용 복사본은 learner `.workspace/`를 제외합니다. 반면 `make verify`는 현재 working tree와 `.workspace/`를 모두 외부에 복사하고 bytes·mode·symlink와 Git index의 전후 불변성을 확인하되, exact curriculum validator와 reference/skeleton 계약 검사는 canonical tracked curriculum만 대상으로 합니다. 학습자용 `scripts/verify-java.sh .workspace/<slug>`도 workspace 안의 수정 가능한 테스트가 아니라 해당 실습의 추적된 정본 테스트를 사용합니다. `make clean`은 명시된 생성물만 지우며 준비 cache와 learner `.workspace/`는 보존합니다.
 
 커밋 전에는 추적 범위와 공백 오류를 확인합니다.
 

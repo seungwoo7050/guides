@@ -11,6 +11,7 @@ public final class ContractsAndOrderTest {
         sequenceGapIsBufferedAndDrained();
         duplicateEventIsIgnored();
         reusedIdAndCompetingSequenceAreRejected();
+        aggregateGapsRemainIndependent();
     }
 
     private static void mismatchedChannelIsRejected() {
@@ -134,5 +135,50 @@ public final class ContractsAndOrderTest {
             "같은 event ID의 다른 payload를 중복으로 숨기면 안 됩니다"
         );
         Checks.equals(1, projection.bufferedCount("r-5"), "충돌은 기존 buffer를 바꾸면 안 됩니다");
+
+        ContractsAndOrder.Projection applied =
+            new ContractsAndOrder.Projection(CHANNEL, 2);
+        applied.onEvent(
+            new ContractsAndOrder.Event(CHANNEL, 1, "event-applied", "r-7", 1, "CREATED")
+        );
+        Checks.throwsType(
+            ContractsAndOrder.ContractViolationException.class,
+            () -> applied.onEvent(
+                new ContractsAndOrder.Event(
+                    CHANNEL,
+                    1,
+                    "event-late-conflict",
+                    "r-7",
+                    1,
+                    "CREATED"
+                )
+            ),
+            "이미 적용된 aggregate sequence를 다른 이벤트가 다시 주장하면 안 됩니다"
+        );
+        Checks.equals("CREATED", applied.state("r-7"), "적용 뒤 sequence 충돌은 상태를 바꾸면 안 됩니다");
+    }
+
+    private static void aggregateGapsRemainIndependent() {
+        ContractsAndOrder.Projection projection =
+            new ContractsAndOrder.Projection(CHANNEL, 2);
+        projection.onEvent(
+            new ContractsAndOrder.Event(CHANNEL, 1, "event-a2", "aggregate-a", 2, "A2")
+        );
+
+        Checks.equals(
+            ContractsAndOrder.Outcome.APPLIED,
+            projection.onEvent(
+                new ContractsAndOrder.Event(CHANNEL, 1, "event-b1", "aggregate-b", 1, "B1")
+            ),
+            "한 aggregate의 gap이 다른 aggregate 적용을 막으면 안 됩니다"
+        );
+        Checks.equals("B1", projection.state("aggregate-b"), "다른 aggregate는 독립적으로 진행해야 합니다");
+        Checks.equals(1, projection.bufferedCount("aggregate-a"), "첫 aggregate의 gap은 보존해야 합니다");
+
+        projection.onEvent(
+            new ContractsAndOrder.Event(CHANNEL, 1, "event-a1", "aggregate-a", 1, "A1")
+        );
+        Checks.equals("A2", projection.state("aggregate-a"), "gap이 채워지면 해당 aggregate만 drain해야 합니다");
+        Checks.equals("B1", projection.state("aggregate-b"), "다른 aggregate 상태를 바꾸면 안 됩니다");
     }
 }

@@ -39,6 +39,7 @@ public final class ContractsAndOrder {
         private final Map<String, String> states = new HashMap<>();
         private final Map<String, Long> nextSequence = new HashMap<>();
         private final Map<String, TreeMap<Long, Event>> buffers = new HashMap<>();
+        private final Map<String, TreeMap<Long, Event>> claimedSequences = new HashMap<>();
         private final Map<String, Event> knownEvents = new HashMap<>();
         private final List<Event> isolated = new ArrayList<>();
 
@@ -74,7 +75,20 @@ public final class ContractsAndOrder {
             }
 
             long expected = nextSequence.getOrDefault(event.aggregateId(), 1L);
+            TreeMap<Long, Event> claims = claimedSequences.get(event.aggregateId());
+            Event claimed = claims == null ? null : claims.get(event.sequence());
+            if (claimed != null && !claimed.equals(event)) {
+                throw new ContractViolationException(
+                    "different events claim aggregate sequence " + event.sequence()
+                );
+            }
             if (event.sequence() < expected) {
+                if (claimed == null) {
+                    throw new ContractViolationException(
+                        "late event claims an already applied aggregate sequence "
+                            + event.sequence()
+                    );
+                }
                 knownEvents.put(event.eventId(), event);
                 return Outcome.STALE;
             }
@@ -89,11 +103,21 @@ public final class ContractsAndOrder {
                     );
                 }
                 knownEvents.put(event.eventId(), event);
+                if (claims == null) {
+                    claims = new TreeMap<>();
+                    claimedSequences.put(event.aggregateId(), claims);
+                }
+                claims.put(event.sequence(), event);
                 buffer.put(event.sequence(), event);
                 return Outcome.BUFFERED;
             }
 
             knownEvents.put(event.eventId(), event);
+            if (claims == null) {
+                claims = new TreeMap<>();
+                claimedSequences.put(event.aggregateId(), claims);
+            }
+            claims.put(event.sequence(), event);
             apply(event);
             drain(event.aggregateId());
             return Outcome.APPLIED;

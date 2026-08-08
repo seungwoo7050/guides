@@ -50,6 +50,12 @@ skeleton은 broker에 보내기 전에 Outbox를 완료로 표시합니다. 전�
 
 ## 검증
 
+학습자 복사본은 다음 정본 명령으로 검사합니다.
+
+```sh
+./scripts/verify-java.sh .workspace/outbox-reconciliation
+```
+
 개별 reference를 검사하려면 저장소 루트에서 실행합니다.
 
 ```sh

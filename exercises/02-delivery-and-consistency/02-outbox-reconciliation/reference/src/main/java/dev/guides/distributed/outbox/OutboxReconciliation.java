@@ -60,9 +60,21 @@ public final class OutboxReconciliation {
     public static final class Database {
         private final Map<String, String> orders = new HashMap<>();
         private final Map<String, String> eventByOrder = new HashMap<>();
+        private final Map<String, DomainEvent> eventsById = new HashMap<>();
         private final List<OutboxRow> outbox = new ArrayList<>();
 
         public synchronized void createOrder(String orderId, String eventId) {
+            if (orderId == null || orderId.isBlank()
+                || eventId == null || eventId.isBlank()) {
+                throw new IllegalArgumentException("order and event IDs are required");
+            }
+            DomainEvent candidate = new DomainEvent(eventId, orderId);
+            DomainEvent claimedEvent = eventsById.get(eventId);
+            if (claimedEvent != null && !claimedEvent.equals(candidate)) {
+                throw new IllegalArgumentException(
+                    "event ID was reused by a different order"
+                );
+            }
             if (orders.containsKey(orderId)) {
                 if (!eventId.equals(eventByOrder.get(orderId))) {
                     throw new IllegalArgumentException(
@@ -73,7 +85,8 @@ public final class OutboxReconciliation {
             }
             orders.put(orderId, "CREATED");
             eventByOrder.put(orderId, eventId);
-            outbox.add(new OutboxRow(new DomainEvent(eventId, orderId)));
+            eventsById.put(eventId, candidate);
+            outbox.add(new OutboxRow(candidate));
         }
 
         public synchronized List<OutboxRow> pending() {

@@ -24,6 +24,8 @@ public final class ChaosEvidence {
 
     public record Snapshot(
         Phase phase,
+        String operationId,
+        long elapsedMillis,
         int primaryRows,
         int pendingOutbox,
         int readModelRows,
@@ -35,8 +37,10 @@ public final class ChaosEvidence {
     }
 
     public record Report(
+        String operationId,
         String hypothesis,
         long timeBudgetMillis,
+        long elapsedMillis,
         Result primaryResult,
         Result cleanupResult,
         List<Snapshot> snapshots
@@ -62,8 +66,10 @@ public final class ChaosEvidence {
         public Report run(Set<Failure> failures) {
             return run(
                 failures,
+                "chaos-operation",
                 "the system preserves evidence and converges after one failure",
                 1_000,
+                10,
                 true
             );
         }
@@ -74,42 +80,75 @@ public final class ChaosEvidence {
             long timeBudgetMillis,
             boolean cleanupSucceeds
         ) {
+            return run(
+                failures,
+                "chaos-operation",
+                hypothesis,
+                timeBudgetMillis,
+                Math.min(10, timeBudgetMillis),
+                cleanupSucceeds
+            );
+        }
+
+        public Report run(
+            Set<Failure> failures,
+            String operationId,
+            String hypothesis,
+            long timeBudgetMillis,
+            long elapsedMillis,
+            boolean cleanupSucceeds
+        ) {
             if (failures.size() != 1) {
                 throw new IllegalArgumentException("inject exactly one failure");
             }
-            if (hypothesis == null || hypothesis.isBlank() || timeBudgetMillis <= 0) {
-                throw new IllegalArgumentException("hypothesis and positive time budget are required");
+            if (operationId == null || operationId.isBlank()
+                || hypothesis == null || hypothesis.isBlank()
+                || timeBudgetMillis <= 0 || elapsedMillis < 0) {
+                throw new IllegalArgumentException(
+                    "operation, hypothesis, positive time budget and elapsed time are required"
+                );
             }
             Failure failure = failures.iterator().next();
             List<Snapshot> evidence = new ArrayList<>();
-            evidence.add(snapshot(Phase.BEFORE));
+            evidence.add(snapshot(Phase.BEFORE, operationId, 0));
 
             if (failure == Failure.DATABASE_DOWN) {
                 processUp = true;
-                evidence.add(snapshot(Phase.DURING));
-                evidence.add(snapshot(Phase.AFTER));
-                return report(hypothesis, timeBudgetMillis, cleanupSucceeds, evidence);
+                evidence.add(snapshot(Phase.DURING, operationId, elapsedMillis / 2));
+                evidence.add(snapshot(Phase.AFTER, operationId, elapsedMillis));
+                return report(
+                    operationId, hypothesis, timeBudgetMillis, elapsedMillis,
+                    cleanupSucceeds, evidence
+                );
             }
 
             primaryRows++;
             pendingOutbox++;
             publishPending();
-            evidence.add(snapshot(Phase.DURING));
-            evidence.add(snapshot(Phase.AFTER));
-            return report(hypothesis, timeBudgetMillis, cleanupSucceeds, evidence);
+            evidence.add(snapshot(Phase.DURING, operationId, elapsedMillis / 2));
+            evidence.add(snapshot(Phase.AFTER, operationId, elapsedMillis));
+            return report(
+                operationId, hypothesis, timeBudgetMillis, elapsedMillis,
+                cleanupSucceeds, evidence
+            );
         }
 
         private Report report(
+            String operationId,
             String hypothesis,
             long timeBudgetMillis,
+            long elapsedMillis,
             boolean cleanupSucceeds,
             List<Snapshot> evidence
         ) {
-            boolean converged = evidence.get(evidence.size() - 1).converged();
+            boolean convergedInTime = evidence.get(evidence.size() - 1).converged()
+                && elapsedMillis <= timeBudgetMillis;
             return new Report(
+                operationId,
                 hypothesis,
                 timeBudgetMillis,
-                converged ? Result.PASS : Result.FAIL,
+                elapsedMillis,
+                convergedInTime ? Result.PASS : Result.FAIL,
                 cleanupSucceeds ? Result.PASS : Result.FAIL,
                 evidence
             );
@@ -120,9 +159,11 @@ public final class ChaosEvidence {
             pendingOutbox = 0;
         }
 
-        private Snapshot snapshot(Phase phase) {
+        private Snapshot snapshot(Phase phase, String operationId, long elapsedMillis) {
             return new Snapshot(
                 phase,
+                operationId,
+                elapsedMillis,
                 primaryRows,
                 pendingOutbox,
                 readModelRows,

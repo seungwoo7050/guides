@@ -80,11 +80,12 @@ public final class BackpressureTest {
         system.register("payments", 1, 2, 20);
         system.submit("payments", "p-1", 0, 100);
         system.submit("payments", "p-2", 5, 100);
+        system.submit("payments", "p-3", 15, 100);
 
-        Checks.equals(10L, system.oldestQueueAge("payments", 15), "가장 오래 기다린 시간을 관찰해야 합니다");
-        Checks.equals(1, system.expire("payments", 25), "queue age를 넘은 작업을 만료해야 합니다");
-        Checks.equals(0, system.queued("payments"), "만료된 작업은 대기열에서 제거되어야 합니다");
-        Checks.equals(null, system.completeOne("payments", 25), "만료 요청을 실행 상태로 올리면 안 됩니다");
+        Checks.equals(13L, system.oldestQueueAge("payments", 18), "가장 오래 기다린 시간을 관찰해야 합니다");
+        Checks.equals(1, system.expire("payments", 26), "가장 오래된 만료 작업만 제거해야 합니다");
+        Checks.equals(1, system.queued("payments"), "아직 유효한 뒤 요청은 보존해야 합니다");
+        Checks.equals("p-3", system.completeOne("payments", 26), "유효한 뒤 요청을 실행 상태로 올려야 합니다");
         Checks.equals(1, system.expired("payments"), "만료 근거를 집계해야 합니다");
 
         Checks.equals(

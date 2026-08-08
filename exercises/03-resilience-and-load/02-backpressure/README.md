@@ -40,6 +40,12 @@ skeleton은 모든 의존성이 하나의 공용 대기열을 공유하고, 대�
 
 ## 검증
 
+학습자 복사본은 다음 정본 명령으로 검사합니다.
+
+```sh
+./scripts/verify-java.sh .workspace/backpressure
+```
+
 저장소 루트에서 `./verify.sh`를 실행하면 reference가 다음을 만족하는지 검사합니다.
 
 - 대기열이 가득 찬 뒤의 요청은 `REJECTED`입니다.

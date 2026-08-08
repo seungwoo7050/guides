@@ -38,6 +38,12 @@ skeleton은 가장 빠른 실행 하나만 보고 `PASS`를 반환합니다. 중
 
 ## 검증
 
+학습자 복사본은 다음 정본 명령으로 검사합니다.
+
+```sh
+./scripts/verify-java.sh .workspace/performance-gate
+```
+
 - 빠르지만 중복 효과가 있는 결과는 `FAIL`입니다.
 - 반복 수가 부족하거나 환경 지문이 섞이면 `UNVERIFIED`입니다.
 - 모든 실행이 정확하고 시간 목표 안에 있을 때만 `PASS`입니다.

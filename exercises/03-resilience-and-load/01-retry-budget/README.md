@@ -24,7 +24,7 @@
 
 - 모든 재시도가 같은 operation ID와 하나의 전체 deadline을 사용합니다.
 - 업무 거절은 재시도·breaker 실패 횟수에서 제외되고 transient 실패만 집계됩니다.
-- open 뒤 반개방 probe가 성공하면 닫히며, 실패 메시지는 같은 ID로 DLQ에서 재생됩니다.
+- open 뒤 반개방 probe가 성공하면 닫히며, 실패 메시지는 같은 event ID·operation ID·payload로 DLQ에서 재생됩니다.
 
 ## 자기 설명
 
@@ -32,6 +32,12 @@
 - backoff와 breaker가 있어도 업무 거절을 재시도해서는 안 되는 이유는 무엇입니까?
 
 ## 검증
+
+학습자 복사본은 다음 정본 명령으로 검사합니다.
+
+```sh
+./scripts/verify-java.sh .workspace/retry-budget
+```
 
 ```sh
 ./scripts/verify-java.sh \

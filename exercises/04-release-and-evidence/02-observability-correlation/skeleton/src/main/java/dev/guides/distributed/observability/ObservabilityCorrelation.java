@@ -2,7 +2,6 @@ package dev.guides.distributed.observability;
 
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
-import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -40,7 +39,7 @@ public final class ObservabilityCorrelation {
 
     public static final class Flow {
         private final List<Observation> observations = new ArrayList<>();
-        private final Set<String> appliedEvents = new LinkedHashSet<>();
+        private final Map<String, Event> appliedEvents = new LinkedHashMap<>();
         private final Map<String, Integer> metrics = new LinkedHashMap<>();
         private int effects;
 
@@ -72,8 +71,13 @@ public final class ObservabilityCorrelation {
         }
 
         public void consume(Event event) {
-            boolean first = appliedEvents.add(event.eventId());
+            Event previous = appliedEvents.get(event.eventId());
+            if (previous != null && !previous.equals(event)) {
+                throw new IllegalArgumentException("event ID reused with different identifiers");
+            }
+            boolean first = previous == null;
             if (first) {
+                appliedEvents.put(event.eventId(), event);
                 effects++;
             }
             observe("inventory", "event.consumed", event.traceId(), event.correlationId(),

@@ -1,6 +1,7 @@
 package dev.guides.distributed.retry;
 
 import dev.guides.distributed.testing.Checks;
+import java.util.ArrayList;
 import java.util.List;
 
 public final class RetryBudgetTest {
@@ -10,6 +11,7 @@ public final class RetryBudgetTest {
         nextBackoffCannotCrossDeadline();
         circuitBreakerStopsNewCalls();
         halfOpenProbeAndDlqReplayPreserveContracts();
+        failedHalfOpenProbeStartsANewOpenWindow();
     }
 
     private static void transientFailureUsesSameOperationId() {
@@ -121,15 +123,74 @@ public final class RetryBudgetTest {
         );
 
         RetryBudget.DeadLetterQueue dlq = new RetryBudget.DeadLetterQueue();
-        dlq.add(new RetryBudget.DeadLetter("op-dlq", "reservation"));
-        RetryBudget.ScriptedDependency replay =
-            new RetryBudget.ScriptedDependency().thenReturn("replayed");
-        Checks.equals("replayed", dlq.replayNext(replay), "DLQ 메시지를 재생해야 합니다");
+        RetryBudget.DeadLetter message =
+            new RetryBudget.DeadLetter("event-dlq", "op-dlq", "reservation");
+        dlq.add(message);
+        Checks.throwsType(
+            RetryBudget.TransientFailure.class,
+            () -> dlq.replayNext(ignored -> {
+                throw new RetryBudget.TransientFailure("still unavailable");
+            }),
+            "실패한 DLQ replay는 원본 메시지를 제거하면 안 됩니다"
+        );
+        Checks.equals(1, dlq.size(), "실패한 replay 뒤 DLQ 근거를 보존해야 합니다");
+
+        List<RetryBudget.DeadLetter> replayed = new ArrayList<>();
         Checks.equals(
-            List.of("op-dlq"),
-            replay.receivedOperationIds(),
-            "DLQ replay도 원래 operation ID를 유지해야 합니다"
+            "replayed",
+            dlq.replayNext(replayedMessage -> {
+                replayed.add(replayedMessage);
+                return "replayed";
+            }),
+            "DLQ 메시지를 재생해야 합니다"
+        );
+        Checks.equals(
+            List.of(message),
+            replayed,
+            "DLQ replay는 원래 event ID, operation ID와 payload를 함께 유지해야 합니다"
         );
         Checks.equals(0, dlq.size(), "성공한 replay는 DLQ에서 제거되어야 합니다");
+    }
+
+    private static void failedHalfOpenProbeStartsANewOpenWindow() {
+        RetryBudget.VirtualClock clock = new RetryBudget.VirtualClock();
+        RetryBudget.CircuitBreaker breaker =
+            new RetryBudget.CircuitBreaker(1, 20, clock);
+        RetryBudget.ScriptedDependency dependency = new RetryBudget.ScriptedDependency()
+            .thenThrow(new RetryBudget.TransientFailure("initial outage"))
+            .thenThrow(new RetryBudget.TransientFailure("probe still failing"))
+            .thenReturn("recovered later");
+        RetryBudget.Executor executor = new RetryBudget.Executor(clock, 1);
+
+        Checks.throwsType(
+            RetryBudget.CircuitOpen.class,
+            () -> executor.execute("op-window", 100, dependency, breaker),
+            "첫 실패가 breaker를 열어야 합니다"
+        );
+        clock.advance(20);
+        Checks.throwsType(
+            RetryBudget.CircuitOpen.class,
+            () -> executor.execute("op-window", 100, dependency, breaker),
+            "실패한 half-open probe가 breaker를 다시 열어야 합니다"
+        );
+        Checks.equals(2, dependency.calls(), "half-open probe는 한 번만 호출해야 합니다");
+        clock.advance(19);
+        Checks.throwsType(
+            RetryBudget.CircuitOpen.class,
+            () -> executor.execute("op-window", 100, dependency, breaker),
+            "실패한 probe 뒤 새 open window를 끝까지 지켜야 합니다"
+        );
+        Checks.equals(2, dependency.calls(), "새 open window 중 의존성을 호출하면 안 됩니다");
+        clock.advance(1);
+        Checks.equals(
+            "recovered later",
+            executor.execute("op-window", 100, dependency, breaker),
+            "새 open window 뒤 다음 probe를 허용해야 합니다"
+        );
+        Checks.equals(
+            RetryBudget.CircuitBreaker.State.CLOSED,
+            breaker.state(),
+            "후속 probe 성공 뒤 breaker가 닫혀야 합니다"
+        );
     }
 }

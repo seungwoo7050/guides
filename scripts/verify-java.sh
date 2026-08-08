@@ -32,6 +32,52 @@ compile_support() {
     "${sources[@]}"
 }
 
+canonical_test_root() {
+  python3 - "$ROOT" "$1" <<'PY'
+from pathlib import Path
+import os
+import re
+import sys
+
+root = Path(sys.argv[1]).resolve()
+requested = Path(sys.argv[2])
+lexical = Path(os.path.abspath(requested))
+try:
+    resolved = requested.resolve(strict=True)
+except OSError as error:
+    raise SystemExit(f"cannot resolve exercise module: {error}") from error
+
+workspace = root / ".workspace"
+workspace_physical = workspace.resolve()
+if lexical.parent == workspace and resolved.parent == workspace_physical:
+    slug = lexical.name
+    candidates = sorted(
+        path for path in (root / "exercises").glob("**/skeleton")
+        if path.is_dir()
+        and (
+            path.parent.name == slug
+            or re.fullmatch(r"[0-9]+-" + re.escape(slug), path.parent.name)
+        )
+    )
+    if len(candidates) != 1:
+        raise SystemExit(f"workspace slug must map to exactly one canonical skeleton: {slug}")
+    print(candidates[0] / "src/test/java")
+    raise SystemExit(0)
+
+try:
+    relative = resolved.relative_to(root / "exercises")
+except ValueError as error:
+    raise SystemExit(
+        "requested module must be a canonical reference or a direct .workspace child"
+    ) from error
+if not relative.parts or relative.parts[-1] != "reference" or lexical != resolved:
+    raise SystemExit(
+        "requested module must be a canonical reference or a direct .workspace child"
+    )
+print(resolved / "src/test/java")
+PY
+}
+
 verify_module() {
   local module="$1"
   local name="${module#"$ROOT/"}"
@@ -39,16 +85,18 @@ verify_module() {
   local output_dir="$WORK_ROOT/$safe_name"
   local test_file
   local test_class
+  local test_root
   local sources=()
   local source
 
   mkdir -p -- "$output_dir"
+  test_root="$(canonical_test_root "$module")" || return 1
   while IFS= read -r source; do
     sources+=("$source")
   done < <(
     {
       find "$module/src/main/java" -type f -name '*.java'
-      find "$module/src/test/java" -type f -name '*.java'
+      find "$test_root" -type f -name '*.java'
     } | sort
   )
 
@@ -62,12 +110,12 @@ verify_module() {
     -d "$output_dir" \
     "${sources[@]}"
 
-  test_file="$(find "$module/src/test/java" -type f -name '*Test.java' | sort | head -n 1)"
+  test_file="$(find "$test_root" -type f -name '*Test.java' | sort | head -n 1)"
   [[ -n "$test_file" ]] || {
     printf 'no executable test class in %s\n' "$name" >&2
     return 1
   }
-  if [[ "$(find "$module/src/test/java" -type f -name '*Test.java' | wc -l | tr -d ' ')" != "1" ]]; then
+  if [[ "$(find "$test_root" -type f -name '*Test.java' | wc -l | tr -d ' ')" != "1" ]]; then
     printf 'each exercise must expose exactly one *Test.java main: %s\n' "$name" >&2
     return 1
   fi

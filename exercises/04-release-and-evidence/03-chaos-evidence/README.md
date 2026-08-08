@@ -22,9 +22,9 @@ skeleton은 장애 중 snapshot을 남기지 않고 마지막 상태만 반환�
 
 ## 완료 기준
 
-- 가설과 시간 제한을 기록한 `BEFORE`, `DURING`, `AFTER` 증거가 모두 남습니다.
+- 같은 operation ID와 단조 증가한 경과 시간으로 연결된 `BEFORE`, `DURING`, `AFTER` 증거가 모두 남습니다.
 - 장애 중 snapshot은 복구·정리 뒤에도 변하지 않고 Outbox 미수렴을 보여 줍니다.
-- primary 결과와 cleanup 결과를 분리하며 최종 상태는 원본·읽기 모델 수렴을 증명합니다.
+- primary 결과와 cleanup 결과를 분리하며 최종 상태는 시간 한도 안의 원본·읽기 모델 수렴을 증명합니다.
 
 ## 자기 설명
 
@@ -33,8 +33,15 @@ skeleton은 장애 중 snapshot을 남기지 않고 마지막 상태만 반환�
 
 ## 검증
 
+학습자 복사본은 다음 정본 명령으로 검사합니다.
+
+```sh
+./scripts/verify-java.sh .workspace/chaos-evidence
+```
+
 - `BEFORE`, `DURING`, `AFTER` snapshot이 모두 남습니다.
 - 장애 중에는 원본 1건, Outbox 1건, 읽기 모델 0건입니다.
 - 복구 뒤에는 Outbox가 비고 읽기 모델이 원본과 같습니다.
 - 여러 실패를 한 시나리오에 동시에 주입하려 하면 거절합니다.
 - 저장된 장애 중 snapshot은 복구 뒤에도 바뀌지 않습니다.
+- 최종 상태가 수렴해도 시간 한도를 넘기면 primary 결과는 실패합니다.

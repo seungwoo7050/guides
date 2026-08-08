@@ -1,15 +1,19 @@
 package dev.guides.distributed.capstone;
 
 import java.util.ArrayList;
+import java.util.ArrayDeque;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.OptionalLong;
+import java.util.Queue;
 import java.util.TreeMap;
 
 public final class ReservationFlow {
     public enum Status {
         PENDING,
+        UNKNOWN,
         ACCEPTED,
         REJECTED
     }
@@ -46,6 +50,22 @@ public final class ReservationFlow {
         }
     }
 
+    public static final class DeadlineExceeded extends RuntimeException {
+        private static final long serialVersionUID = 1L;
+
+        public DeadlineExceeded() {
+            super("reservation deadline exceeded");
+        }
+    }
+
+    public static final class InventoryQueryUnavailable extends RuntimeException {
+        private static final long serialVersionUID = 1L;
+
+        public InventoryQueryUnavailable() {
+            super("inventory operation lookup unavailable");
+        }
+    }
+
     public record CommandResult(String reservationId, Status status) {
     }
 
@@ -69,6 +89,9 @@ public final class ReservationFlow {
     ) {
     }
 
+    public record EventEnvelope(int schemaVersion, Event event) {
+    }
+
     public record Observation(
         String component,
         String action,
@@ -79,12 +102,36 @@ public final class ReservationFlow {
     ) {
     }
 
+    public enum ReconciliationOutcome {
+        APPLIED,
+        PENDING_NOT_FOUND,
+        PENDING_SOURCE_UNAVAILABLE
+    }
+
+    public record ReconciliationRecord(
+        String operationId,
+        String reservationId,
+        ReconciliationOutcome outcome,
+        long nextAttemptAtMillis
+    ) {
+    }
+
+    public record DispatchTask(
+        String operationId,
+        String correlationId,
+        int quantity,
+        long deadlineMillis
+    ) {
+    }
+
     private static final class OutboxRecord {
         private final Event event;
+        private final long createdAtMillis;
         private boolean published;
 
-        private OutboxRecord(Event event) {
+        private OutboxRecord(Event event, long createdAtMillis) {
             this.event = event;
+            this.createdAtMillis = createdAtMillis;
         }
     }
 
@@ -109,6 +156,15 @@ public final class ReservationFlow {
             String operationId,
             String correlationId,
             int quantity
+        ) {
+            return submit(operationId, correlationId, quantity, 0L);
+        }
+
+        public CommandResult submit(
+            String operationId,
+            String correlationId,
+            int quantity,
+            long nowMillis
         ) {
             if (operationId == null || operationId.isBlank()
                 || correlationId == null || correlationId.isBlank()) {
@@ -155,7 +211,7 @@ public final class ReservationFlow {
                 correlationId,
                 operationId
             );
-            outbox.put(requested.eventId(), new OutboxRecord(requested));
+            outbox.put(requested.eventId(), new OutboxRecord(requested, nowMillis));
             return new CommandResult(reservationId, Status.PENDING);
         }
 
@@ -169,6 +225,10 @@ public final class ReservationFlow {
         }
 
         public void applyInventoryResult(Event result) {
+            applyInventoryResult(result, 0L);
+        }
+
+        public void applyInventoryResult(Event result, long nowMillis) {
             if (result.kind() != Kind.INVENTORY_ACCEPTED
                 && result.kind() != Kind.INVENTORY_REJECTED) {
                 throw new IllegalArgumentException("not an inventory result");
@@ -197,7 +257,8 @@ public final class ReservationFlow {
             Status nextStatus = result.kind() == Kind.INVENTORY_ACCEPTED
                 ? Status.ACCEPTED
                 : Status.REJECTED;
-            if (previous.status() != Status.PENDING) {
+            if (previous.status() != Status.PENDING
+                && previous.status() != Status.UNKNOWN) {
                 if (previous.status() != nextStatus) {
                     throw new IllegalStateException("contradictory terminal transition");
                 }
@@ -226,7 +287,42 @@ public final class ReservationFlow {
                 updated.correlationId(),
                 result.eventId()
             );
-            outbox.putIfAbsent(statusEvent.eventId(), new OutboxRecord(statusEvent));
+            outbox.putIfAbsent(
+                statusEvent.eventId(),
+                new OutboxRecord(statusEvent, nowMillis)
+            );
+        }
+
+        public void markUnknown(String reservationId) {
+            Reservation previous = requireReservation(reservationId);
+            if (previous.status() == Status.PENDING) {
+                reservations.put(
+                    reservationId,
+                    new Reservation(
+                        previous.reservationId(),
+                        previous.operationId(),
+                        previous.quantity(),
+                        Status.UNKNOWN,
+                        previous.correlationId()
+                    )
+                );
+            }
+        }
+
+        public void markPending(String reservationId) {
+            Reservation previous = requireReservation(reservationId);
+            if (previous.status() == Status.UNKNOWN) {
+                reservations.put(
+                    reservationId,
+                    new Reservation(
+                        previous.reservationId(),
+                        previous.operationId(),
+                        previous.quantity(),
+                        Status.PENDING,
+                        previous.correlationId()
+                    )
+                );
+            }
         }
 
         public List<Event> pendingOutbox() {
@@ -253,7 +349,8 @@ public final class ReservationFlow {
 
         public int pendingCount() {
             return (int) reservations.values().stream()
-                .filter(reservation -> reservation.status() == Status.PENDING)
+                .filter(reservation -> reservation.status() == Status.PENDING
+                    || reservation.status() == Status.UNKNOWN)
                 .count();
         }
 
@@ -263,6 +360,20 @@ public final class ReservationFlow {
 
         public int pendingOutboxCount() {
             return pendingOutbox().size();
+        }
+
+        public OptionalLong oldestPendingOutboxAge(long nowMillis) {
+            return outbox.values().stream()
+                .filter(record -> !record.published)
+                .mapToLong(record -> Math.max(0L, nowMillis - record.createdAtMillis))
+                .max();
+        }
+
+        public List<Reservation> pendingReservations() {
+            return reservations.values().stream()
+                .filter(reservation -> reservation.status() == Status.PENDING
+                    || reservation.status() == Status.UNKNOWN)
+                .toList();
         }
 
         public Status status(String reservationId) {
@@ -283,6 +394,10 @@ public final class ReservationFlow {
         private int allocationEffects;
         private final Map<String, Event> resultByRequestEvent = new HashMap<>();
         private final Map<String, Event> requestsByEventId = new HashMap<>();
+        private final Map<String, Event> requestsByOperation = new HashMap<>();
+        private final Map<String, Event> resultByOperation = new HashMap<>();
+        private final List<String> lookupOperations = new ArrayList<>();
+        private boolean lookupAvailable = true;
 
         public InventoryService(int available) {
             if (available < 0) {
@@ -304,6 +419,18 @@ public final class ReservationFlow {
                 }
                 return previous;
             }
+            Event previousOperation = requestsByOperation.get(request.causationId());
+            if (previousOperation != null) {
+                if (!sameOperationInput(previousOperation, request)) {
+                    throw new IllegalArgumentException(
+                        "inventory operation ID was reused with different input"
+                    );
+                }
+                Event operationResult = resultByOperation.get(request.causationId());
+                requestsByEventId.put(request.eventId(), request);
+                resultByRequestEvent.put(request.eventId(), operationResult);
+                return operationResult;
+            }
 
             boolean accepted = request.quantity() <= available;
             if (accepted) {
@@ -321,7 +448,34 @@ public final class ReservationFlow {
             );
             resultByRequestEvent.put(request.eventId(), result);
             requestsByEventId.put(request.eventId(), request);
+            requestsByOperation.put(request.causationId(), request);
+            resultByOperation.put(request.causationId(), result);
             return result;
+        }
+
+        private static boolean sameOperationInput(Event left, Event right) {
+            return left.kind() == right.kind()
+                && left.reservationId().equals(right.reservationId())
+                && left.sequence() == right.sequence()
+                && left.quantity() == right.quantity()
+                && left.correlationId().equals(right.correlationId())
+                && left.causationId().equals(right.causationId());
+        }
+
+        public Event findResultByOperation(String operationId) {
+            lookupOperations.add(operationId);
+            if (!lookupAvailable) {
+                throw new InventoryQueryUnavailable();
+            }
+            return resultByOperation.get(operationId);
+        }
+
+        public void setLookupAvailable(boolean lookupAvailable) {
+            this.lookupAvailable = lookupAvailable;
+        }
+
+        public List<String> lookupOperations() {
+            return List.copyOf(lookupOperations);
         }
 
         public int available() {
@@ -379,33 +533,49 @@ public final class ReservationFlow {
         private final Map<String, Status> statuses = new HashMap<>();
         private final Map<String, Integer> lastSequence = new HashMap<>();
         private final Map<String, TreeMap<Integer, Event>> pending = new HashMap<>();
-        private final Map<String, Event> receivedEvents = new LinkedHashMap<>();
+        private final Map<String, TreeMap<Integer, Event>> claimedSequences = new HashMap<>();
+        private final Map<String, EventEnvelope> receivedEvents = new LinkedHashMap<>();
         private final List<Event> isolated = new ArrayList<>();
 
         public void consume(Event event) {
-            consume(1, event);
+            consume(new EventEnvelope(1, event));
         }
 
         public void consume(int schemaVersion, Event event) {
-            if (schemaVersion != 1) {
-                isolated.add(event);
-                return;
-            }
-            if (event.kind() != Kind.RESERVATION_REQUESTED
-                && event.kind() != Kind.RESERVATION_ACCEPTED
-                && event.kind() != Kind.RESERVATION_REJECTED) {
-                return;
-            }
-            Event received = receivedEvents.get(event.eventId());
+            consume(new EventEnvelope(schemaVersion, event));
+        }
+
+        public void consume(EventEnvelope envelope) {
+            int schemaVersion = envelope.schemaVersion();
+            Event event = envelope.event();
+            EventEnvelope received = receivedEvents.get(event.eventId());
             if (received != null) {
-                if (!received.equals(event)) {
+                if (!received.equals(envelope)) {
                     throw new IllegalArgumentException(
                         "projection event ID was reused with different payload"
                     );
                 }
                 return;
             }
-
+            if (schemaVersion != 1) {
+                receivedEvents.put(event.eventId(), envelope);
+                isolated.add(event);
+                return;
+            }
+            if (event.kind() != Kind.RESERVATION_REQUESTED
+                && event.kind() != Kind.RESERVATION_ACCEPTED
+                && event.kind() != Kind.RESERVATION_REJECTED) {
+                receivedEvents.put(event.eventId(), envelope);
+                return;
+            }
+            validateProjectionSequence(event);
+            TreeMap<Integer, Event> claims = claimedSequences.get(event.reservationId());
+            Event claimed = claims == null ? null : claims.get(event.sequence());
+            if (claimed != null && !claimed.equals(event)) {
+                throw new IllegalArgumentException(
+                    "different projection events claim one sequence"
+                );
+            }
             int expected = lastSequence.getOrDefault(event.reservationId(), 0) + 1;
             if (event.sequence() > expected) {
                 TreeMap<Integer, Event> buffer = pending.computeIfAbsent(
@@ -418,17 +588,32 @@ public final class ReservationFlow {
                         "different projection events claim one sequence"
                     );
                 }
-                receivedEvents.put(event.eventId(), event);
+                receivedEvents.put(event.eventId(), envelope);
+                if (claims == null) {
+                    claims = new TreeMap<>();
+                    claimedSequences.put(event.reservationId(), claims);
+                }
+                claims.put(event.sequence(), event);
                 buffer.put(event.sequence(), event);
                 return;
             }
             if (event.sequence() < expected) {
-                receivedEvents.put(event.eventId(), event);
+                if (claimed == null) {
+                    throw new IllegalArgumentException(
+                        "late event claims an already applied sequence"
+                    );
+                }
+                receivedEvents.put(event.eventId(), envelope);
                 return;
             }
 
-            receivedEvents.put(event.eventId(), event);
             apply(event);
+            receivedEvents.put(event.eventId(), envelope);
+            if (claims == null) {
+                claims = new TreeMap<>();
+                claimedSequences.put(event.reservationId(), claims);
+            }
+            claims.put(event.sequence(), event);
             drain(event.reservationId());
         }
 
@@ -442,6 +627,18 @@ public final class ReservationFlow {
 
         public int isolatedCount() {
             return isolated.size();
+        }
+
+        public void rebuild(List<EventEnvelope> history) {
+            statuses.clear();
+            lastSequence.clear();
+            pending.clear();
+            claimedSequences.clear();
+            receivedEvents.clear();
+            isolated.clear();
+            for (EventEnvelope envelope : history) {
+                consume(envelope);
+            }
         }
 
         private void drain(String reservationId) {
@@ -475,6 +672,19 @@ public final class ReservationFlow {
             statuses.put(event.reservationId(), status);
             lastSequence.put(event.reservationId(), event.sequence());
         }
+
+        private static void validateProjectionSequence(Event event) {
+            boolean creation = event.kind() == Kind.RESERVATION_REQUESTED
+                && event.sequence() == 1;
+            boolean terminal = (event.kind() == Kind.RESERVATION_ACCEPTED
+                || event.kind() == Kind.RESERVATION_REJECTED)
+                && event.sequence() == 2;
+            if (!creation && !terminal) {
+                throw new IllegalArgumentException(
+                    "reservation projection requires REQUESTED sequence 1 and terminal sequence 2"
+                );
+            }
+        }
     }
 
     public static final class SystemUnderTest {
@@ -485,6 +695,7 @@ public final class ReservationFlow {
         private final QueryService query = new QueryService();
         private final List<Event> inventoryResults = new ArrayList<>();
         private final List<Observation> observations = new ArrayList<>();
+        private final List<ReconciliationRecord> reconciliationRecords = new ArrayList<>();
 
         public SystemUnderTest(int maxPending, int inventoryAvailable) {
             reservations = new ReservationService(maxPending);
@@ -521,9 +732,23 @@ public final class ReservationFlow {
             long deadlineMillis
         ) {
             if (nowMillis >= deadlineMillis) {
-                throw new IllegalArgumentException("reservation deadline exceeded");
+                throw new DeadlineExceeded();
             }
-            return submit(operationId, correlationId, quantity);
+            CommandResult result = reservations.submit(
+                operationId,
+                correlationId,
+                quantity,
+                nowMillis
+            );
+            observations.add(new Observation(
+                "gateway",
+                "reservation.submit",
+                correlationId,
+                operationId,
+                null,
+                "accepted"
+            ));
+            return result;
         }
 
         public void publishPending(boolean crashAfterFirstSend) {
@@ -557,11 +782,57 @@ public final class ReservationFlow {
         public void reconcile() {
             publishPending(false);
             consumeInventoryRequests();
-            applyInventoryResults();
+            reconcilePending(0L, 1L);
             publishPending(false);
             for (Event event : broker.messages()) {
                 query.consume(event);
             }
+        }
+
+        public List<ReconciliationRecord> reconcilePending(
+            long nowMillis,
+            long retryDelayMillis
+        ) {
+            if (retryDelayMillis <= 0) {
+                throw new IllegalArgumentException("retry delay must be positive");
+            }
+            List<ReconciliationRecord> current = new ArrayList<>();
+            for (Reservation reservation : reservations.pendingReservations()) {
+                ReconciliationRecord record;
+                try {
+                    Event result = inventory.findResultByOperation(
+                        reservation.operationId()
+                    );
+                    if (result == null) {
+                        reservations.markPending(reservation.reservationId());
+                        record = new ReconciliationRecord(
+                            reservation.operationId(),
+                            reservation.reservationId(),
+                            ReconciliationOutcome.PENDING_NOT_FOUND,
+                            nowMillis + retryDelayMillis
+                        );
+                    } else {
+                        reservations.applyInventoryResult(result, nowMillis);
+                        record = new ReconciliationRecord(
+                            reservation.operationId(),
+                            reservation.reservationId(),
+                            ReconciliationOutcome.APPLIED,
+                            0L
+                        );
+                    }
+                } catch (InventoryQueryUnavailable unavailable) {
+                    reservations.markUnknown(reservation.reservationId());
+                    record = new ReconciliationRecord(
+                        reservation.operationId(),
+                        reservation.reservationId(),
+                        ReconciliationOutcome.PENDING_SOURCE_UNAVAILABLE,
+                        nowMillis + retryDelayMillis
+                    );
+                }
+                current.add(record);
+                reconciliationRecords.add(record);
+            }
+            return List.copyOf(current);
         }
 
         public boolean converged(String reservationId) {
@@ -581,6 +852,10 @@ public final class ReservationFlow {
             return List.copyOf(observations);
         }
 
+        public List<ReconciliationRecord> reconciliationRecords() {
+            return List.copyOf(reconciliationRecords);
+        }
+
         public ReservationService reservations() {
             return reservations;
         }
@@ -595,6 +870,84 @@ public final class ReservationFlow {
 
         public QueryService query() {
             return query;
+        }
+    }
+
+    public static final class Dispatcher {
+        private final SystemUnderTest system;
+        private final int maxRunning;
+        private final int maxQueued;
+        private final Queue<DispatchTask> queued = new ArrayDeque<>();
+        private final Map<DispatchTask, Integer> runningTasks = new HashMap<>();
+        private int runningCount;
+
+        public Dispatcher(SystemUnderTest system, int maxRunning, int maxQueued) {
+            if (maxRunning <= 0 || maxQueued <= 0) {
+                throw new IllegalArgumentException("dispatcher limits must be positive");
+            }
+            this.system = system;
+            this.maxRunning = maxRunning;
+            this.maxQueued = maxQueued;
+        }
+
+        public void enqueue(DispatchTask task, long nowMillis) {
+            if (task == null || nowMillis >= task.deadlineMillis()) {
+                throw new DeadlineExceeded();
+            }
+            if (queued.size() >= maxQueued) {
+                throw new Overloaded();
+            }
+            queued.add(task);
+        }
+
+        public DispatchTask beginNext(long nowMillis) {
+            if (runningCount >= maxRunning) {
+                throw new Overloaded();
+            }
+            DispatchTask task = queued.poll();
+            if (task == null) {
+                return null;
+            }
+            if (nowMillis >= task.deadlineMillis()) {
+                throw new DeadlineExceeded();
+            }
+            runningTasks.merge(task, 1, Integer::sum);
+            runningCount++;
+            return task;
+        }
+
+        public CommandResult execute(DispatchTask task, long nowMillis) {
+            if (runningTasks.getOrDefault(task, 0) == 0) {
+                throw new IllegalStateException("dispatch task is not running");
+            }
+            return system.submit(
+                task.operationId(),
+                task.correlationId(),
+                task.quantity(),
+                nowMillis,
+                task.deadlineMillis()
+            );
+        }
+
+        public void complete(DispatchTask task) {
+            int count = runningTasks.getOrDefault(task, 0);
+            if (count == 0) {
+                throw new IllegalStateException("dispatch task is not running");
+            }
+            if (count == 1) {
+                runningTasks.remove(task);
+            } else {
+                runningTasks.put(task, count - 1);
+            }
+            runningCount--;
+        }
+
+        public int queuedCount() {
+            return queued.size();
+        }
+
+        public int runningCount() {
+            return runningCount;
         }
     }
 

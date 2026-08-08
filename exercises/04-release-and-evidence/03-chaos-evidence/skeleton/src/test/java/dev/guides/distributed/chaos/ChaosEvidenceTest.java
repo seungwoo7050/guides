@@ -9,6 +9,8 @@ public final class ChaosEvidenceTest {
         recoveryUsesBusinessConvergence();
         multipleFailuresAreRejected();
         hypothesisBudgetAndCleanupEvidenceRemainSeparate();
+        operationAndElapsedEvidenceStayConnected();
+        lateConvergenceFailsThePrimaryResult();
     }
 
     private static void evidenceContainsAllPhases() {
@@ -88,6 +90,52 @@ public final class ChaosEvidenceTest {
             1,
             report.at(ChaosEvidence.Phase.DURING).pendingOutbox(),
             "정리 실패 뒤에도 장애 중 증거가 남아야 합니다"
+        );
+    }
+
+    private static void operationAndElapsedEvidenceStayConnected() {
+        ChaosEvidence.Report report = new ChaosEvidence.Scenario().run(
+            ChaosEvidence.one(ChaosEvidence.Failure.BROKER_DOWN),
+            "op-chaos-7",
+            "the projection converges within 100 ms",
+            100,
+            80,
+            true
+        );
+
+        Checks.equals("op-chaos-7", report.operationId(), "보고서가 operation ID를 보존해야 합니다");
+        Checks.equals(80L, report.elapsedMillis(), "실제 경과 시간을 보고서에 남겨야 합니다");
+        for (ChaosEvidence.Snapshot snapshot : report.snapshots()) {
+            Checks.equals(
+                "op-chaos-7",
+                snapshot.operationId(),
+                "모든 장애 단계가 같은 operation ID로 연결되어야 합니다"
+            );
+        }
+        Checks.equals(0L, report.at(ChaosEvidence.Phase.BEFORE).elapsedMillis(),
+            "장애 전 기준 시각은 0이어야 합니다");
+        Checks.equals(80L, report.at(ChaosEvidence.Phase.AFTER).elapsedMillis(),
+            "복구 후 snapshot이 최종 경과 시간을 가져야 합니다");
+    }
+
+    private static void lateConvergenceFailsThePrimaryResult() {
+        ChaosEvidence.Report report = new ChaosEvidence.Scenario().run(
+            ChaosEvidence.one(ChaosEvidence.Failure.BROKER_DOWN),
+            "op-chaos-late",
+            "the projection converges within 50 ms",
+            50,
+            51,
+            true
+        );
+
+        Checks.isTrue(
+            report.at(ChaosEvidence.Phase.AFTER).converged(),
+            "시간 초과 여부와 별개로 최종 업무 상태는 수렴할 수 있습니다"
+        );
+        Checks.equals(
+            ChaosEvidence.Result.FAIL,
+            report.primaryResult(),
+            "시간 한도를 넘긴 수렴을 실험 성공으로 판정하면 안 됩니다"
         );
     }
 }

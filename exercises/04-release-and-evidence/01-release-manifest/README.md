@@ -69,6 +69,12 @@ clean detached worktree
 
 ## 검증
 
+학습자 복사본은 다음 정본 명령으로 검사합니다.
+
+```sh
+python3 exercises/04-release-and-evidence/01-release-manifest/tests/verify_manifest.py .workspace/release-manifest/manifest_check.py
+```
+
 - reference는 정상 manifest와 각 오류 fixture를 정확히 구분합니다.
 - skeleton은 commit 일치만으로 불완전한 manifest를 승인하지 못합니다.
 - 저장소 전체 검증은 임시 저장소만 사용하고 학습자 checkout을 변경하지 않습니다.

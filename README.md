@@ -12,7 +12,7 @@
 - 릴리스 조합, 관측 정보, 장애 실험과 성능 주장을 재현 가능한 근거로 남깁니다.
 - 여러 서비스가 얽힌 최종 과제에서 장애 전·중·복구 후의 업무 상태를 검증합니다.
 
-공식 실습은 Java 17과 Maven Wrapper를 사용합니다. 핵심 실습은 외부 브로커 없이 결정적으로 실행되며, 실제 Kafka 설정은 선택 실습으로 분리되어 있습니다.
+공식 실습은 Java API/bytecode release 17, 실행 JDK 17~25, Maven Wrapper 3.3.4와 Maven 3.9.16을 사용합니다. 핵심 실습은 외부 브로커 없이 결정적으로 실행되며, Kafka 4.3.1 설정은 별도 실습으로 분리되어 있습니다.
 
 ## 선행 지식
 
@@ -24,20 +24,22 @@
 - 메시지 브로커가 메시지를 저장하고 구독자에게 전달한다는 수준의 이해
 - Git의 커밋, 태그와 작업 트리 개념
 
-Spring Boot와 Kafka 운영 경험은 핵심 문서를 읽기 위한 필수 조건이 아닙니다. 다만 저장소 전체를 `./verify.sh` 한 번으로 검증하려면 실행 중인 Docker Engine과 Docker Compose v2가 필요합니다.
+Spring Boot와 Kafka 운영 경험은 핵심 문서를 읽기 위한 필수 조건이 아닙니다. 다만 저장소 전체를 `make verify` 한 번으로 검증하려면 실행 중인 Docker Engine과 Docker Compose v2가 필요합니다.
 
 ## 시작
 
-overlay ZIP을 저장소 루트에 풀었다면 다음 두 명령만 실행합니다.
+`distributed-services` 브랜치를 clone 또는 worktree로 받은 뒤 공개 명령 네 가지를 저장소 루트에서 사용합니다.
 
 ```sh
-./prepare.sh
-./verify.sh
+make prepare
+make check
+VERIFY_LOG=/tmp/guide-distributed-services-verify.log make verify
+make clean
 ```
 
-`prepare.sh`는 기준 저장소를 확인하고, 폐기된 파일을 안전하게 제거하며, 실행 권한, Maven 의존성 캐시와 선택 Kafka 실습의 고정 이미지를 준비합니다. 필수 도구가 없으면 일부 검사를 묵시적으로 건너뛰지 않고 준비 단계에서 중단합니다.
+`make prepare`는 추적 소스를 변경하지 않고 저장소별 Maven 의존성 캐시와 Kafka 4.3.1 이미지를 준비합니다. Maven cache 준비용 임시 복사본에서는 학습자 `.workspace/`를 제외하지만, 이는 의존성 준비 입력을 curriculum으로 제한하기 위한 것이며 정식 source 보존 범위를 줄이지 않습니다. 모든 준비가 성공한 뒤에만 `.guide/distributed-services/prepared.json`에 입력 fingerprint와 이미지 identity를 기록하며, 필수 도구가 없으면 일부 검사를 묵시적으로 건너뛰지 않고 중단합니다.
 
-`verify.sh`는 준비가 끝난 최종 저장소를 대상으로 다음을 한 번에 검사합니다.
+`make verify`는 준비가 끝난 현재 working tree를 대상으로 다음을 한 번에 검사합니다.
 
 - 문서 구조와 내부 링크
 - 참조 구현의 컴파일과 계약 검사
@@ -45,7 +47,9 @@ overlay ZIP을 저장소 루트에 풀었다면 다음 두 명령만 실행합�
 - Git 릴리스 명세 실습
 - 장애 실험과 성능 판정
 - 다중 서비스 capstone
-- 선택 Kafka 실습의 정적 구성과, 가능한 환경에서는 실제 브로커 동작
+- Kafka 실습의 정적 구성과 실제 broker·consumer group 동작
+
+`make check`는 빠른 구조·교육 계약 검사를 실행하고 `make clean`은 명시된 생성물만 지우며 준비 cache와 학습자 `.workspace/`는 보존합니다. 검증 로그는 기본적으로 저장소 밖 `/tmp`에 남으며, `VERIFY_LOG=/absolute/outside/path.log make verify`로 경로를 지정할 수 있습니다. 상대 경로나 저장소 내부 로그 경로는 원본 불변 계약 때문에 거절됩니다.
 
 ## 읽는 순서
 
@@ -71,13 +75,14 @@ overlay ZIP을 저장소 루트에 풀었다면 다음 두 명령만 실행합�
 → reference와 결과·불변 조건을 비교합니다.
 ```
 
-루트 `./verify.sh`는 배포된 가이드 자체의 무결성을 검사하므로 원본 skeleton이 의도한 계약에서 실패해야 합니다. 학습할 때는 원본을 직접 고치지 않고 `.workspace/` 아래로 복사해 작업합니다. `.workspace/`는 Git과 루트 검증에서 제외됩니다.
+루트 `make verify`는 배포된 가이드 자체의 무결성을 검사하므로 원본 skeleton이 의도한 계약에서 실패해야 합니다. 학습할 때는 원본을 직접 고치지 않고 `.workspace/` 아래로 복사해 작업합니다. `.workspace/`는 Git과 exact curriculum tree 검사에서는 제외되지만 정식 검증의 외부 working-tree 복사와 source bytes·mode·symlink 불변성 검사에는 포함됩니다. 정식 검증이 실행하는 reference/skeleton 계약 검사는 계속 canonical tracked curriculum을 대상으로 합니다.
 
 ```sh
 mkdir -p .workspace
 cp -R exercises/01-boundaries-and-failure/01-uncertain-outcome/skeleton \
   .workspace/uncertain-outcome
 
+# checker는 workspace의 테스트 복사본이 아니라 추적된 정본 테스트를 사용합니다.
 # 수정 전에는 실패하고, 계약을 구현한 뒤에는 통과해야 합니다.
 ./scripts/verify-java.sh .workspace/uncertain-outcome
 ```
@@ -95,9 +100,9 @@ reference의 소스 형태를 외우는 것이 목표가 아닙니다. 다음 �
 
 다음 영역은 다른 가이드의 주 소유 범위입니다.
 
-- Java 언어, JVM, Maven과 일반 동시성: `guide-java`
-- Spring MVC, JPA, Spring Kafka와 Resilience4j 적용법: `guide-backend-spring-boot`
-- SQL 의미론, 격리 수준, MVCC와 WAL: `guide-database-systems`
-- 컨테이너, 호스트, DNS, TLS, 배포, 수집 시스템과 백업: `guide-web-infrastructure`
+- Java 언어, JVM, Maven과 일반 동시성: [`java`](https://github.com/seungwoo7050/guides/tree/java)
+- Spring MVC, JPA, Spring Kafka와 Resilience4j 적용법: [`backend-spring-boot`](https://github.com/seungwoo7050/guides/tree/backend-spring-boot)
+- SQL 의미론, 격리 수준, MVCC와 WAL: [`database-systems`](https://github.com/seungwoo7050/guides/tree/database-systems)
+- 컨테이너, 호스트, DNS, TLS, 배포, 수집 시스템과 백업: [`web-infra`](https://github.com/seungwoo7050/guides/tree/web-infra)
 
 이 가이드는 필요한 접점만 설명하고 해당 영역 전체를 다시 가르치지 않습니다.

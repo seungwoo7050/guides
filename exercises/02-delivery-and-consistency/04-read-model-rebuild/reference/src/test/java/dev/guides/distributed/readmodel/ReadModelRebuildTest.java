@@ -57,10 +57,12 @@ public final class ReadModelRebuildTest {
         log.append(new ReadModelRebuild.Event("e-b", "a-3", 4));
 
         ReadModelRebuild.Projection rebuilt = new ReadModelRebuild.Projection();
-        new ReadModelRebuild.Runner(log, rebuilt).replayAll();
+        ReadModelRebuild.Runner runner = new ReadModelRebuild.Runner(log, rebuilt);
+        runner.replayAll();
 
         Checks.equals(6, rebuilt.total("a-3"), "전체 로그로 projection을 재구축해야 합니다");
         Checks.equals(2, rebuilt.appliedCount(), "모든 고유 이벤트가 반영되어야 합니다");
+        Checks.equals(2L, runner.checkpoint(), "rebuild checkpoint는 로그 끝에 수렴해야 합니다");
     }
 
     private static void reusedIdWithDifferentPayloadIsRejected() {

@@ -83,12 +83,6 @@ verify_expected_failure() {
     printf 'skeleton unexpectedly passed: %s\n' "$name" >&2
     return 1
   fi
-  if ! grep -q 'AssertionError' "$log_file"; then
-    printf 'skeleton failed for an unintended reason: %s\n' "$name" >&2
-    cat "$log_file" >&2
-    return 1
-  fi
-
   case "$name" in
     exercises/01-boundaries-and-failure/01-uncertain-outcome/skeleton) expected='응답 유실 뒤 저장된 결과를 조회해야 합니다' ;;
     exercises/01-boundaries-and-failure/02-service-boundary/skeleton) expected='공유 쓰기를 찾아야 합니다' ;;
@@ -108,8 +102,25 @@ verify_expected_failure() {
       return 1
       ;;
   esac
-  if ! grep -Fq "$expected" "$log_file"; then
-    printf 'skeleton failed at the wrong contract: %s\n' "$name" >&2
+  if ! python3 - "$log_file" "$expected" <<'PY'
+from pathlib import Path
+import sys
+
+lines = Path(sys.argv[1]).read_text(encoding="utf-8", errors="replace").splitlines()
+expected = sys.argv[2]
+assertions = [line for line in lines if "java.lang.AssertionError:" in line]
+top_level = [line for line in lines if line.startswith('Exception in thread "main" ')]
+if (
+    len(assertions) != 1
+    or len(top_level) != 1
+    or assertions[0] != top_level[0]
+    or expected not in assertions[0]
+    or any(line.startswith("Caused by:") for line in lines)
+):
+    raise SystemExit(1)
+PY
+  then
+    printf 'skeleton failed for an unintended reason: %s\n' "$name" >&2
     cat "$log_file" >&2
     return 1
   fi

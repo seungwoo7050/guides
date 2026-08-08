@@ -12,16 +12,42 @@ import subprocess
 from pathlib import Path
 
 
-GENERATED_DIRS = {".git", ".guide", "target", "__pycache__", ".pytest_cache", ".venv"}
 GENERATED_FILES = {".DS_Store"}
-GENERATED_SUFFIXES = {".pyc", ".pyo", ".jfr"}
+
+
+def generated_directory(relative: Path) -> bool:
+    parts = relative.parts
+    if not parts:
+        return False
+    if parts[0] in {".git", ".guide"}:
+        return True
+    for index, part in enumerate(parts):
+        prefix = parts[:index]
+        if part == "target":
+            if not prefix:
+                return True
+            if prefix == ("exercises", "test-support"):
+                return True
+            if prefix and prefix[0] == "exercises" and prefix[-1] in {"reference", "skeleton"}:
+                return True
+        if part in {"__pycache__", ".pytest_cache"} and prefix and prefix[0] in {
+            "scripts", "exercises"
+        }:
+            return True
+    return False
 
 
 def ignored(path: Path, root: Path) -> bool:
     relative = path.relative_to(root)
-    if any(part in GENERATED_DIRS for part in relative.parts):
+    if generated_directory(relative):
         return True
-    if path.name in GENERATED_FILES or path.suffix in GENERATED_SUFFIXES:
+    if path.name in GENERATED_FILES:
+        return True
+    if (
+        path.suffix in {".pyc", ".pyo"}
+        and relative.parts
+        and relative.parts[0] in {"scripts", "exercises"}
+    ):
         return True
     return False
 
@@ -68,20 +94,39 @@ def preparation_fingerprint(root: Path, paths: list[str]) -> str:
     return digest.hexdigest()
 
 
-def git_index_sha256(root: Path) -> str | None:
+def git_index_state(root: Path) -> dict[str, str] | None:
+    git_environment = {**os.environ, "GIT_OPTIONAL_LOCKS": "0"}
     probe = subprocess.run(
         ["git", "-C", str(root), "rev-parse", "--is-inside-work-tree"],
         check=False,
         capture_output=True,
+        env=git_environment,
     )
     if probe.returncode != 0:
         return None
-    index = subprocess.run(
+    index_path_output = subprocess.run(
+        ["git", "-C", str(root), "rev-parse", "--git-path", "index"],
+        check=True,
+        capture_output=True,
+        text=True,
+        env=git_environment,
+    ).stdout.strip()
+    index_path = Path(index_path_output)
+    if not index_path.is_absolute():
+        index_path = root / index_path
+    if not index_path.is_file():
+        raise SystemExit(f"Git index file is missing: {index_path}")
+    raw_bytes_sha256 = sha256_file(index_path)
+    staged_entries = subprocess.run(
         ["git", "-C", str(root), "ls-files", "--stage", "-z"],
         check=True,
         capture_output=True,
+        env=git_environment,
     ).stdout
-    return hashlib.sha256(index).hexdigest()
+    return {
+        "raw_bytes_sha256": raw_bytes_sha256,
+        "staged_entries_sha256": hashlib.sha256(staged_entries).hexdigest(),
+    }
 
 
 def main() -> int:
@@ -103,7 +148,7 @@ def main() -> int:
             json.dumps(
                 {
                     "entries": entries(root),
-                    "git_index_sha256": git_index_sha256(root),
+                    "git_index": git_index_state(root),
                 },
                 ensure_ascii=False,
                 separators=(",", ":"),

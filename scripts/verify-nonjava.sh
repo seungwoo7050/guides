@@ -23,12 +23,27 @@ if [[ $status -eq 0 ]]; then
   printf 'release manifest skeleton unexpectedly passed\n' >&2
   exit 1
 fi
-if ! grep -q 'AssertionError' "$WORK_ROOT/release-skeleton.log"; then
+release_failure='GUIDE_SEMANTIC: invalid manifest was accepted (expected duplicate)'
+if ! python3 - "$WORK_ROOT/release-skeleton.log" "$release_failure" <<'PY'
+from pathlib import Path
+import sys
+
+lines = Path(sys.argv[1]).read_text(encoding="utf-8", errors="replace").splitlines()
+expected = "AssertionError: " + sys.argv[2]
+assertions = [line for line in lines if line.startswith("AssertionError:")]
+if assertions != [expected]:
+    raise SystemExit(1)
+PY
+then
   printf 'release manifest skeleton failed for an unintended reason\n' >&2
   cat "$WORK_ROOT/release-skeleton.log" >&2
   exit 1
 fi
 printf '[PASS] expected release manifest skeleton failure\n'
+
+if [[ "${GUIDE_VALIDATOR_SELF_TEST:-}" == "release" ]]; then
+  exit 0
+fi
 
 "$KRAFT/verify.sh" --static
 printf '[PASS] KRaft static contract\n'

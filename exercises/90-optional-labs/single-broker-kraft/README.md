@@ -42,12 +42,13 @@ KAFKA_TRANSACTION_STATE_LOG_MIN_ISR=2
 
 1. broker API가 응답하는지 확인합니다.
 2. 일반 토픽을 만들고 메시지를 한 건 보냅니다.
-3. 명시적인 group ID를 가진 consumer가 메시지를 읽는지 확인합니다.
-4. skeleton에서는 group consumer가 실패해야 합니다.
-5. reference에서는 같은 메시지를 읽어야 합니다.
-6. 모든 컨테이너·네트워크·볼륨을 정리합니다.
+3. partition과 offset을 직접 지정한 consumer가 같은 메시지를 읽어 broker 기본 경로를 증명합니다.
+4. 명시적인 group ID를 가진 consumer를 별도로 실행합니다.
+5. skeleton에서는 group consumer만 지정된 내부 토픽 복제 오류로 실패해야 합니다.
+6. reference에서는 group consumer도 같은 메시지를 읽어야 합니다.
+7. 모든 컨테이너·네트워크·볼륨을 정리합니다.
 
-`./verify.sh --static`은 Docker를 시작하지 않고 두 설정의 핵심 값과 Compose 문법만 확인합니다.
+`./exercises/90-optional-labs/single-broker-kraft/verify.sh --static`은 Docker를 시작하지 않고 두 설정의 핵심 값과 Compose 문법만 확인합니다.
 
 ## 제한
 

@@ -113,6 +113,28 @@ def relative(path: Path) -> str:
     return path.relative_to(ROOT).as_posix()
 
 
+def learner_workspace(relative_path: Path) -> bool:
+    return bool(relative_path.parts) and relative_path.parts[0] == ".workspace"
+
+
+def generated_path(relative_path: Path) -> bool:
+    parts = relative_path.parts
+    for index, part in enumerate(parts):
+        prefix = parts[:index]
+        if part == "target":
+            if not prefix:
+                return True
+            if prefix == ("exercises", "test-support"):
+                return True
+            if prefix and prefix[0] == "exercises" and prefix[-1] in {"reference", "skeleton"}:
+                return True
+        if part in {"__pycache__", ".pytest_cache"} and prefix and prefix[0] in {
+            "scripts", "exercises"
+        }:
+            return True
+    return relative_path.suffix in {".pyc", ".pyo", ".jfr"}
+
+
 def markdown_files() -> list[Path]:
     files = [ROOT / "README.md", ROOT / "CONTRIBUTING.md"]
     files.extend(sorted((ROOT / "docs").rglob("*.md")))
@@ -164,6 +186,7 @@ def check_expected_tree(result: Validation) -> None:
         "mvnw",
         ".mvn/jvm.config",
         ".mvn/wrapper/maven-wrapper.properties",
+        "config/repository-files.txt",
         "scripts/validate.py",
         "scripts/verify-java.sh",
         "scripts/verify-skeletons.sh",
@@ -179,9 +202,41 @@ def check_expected_tree(result: Validation) -> None:
 
     generated = [
         path for path in ROOT.rglob("*")
-        if path.name in {"target", "__pycache__", ".pytest_cache", ".workspace"}
+        if not learner_workspace(path.relative_to(ROOT))
+        and generated_path(path.relative_to(ROOT))
     ]
     result.require(not generated, f"generated artifacts remain: {[relative(path) for path in generated]}")
+
+
+def check_repository_manifest(result: Validation) -> None:
+    manifest = ROOT / "config/repository-files.txt"
+    if not manifest.is_file():
+        return
+    expected = {
+        line.strip()
+        for line in manifest.read_text(encoding="utf-8").splitlines()
+        if line.strip()
+    }
+    actual: set[str] = set()
+    for path in ROOT.rglob("*"):
+        rel_path = path.relative_to(ROOT)
+        if not rel_path.parts or rel_path.parts[0] in {".git", ".guide"}:
+            continue
+        if learner_workspace(rel_path) or generated_path(rel_path) or path.name == ".DS_Store":
+            continue
+        if path.is_file() or path.is_symlink():
+            actual.add(rel_path.as_posix())
+    result.require(
+        actual == expected,
+        "managed repository tree differs from its exact manifest "
+        f"(missing={sorted(expected - actual)}, unexpected={sorted(actual - expected)})",
+    )
+    for expected_path in sorted(expected):
+        candidate = ROOT / expected_path
+        result.require(
+            candidate.is_file() and not candidate.is_symlink(),
+            f"managed path must be a regular file, not a symlink: {expected_path}",
+        )
 
 
 def check_markdown(result: Validation) -> None:
@@ -239,18 +294,55 @@ def check_markdown(result: Validation) -> None:
 
 
 def check_unique_pedagogy(result: Validation) -> None:
-    seen: dict[str, str] = {}
+    seen_completion: dict[str, str] = {}
+    seen_explanation: dict[str, str] = {}
     for readme in sorted((ROOT / "exercises").rglob("README.md")):
         text = readme.read_text(encoding="utf-8")
-        start = text.find("## 완료 기준\n")
-        end = text.find("## 검증\n")
-        if start < 0 or end < 0:
+        completion_start = text.find("## 완료 기준\n")
+        explanation_start = text.find("## 자기 설명\n")
+        verify_start = text.find("## 검증\n")
+        if min(completion_start, explanation_start, verify_start) < 0:
             continue
-        section = re.sub(r"\s+", " ", text[start:end]).strip()
-        previous = seen.get(section)
-        if previous:
-            result.error(f"copied completion/self-explanation sections: {previous}, {relative(readme)}")
-        seen[section] = relative(readme)
+        completion = re.sub(
+            r"\s+", " ", text[completion_start:explanation_start]
+        ).strip()
+        explanation = re.sub(
+            r"\s+", " ", text[explanation_start:verify_start]
+        ).strip()
+        previous_completion = seen_completion.get(completion)
+        if previous_completion:
+            result.error(
+                f"copied completion section: {previous_completion}, {relative(readme)}"
+            )
+        previous_explanation = seen_explanation.get(explanation)
+        if previous_explanation:
+            result.error(
+                f"copied self-explanation section: {previous_explanation}, {relative(readme)}"
+            )
+        seen_completion[completion] = relative(readme)
+        seen_explanation[explanation] = relative(readme)
+
+
+def check_learner_commands(result: Validation) -> None:
+    for exercise in sorted(JAVA_EXERCISES):
+        readme = ROOT / exercise / "README.md"
+        text = readme.read_text(encoding="utf-8")
+        verify_start = text.find("## 검증\n")
+        workspace_name = re.sub(r"^\d+-", "", Path(exercise).name)
+        command = f"./scripts/verify-java.sh .workspace/{workspace_name}"
+        result.require(
+            verify_start >= 0 and command in text[verify_start:],
+            f"{relative(readme)} must document learner command: {command}",
+        )
+    release = ROOT / "exercises/04-release-and-evidence/01-release-manifest/README.md"
+    release_command = (
+        "python3 exercises/04-release-and-evidence/01-release-manifest/tests/"
+        "verify_manifest.py .workspace/release-manifest/manifest_check.py"
+    )
+    result.require(
+        release_command in release.read_text(encoding="utf-8"),
+        f"{relative(release)} must document learner command: {release_command}",
+    )
 
 
 def check_text_hygiene(result: Validation) -> None:
@@ -368,23 +460,34 @@ def check_pins(result: Validation) -> None:
         "distributionSha256Sum=5af3b743dd8b876b5c45da33b676251e5f1687712644abb4ee519ca56e1d89ce" in wrapper,
         "Maven Wrapper must pin the official Maven 3.9.16 SHA-256",
     )
-    kafka_files = [
-        ROOT / "prepare.sh",
-        ROOT / "verify.sh",
-        ROOT / "exercises/90-optional-labs/single-broker-kraft/skeleton/compose.yaml",
-        ROOT / "exercises/90-optional-labs/single-broker-kraft/reference/compose.yaml",
-    ]
-    combined = "\n".join(path.read_text(encoding="utf-8") for path in kafka_files)
-    result.require(
-        "apache/kafka:4.3.1@sha256:77e3df9054047a88b520d0cc46e16696d3b22022e1d580aeccd2632df6532837" in combined,
-        "Kafka must pin the approved 4.3.1 immutable digest",
+    approved = (
+        "apache/kafka:4.3.1@sha256:"
+        "77e3df9054047a88b520d0cc46e16696d3b22022e1d580aeccd2632df6532837"
     )
-    result.require("apache/kafka:latest" not in combined, "floating Kafka latest tag is forbidden")
+    for relative_path in ("prepare.sh", "verify.sh"):
+        text = (ROOT / relative_path).read_text(encoding="utf-8")
+        result.require(
+            f'KAFKA_IMAGE="{approved}"' in text,
+            f"{relative_path} must pin the exact approved Kafka image",
+        )
+    for relative_path in (
+        "exercises/90-optional-labs/single-broker-kraft/skeleton/compose.yaml",
+        "exercises/90-optional-labs/single-broker-kraft/reference/compose.yaml",
+    ):
+        text = (ROOT / relative_path).read_text(encoding="utf-8")
+        images = re.findall(r"^\s*image:\s*(\S+)\s*$", text, re.MULTILINE)
+        result.require(
+            images == [approved],
+            f"{relative_path} must declare only the exact approved Kafka image",
+        )
 
 
 def check_scripts(result: Validation) -> None:
     for path in sorted(ROOT.rglob("*.sh")):
-        if any(part in {"target", ".guide"} for part in path.parts):
+        relative_path = path.relative_to(ROOT)
+        if learner_workspace(relative_path) or any(
+            part in {"target", ".guide"} for part in relative_path.parts
+        ):
             continue
         mode = path.stat().st_mode
         result.require(
@@ -393,7 +496,10 @@ def check_scripts(result: Validation) -> None:
         )
 
     for path in sorted(ROOT.rglob("*.py")):
-        if any(part in {"target", ".guide"} for part in path.parts):
+        relative_path = path.relative_to(ROOT)
+        if learner_workspace(relative_path) or any(
+            part in {"target", ".guide"} for part in relative_path.parts
+        ):
             continue
         text = path.read_text(encoding="utf-8")
         try:
@@ -415,13 +521,101 @@ def check_scripts(result: Validation) -> None:
             f"required command is not executable: {relative_path}",
         )
 
+    nonjava = (ROOT / "scripts/verify-nonjava.sh").read_text(encoding="utf-8")
+    kraft = (
+        ROOT / "exercises/90-optional-labs/single-broker-kraft/verify.sh"
+    ).read_text(encoding="utf-8")
+    result.require(
+        "GUIDE_SEMANTIC: invalid manifest was accepted (expected duplicate)" in nonjava,
+        "release-manifest skeleton must use its designated semantic failure",
+    )
+    result.require(
+        "INVALID_REPLICATION_FACTOR" in kraft
+        and "__consumer_offsets" in kraft
+        and "direct partition consumer failed; group result would be ambiguous" in kraft,
+        "KRaft skeleton must distinguish direct-consumer success from the designated group failure",
+    )
+
+    for documentation in (ROOT / "README.md", ROOT / "CONTRIBUTING.md"):
+        text = documentation.read_text(encoding="utf-8")
+        for command in (
+            "make prepare\n",
+            "make check\n",
+            "VERIFY_LOG=/tmp/guide-distributed-services-verify.log make verify\n",
+            "make clean\n",
+        ):
+            result.require(
+                command in text,
+                f"{relative(documentation)} must document public command: {command.strip()}",
+            )
+
+    verifier = (ROOT / "verify.sh").read_text(encoding="utf-8")
+    result.require(
+        "--exclude='/.workspace/'" not in verifier,
+        "verify.sh must copy learner .workspace for source preservation",
+    )
+    preparer = (ROOT / "prepare.sh").read_text(encoding="utf-8")
+    for name, text in (("prepare.sh", preparer), ("verify.sh", verifier)):
+        result.require(
+            "--exclude='/.git'" in text and "--exclude='/.git/'" not in text,
+            f"{name} must exclude linked-worktree .git files from isolated copies",
+        )
+        result.require(
+            "export GIT_OPTIONAL_LOCKS=0" in text,
+            f"{name} must forbid optional Git index writes",
+        )
+        result.require(
+            "\n  mvnw\n" in text,
+            f"{name} preparation fingerprint must include mvnw",
+        )
+        result.require(
+            'find "$ROOT/exercises" -type f -name pom.xml | sort' in text,
+            f"{name} preparation fingerprint must include every exercise pom.xml",
+        )
+    state_helper = (ROOT / "scripts/repository_state.py").read_text(encoding="utf-8")
+    result.require(
+        '"raw_bytes_sha256"' in state_helper and '"GIT_OPTIONAL_LOCKS": "0"' in state_helper,
+        "repository state must hash raw linked-worktree index bytes without optional writes",
+    )
+    result.require(
+        'MARKER_TMP=""' in preparer
+        and '  if [[ -n "$MARKER_TMP" ]]; then\n'
+        '    rm -f -- "$MARKER_TMP"\n'
+        '  fi' in preparer
+        and "run_managed write_marker_file" in preparer,
+        "prepare must track and clean its atomic marker writer and exact temporary path",
+    )
+    learner_verifier = (ROOT / "scripts/verify-java.sh").read_text(encoding="utf-8")
+    result.require(
+        "canonical_test_root" in learner_verifier
+        and "workspace slug must map to exactly one canonical skeleton" in learner_verifier,
+        "learner Java verification must bind workspace implementations to canonical tests",
+    )
+    result.require(
+        'test_root="$(canonical_test_root "$module")"' in learner_verifier
+        and 'find "$test_root" -type f -name \'*.java\'' in learner_verifier,
+        "learner Java verification must compile canonical tests rather than workspace tests",
+    )
+    for field in (
+        "docker_compose_version",
+        "python_version",
+        "git_version",
+        "rsync_version",
+    ):
+        result.require(
+            f'"{field}"' in preparer and f'"{field}"' in verifier,
+            f"prepare/verify marker contract must record and validate {field}",
+        )
+
 
 def main() -> int:
     os.chdir(ROOT)
     result = Validation()
     check_expected_tree(result)
+    check_repository_manifest(result)
     check_markdown(result)
     check_unique_pedagogy(result)
+    check_learner_commands(result)
     check_text_hygiene(result)
     check_java_exercises(result)
     check_maven_modules(result)

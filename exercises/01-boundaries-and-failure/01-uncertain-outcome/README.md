@@ -32,6 +32,12 @@
 
 ## 검증
 
+학습자 복사본은 다음 정본 명령으로 검사합니다.
+
+```sh
+./scripts/verify-java.sh .workspace/uncertain-outcome
+```
+
 저장소 전체 검증은 reference가 통과하고 skeleton이 이 계약에서 실패하는지 확인합니다.
 
 개별 reference를 실행하려면 루트의 준비를 마친 뒤 다음을 사용합니다.

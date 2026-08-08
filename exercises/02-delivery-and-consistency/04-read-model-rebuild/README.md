@@ -32,6 +32,12 @@ projection 적용과 checkpoint 전진의 순서를 바꾸어 이벤트가 유�
 
 ## 검증
 
+학습자 복사본은 다음 정본 명령으로 검사합니다.
+
+```sh
+./scripts/verify-java.sh .workspace/read-model-rebuild
+```
+
 ```sh
 ./scripts/verify-java.sh \
   exercises/02-delivery-and-consistency/04-read-model-rebuild/reference

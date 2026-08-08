@@ -154,7 +154,21 @@ public final class RetryBudget {
         }
     }
 
-    public record DeadLetter(String operationId, String payload) {
+    public record DeadLetter(String eventId, String operationId, String payload) {
+        public DeadLetter {
+            if (eventId == null || eventId.isBlank()
+                || operationId == null || operationId.isBlank()
+                || payload == null || payload.isBlank()) {
+                throw new IllegalArgumentException(
+                    "dead letter event, operation, and payload are required"
+                );
+            }
+        }
+    }
+
+    @FunctionalInterface
+    public interface DeadLetterHandler {
+        String replay(DeadLetter message);
     }
 
     public static final class DeadLetterQueue {
@@ -164,9 +178,9 @@ public final class RetryBudget {
             messages.add(message);
         }
 
-        public String replayNext(Dependency dependency) {
+        public String replayNext(DeadLetterHandler handler) {
             DeadLetter message = messages.element();
-            String result = dependency.call(message.operationId());
+            String result = handler.replay(message);
             messages.remove();
             return result;
         }

@@ -34,6 +34,12 @@ skeleton은 hop마다 새 correlation ID를 만들고, operation ID를 metric ta
 
 ## 검증
 
+학습자 복사본은 다음 정본 명령으로 검사합니다.
+
+```sh
+./scripts/verify-java.sh .workspace/observability-correlation
+```
+
 reference는 다음을 만족합니다.
 
 - 명령과 이벤트, 구독자 로그가 같은 correlation ID를 가집니다.

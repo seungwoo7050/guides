@@ -19,7 +19,7 @@ reservation service ── outbox ── broker ── inventory service
 
 - 예약 서비스만 예약 상태를 변경합니다.
 - 재고 서비스만 가용 수량을 변경합니다.
-- 읽기 모델은 예약 이벤트를 순서대로 투영합니다.
+- 읽기 모델은 생성 sequence 1과 terminal sequence 2 계약을 검사한 뒤 예약 이벤트를 순서대로 투영합니다.
 - 브로커 장애 중에는 Outbox가 복구 위치를 보존합니다.
 - 같은 명령과 이벤트는 여러 번 들어올 수 있습니다.
 
@@ -61,6 +61,7 @@ reservation service ── outbox ── broker ── inventory service
 - 명령 재시도·Outbox 재발행·소비 재전달 뒤에도 예약과 재고 효과가 한 번입니다.
 - 순서가 뒤바뀐 상태 이벤트가 gap 해소 뒤 자동으로 적용되어 projection이 수렴합니다.
 - 충돌 payload·모순 terminal transition·deadline 초과가 상태 변경 전에 거절되고 재조정 근거가 남습니다.
+- queue·동시 실행 상한, 가장 오래된 Outbox age, 정본 조회 재시도와 전체 projection replay가 관찰 가능한 값으로 검증됩니다.
 
 ## 자기 설명
 
@@ -69,16 +70,26 @@ reservation service ── outbox ── broker ── inventory service
 
 ## 검증
 
+학습자 복사본은 다음 정본 명령으로 검사합니다.
+
+```sh
+./scripts/verify-java.sh .workspace/reservation-flow
+```
+
 저장소 루트의 `./verify.sh`는 다음을 한 번에 확인합니다.
 
 - 명령 재시도와 입력 충돌
 - 과부하 거절 시 부정 불변식
+- queue·동시 실행 상한과 deadline 만료
 - 브로커 중단
 - 전송 뒤 표시 전 crash
 - 중복 이벤트
 - 순서가 뒤바뀐 읽기 모델
 - 수용과 거절 결과
 - correlation·causation 연결
+- 가장 오래된 pending Outbox age
+- 같은 operation ID를 사용하는 정본 조회 재조정과 다음 시도 시각
+- schema version을 보존한 역순 event envelope history의 projection rebuild와 격리 복구
 - 모든 Outbox와 projection의 최종 수렴
 
 reference는 모두 통과해야 하고 skeleton은 계약 위반으로 실패해야 합니다.

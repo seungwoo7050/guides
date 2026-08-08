@@ -34,6 +34,12 @@
 
 ## 검증
 
+학습자 복사본은 다음 정본 명령으로 검사합니다.
+
+```sh
+./scripts/verify-java.sh .workspace/contracts-and-order
+```
+
 ```sh
 ./scripts/verify-java.sh \
   exercises/02-delivery-and-consistency/03-contracts-and-order/reference

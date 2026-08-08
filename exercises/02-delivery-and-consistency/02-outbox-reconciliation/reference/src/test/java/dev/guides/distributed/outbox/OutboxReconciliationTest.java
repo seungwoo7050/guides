@@ -20,6 +20,13 @@ public final class OutboxReconciliationTest {
             () -> database.createOrder("order-conflict", "event-other"),
             "같은 주문을 다른 이벤트 ID로 조용히 재사용하면 안 됩니다"
         );
+        Checks.throwsType(
+            IllegalArgumentException.class,
+            () -> database.createOrder("order-other", "event-original"),
+            "같은 event ID를 다른 주문의 Outbox로 commit하면 안 됩니다"
+        );
+        Checks.equals(1, database.orderCount(), "event ID 충돌은 주문 상태를 만들면 안 됩니다");
+        Checks.equals(1, database.outboxCount(), "event ID 충돌은 Outbox 행을 만들면 안 됩니다");
 
         OutboxReconciliation.Consumer consumer = new OutboxReconciliation.Consumer();
         consumer.onEvent(new OutboxReconciliation.DomainEvent("event-c", "order-a"));
