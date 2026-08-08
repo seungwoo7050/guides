@@ -1,0 +1,46 @@
+From e192ee0e9f0939c1c42fd98026129b3db94be4ed Mon Sep 17 00:00:00 2001
+From: Seungwoo Kim <seungwoo7050@naver.com>
+Date: Tue, 30 Sep 2025 21:16:00 +0900
+Subject: [PATCH] feat(data): PostgreSQL 트랜잭션 구현
+
+diff --git a/src/repository.ts b/src/repository.ts
+index 68d76f3..f56f206 100644
+--- a/src/repository.ts
++++ b/src/repository.ts
+@@ -1,14 +1,29 @@
+-import type { Kysely } from "kysely";
++import type { Kysely, Transaction } from "kysely";
+ import type { Database } from "./db";
+
+ export class SeatTakenError extends Error {}
+
+ export async function createEvent(db: Kysely<Database>, name: string) {
+-  // TODO: INSERT ... RETURNING 쿼리를 구현해 주세요.
+-  throw new Error("TODO");
++  return db.insertInto("events").values({ name }).returningAll().executeTakeFirstOrThrow();
+ }
+
+ export async function reserveSeat(db: Kysely<Database>, input: { eventId: string; userId: string; seatNo: number }) {
+-  // TODO: 트랜잭션을 사용하고 고유 제약 위반 코드 23505를 변환해 주세요.
+-  throw new Error("TODO");
++  try {
++    return await db.transaction().execute(async (trx) => reserveInTransaction(trx, input));
++  } catch (error: unknown) {
++    if (isUniqueViolation(error)) throw new SeatTakenError("seat_taken");
++    throw error;
++  }
++}
++
++async function reserveInTransaction(trx: Transaction<Database>, input: { eventId: string; userId: string; seatNo: number }) {
++  return trx.insertInto("reservations").values({
++    event_id: input.eventId,
++    user_id: input.userId,
++    seat_no: input.seatNo
++  }).returningAll().executeTakeFirstOrThrow();
++}
++
++function isUniqueViolation(error: unknown): boolean {
++  return typeof error === "object" && error !== null && "code" in error && error.code === "23505";
+ }
+--
+2.47.3
