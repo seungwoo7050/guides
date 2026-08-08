@@ -1,0 +1,136 @@
+From 14945c7da42f1e0e86d271bafe3512c0c978c23a Mon Sep 17 00:00:00 2001
+From: Seungwoo Kim <seungwoo7050@naver.com>
+Date: Wed, 15 Oct 2025 21:31:00 +0900
+Subject: [PATCH] feat(realtime): WebSocket 상태 동기화 구현
+
+diff --git a/src/app.test.ts b/src/app.test.ts
+index ff45dca..e0581bd 100644
+--- a/src/app.test.ts
++++ b/src/app.test.ts
+@@ -20,12 +20,22 @@ function next(socket: WebSocket, type: string): Promise<any> {
+ describe("실시간 보드", () => {
+   let app: Awaited<ReturnType<typeof buildApp>> | undefined;
+   afterEach(async () => app?.close());
+-  it("재연결 요청에 스냅숏을 반환합니다", async () => {
++  it("재연결 요청에 최신 스냅숏을 반환합니다", async () => {
+     app = await buildApp();
+     await app.ready();
+     const socket = await app.injectWS("/ws") as WebSocket;
+     socket.send(JSON.stringify({ type: "board.join", boardId: "planning" }));
+     expect((await next(socket, "board.snapshot")).snapshot.boardId).toBe("planning");
++    socket.send(JSON.stringify({
++      type: "item.create",
++      boardId: "planning",
++      content: "검토할 항목",
++      x: 100,
++      y: 120
++    }));
++    expect((await next(socket, "board.patch")).patch.operation).toBe("item.create");
++    socket.send(JSON.stringify({ type: "snapshot.request", boardId: "planning" }));
++    expect((await next(socket, "board.snapshot")).snapshot.items).toHaveLength(1);
+     socket.terminate();
+   });
+ });
+diff --git a/src/app.ts b/src/app.ts
+index 3061c75..39501ec 100644
+--- a/src/app.ts
++++ b/src/app.ts
+@@ -1,17 +1,91 @@
++import { randomUUID } from "node:crypto";
+ import websocket from "@fastify/websocket";
+ import Fastify from "fastify";
+-import { ClientEventSchema } from "./protocol";
++import { WebSocket } from "ws";
++import { ClientEventSchema, type BoardSnapshot, type ServerEvent } from "./protocol";
++
++type Client = { id: string; socket: WebSocket; boardId: string | null; alive: boolean };
+
+ export async function buildApp() {
+   const app = Fastify({ logger: false });
++  const clients = new Set<Client>();
++  const boards = new Map<string, BoardSnapshot>();
+   await app.register(websocket);
++
+   app.get("/ws", { websocket: true }, (socket) => {
++    const client: Client = { id: randomUUID(), socket: socket as WebSocket, boardId: null, alive: true };
++    clients.add(client);
++    socket.on("pong", () => { client.alive = true; });
++    socket.on("close", () => clients.delete(client));
+     socket.on("message", (raw) => {
+-      const event = ClientEventSchema.safeParse(JSON.parse(raw.toString()));
+-      // TODO: 구성원 확인, 스냅숏, 브로드캐스트와 잘못된 메시지 처리를 구현해 주세요.
+-      void event;
++      const parsed = ClientEventSchema.safeParse(safeJson(raw.toString()));
++      if (!parsed.success) return socket.close(1008, "메시지 형식이 올바르지 않습니다.");
++      const event = parsed.data;
++      if (event.type === "board.join") {
++        client.boardId = event.boardId;
++        send(client, { type: "board.snapshot", snapshot: board(event.boardId) });
++        return presence(event.boardId);
++      }
++      if (client.boardId !== event.boardId) return socket.close(1008, "join board first");
++      if (event.type === "snapshot.request") {
++        return send(client, { type: "board.snapshot", snapshot: board(event.boardId) });
++      }
++      const current = board(event.boardId);
++      if (event.type === "item.create") {
++        current.version += 1;
++        current.sequence += 1;
++        current.items.push({
++          id: randomUUID(),
++          content: event.content,
++          x: event.x,
++          y: event.y,
++          version: 1
++        });
++      }
++      if (event.type === "cursor.move") current.sequence += 1;
++      const patch = {
++        type: "board.patch" as const,
++        patch: { boardId: event.boardId, sequence: current.sequence, operation: event.type }
++      };
++      for (const target of clients) if (target.boardId === event.boardId) send(target, patch);
+     });
+   });
+-  // TODO: 연결 확인 타이머와 `onClose` 정리를 구현해 주세요.
++
++  const heartbeat = setInterval(() => {
++    for (const client of clients) {
++      if (!client.alive) {
++        client.socket.terminate();
++        clients.delete(client);
++        continue;
++      }
++      client.alive = false;
++      client.socket.ping();
++    }
++  }, 10_000);
++
++  app.addHook("onClose", async () => {
++    clearInterval(heartbeat);
++    for (const client of clients) client.socket.terminate();
++    clients.clear();
++  });
++
++  function board(boardId: string) {
++    const current = boards.get(boardId) ?? { boardId, version: 0, sequence: 0, items: [] };
++    boards.set(boardId, current);
++    return current;
++  }
++  function presence(boardId: string) {
++    const members = [...clients].filter((client) => client.boardId === boardId).map((client) => client.id);
++    for (const target of clients) {
++      if (target.boardId === boardId) send(target, { type: "presence.changed", boardId, members });
++    }
++  }
+   return app;
+ }
++
++function send(client: Client, event: ServerEvent) {
++  if (client.socket.readyState === WebSocket.OPEN) client.socket.send(JSON.stringify(event));
++}
++function safeJson(raw: string) {
++  try { return JSON.parse(raw); } catch { return null; }
++}
+--
+2.47.3

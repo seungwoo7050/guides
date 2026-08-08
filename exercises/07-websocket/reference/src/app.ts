@@ -1,0 +1,91 @@
+import { randomUUID } from "node:crypto";
+import websocket from "@fastify/websocket";
+import Fastify from "fastify";
+import { WebSocket } from "ws";
+import { ClientEventSchema, type BoardSnapshot, type ServerEvent } from "./protocol";
+
+type Client = { id: string; socket: WebSocket; boardId: string | null; alive: boolean };
+
+export async function buildApp() {
+  const app = Fastify({ logger: false });
+  const clients = new Set<Client>();
+  const boards = new Map<string, BoardSnapshot>();
+  await app.register(websocket);
+
+  app.get("/ws", { websocket: true }, (socket) => {
+    const client: Client = { id: randomUUID(), socket: socket as WebSocket, boardId: null, alive: true };
+    clients.add(client);
+    socket.on("pong", () => { client.alive = true; });
+    socket.on("close", () => clients.delete(client));
+    socket.on("message", (raw) => {
+      const parsed = ClientEventSchema.safeParse(safeJson(raw.toString()));
+      if (!parsed.success) return socket.close(1008, "메시지 형식이 올바르지 않습니다.");
+      const event = parsed.data;
+      if (event.type === "board.join") {
+        client.boardId = event.boardId;
+        send(client, { type: "board.snapshot", snapshot: board(event.boardId) });
+        return presence(event.boardId);
+      }
+      if (client.boardId !== event.boardId) return socket.close(1008, "join board first");
+      if (event.type === "snapshot.request") {
+        return send(client, { type: "board.snapshot", snapshot: board(event.boardId) });
+      }
+      const current = board(event.boardId);
+      if (event.type === "item.create") {
+        current.version += 1;
+        current.sequence += 1;
+        current.items.push({
+          id: randomUUID(),
+          content: event.content,
+          x: event.x,
+          y: event.y,
+          version: 1
+        });
+      }
+      if (event.type === "cursor.move") current.sequence += 1;
+      const patch = {
+        type: "board.patch" as const,
+        patch: { boardId: event.boardId, sequence: current.sequence, operation: event.type }
+      };
+      for (const target of clients) if (target.boardId === event.boardId) send(target, patch);
+    });
+  });
+
+  const heartbeat = setInterval(() => {
+    for (const client of clients) {
+      if (!client.alive) {
+        client.socket.terminate();
+        clients.delete(client);
+        continue;
+      }
+      client.alive = false;
+      client.socket.ping();
+    }
+  }, 10_000);
+
+  app.addHook("onClose", async () => {
+    clearInterval(heartbeat);
+    for (const client of clients) client.socket.terminate();
+    clients.clear();
+  });
+
+  function board(boardId: string) {
+    const current = boards.get(boardId) ?? { boardId, version: 0, sequence: 0, items: [] };
+    boards.set(boardId, current);
+    return current;
+  }
+  function presence(boardId: string) {
+    const members = [...clients].filter((client) => client.boardId === boardId).map((client) => client.id);
+    for (const target of clients) {
+      if (target.boardId === boardId) send(target, { type: "presence.changed", boardId, members });
+    }
+  }
+  return app;
+}
+
+function send(client: Client, event: ServerEvent) {
+  if (client.socket.readyState === WebSocket.OPEN) client.socket.send(JSON.stringify(event));
+}
+function safeJson(raw: string) {
+  try { return JSON.parse(raw); } catch { return null; }
+}
