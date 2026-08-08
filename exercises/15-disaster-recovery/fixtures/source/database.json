@@ -1,0 +1,20 @@
+{
+  "schema_version": 3,
+  "latest_record_at": "2026-08-07T01:55:00Z",
+  "notes": [
+    {
+      "id": 1,
+      "body": "first note",
+      "upload": "uploads/note-1.txt",
+      "upload_sha256": "59835cb977942f5e2c3f1b0c7c5e08ddcea2344659f7ffb09ef04e92466647b3",
+      "updated_at": "2026-08-07T01:40:00Z"
+    },
+    {
+      "id": 2,
+      "body": "second note",
+      "upload": "uploads/note-2.txt",
+      "upload_sha256": "235293b6a00d0531c644efba11b425643d7c2be0d0659e7e2ffac198484f0132",
+      "updated_at": "2026-08-07T01:55:00Z"
+    }
+  ]
+}
