@@ -23,7 +23,10 @@ TIMESTAMP="$(date +%Y%m%d-%H%M%S)"
 LOG="${VERIFY_LOG:-${TMPDIR:-/tmp}/guide-cpp-verify-${TIMESTAMP}-$$.log}"
 case "$LOG" in
     /*) ;;
-    *) LOG="$ROOT/$LOG" ;;
+    *)
+        printf 'VERIFY ERROR: VERIFY_LOG는 저장소 밖의 절대 경로여야 합니다: %s\n' "$LOG" >&2
+        exit 2
+        ;;
 esac
 mkdir -p "$(dirname "$LOG")" 2>/dev/null || {
     printf 'VERIFY ERROR: 로그 디렉터리를 만들 수 없습니다: %s\n' "$(dirname "$LOG")" >&2
