@@ -1,0 +1,96 @@
+{
+  "version": 2,
+  "cmakeMinimumRequired": {
+    "major": 3,
+    "minor": 20,
+    "patch": 0
+  },
+  "configurePresets": [
+    {
+      "name": "debug",
+      "displayName": "Debug",
+      "generator": "Ninja",
+      "binaryDir": "${sourceDir}/build/debug",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Debug",
+        "CMAKE_EXPORT_COMPILE_COMMANDS": "ON"
+      }
+    },
+    {
+      "name": "release",
+      "displayName": "Release",
+      "inherits": "debug",
+      "binaryDir": "${sourceDir}/build/release",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Release",
+        "CMAKE_EXPORT_COMPILE_COMMANDS": "ON"
+      }
+    },
+    {
+      "name": "sanitize",
+      "displayName": "Debug with sanitizers",
+      "inherits": "debug",
+      "binaryDir": "${sourceDir}/build/sanitize",
+      "cacheVariables": {
+        "GUIDE_ENABLE_SANITIZERS": "ON"
+      }
+    },
+    {
+      "name": "thread-sanitize",
+      "displayName": "Debug with ThreadSanitizer",
+      "inherits": "debug",
+      "binaryDir": "${sourceDir}/build/thread-sanitize",
+      "cacheVariables": {
+        "GUIDE_ENABLE_THREAD_SANITIZER": "ON"
+      }
+    }
+  ],
+  "buildPresets": [
+    {
+      "name": "debug",
+      "configurePreset": "debug"
+    },
+    {
+      "name": "release",
+      "configurePreset": "release"
+    },
+    {
+      "name": "sanitize",
+      "configurePreset": "sanitize"
+    },
+    {
+      "name": "thread-sanitize",
+      "configurePreset": "thread-sanitize"
+    }
+  ],
+  "testPresets": [
+    {
+      "name": "debug",
+      "configurePreset": "debug",
+      "output": {
+        "outputOnFailure": true
+      }
+    },
+    {
+      "name": "release",
+      "configurePreset": "release",
+      "output": {
+        "outputOnFailure": true
+      }
+    },
+    {
+      "name": "sanitize",
+      "configurePreset": "sanitize",
+      "output": {
+        "outputOnFailure": true
+      }
+    },
+    {
+      "name": "thread-sanitize",
+      "configurePreset": "thread-sanitize",
+      "output": {
+        "outputOnFailure": true
+      }
+    }
+  ]
+}
