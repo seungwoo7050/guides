@@ -1,0 +1,12 @@
+exercises/01-relational-semantics-and-design/01-sql-semantics
+exercises/01-relational-semantics-and-design/02-schema-and-constraints
+exercises/02-storage-and-indexes/01-slotted-page
+exercises/02-storage-and-indexes/02-bplus-tree
+exercises/02-storage-and-indexes/03-buffer-pool-clock
+exercises/03-transactions-and-recovery/01-postgres-isolation
+exercises/03-transactions-and-recovery/02-wal-recovery
+exercises/04-execution-and-optimization/01-join-algorithms
+exercises/04-execution-and-optimization/02-query-plans-and-indexes
+exercises/04-execution-and-optimization/03-safe-migration-and-backfill
+exercises/05-capstones/01-application-database-review
+exercises/05-capstones/02-mini-storage-engine

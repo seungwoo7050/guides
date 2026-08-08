@@ -10,3 +10,22 @@
 단순한 `SELECT → 판단 → UPDATE`는 transaction 안에 있어도 안전하지 않다. 어떤 row 또는 명령이 충돌을 직렬화하는지 명시해야 한다.
 
 문서: [`docs/03-transactions-and-recovery/01-transactions-isolation-and-locks.md`](../../../docs/03-transactions-and-recovery/01-transactions-isolation-and-locks.md)
+
+## 목표
+
+각 업무 불변식을 공유 row 충돌 또는 PostgreSQL isolation 실패와 연결해 동시 요청의 허용 결과를 제한한다.
+
+## 완료 기준
+
+- 재고 10에서 수량 7 예약 두 건을 동시에 실행해 성공 건수가 최대 1임을 확인한다.
+- 당직 의사 두 명의 해제 요청을 겹쳐도 최소 한 명이 남는 결과만 허용한다.
+- timeout 안에 두 session이 종료되고 deadlock·hang이 정상 결과로 오인되지 않는다.
+
+## 자기 설명
+
+1. 서로 다른 doctor row만 잠그는 방식으로 write skew를 막지 못하는 이유는 무엇인가?
+2. retry가 필요한 serialization failure와 업무상 `false` 반환을 호출자는 어떻게 구분해야 하는가?
+
+## 검증
+
+`./prepare.sh` 뒤 `make postgres-check`를 실행해 실제 두 session의 동시 결과를 검사한다.

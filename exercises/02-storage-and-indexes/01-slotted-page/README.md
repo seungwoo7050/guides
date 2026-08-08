@@ -20,3 +20,22 @@ PYTHONPATH=exercises/02-storage-and-indexes/01-slotted-page/workspace \
 ```
 
 문서: [`docs/02-storage-and-indexes/01-pages-records-and-files.md`](../../../docs/02-storage-and-indexes/01-pages-records-and-files.md)
+
+## 목표
+
+slot directory와 record 영역을 분리해 가변 길이 bytes가 이동해도 논리 RID가 안정적으로 남는 페이지를 구현한다.
+
+## 완료 기준
+
+- 서로 다른 크기의 record를 넣고 읽었을 때 key와 bytes가 손실 없이 돌아온다.
+- delete와 compact 뒤 live record의 기존 slot ID가 바뀌지 않는다.
+- 공간 부족 update와 손상된 serialized page가 부분 변경 없이 명시적 예외로 끝난다.
+
+## 자기 설명
+
+1. slot ID 대신 byte offset을 RID로 노출하면 compaction이 어떤 상위 계층을 깨뜨리는가?
+2. header·slot directory·record 영역이 서로 겹치지 않음을 어떤 경계식으로 증명하는가?
+
+## 검증
+
+위 실행 명령으로 workspace 테스트를 통과시키고, 루트의 `make python-check`로 reference/skeleton 계약을 확인한다.

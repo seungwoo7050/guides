@@ -25,3 +25,22 @@ indexes.sql    대표 workload 인덱스
 ## 검증 계약
 
 reference의 migration은 중단 뒤 다시 적용해도 같은 최종 상태를 만들며, 루트 검증은 이를 두 번 실행해 확인한다.
+
+## 목표
+
+멀티 조직 경계, ticket 상태, 업무 view, workload index와 호환 migration을 하나의 검토 가능한 데이터 계약으로 완성한다.
+
+## 완료 기준
+
+- 다른 조직의 project·assignee를 참조하는 ticket이 복합 외래 키에서 거부된다.
+- backlog와 담당자 queue view가 seed의 기대 행·순서·집계 단위와 정확히 일치한다.
+- migration 재실행 뒤 priority가 보존되고 대표 질의가 의도한 복합 인덱스를 사용한다.
+
+## 자기 설명
+
+1. tenant ID를 모든 관련 unique/foreign key에 포함하는 것이 방어하는 실수는 무엇인가?
+2. schema·query·index·migration을 따로 검토할 때 놓치기 쉬운 교차 계약은 무엇인가?
+
+## 검증
+
+`./prepare.sh` 뒤 `make postgres-check`를 실행해 정상 결과와 조직 경계 위반을 같은 fixture에서 검토한다.

@@ -20,3 +20,22 @@ PYTHONPATH=exercises/02-storage-and-indexes/02-bplus-tree/workspace \
 ```
 
 문서: [`docs/02-storage-and-indexes/02-index-structures.md`](../../../docs/02-storage-and-indexes/02-index-structures.md)
+
+## 목표
+
+leaf와 internal node의 서로 다른 split 규칙을 보존하면서 point lookup과 연결 leaf range scan을 구현한다.
+
+## 완료 기준
+
+- 삽입 순서가 달라도 모든 key를 찾고 기존 key 갱신은 중복 entry를 만들지 않는다.
+- leaf와 internal split 뒤 `validate()`가 동일 높이, separator, 자식 수 불변식을 통과한다.
+- 경계가 포함된 range 결과가 leaf 여러 개를 넘어도 오름차순으로 정확히 반환된다.
+
+## 자기 설명
+
+1. internal separator를 왼쪽 최대가 아닌 오른쪽 subtree 최소로 정의했을 때 탐색 비교는 어떻게 달라지는가?
+2. range scan이 root를 매번 다시 탐색하지 않도록 leaf 연결이 제공하는 이점은 무엇인가?
+
+## 검증
+
+workspace 단위 테스트와 `make python-check`를 모두 실행해 깊은 split과 skeleton 실패를 관찰한다.

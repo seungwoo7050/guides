@@ -20,3 +20,22 @@ PYTHONPATH=exercises/02-storage-and-indexes/03-buffer-pool-clock/workspace \
 ```
 
 문서: [`docs/02-storage-and-indexes/03-buffer-pool-and-replacement.md`](../../../docs/02-storage-and-indexes/03-buffer-pool-and-replacement.md)
+
+## 목표
+
+page table, pin count, dirty bit와 Clock hand를 하나의 frame 수명 계약으로 연결한다.
+
+## 완료 기준
+
+- 같은 page 재조회가 buffer hit로 관찰되고 disk read count를 늘리지 않는다.
+- pin된 모든 frame만 남은 경우 victim을 고르지 않고 정해진 오류를 반환한다.
+- dirty victim은 disk write를 먼저 완료한 뒤 page table과 frame mapping에서 제거된다.
+
+## 자기 설명
+
+1. referenced bit를 지우는 첫 순회와 실제 축출 순회를 분리해야 하는 이유는 무엇인가?
+2. page table entry를 disk write보다 먼저 지우면 실패 시 어떤 상태를 잃는가?
+
+## 검증
+
+workspace 단위 테스트를 반복하고 `make python-check`에서 reference와 의도적으로 불완전한 skeleton을 대조한다.

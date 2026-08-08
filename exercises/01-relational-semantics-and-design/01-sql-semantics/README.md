@@ -16,3 +16,22 @@
 ```
 
 문서: [`docs/01-relational-semantics-and-design/02-sql-semantics-and-query-shape.md`](../../../docs/01-relational-semantics-and-design/02-sql-semantics-and-query-shape.md)
+
+## 목표
+
+`NULL`, outer join, 집계의 행 단위와 tie-breaker가 결과 집합에 미치는 영향을 네 view로 설명한다.
+
+## 완료 기준
+
+- 주문이 없는 사용자와 차단되지 않은 사용자가 seed의 기대 ID 집합과 정확히 일치한다.
+- 주문이 없는 사용자도 합계 view에 남고 count와 amount가 각각 `0`으로 관찰된다.
+- 동일 합계가 생겨도 `position` 1~3의 순서가 사용자 ID tie-breaker로 고정된다.
+
+## 자기 설명
+
+1. `NOT IN` 후보 집합에 `NULL`이 있을 때 `NOT EXISTS`와 결과가 달라지는 이유는 무엇인가?
+2. `COUNT(*)`와 nullable 오른쪽 열의 `COUNT(column)` 중 outer join 집계에 맞는 것은 무엇인가?
+
+## 검증
+
+`./prepare.sh` 뒤 `make postgres-check`를 실행해 reference 통과와 skeleton의 의미적 실패를 함께 확인한다.

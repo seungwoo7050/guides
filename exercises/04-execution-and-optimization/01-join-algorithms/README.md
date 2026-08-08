@@ -19,3 +19,22 @@ PYTHONPATH=exercises/04-execution-and-optimization/01-join-algorithms/workspace 
 ```
 
 문서: [`docs/04-execution-and-optimization/01-query-execution-joins-and-sorting.md`](../../../docs/04-execution-and-optimization/01-query-execution-joins-and-sorting.md)
+
+## 목표
+
+세 join 알고리즘이 중복과 `NULL`을 포함한 같은 bag 의미를 만들되 서로 다른 자원 전제를 갖는다는 점을 구현한다.
+
+## 완료 기준
+
+- 중복 key의 좌우 조합 수가 곱으로 보존되고 `NULL` key끼리는 결합되지 않는다.
+- hash join은 선택한 build side와 무관하게 nested-loop와 같은 bag 결과를 만든다.
+- sort-merge join은 동일 key run 전체를 소비하고 입력 경계에서도 행을 빠뜨리지 않는다.
+
+## 자기 설명
+
+1. 출력 list 순서가 아닌 bag으로 알고리즘 동등성을 비교해야 하는 이유는 무엇인가?
+2. 심한 key skew가 hash join의 메모리와 실행 시간에 어떤 영향을 주는가?
+
+## 검증
+
+workspace 테스트와 `make python-check`를 실행해 세 구현의 결과 다중집합을 대조한다.
