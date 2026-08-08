@@ -1,0 +1,23 @@
+
+clients:
+  decision:
+    base-url: http://localhost:18080
+    connect-timeout: 200ms
+    read-timeout: 500ms
+resilience4j:
+  circuitbreaker:
+    instances:
+      decisionClient:
+        sliding-window-type: COUNT_BASED
+        sliding-window-size: 2
+        minimum-number-of-calls: 2
+        failure-rate-threshold: 50
+        wait-duration-in-open-state: 5s
+        permitted-number-of-calls-in-half-open-state: 1
+        record-exceptions:
+          - java.lang.RuntimeException
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,metrics,circuitbreakers
