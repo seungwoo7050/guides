@@ -1,0 +1,13 @@
+{
+  "schema_version": 1,
+  "cases": {
+    "01-command-resolution": {
+      "layer": "network-endpoint",
+      "primary_cause": "dns-failure",
+      "observation_commands": ["reinstall everything"],
+      "expected_evidence": "그럴듯하지만 실제 사례와 관계없는 원인이다.",
+      "safe_fix": "run-as-root",
+      "regression_checks": ["한 번 실행해 본다."]
+    }
+  }
+}
