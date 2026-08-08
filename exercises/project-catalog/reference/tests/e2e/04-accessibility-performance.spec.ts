@@ -1,10 +1,11 @@
 import { readFileSync } from "node:fs";
+import { join } from "node:path";
 import { expect, test } from "@playwright/test";
 import type { Page } from "@playwright/test";
 
 const resetToken = process.env.CATALOG_TEST_RESET_TOKEN;
 const budget = JSON.parse(
-  readFileSync(new URL("../../performance-budget.json", import.meta.url), "utf8")
+  readFileSync(join(process.cwd(), "performance-budget.json"), "utf8")
 ) as {
   maximumInitialJavaScriptBytes: number;
   maximumDomNodes: number;

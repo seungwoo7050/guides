@@ -1,7 +1,6 @@
 {
   "name": "project-catalog",
   "private": true,
-  "type": "module",
   "scripts": {
     "dev": "next dev",
     "typecheck": "next typegen && tsc --noEmit",

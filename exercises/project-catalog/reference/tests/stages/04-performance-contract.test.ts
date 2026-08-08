@@ -1,8 +1,9 @@
 import { readFileSync } from "node:fs";
+import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 
 const budget = JSON.parse(
-  readFileSync(new URL("../../performance-budget.json", import.meta.url), "utf8")
+  readFileSync(join(process.cwd(), "performance-budget.json"), "utf8")
 ) as Record<string, unknown>;
 
 describe("Stage 04: 성능 예산 계약", () => {
