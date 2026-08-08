@@ -2,7 +2,7 @@
 set -Eeuo pipefail
 [[ $# -eq 3 ]] || { echo "usage: $0 CONTAINER DATABASE IMPLEMENTATION" >&2; exit 2; }
 container="$1"; database="$2"; implementation="$3"
-root="/guide/exercises/03-transactions-and-recovery/01-postgres-isolation"
+root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd -P)"
 tmp="$(mktemp -d)"
 trap 'rm -rf "$tmp"' EXIT
 
