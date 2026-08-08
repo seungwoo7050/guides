@@ -1,0 +1,49 @@
+From b09acbe2f6fbfaae7c595f6c6f1c790fbb2c638b Mon Sep 17 00:00:00 2001
+From: Seungwoo Kim <seungwoo7050@naver.com>
+Date: Tue, 7 Oct 2025 20:49:00 +0900
+Subject: [PATCH] fix(security): 세션과 권한 경계 보완
+
+diff --git a/src/app.ts b/src/app.ts
+index 555cb4e..0f32503 100644
+--- a/src/app.ts
++++ b/src/app.ts
+@@ -17,7 +17,7 @@ const ProfileSchema = z.object({ displayName: z.string().trim().min(1).max(40) }
+
+ export function buildApp(allowedOrigins = ["http://localhost:3000"]) {
+   const app = Fastify({ logger: false });
+-  app.register(cors, { origin: true, credentials: true }); // TODO: 명시적인 허용 목록을 사용해 주세요.
++  app.register(cors, { origin: allowedOrigins, credentials: true });
+   app.register(cookie);
+
+   app.post("/auth/login", async (request, reply) => {
+@@ -32,8 +32,8 @@ export function buildApp(allowedOrigins = ["http://localhost:3000"]) {
+
+   app.post("/auth/logout", async (request, reply) => {
+     const token = request.cookies.board_session;
+-    // TODO: 서버 세션을 폐기해 주세요.
+-    reply.clearCookie("board_session", { path: "/auth" }); // TODO: 발급 경로와 맞춰 주세요.
++    if (token) sessions.delete(token);
++    reply.clearCookie("board_session", { path: "/" });
+     return { ok: true };
+   });
+
+@@ -47,7 +47,7 @@ export function buildApp(allowedOrigins = ["http://localhost:3000"]) {
+     const actor = currentUser(request);
+     if (!actor) return unauthorized(reply);
+     const { id } = request.params as { id: string };
+-    // TODO: 자원 소유권이나 관리자 권한을 검사해 주세요.
++    if (actor.id !== id && actor.role !== "admin") return forbidden(reply);
+     const parsed = ProfileSchema.safeParse(request.body);
+     if (!parsed.success) return reply.code(400).send({ code: "invalid_request" });
+     const target = [...users.values()].find((user) => user.id === id);
+@@ -59,7 +59,7 @@ export function buildApp(allowedOrigins = ["http://localhost:3000"]) {
+   app.get("/admin/users", async (request, reply) => {
+     const actor = currentUser(request);
+     if (!actor) return unauthorized(reply);
+-    // TODO: 관리자 역할을 검사해 주세요.
++    if (actor.role !== "admin") return forbidden(reply);
+     return { users: [...users.values()] };
+   });
+
+--
+2.47.3
