@@ -1,4 +1,19 @@
-.PHONY: help
+.PHONY: prepare check verify negative-check clean
 
-help:
-	@printf '%s\n' '학습 자료와 검증 도구는 이후 커밋에서 추가됩니다.'
+prepare:
+	@./prepare.sh
+
+check:
+	@python3 scripts/validate.py
+	@python3 scripts/test-validator.py
+	@./scripts/test-prepare-safety.sh
+	@./scripts/validate.sh
+
+verify:
+	@./verify.sh
+
+negative-check:
+	@./scripts/test-verify-negatives.sh
+
+clean:
+	@printf '%s\n' '생성 실습 workspace와 .guide는 사용자 상태이므로 자동 삭제하지 않습니다.'
