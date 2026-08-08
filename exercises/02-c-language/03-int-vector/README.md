@@ -23,6 +23,17 @@ capacity == 0이면 data == NULL
 - `get`의 범위 오류는 `out_value`를 변경하지 않습니다.
 - destroy 뒤 빈 상태가 되고 반복 호출할 수 있습니다.
 
+## 완료 기준
+
+- `make exercise-test`와 `make sanitize`가 통과하며 0개에서 시작해 여러 번 capacity를 늘려도 삽입 순서와 모든 기존 원소가 보존됩니다.
+- 유효한 첫·마지막 index 조회와 범위 밖 조회를 확인하고, 실패한 `get`이 `out_value`를 바꾸지 않음을 sentinel 값으로 증명합니다.
+- 잘못된 불변식, capacity 계산 overflow와 다음 성장의 할당 실패 뒤 data·size·capacity·원소가 호출 전 상태 그대로임을 확인합니다.
+
+## 자기 설명
+
+- `size == capacity`일 때 새 capacity와 바이트 수를 계산하는 각 단계에서 어떤 overflow를 막아야 하나요?
+- 실패할 수 있는 할당과 상태 갱신의 순서를 어떻게 정해야 기존 vector를 계속 사용할 수 있나요?
+
 ## 검증
 
 ```sh

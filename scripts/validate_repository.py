@@ -93,6 +93,12 @@ EXERCISE_TARGETS = {
     "clean",
 }
 
+EXERCISE_PEDAGOGY_SECTIONS = (
+    "완료 기준",
+    "자기 설명",
+    "검증",
+)
+
 TEXT_SUFFIXES = {".c", ".h", ".md", ".py", ".sh", ".txt"}
 SOURCE_SUFFIXES = {".c", ".h", ".py", ".sh"}
 ARTIFACT_SUFFIXES = {
@@ -181,6 +187,16 @@ def makefile_has_target(text: str, target: str) -> bool:
     return re.search(rf"(?m)^{re.escape(target)}\s*:", text) is not None
 
 
+def markdown_h2_sections(text: str) -> tuple[list[str], dict[str, str]]:
+    matches = list(re.finditer(r"(?m)^## ([^\n]+?)\s*$", text))
+    headings = [match.group(1) for match in matches]
+    sections: dict[str, str] = {}
+    for index, match in enumerate(matches):
+        end = matches[index + 1].start() if index + 1 < len(matches) else len(text)
+        sections[match.group(1)] = text[match.end():end].strip()
+    return headings, sections
+
+
 def check_exercises() -> None:
     exercises = ROOT / "exercises"
     actual: set[str] = set()
@@ -199,6 +215,8 @@ def check_exercises() -> None:
         fail("exercises/ 구성이 계획과 다릅니다: " + "; ".join(details))
 
     aggregate = (exercises / "Makefile").read_text(encoding="utf-8")
+    completion_owners: dict[str, str] = {}
+    explanation_owners: dict[str, str] = {}
     for name in sorted(EXPECTED_EXERCISES):
         root = exercises / name
         for required in ("README.md", "Makefile", "skeleton", "reference", "tests"):
@@ -223,6 +241,60 @@ def check_exercises() -> None:
             )
         if name not in aggregate:
             fail(f"exercises/Makefile이 연습문제를 열거하지 않습니다: {name}")
+
+        readme_text = (root / "README.md").read_text(encoding="utf-8")
+        headings, sections = markdown_h2_sections(readme_text)
+        for heading in EXERCISE_PEDAGOGY_SECTIONS:
+            if headings.count(heading) != 1:
+                fail(
+                    f"연습문제 README에 '## {heading}' 제목이 정확히 하나여야 합니다: "
+                    f"exercises/{name}/README.md"
+                )
+        positions = [headings.index(heading) for heading in EXERCISE_PEDAGOGY_SECTIONS]
+        if positions != sorted(positions):
+            fail(
+                "연습문제 README의 학습 마무리 순서는 "
+                "'완료 기준 -> 자기 설명 -> 검증'이어야 합니다: "
+                f"exercises/{name}/README.md"
+            )
+
+        completion_bullets = [
+            line for line in sections["완료 기준"].splitlines()
+            if line.startswith("- ")
+        ]
+        explanation_bullets = [
+            line for line in sections["자기 설명"].splitlines()
+            if line.startswith("- ")
+        ]
+        if len(completion_bullets) < 3:
+            fail(
+                "연습문제 완료 기준에는 관찰 가능한 확인 항목이 3개 이상 필요합니다: "
+                f"exercises/{name}/README.md"
+            )
+        if len(explanation_bullets) < 2 or any(
+            not line.rstrip().endswith("?") for line in explanation_bullets
+        ):
+            fail(
+                "연습문제 자기 설명에는 물음표로 끝나는 질문이 2개 이상 필요합니다: "
+                f"exercises/{name}/README.md"
+            )
+
+        normalized_completion = " ".join(sections["완료 기준"].split())
+        normalized_explanation = " ".join(sections["자기 설명"].split())
+        if normalized_completion in completion_owners:
+            fail(
+                "연습문제별 완료 기준이 서로 달라야 합니다: "
+                f"exercises/{name}/README.md, "
+                f"exercises/{completion_owners[normalized_completion]}/README.md"
+            )
+        if normalized_explanation in explanation_owners:
+            fail(
+                "연습문제별 자기 설명 질문이 서로 달라야 합니다: "
+                f"exercises/{name}/README.md, "
+                f"exercises/{explanation_owners[normalized_explanation]}/README.md"
+            )
+        completion_owners[normalized_completion] = name
+        explanation_owners[normalized_explanation] = name
 
         for source in (root / "reference").rglob("*"):
             if not source.is_file() or source.suffix not in SOURCE_SUFFIXES:

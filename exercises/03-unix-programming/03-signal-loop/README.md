@@ -25,6 +25,17 @@ ready pid=<PID>
 - 설치 전 handler를 보존하고 종료 때 정확히 복구합니다.
 - 표준 시그널은 여러 번 생성되어도 하나로 합쳐질 수 있으므로 정확한 이벤트 카운터로 사용하지 않습니다.
 
+## 완료 기준
+
+- `make exercise-test`와 `make sanitize`가 통과하며 `ready`가 먼저 출력된 뒤 SIGUSR1 사건을 처리하고 SIGTERM 사건·상태 0으로 종료합니다.
+- burst 시그널에서도 멈추지 않고, self-pipe가 가득 찬 경우 pending 플래그로 사건 존재를 보존하며 정확한 발생 횟수를 약속하지 않습니다.
+- 파이프의 nonblocking·close-on-exec 설정과 설치 전 handler 복구를 확인하고, 준비·정리 구간에서 관련 시그널이 차단되어 추가 출력이나 FD 누수가 없습니다.
+
+## 자기 설명
+
+- handler가 로그 출력이나 동적 할당 대신 pending 플래그와 self-pipe 쓰기만 수행해야 하는 이유는 무엇인가요?
+- handler 설치·복구와 FD 생성·폐기 사이에서 시그널 mask를 사용하지 않으면 어떤 경쟁 순서가 잘못된 FD 접근을 만들 수 있나요?
+
 ## 검증
 
 ```sh

@@ -29,6 +29,17 @@
 - destroy 뒤 빈 상태가 되며 반복 호출할 수 있습니다.
 - allocator는 테스트가 특정 resize 호출을 실패시키기 위한 경계입니다.
 
+## 완료 기준
+
+- `make exercise-test`와 `make sanitize`가 통과하며 초기화, 여러 번의 성장, 빈 문자열 append와 반복 destroy 뒤에도 불변식이 유지됩니다.
+- 문자열 전체와 내부 suffix를 source로 넘기는 alias append가 `realloc`의 이동 여부와 관계없이 정확한 결과를 만듭니다.
+- 잘못된 객체, 크기 overflow와 지정한 할당 실패 뒤 data 포인터·내용·length·capacity가 호출 전과 동일함을 테스트로 증명합니다.
+
+## 자기 설명
+
+- alias source를 포인터가 아니라 기존 data로부터의 offset으로 기억해야 `realloc` 뒤에도 안전한 이유는 무엇인가요?
+- 새 capacity 계산과 할당을 먼저 성공시킨 뒤 공개 상태를 갱신하는 순서가 강한 실패 보장을 어떻게 만드는지 설명할 수 있나요?
+
 ## 검증
 
 ```sh
