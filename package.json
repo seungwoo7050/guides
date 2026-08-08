@@ -1,0 +1,29 @@
+{
+  "name": "frontend-react-nextjs-guide",
+  "private": true,
+  "packageManager": "pnpm@10.32.1",
+  "scripts": {
+    "check:reference": "pnpm --dir exercises/project-catalog/reference typecheck && pnpm --dir exercises/project-catalog/reference test",
+    "check:skeleton": "node scripts/verify-skeleton.mjs",
+    "check": "pnpm check:reference && pnpm check:skeleton",
+    "build": "pnpm --dir exercises/project-catalog/reference build",
+    "test:e2e": "pnpm --dir exercises/project-catalog/reference test:e2e",
+    "smoke": "pnpm --dir exercises/project-catalog/reference smoke",
+    "exercise:create": "node exercises/project-catalog/create-workspace.mjs",
+    "exercise:verify:01": "node exercises/project-catalog/check-workspace.mjs stage:01",
+    "exercise:verify:02": "node exercises/project-catalog/check-workspace.mjs stage:02",
+    "exercise:verify:03": "node exercises/project-catalog/check-workspace.mjs stage:03",
+    "exercise:verify:04": "node exercises/project-catalog/check-workspace.mjs stage:04",
+    "exercise:verify:05": "node exercises/project-catalog/check-workspace.mjs stage:05",
+    "exercise:check": "node exercises/project-catalog/check-workspace.mjs check",
+    "exercise:build": "node exercises/project-catalog/check-workspace.mjs build",
+    "exercise:test:e2e": "node exercises/project-catalog/check-workspace.mjs test:e2e",
+    "exercise:smoke": "node exercises/project-catalog/check-workspace.mjs smoke",
+    "exercise:verify": "node exercises/project-catalog/check-workspace.mjs verify",
+    "verify": "pnpm check && pnpm build && pnpm test:e2e && pnpm smoke",
+    "clean": "node scripts/clean-generated.mjs"
+  },
+  "engines": {
+    "node": ">=22.16.0 <23"
+  }
+}
