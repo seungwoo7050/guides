@@ -1,10 +1,12 @@
 # 명령과 장애 진단
 
-저장소 전체의 정본 명령은 두 개다.
+저장소 전체의 공개 명령은 네 개다.
 
 ```sh
-./prepare.sh
-VERIFY_LOG="/tmp/backend-spring-boot-verify.log" ./verify.sh
+make prepare
+make check
+VERIFY_LOG="/tmp/backend-spring-boot-verify.log" make verify
+make clean
 ```
 
 개별 학습 실습을 반복할 때만 아래 명령을 사용한다.
@@ -13,16 +15,17 @@ VERIFY_LOG="/tmp/backend-spring-boot-verify.log" ./verify.sh
 |---|---|
 | reference 전체 test | `./scripts/mvn-guide.sh verify` |
 | 단일 reference | `./scripts/mvn-guide.sh -pl :모듈명 -am test` |
-| 단일 skeleton | `./scripts/mvn-guide.sh -f exercises/실습명/skeleton/pom.xml test` |
+| 학습 workspace 생성 | `./scripts/new-workspace.sh 실습명` |
+| 학습 workspace test | `./scripts/check-workspace.sh 실습명` |
 | dependency tree | `./scripts/mvn-guide.sh dependency:tree` |
 | 문서·구조 검사 | `python3 scripts/validate.py` |
 | 결과물 정리 | `make clean` |
 | Docker 접근 확인 | `docker info` |
 | guide가 만든 시험 컨테이너 확인 | `docker ps --filter label=org.testcontainers=true` |
 
-`docker system prune -a --volumes`는 이 저장소의 정리 명령이 아니다. 다른 프로젝트의 image와 data까지 제거할 수 있다. `verify.sh`는 외부 임시 사본을 지우고 `dev.guides.verify-run` 값이 같은 container만 회수한다.
+`docker system prune -a --volumes`는 이 저장소의 정리 명령이 아니다. 다른 프로젝트의 image와 data까지 제거할 수 있다. `make verify`는 외부 임시 사본을 지우고 실행 전 baseline 이후 생긴 Testcontainers 자원만 회수하며 기존 sentinel은 보존한다.
 
-검증 로그에는 단계별 PASS/FAIL, `SUMMARY: passed=... failed=... skipped=0`과 최종 `RESULT: PASS|FAIL`이 남는다. dependency나 image가 준비되지 않았을 때 verify가 네트워크로 보충하지 않으므로 `./prepare.sh`를 다시 실행해 원인을 드러낸다.
+검증 로그에는 단계별 PASS/FAIL, `SUMMARY: passed=... failed=... skipped=0`과 최종 `RESULT: PASS|FAIL`이 남는다. dependency나 image가 준비되지 않았을 때 verify가 네트워크로 보충하지 않으므로 `make prepare`를 다시 실행해 원인을 드러낸다. tracked canonical skeleton은 root 검증의 고정 실패 fixture이므로 직접 고치지 않고 `.workspace/<실습명>`만 수정한다.
 
 ## 증상에서 첫 원인을 좁힌다
 

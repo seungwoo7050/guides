@@ -14,11 +14,12 @@
 !.env.example
 
 # Java와 JVM 도구
-target/
-**/target/
-.guide/
-.workspace/
-**/.workspace/
+/target/
+/exercises/*/reference/target/
+/exercises/*/skeleton/target/
+/scripts/__pycache__/
+/.guide/
+/.workspace/
 *.jfr
 .classpath
 .project

@@ -15,14 +15,18 @@ Spring 고유 구현 경계와 전체 읽기 순서는 [Spring Boot 백엔드 �
 준비와 검증은 일반 clone과 linked worktree에서 같은 계약으로 동작한다.
 
 ```sh
-./prepare.sh
-VERIFY_LOG="/tmp/backend-spring-boot-verify.log" ./verify.sh
+make prepare
+make check
+VERIFY_LOG="/tmp/backend-spring-boot-verify.log" make verify
+make clean
 ```
 
-- `prepare.sh`: source와 Git index를 바꾸지 않고 namespaced Maven cache, immutable 컨테이너 이미지와 fingerprint marker 준비
-- `verify.sh`: 저장소 밖의 격리 사본에서 offline reference·통합 검사, validator mutant와 skeleton 실패 계약 검증
+- `make prepare`: source와 Git index를 바꾸지 않고 namespaced Maven cache, immutable 컨테이너 이미지와 fingerprint marker 준비
+- `make check`: 문서·exact tree·validator mutant와 offline compile 빠른 검사
+- `make verify`: 저장소 밖의 격리 사본에서 reference·workspace·통합 검사와 canonical skeleton 지정 실패 검증
+- `make clean`: root와 canonical 실습의 지정 build 생성물만 제거하고 준비 cache와 `.workspace` 학습자 파일은 보존
 
-두 스크립트는 저장소 루트에서 인자 없이 실행한다. `VERIFY_LOG`는 저장소 밖의 절대 경로여야 하며 `prepare.sh`는 반복 실행해도 source 상태를 바꾸지 않는다.
+네 명령은 저장소 루트에서 실행한다. `VERIFY_LOG`는 저장소 밖의 절대 경로여야 하며 `make prepare`는 반복 실행해도 source 상태를 바꾸지 않는다.
 
 ## 학습 경로
 
@@ -57,7 +61,7 @@ Spring Core
 | [resilient-http-client](exercises/resilient-http-client/README.md) | 외부 응답 분류와 Circuit Breaker |
 | [single-service-capstone](exercises/single-service-capstone/README.md) | Security·HTTP·PostgreSQL·Redis·Outbox·metric 통합 |
 
-각 실습은 `skeleton`과 `reference`를 제공한다. 먼저 skeleton의 의도한 실패를 확인하고 직접 수정한 뒤 reference와 비교한다. 루트 Maven reactor에는 검증 가능한 reference만 포함된다.
+각 실습은 immutable canonical `skeleton`과 `reference`를 제공한다. `make verify`가 canonical skeleton의 의도한 실패를 고정하므로 tracked skeleton을 직접 수정하지 않는다. `./scripts/new-workspace.sh <실습>`으로 `.workspace/<실습>`을 만든 뒤 그 복사본만 수정하고 `./scripts/check-workspace.sh <실습>`으로 같은 공개 test를 통과시킨다. 루트 Maven reactor에는 검증 가능한 reference만 포함되며 `make clean`은 학습자 workspace를 지우지 않는다.
 
 ## 환경
 

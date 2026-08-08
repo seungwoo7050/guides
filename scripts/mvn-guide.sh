@@ -2,6 +2,7 @@
 set -Eeuo pipefail
 
 ROOT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd -P)"
+STATE_TOOL="$ROOT_DIR/scripts/guide_state.py"
 MARKER="$ROOT_DIR/.guide/backend-spring-boot/prepared.json"
 
 [[ -f "$MARKER" ]] || {
@@ -9,24 +10,12 @@ MARKER="$ROOT_DIR/.guide/backend-spring-boot/prepared.json"
   exit 1
 }
 
-fingerprint="$(python3 "$ROOT_DIR/scripts/source_fingerprint.py" "$ROOT_DIR")"
-values="$(python3 - "$MARKER" "$fingerprint" <<'PY'
-import json
-import sys
-from pathlib import Path
-
-marker = json.loads(Path(sys.argv[1]).read_text(encoding="utf-8"))
-if marker.get("guide_id") != "backend-spring-boot":
-    raise SystemExit("prepare marker의 guide ID가 다릅니다.")
-if marker.get("input_fingerprint") != sys.argv[2]:
-    raise SystemExit("prepare marker가 현재 source와 맞지 않습니다. ./prepare.sh를 다시 실행하세요.")
-home = Path(marker["maven_home"])
-repository = Path(marker["maven_repository"])
-if not home.is_dir() or not repository.is_dir():
-    raise SystemExit("준비된 Maven cache가 없습니다. ./prepare.sh를 다시 실행하세요.")
-print(f"{home}\t{repository}")
-PY
-)"
+fingerprint="$(python3 "$STATE_TOOL" capture "$ROOT_DIR")"
+values="$(python3 "$STATE_TOOL" validate-marker "$MARKER" "$ROOT_DIR" "$fingerprint")" \
+  || {
+    printf '[FAIL] prepare marker가 손상·만료되었습니다. ./prepare.sh를 다시 실행하세요.\n' >&2
+    exit 1
+  }
 IFS=$'\t' read -r maven_home maven_repository <<<"$values"
 
 exec env MAVEN_USER_HOME="$maven_home" \

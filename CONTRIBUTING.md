@@ -27,6 +27,7 @@
 각 실습은 문제를 설명하는 README와 `skeleton`, `reference`를 가진다.
 
 - skeleton은 compile되어야 하며 알려진 계약 위반 때문에 test가 실패해야 한다.
+- tracked skeleton은 root 검증의 immutable 실패 fixture이므로 직접 수정하지 않는다. 학습 구현은 `.workspace/<실습>` 복사본에서만 한다.
 - dependency 누락, compile 오류와 Docker 부재를 의도한 학습 실패로 사용하지 않는다.
 - reference에는 `TODO`, `FIXME`, 임시 반환값을 남기지 않는다.
 - HTTP status뿐 아니라 DB·Redis·Outbox·외부 호출과 metric의 최종 상태를 검사한다.
@@ -37,14 +38,24 @@
 
 ## 변경을 검증한다
 
-일반 clone과 linked worktree를 포함한 모든 checkout에서 다음 두 명령이 정본이다.
+일반 clone과 linked worktree를 포함한 모든 checkout에서 다음 네 공개 명령이 정본이다.
 
 ```sh
-./prepare.sh
-./verify.sh
+make prepare
+make check
+make verify
+make clean
 ```
 
-`prepare.sh`는 도구를 확인하고 namespaced Maven cache와 immutable Docker image를 준비한다. source, mode, symlink와 Git index를 변경하거나 정답을 판정하지 않는다. `verify.sh`는 준비가 끝난 현재 tree를 외부 임시 사본에서 offline Maven으로 전체 검사하며 원본 구조나 의존성을 변경하지 않는다.
+`make prepare`는 도구를 확인하고 namespaced Maven cache와 immutable Docker image를 준비한다. source, mode, symlink와 Git index를 변경하거나 정답을 판정하지 않는다. `make check`는 문서·구조·mutant와 offline compile을 빠르게 확인한다. `make verify`는 준비가 끝난 현재 tree를 외부 임시 사본에서 offline Maven으로 전체 검사하며 원본 구조나 의존성을 변경하지 않는다. `make clean`은 지정 build 생성물만 제거하고 준비 cache와 `.workspace` 학습자 파일을 보존한다.
+
+실습은 다음처럼 canonical skeleton의 안전한 복사본에서 수행한다.
+
+```sh
+./scripts/new-workspace.sh application-boundaries
+#학습 구현: .workspace/application-boundaries/src/main을 수정한다.
+./scripts/check-workspace.sh application-boundaries
+```
 
 문서·구조만 빠르게 확인할 때는 다음 명령을 사용할 수 있다.
 

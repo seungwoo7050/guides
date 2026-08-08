@@ -3,303 +3,418 @@ set -Eeuo pipefail
 
 GUIDE_ID="backend-spring-boot"
 ROOT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd -P)"
+STATE_TOOL="$ROOT_DIR/scripts/guide_state.py"
+RUNNER="$ROOT_DIR/scripts/run_in_session.py"
 MARKER="$ROOT_DIR/.guide/$GUIDE_ID/prepared.json"
+TIMESTAMP="$(date -u +%Y%m%dT%H%M%SZ)"
+DEFAULT_LOG="/tmp/guide-backend-spring-boot-verify-$TIMESTAMP-$$.log"
+REQUESTED_LOG="${VERIFY_LOG:-$DEFAULT_LOG}"
+FALLBACK_LOG="/tmp/guide-backend-spring-boot-preflight-$TIMESTAMP-$$.log"
+VERIFY_LOG=""
+WORK_ROOT=""
+WORK_TREE=""
+ACTIVE_PID=""
+ACTIVE_PGID=""
+SOURCE_BEFORE=""
+INDEX_BEFORE=""
+COPY_BEFORE=""
+RUN_ID="backend-spring-boot-$TIMESTAMP-$$-${RANDOM:-0}"
+PASS_COUNT=0
+FAIL_COUNT=0
+SKIP_COUNT=0
+FINISHED=0
+STATE_CHECKED=0
+DOCKER_BASELINE_READY=0
+DOCKER_CLEANED=0
+
 POSTGRES_IMAGE="postgres:18.4-alpine@sha256:9a8afca54e7861fd90fab5fdf4c42477a6b1cb7d293595148e674e0a3181de15"
 REDIS_IMAGE="redis:8.8.0-alpine@sha256:9d317178eceac8454a2284a9e6df2466b93c745529947f0cd42a0fa9609d7005"
 RYUK_IMAGE="testcontainers/ryuk:0.14.0@sha256:7c1a8a9a47c780ed0f983770a662f80deb115d95cce3e2daa3d12115b8cd28f0"
 KAFKA_IMAGE="apache/kafka:4.3.1@sha256:77e3df9054047a88b520d0cc46e16696d3b22022e1d580aeccd2632df6532837"
-TEMP_DIR=""
-WORK_DIR=""
-RUN_ID="backend-spring-boot-$$-$(date +%s)"
-PASS_COUNT=0
-FAIL_COUNT=0
-RESULT_PRINTED=0
-ACTIVE_PID=""
 
-preflight_fail() {
-  printf '[FAIL] %s\nRESULT: FAIL\n' "$*" >&2
-  exit 1
-}
-
-[[ -n "${VERIFY_LOG:-}" ]] \
-  || preflight_fail "저장소 밖의 절대 로그 경로를 VERIFY_LOG로 지정해야 합니다."
-[[ "$VERIFY_LOG" == /* ]] \
-  || preflight_fail "VERIFY_LOG는 절대 경로여야 합니다: $VERIFY_LOG"
-python3 - "$ROOT_DIR" "$VERIFY_LOG" <<'PY' \
-  || preflight_fail "VERIFY_LOG는 저장소 밖에 있어야 합니다: $VERIFY_LOG"
+canonical_path() {
+  python3 - "$1" <<'PY'
 import sys
 from pathlib import Path
 
-root = Path(sys.argv[1]).resolve()
-log = Path(sys.argv[2]).resolve()
 try:
-    log.relative_to(root)
-except ValueError:
-    raise SystemExit(0)
-raise SystemExit(1)
+    print(Path(sys.argv[1]).resolve(strict=False))
+except (OSError, RuntimeError) as error:
+    raise SystemExit(str(error))
 PY
-[[ -d "$(dirname -- "$VERIFY_LOG")" ]] \
-  || preflight_fail "VERIFY_LOG 상위 디렉터리가 없습니다: $(dirname -- "$VERIFY_LOG")"
-: >"$VERIFY_LOG" || preflight_fail "VERIFY_LOG에 쓸 수 없습니다: $VERIFY_LOG"
-exec > >(tee -a "$VERIFY_LOG") 2>&1
+}
+
+emit_raw_summary() {
+  local destination=$1 message=$2
+  umask 077
+  mkdir -p -- "$(dirname -- "$destination")" 2>/dev/null || true
+  {
+    printf '[FAIL] %s\n' "$message"
+    printf 'SUMMARY: passed=0 failed=1 skipped=0\n'
+    printf 'VERIFY LOG: %s\n' "$destination"
+    printf 'RESULT: FAIL\n'
+  } | tee "$destination" >&2
+}
+
+log_preflight_fail() {
+  local message=$1 fallback
+  fallback="$(canonical_path "$FALLBACK_LOG" 2>/dev/null || printf '%s' "$FALLBACK_LOG")"
+  emit_raw_summary "$fallback" "$message"
+  exit 2
+}
+
+resolve_log() {
+  local canonical_root canonical_log parent after_parent
+  [[ "$REQUESTED_LOG" == /* ]] \
+    || log_preflight_fail "VERIFY_LOG는 저장소 밖의 절대 경로여야 합니다: $REQUESTED_LOG"
+  canonical_root="$(canonical_path "$ROOT_DIR")" \
+    || log_preflight_fail "저장소 경로를 해석하지 못했습니다."
+  canonical_log="$(canonical_path "$REQUESTED_LOG")" \
+    || log_preflight_fail "VERIFY_LOG 경로를 해석하지 못했습니다: $REQUESTED_LOG"
+  case "$canonical_log" in
+    "$canonical_root"|"$canonical_root"/*)
+      log_preflight_fail "VERIFY_LOG는 저장소 밖이어야 합니다: $canonical_log"
+      ;;
+  esac
+  parent="$(dirname -- "$canonical_log")"
+  mkdir -p -- "$parent" \
+    || log_preflight_fail "VERIFY_LOG parent를 만들 수 없습니다: $parent"
+  after_parent="$(canonical_path "$parent")" \
+    || log_preflight_fail "VERIFY_LOG parent를 다시 확인하지 못했습니다: $parent"
+  case "$after_parent/$(basename -- "$canonical_log")" in
+    "$canonical_root"|"$canonical_root"/*)
+      log_preflight_fail "VERIFY_LOG parent가 저장소 안으로 바뀌었습니다."
+      ;;
+  esac
+  VERIFY_LOG="$canonical_log"
+  umask 077
+  : >"$VERIFY_LOG" || log_preflight_fail "VERIFY_LOG를 쓸 수 없습니다: $VERIFY_LOG"
+}
+
+resolve_log
+
+emit_line() {
+  printf '%s\n' "$*"
+  printf '%s\n' "$*" >>"$VERIFY_LOG"
+}
 
 pass() {
   PASS_COUNT=$((PASS_COUNT + 1))
-  printf '[PASS] %s\n' "$*"
+  emit_line "[PASS] $*"
 }
 
 fail() {
   FAIL_COUNT=$((FAIL_COUNT + 1))
-  printf '[FAIL] %s\n' "$*" >&2
+  emit_line "[FAIL] $*"
+  return 1
+}
+
+preflight_fail() {
+  FAIL_COUNT=$((FAIL_COUNT + 1))
+  emit_line "[FAIL] $*"
+  exit 2
+}
+
+fatal() {
+  FAIL_COUNT=$((FAIL_COUNT + 1))
+  emit_line "[FAIL] $*"
   exit 1
 }
 
-source_fingerprint() {
-  python3 "$ROOT_DIR/scripts/source_fingerprint.py" "$ROOT_DIR"
+process_group_exists() {
+  [[ -n "${ACTIVE_PGID:-}" ]] \
+    && kill -0 -- "-$ACTIVE_PGID" >/dev/null 2>&1
 }
 
-index_fingerprint() {
-  git -C "$ROOT_DIR" ls-files -s -z | shasum -a 256 | awk '{print $1}'
-}
-
-cleanup_run_containers() {
-  command -v docker >/dev/null 2>&1 || return 0
-  while IFS= read -r container_id; do
-    [[ -n "$container_id" ]] || continue
-    docker rm -f "$container_id" >/dev/null 2>&1 || true
-  done < <(docker ps -aq --filter "label=dev.guides.verify-run=$RUN_ID" 2>/dev/null || true)
-}
-
-terminate_process_tree() {
-  local process_id="$1"
-  local child_id
-  while IFS= read -r child_id; do
-    [[ -n "$child_id" ]] || continue
-    terminate_process_tree "$child_id"
-  done < <(pgrep -P "$process_id" 2>/dev/null || true)
-  kill -TERM "$process_id" >/dev/null 2>&1 || true
-}
-
-terminate_active_child() {
+stop_active_group() {
   local attempt
-  [[ -n "$ACTIVE_PID" ]] || return 0
-  terminate_process_tree "$ACTIVE_PID"
-  for attempt in {1..20}; do
-    kill -0 "$ACTIVE_PID" >/dev/null 2>&1 || break
+  [[ -n "${ACTIVE_PID:-}" ]] || return 0
+  kill -TERM -- "-$ACTIVE_PGID" >/dev/null 2>&1 || true
+  for attempt in {1..50}; do
+    process_group_exists || break
     sleep 0.1
   done
-  kill -KILL "$ACTIVE_PID" >/dev/null 2>&1 || true
+  process_group_exists \
+    && kill -KILL -- "-$ACTIVE_PGID" >/dev/null 2>&1 || true
   wait "$ACTIVE_PID" >/dev/null 2>&1 || true
   ACTIVE_PID=""
+  ACTIVE_PGID=""
 }
 
-finish() {
-  local status=$?
-  terminate_active_child
-  cleanup_run_containers
-  [[ -z "$TEMP_DIR" ]] || rm -rf -- "$TEMP_DIR"
-  if (( RESULT_PRINTED == 0 )); then
-    if (( status == 0 )); then
-      printf 'RESULT: PASS\n'
-    else
-      (( FAIL_COUNT > 0 )) || FAIL_COUNT=1
-      printf 'SUMMARY: passed=%d failed=%d skipped=0\n' "$PASS_COUNT" "$FAIL_COUNT"
-      printf 'LOG: %s\n' "$VERIFY_LOG"
-      printf 'RESULT: FAIL\n'
-    fi
-  fi
-  exit "$status"
-}
-trap finish EXIT
-trap 'terminate_active_child; exit 130' INT
-trap 'terminate_active_child; exit 143' TERM
-trap 'terminate_active_child; exit 129' HUP
-
-need_command() {
-  command -v "$1" >/dev/null 2>&1 \
-    || fail "필수 명령을 찾을 수 없습니다: $1"
-}
-
-snapshot_testcontainers() {
-  local prefix="$1"
-  docker ps -aq --filter label=org.testcontainers=true | sort \
-    >"$TEMP_DIR/$prefix.containers"
-  docker network ls -q --filter label=org.testcontainers=true | sort \
-    >"$TEMP_DIR/$prefix.networks"
-  docker volume ls -q --filter label=org.testcontainers=true | sort \
-    >"$TEMP_DIR/$prefix.volumes"
-}
-
-run_maven() {
-  local status=0
-  (
-    cd "$WORK_DIR"
-    export MAVEN_USER_HOME="$MAVEN_HOME_DIR"
-    exec ./mvnw -B -ntp -o \
-      -Dmaven.repo.local="$MAVEN_REPOSITORY" "$@"
-  ) &
+start_managed() {
+  local output=$1 observed_pgid="" attempt
+  shift
+  python3 "$RUNNER" "$@" >>"$output" 2>&1 &
   ACTIVE_PID=$!
+  ACTIVE_PGID=$ACTIVE_PID
+  for attempt in {1..100}; do
+    observed_pgid="$(ps -o pgid= -p "$ACTIVE_PID" 2>/dev/null | tr -d ' ' || true)"
+    [[ "$observed_pgid" == "$ACTIVE_PID" ]] && break
+    kill -0 "$ACTIVE_PID" >/dev/null 2>&1 || break
+    sleep 0.01
+  done
+}
+
+run_managed_to() {
+  local output=$1 status=0
+  shift
+  start_managed "$output" "$@"
   wait "$ACTIVE_PID" || status=$?
   ACTIVE_PID=""
+  ACTIVE_PGID=""
   return "$status"
 }
 
-expect_test_failure() {
-  local exercise="$1"
-  local log="$TEMP_DIR/skeleton-$exercise.log"
-  local pom="$WORK_DIR/exercises/$exercise/skeleton/pom.xml"
-
-  printf '[INFO] skeleton 실패 계약: %s\n' "$exercise"
-  if run_maven -f "$pom" test >"$log" 2>&1; then
-    cat "$log"
-    fail "$exercise skeleton이 예상과 달리 통과했습니다."
-  fi
-  if grep -Eqi \
-    'COMPILATION ERROR|Could not resolve|Non-resolvable parent|No tests were executed|Could not find a valid Docker environment|ContainerLaunchException|Failed to start container|Plugin .* could not be resolved|Unknown lifecycle phase' \
-    "$log"; then
-    cat "$log"
-    fail "$exercise skeleton이 학습 결함이 아닌 준비·컴파일·Docker 오류로 실패했습니다."
-  fi
-  if ! grep -Eq \
-    'Tests run: [0-9]+, Failures: [1-9][0-9]*|Tests run: [0-9]+, Failures: [0-9]+, Errors: [1-9][0-9]*' \
-    "$log"; then
-    cat "$log"
-    fail "$exercise skeleton에서 Surefire test failure를 확인하지 못했습니다."
-  fi
-  pass "skeleton의 의도한 test failure: $exercise"
+run_managed() {
+  run_managed_to "$VERIFY_LOG" "$@"
 }
 
-cd "$ROOT_DIR"
-for command_name in git bash java python3 docker shasum awk tee pgrep; do
-  need_command "$command_name"
-done
-pass "필수 명령 확인"
-
-[[ "$(git rev-parse --show-toplevel 2>/dev/null || true)" == "$ROOT_DIR" ]] \
-  || fail "저장소 루트의 verify.sh를 실행해야 합니다."
-[[ -f "$MARKER" ]] || fail "prepare marker가 없습니다. 먼저 ./prepare.sh를 실행하세요."
-docker info >/dev/null 2>&1 || fail "Docker daemon에 연결할 수 없습니다."
-pass "저장소와 Docker daemon 확인"
-
-before_source="$(source_fingerprint)"
-before_index="$(index_fingerprint)"
-python3 - "$MARKER" "$GUIDE_ID" "$before_source" <<'PY' \
-  || fail "prepare marker가 손상되었거나 현재 source와 맞지 않습니다. ./prepare.sh를 다시 실행하세요."
-import json
-import sys
-from pathlib import Path
-
-marker = json.loads(Path(sys.argv[1]).read_text(encoding="utf-8"))
-required = {
-    "schema", "guide_id", "input_fingerprint", "java", "maven", "docker",
-    "maven_home", "maven_repository", "images",
-}
-if set(marker) != required:
-    raise SystemExit(1)
-if marker["schema"] != 1 or marker["guide_id"] != sys.argv[2]:
-    raise SystemExit(1)
-if marker["input_fingerprint"] != sys.argv[3]:
-    raise SystemExit(1)
-if not Path(marker["maven_home"]).is_dir() or not Path(marker["maven_repository"]).is_dir():
-    raise SystemExit(1)
-PY
-MAVEN_HOME_DIR="$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1]))["maven_home"])' "$MARKER")"
-MAVEN_REPOSITORY="$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1]))["maven_repository"])' "$MARKER")"
-for image in "$POSTGRES_IMAGE" "$REDIS_IMAGE" "$RYUK_IMAGE" "$KAFKA_IMAGE"; do
-  docker image inspect "$image" >/dev/null 2>&1 \
-    || fail "준비된 Docker image가 없습니다: $image"
-done
-pass "fingerprint·cache·immutable image marker 확인"
-
-TEMP_DIR="$(mktemp -d "${TMPDIR:-/tmp}/guide-spring-verify.XXXXXX")"
-WORK_DIR="$TEMP_DIR/work"
-snapshot_testcontainers before
-python3 - "$ROOT_DIR" "$WORK_DIR" <<'PY'
-import shutil
-import sys
-from pathlib import Path
-
-source = Path(sys.argv[1])
-destination = Path(sys.argv[2])
-
-def ignore(_directory: str, names: list[str]) -> set[str]:
-    ignored = {name for name in names if name in {".git", ".guide", "target", "__pycache__"}}
-    ignored.update(name for name in names if name.endswith(".pyc"))
-    return ignored
-
-shutil.copytree(source, destination, symlinks=True, copy_function=shutil.copy2, ignore=ignore)
-PY
-pass "현재 working tree를 외부 임시 디렉터리에 격리 복사"
-
-export GUIDE_VERIFY_RUN_ID="$RUN_ID"
-export TESTCONTAINERS_PULL_POLICY="dev.guides.spring.testinfra.NeverPullPolicy"
-export TESTCONTAINERS_RYUK_CONTAINER_IMAGE="$RYUK_IMAGE"
-export TESTCONTAINERS_CHECKS_DISABLE="true"
-
-(
-  cd "$WORK_DIR"
-  python3 scripts/validate.py
-  python3 scripts/validator_self_test.py
-  bash -n prepare.sh verify.sh scripts/mvn-guide.sh
-)
-pass "validator·mutant suite·shell 문법"
-
-run_maven -DskipTests compile
-pass "reference 전체 offline compile"
-run_maven verify
-pass "reference와 integration test 전체 offline 검증"
-
-skeletons=(
-  "application-boundaries"
-  "security-boundaries"
-  "transaction-locking"
-  "idempotency-outbox"
-  "kafka-avro-contract"
-  "resilient-http-client"
-  "single-service-capstone"
-)
-for exercise in "${skeletons[@]}"; do
-  expect_test_failure "$exercise"
-done
-
-for attempt in {1..30}; do
-  if [[ -z "$(docker ps -aq --filter "label=dev.guides.verify-run=$RUN_ID")" ]]; then
-    break
+capture_managed() {
+  local variable=$1 output value
+  shift
+  output="$(mktemp "/tmp/guide-spring-capture.XXXXXX")" \
+    || return 1
+  if ! run_managed_to "$output" "$@"; then
+    cat "$output" >>"$VERIFY_LOG"
+    rm -f -- "$output"
+    return 1
   fi
-  sleep 1
-done
-cleanup_run_containers
-[[ -z "$(docker ps -aq --filter "label=dev.guides.verify-run=$RUN_ID")" ]] \
-  || fail "이 실행의 Testcontainers container가 남았습니다."
+  value="$(cat "$output")"
+  rm -f -- "$output"
+  printf -v "$variable" '%s' "$value"
+}
 
-for attempt in {1..30}; do
-  snapshot_testcontainers after
-  new_testcontainers_resource=0
+run_check() {
+  local label=$1
+  shift
+  {
+    printf '\nCHECK: %s\n' "$label"
+    printf 'COMMAND:'
+    printf ' %q' "$@"
+    printf '\n'
+  } >>"$VERIFY_LOG"
+  if run_managed "$@"; then
+    pass "$label"
+  else
+    local status=$?
+    fatal "$label (exit=$status)"
+  fi
+}
+
+snapshot_docker_direct() {
+  local prefix=$1
+  {
+    docker ps -aq --filter label=org.testcontainers=true 2>/dev/null || true
+    docker ps -aq --filter "label=dev.guides.verify-run=$RUN_ID" 2>/dev/null || true
+  } | sort -u >"$WORK_ROOT/$prefix.containers"
+  {
+    docker network ls -q --filter label=org.testcontainers=true 2>/dev/null || true
+    docker network ls -q --filter "label=dev.guides.verify-run=$RUN_ID" 2>/dev/null || true
+  } | sort -u >"$WORK_ROOT/$prefix.networks"
+  {
+    docker volume ls -q --filter label=org.testcontainers=true 2>/dev/null || true
+    docker volume ls -q --filter "label=dev.guides.verify-run=$RUN_ID" 2>/dev/null || true
+  } | sort -u >"$WORK_ROOT/$prefix.volumes"
+}
+
+snapshot_docker_managed() {
+  local prefix=$1 kind command
   for kind in containers networks volumes; do
-    if [[ -n "$(comm -13 "$TEMP_DIR/before.$kind" "$TEMP_DIR/after.$kind" || true)" ]]; then
-      new_testcontainers_resource=1
-      break
-    fi
+    case "$kind" in
+      containers) command='docker ps -aq --filter label=org.testcontainers=true; docker ps -aq --filter "label=dev.guides.verify-run=$GUIDE_VERIFY_RUN_ID"' ;;
+      networks) command='docker network ls -q --filter label=org.testcontainers=true; docker network ls -q --filter "label=dev.guides.verify-run=$GUIDE_VERIFY_RUN_ID"' ;;
+      volumes) command='docker volume ls -q --filter label=org.testcontainers=true; docker volume ls -q --filter "label=dev.guides.verify-run=$GUIDE_VERIFY_RUN_ID"' ;;
+    esac
+    run_managed_to "$WORK_ROOT/$prefix.$kind.raw" \
+      env GUIDE_VERIFY_RUN_ID="$RUN_ID" bash -c "$command" \
+      || return 1
+    sort -u "$WORK_ROOT/$prefix.$kind.raw" >"$WORK_ROOT/$prefix.$kind"
   done
-  (( new_testcontainers_resource == 0 )) && break
-  sleep 1
-done
-snapshot_testcontainers after
-for kind in containers networks volumes; do
-  remaining="$(comm -13 "$TEMP_DIR/before.$kind" "$TEMP_DIR/after.$kind" || true)"
-  [[ -z "$remaining" ]] || fail "검증 뒤 새 Testcontainers $kind 자원이 남았습니다: $remaining"
-done
-pass "실행 범위 Docker 자원 정리와 기존 자원 보존"
+  DOCKER_BASELINE_READY=1
+}
 
-after_source="$(source_fingerprint)"
-after_index="$(index_fingerprint)"
-[[ "$before_source" == "$after_source" ]] \
-  || fail "verify.sh가 원본 source bytes, mode 또는 symlink를 변경했습니다."
-[[ "$before_index" == "$after_index" ]] \
-  || fail "verify.sh가 원본 Git index를 변경했습니다."
-pass "원본 source와 Git index 전후 동일"
+remove_new_docker_resources() {
+  local attempt kind identifier remaining=0
+  (( DOCKER_BASELINE_READY == 1 )) || return 0
+  for attempt in {1..30}; do
+    snapshot_docker_direct current
+    while IFS= read -r identifier; do
+      [[ -n "$identifier" ]] || continue
+      docker rm -f "$identifier" >/dev/null 2>&1 || true
+    done < <(comm -13 "$WORK_ROOT/before.containers" "$WORK_ROOT/current.containers")
+    while IFS= read -r identifier; do
+      [[ -n "$identifier" ]] || continue
+      docker network rm "$identifier" >/dev/null 2>&1 || true
+    done < <(comm -13 "$WORK_ROOT/before.networks" "$WORK_ROOT/current.networks")
+    while IFS= read -r identifier; do
+      [[ -n "$identifier" ]] || continue
+      docker volume rm -f "$identifier" >/dev/null 2>&1 || true
+    done < <(comm -13 "$WORK_ROOT/before.volumes" "$WORK_ROOT/current.volumes")
+    snapshot_docker_direct after
+    remaining=0
+    for kind in containers networks volumes; do
+      [[ -z "$(comm -13 "$WORK_ROOT/before.$kind" "$WORK_ROOT/after.$kind")" ]] \
+        || remaining=1
+    done
+    (( remaining == 0 )) && return 0
+    sleep 0.2
+  done
+  return 1
+}
 
-RESULT_PRINTED=1
-printf 'SUMMARY: passed=%d failed=0 skipped=0\n' "$PASS_COUNT"
-printf 'LOG: %s\n' "$VERIFY_LOG"
-printf 'RESULT: PASS\n'
+check_original_state() {
+  local source_after="" index_after=""
+  (( STATE_CHECKED == 0 )) || return 0
+  STATE_CHECKED=1
+  [[ -n "$SOURCE_BEFORE" && -n "$INDEX_BEFORE" ]] || return 0
+  source_after="$(python3 "$STATE_TOOL" capture "$ROOT_DIR" 2>>"$VERIFY_LOG" || true)"
+  index_after="$(python3 "$STATE_TOOL" index-state "$ROOT_DIR" 2>>"$VERIFY_LOG" || true)"
+  if [[ -n "$source_after" && -n "$index_after" \
+        && "$SOURCE_BEFORE" == "$source_after" \
+        && "$INDEX_BEFORE" == "$index_after" ]]; then
+    pass "원본 source bytes·mode·symlink와 Git index raw bytes·staged entries 불변"
+    return 0
+  fi
+  fail "검증이 원본 source 또는 Git index raw bytes·staged entries를 변경했습니다."
+}
+
+print_summary() {
+  local result=$1
+  emit_line "SUMMARY: passed=$PASS_COUNT failed=$FAIL_COUNT skipped=$SKIP_COUNT"
+  emit_line "VERIFY LOG: $VERIFY_LOG"
+  emit_line "RESULT: $result"
+}
+
+finish() {
+  local status=$? result=PASS
+  (( FINISHED == 0 )) || exit "$status"
+  FINISHED=1
+  trap - EXIT HUP INT TERM
+  stop_active_group
+  if (( DOCKER_CLEANED == 0 && DOCKER_BASELINE_READY == 1 )); then
+    if ! remove_new_docker_resources; then
+      fail "검증 실행이 만든 Testcontainers container/network/volume을 정리하지 못했습니다."
+    fi
+    DOCKER_CLEANED=1
+  fi
+  check_original_state || true
+  [[ -z "$WORK_ROOT" || ! -d "$WORK_ROOT" ]] || rm -rf -- "$WORK_ROOT"
+  if (( status != 0 || FAIL_COUNT != 0 || SKIP_COUNT != 0 )); then
+    result=FAIL
+    (( status != 0 )) || status=1
+  fi
+  print_summary "$result"
+  exit "$status"
+}
+
+handle_signal() {
+  local code=$1 name=$2
+  trap - HUP INT TERM
+  stop_active_group
+  FAIL_COUNT=$((FAIL_COUNT + 1))
+  emit_line "[FAIL] $name 신호로 검증이 중단되었습니다."
+  exit "$code"
+}
+
+trap finish EXIT
+trap 'handle_signal 129 HUP' HUP
+trap 'handle_signal 130 INT' INT
+trap 'handle_signal 143 TERM' TERM
+
+main() {
+  local command_name marker_values copied_state copy_after
+  [[ $# -eq 0 ]] || preflight_fail "사용법: ./verify.sh"
+  [[ "$(pwd -P)" == "$ROOT_DIR" ]] || preflight_fail "저장소 루트에서 ./verify.sh를 실행해야 합니다."
+  for command_name in git bash java javac python3 docker sort comm ps tr; do
+    command -v "$command_name" >/dev/null 2>&1 \
+      || preflight_fail "필수 명령을 찾을 수 없습니다: $command_name"
+  done
+  [[ -x "$STATE_TOOL" && -x "$RUNNER" ]] \
+    || preflight_fail "상태 또는 process-group helper가 실행 가능하지 않습니다."
+  pass "필수 명령 확인"
+
+  [[ "$(cd -- "$(git rev-parse --show-toplevel 2>/dev/null)" && pwd -P)" == "$ROOT_DIR" ]] \
+    || preflight_fail "저장소 루트의 verify.sh를 실행해야 합니다."
+  run_managed_to /dev/null docker info \
+    || preflight_fail "Docker daemon에 연결할 수 없습니다."
+  pass "저장소와 Docker daemon 확인"
+
+  [[ -f "$MARKER" ]] || preflight_fail "prepare marker가 없습니다. 먼저 ./prepare.sh를 실행하세요."
+  capture_managed SOURCE_BEFORE python3 "$STATE_TOOL" capture "$ROOT_DIR" \
+    || preflight_fail "검증 전 source fingerprint를 기록하지 못했습니다."
+  capture_managed INDEX_BEFORE python3 "$STATE_TOOL" index-state "$ROOT_DIR" \
+    || preflight_fail "검증 전 Git index raw bytes와 staged entries를 기록하지 못했습니다."
+  if ! capture_managed marker_values \
+      python3 "$STATE_TOOL" validate-marker "$MARKER" "$ROOT_DIR" "$SOURCE_BEFORE"; then
+    preflight_fail "prepare marker가 손상·만료되었거나 현재 tool/cache/image와 다릅니다."
+  fi
+  IFS=$'\t' read -r MAVEN_HOME_DIR MAVEN_REPOSITORY <<<"$marker_values"
+  export MAVEN_HOME_DIR MAVEN_REPOSITORY
+  pass "정확한 preparation fingerprint·tool·cache·immutable image marker 확인"
+
+  WORK_ROOT="$(mktemp -d "${TMPDIR:-/tmp}/guide-spring-verify.XXXXXX")" \
+    || fatal "검증용 외부 임시 디렉터리를 만들지 못했습니다."
+  WORK_TREE="$WORK_ROOT/repository"
+  mkdir -p -- "$WORK_TREE"
+  snapshot_docker_managed before \
+    || fatal "검증 전 Testcontainers resource baseline을 기록하지 못했습니다."
+  run_managed python3 "$STATE_TOOL" copy "$ROOT_DIR" "$WORK_TREE" \
+    || fatal "현재 working tree를 격리 디렉터리로 복사하지 못했습니다."
+  copied_state="$(python3 "$WORK_TREE/scripts/guide_state.py" capture "$WORK_TREE")"
+  [[ "$copied_state" == "$SOURCE_BEFORE" ]] \
+    || fatal "격리 복사본이 원본 source bytes·mode·symlink와 다릅니다."
+  COPY_BEFORE="$copied_state"
+  pass "현재 working tree를 외부 임시 디렉터리에 정확히 격리 복사"
+
+  export GUIDE_VERIFY_RUN_ID="$RUN_ID"
+  export GUIDE_MAVEN_REPOSITORY="$MAVEN_REPOSITORY"
+  export MAVEN_USER_HOME="$MAVEN_HOME_DIR"
+  export TESTCONTAINERS_PULL_POLICY="dev.guides.spring.testinfra.NeverPullPolicy"
+  export TESTCONTAINERS_RYUK_CONTAINER_IMAGE="$RYUK_IMAGE"
+  export TESTCONTAINERS_CHECKS_DISABLE="true"
+  export SPRING_GUIDE_MARKER="$MARKER"
+  cd "$WORK_TREE" || fatal "격리 복사본으로 이동하지 못했습니다."
+
+  run_managed python3 scripts/validate.py \
+    || fatal "repository exact-tree·문서·실습 validator"
+  run_managed python3 scripts/validator_self_test.py \
+    || fatal "validator와 검증 계약 mutant suite"
+  run_managed ./scripts/verify-workspaces.sh \
+    || fatal "7개 학습 workspace 수정본과 canonical 공개 tests"
+  run_managed env MAVEN_USER_HOME="$MAVEN_HOME_DIR" \
+    ./mvnw -B -ntp -o -Dmaven.repo.local="$MAVEN_REPOSITORY" \
+    org.apache.maven.plugins:maven-help-plugin:3.5.1:effective-pom \
+    -Doutput="$WORK_ROOT/effective-pom.xml" \
+    || fatal "Maven effective POM 생성"
+  run_managed python3 scripts/check-effective-pom.py \
+    "$WORK_ROOT/effective-pom.xml" --self-test \
+    || fatal "effective XML 판본·plugin·dependency pin"
+  run_managed bash -c \
+    'while IFS= read -r -d "" script; do bash -n "$script" || exit 1; done < <(find . -type f -name "*.sh" -not -path "*/target/*" -print0)' \
+    || fatal "전체 shell 문법 검사"
+  pass "validator·mutant suite·7개 workspace·shell 문법"
+
+  run_check "reference 전체 offline compile" env MAVEN_USER_HOME="$MAVEN_HOME_DIR" \
+    ./mvnw -B -ntp -o -Dmaven.repo.local="$MAVEN_REPOSITORY" -DskipTests compile
+  run_check "reference와 integration test 전체 offline 검증" env MAVEN_USER_HOME="$MAVEN_HOME_DIR" \
+    ./mvnw -B -ntp -o -Dmaven.repo.local="$MAVEN_REPOSITORY" verify
+
+  for exercise in application-boundaries security-boundaries transaction-locking \
+      idempotency-outbox kafka-avro-contract resilient-http-client single-service-capstone; do
+    run_check "$exercise skeleton 지정 실패" ./scripts/verify-skeletons.sh "$exercise"
+  done
+
+  run_managed make clean || fatal "격리 복사본의 지정 생성물 정리"
+  run_managed python3 scripts/validate.py || fatal "정리 뒤 exact-tree 재검사"
+  copy_after="$(python3 scripts/guide_state.py capture "$WORK_TREE")"
+  [[ "$copy_after" == "$COPY_BEFORE" ]] \
+    || fatal "검증이 격리 복사본의 source bytes·mode·symlink를 변경했습니다."
+
+  cd "$ROOT_DIR"
+  remove_new_docker_resources \
+    || fatal "검증 실행의 Testcontainers container/network/volume 정리"
+  DOCKER_CLEANED=1
+  pass "실행 범위 Docker 자원 즉시 정리와 baseline sentinel 보존"
+}
+
+main "$@"

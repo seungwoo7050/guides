@@ -4,6 +4,7 @@ clients:
     base-url: http://localhost:18080
     connect-timeout: 200ms
     read-timeout: 500ms
+    max-attempts: 2
 resilience4j:
   circuitbreaker:
     instances:
