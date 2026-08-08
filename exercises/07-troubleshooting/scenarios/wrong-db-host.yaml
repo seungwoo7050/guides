@@ -1,0 +1,6 @@
+services:
+  app:
+    environment:
+      DB_HOST: does-not-exist
+      DB_CONNECT_ATTEMPTS: "6"
+      DB_CONNECT_DELAY_MS: "200"
