@@ -13,8 +13,29 @@ from urllib.parse import unquote
 
 ROOT = Path(__file__).resolve().parents[1]
 ERRORS: list[str] = []
-EXCLUDED_DIRECTORIES = {".git", ".guide", "target", ".workspace", "__pycache__"}
-EXCLUDED_SUFFIXES = {".jfr", ".pyc"}
+GENERATED_DIRECTORIES = {
+    ".git",
+    ".guide",
+    ".workspace",
+    "target",
+    "examples/runtime-model/target",
+    "exercises/01-language-and-domain/01-first-program/reference/target",
+    "exercises/01-language-and-domain/01-first-program/skeleton/target",
+    "exercises/01-language-and-domain/02-value-object-contract/reference/target",
+    "exercises/01-language-and-domain/02-value-object-contract/skeleton/target",
+    "exercises/02-runtime-and-concurrency/01-concurrent-state-update/reference/target",
+    "exercises/02-runtime-and-concurrency/01-concurrent-state-update/skeleton/target",
+    "exercises/02-runtime-and-concurrency/02-executor-lifecycle/reference/target",
+    "exercises/02-runtime-and-concurrency/02-executor-lifecycle/skeleton/target",
+    "exercises/03-build-test-and-evidence/01-multi-repository-maven/.workspace",
+    "exercises/03-build-test-and-evidence/01-multi-repository-maven/consumer-service/target",
+    "exercises/03-build-test-and-evidence/01-multi-repository-maven/contract-library/target",
+    "exercises/03-build-test-and-evidence/02-state-and-effect-testing/reference/target",
+    "exercises/03-build-test-and-evidence/02-state-and-effect-testing/skeleton/target",
+    "exercises/04-capstone/01-concurrent-job-ledger/reference/target",
+    "exercises/04-capstone/01-concurrent-job-ledger/skeleton/target",
+    "scripts/__pycache__",
+}
 
 EXPECTED_DOCS = {
     "docs/00-roadmap.md",
@@ -39,6 +60,19 @@ EXPECTED_EXERCISES = {
     "exercises/03-build-test-and-evidence/02-state-and-effect-testing",
     "exercises/04-capstone/01-concurrent-job-ledger",
 }
+
+WORKSPACE_EXERCISES = {
+    "exercises/01-language-and-domain/01-first-program": "first-program",
+    "exercises/01-language-and-domain/02-value-object-contract": "value-object-contract",
+    "exercises/02-runtime-and-concurrency/01-concurrent-state-update": "concurrent-state-update",
+    "exercises/02-runtime-and-concurrency/02-executor-lifecycle": "executor-lifecycle",
+    "exercises/03-build-test-and-evidence/02-state-and-effect-testing": "state-and-effect-testing",
+    "exercises/04-capstone/01-concurrent-job-ledger": "concurrent-job-ledger",
+}
+
+OBSERVATION_EXERCISE = (
+    "exercises/03-build-test-and-evidence/01-multi-repository-maven"
+)
 
 EXPECTED_MODULES = {
     "examples/runtime-model",
@@ -74,9 +108,12 @@ EXECUTABLE_FILES = {
     "prepare.sh",
     "verify.sh",
     "scripts/mvn-guide.sh",
+    "scripts/new-workspace.sh",
+    "scripts/check-workspace.sh",
     "scripts/preflight.sh",
     "scripts/record-executor-jfr.sh",
     "scripts/smoke-javac.sh",
+    "scripts/verify-skeletons.sh",
     "exercises/03-build-test-and-evidence/01-multi-repository-maven/verify.sh",
 }
 
@@ -85,14 +122,26 @@ def report(message: str) -> None:
     ERRORS.append(message)
 
 
+def generated(relative: str) -> bool:
+    return any(
+        relative == directory or relative.startswith(f"{directory}/")
+        for directory in GENERATED_DIRECTORIES
+    )
+
+
 def source_files() -> list[Path]:
     files: list[Path] = []
     for directory, names, filenames in os.walk(ROOT, followlinks=False):
-        names[:] = sorted(name for name in names if name not in EXCLUDED_DIRECTORIES)
         base = Path(directory)
+        names[:] = sorted(
+            name
+            for name in names
+            if not generated((base / name).relative_to(ROOT).as_posix())
+        )
         for name in sorted(filenames):
             path = base / name
-            if path.suffix not in EXCLUDED_SUFFIXES:
+            relative = path.relative_to(ROOT).as_posix()
+            if not generated(relative):
                 files.append(path)
         for name in names.copy():
             path = base / name
@@ -206,7 +255,7 @@ def check_text_hygiene() -> None:
 def check_markdown() -> None:
     link_pattern = re.compile(r"(?<!!)\[[^\]]+\]\(([^)]+)\)")
     for path in sorted(ROOT.rglob("*.md")):
-        if any(part in EXCLUDED_DIRECTORIES for part in path.relative_to(ROOT).parts):
+        if generated(path.relative_to(ROOT).as_posix()):
             continue
         relative = path.relative_to(ROOT)
         text = path.read_text(encoding="utf-8")
@@ -262,7 +311,8 @@ def section(text: str, heading: str) -> tuple[int, str] | None:
 
 
 def check_exercise_rubrics() -> None:
-    rubric_signatures: dict[str, str] = {}
+    completion_signatures: dict[str, str] = {}
+    explanation_signatures: dict[str, str] = {}
     for exercise in sorted(EXPECTED_EXERCISES):
         readme = ROOT / exercise / "README.md"
         if not readme.is_file():
@@ -286,20 +336,71 @@ def check_exercise_rubrics() -> None:
             report(f"관찰 가능한 완료 기준이 3개 미만입니다: {exercise}")
         if len(re.findall(r"^- .+\?\s*$", explanation, re.MULTILINE)) < 2:
             report(f"실습별 자기 설명 질문이 2개 미만입니다: {exercise}")
-        if not any(token in verification for token in ("mvn-guide.sh", "verify.sh")):
-            report(f"실행 가능한 검증 명령이 없습니다: {exercise}")
+        if exercise in WORKSPACE_EXERCISES:
+            expected_command = f"./scripts/check-workspace.sh {exercise}"
+        else:
+            expected_command = f"./{OBSERVATION_EXERCISE}/verify.sh"
+        if expected_command not in verification:
+            report(f"정본 learner 검증 명령이 없습니다: {exercise}: {expected_command}")
 
-        signature = re.sub(r"\s+", " ", completion + "\n" + explanation).strip().lower()
-        previous = rubric_signatures.get(signature)
+        completion_signature = re.sub(r"\s+", " ", completion).strip().lower()
+        previous = completion_signatures.get(completion_signature)
         if previous is not None:
-            report(f"복사형 완료 기준·자기 설명을 사용했습니다: {previous}, {exercise}")
-        rubric_signatures[signature] = exercise
+            report(f"복사형 완료 기준을 사용했습니다: {previous}, {exercise}")
+        completion_signatures[completion_signature] = exercise
+
+        explanation_signature = re.sub(r"\s+", " ", explanation).strip().lower()
+        previous = explanation_signatures.get(explanation_signature)
+        if previous is not None:
+            report(f"복사형 자기 설명 질문을 사용했습니다: {previous}, {exercise}")
+        explanation_signatures[explanation_signature] = exercise
+
+
+def check_workspace_contract() -> None:
+    manifest = ROOT / "scripts/workspaces.txt"
+    expected = {
+        f"{exercise}\t{name}" for exercise, name in WORKSPACE_EXERCISES.items()
+    }
+    if not manifest.is_file() or set(manifest.read_text(encoding="utf-8").splitlines()) != expected:
+        report("learner workspace manifest가 정확하지 않습니다: scripts/workspaces.txt")
+
+    script_contracts = {
+        "scripts/new-workspace.sh": (
+            "manifest에 없는 exercise 경로",
+            "skeleton의 symlink는 허용하지 않습니다",
+            "workspace가 이미 있습니다",
+            "<relativePath>../../pom.xml</relativePath>",
+        ),
+        "scripts/check-workspace.sh": (
+            "workspace가 저장소 경계를 벗어났습니다",
+            "공개 테스트를 변경했습니다",
+            "workspace POM 계약을 변경했습니다",
+            '"$ROOT/scripts/mvn-guide.sh" -f "$workspace/pom.xml" test',
+        ),
+    }
+    for relative, tokens in script_contracts.items():
+        path = ROOT / relative
+        if not path.is_file():
+            continue
+        text = path.read_text(encoding="utf-8")
+        for token in tokens:
+            if token not in text:
+                report(f"workspace 도구 계약이 빠졌습니다: {relative}: {token}")
+
+
+def check_public_commands() -> None:
+    required = ("make prepare", "make check", "make verify", "make clean")
+    for relative in ("README.md", "CONTRIBUTING.md"):
+        text = (ROOT / relative).read_text(encoding="utf-8")
+        for command in required:
+            if command not in text:
+                report(f"공개 명령 안내가 빠졌습니다: {relative}: {command}")
 
 
 def check_poms_and_sources() -> None:
     namespace = {"m": "http://maven.apache.org/POM/4.0.0"}
     for path in sorted(ROOT.rglob("pom.xml")):
-        if any(part in EXCLUDED_DIRECTORIES for part in path.relative_to(ROOT).parts):
+        if generated(path.relative_to(ROOT).as_posix()):
             continue
         relative = path.relative_to(ROOT)
         try:
@@ -320,7 +421,7 @@ def check_poms_and_sources() -> None:
                     report(f"루트 POM의 예상하지 않은 모듈: {unexpected}")
 
     for path in sorted(ROOT.rglob("*.java")):
-        if any(part in EXCLUDED_DIRECTORIES for part in path.relative_to(ROOT).parts):
+        if generated(path.relative_to(ROOT).as_posix()):
             continue
         relative = path.relative_to(ROOT)
         text = path.read_text(encoding="utf-8")
@@ -401,6 +502,8 @@ def main() -> int:
     check_text_hygiene()
     check_markdown()
     check_exercise_rubrics()
+    check_workspace_contract()
+    check_public_commands()
     check_poms_and_sources()
     check_test_pairs()
     check_toolchain_and_modes()

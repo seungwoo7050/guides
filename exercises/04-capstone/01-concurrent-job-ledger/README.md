@@ -25,7 +25,7 @@
 
 ## 구현 순서
 
-1. `JobId`, `CreditJob`, `DebitJob`의 생성 불변식을 확인합니다.
+1. 정본 생성 명령으로 `.workspace/concurrent-job-ledger`를 만들고 `JobId`, `CreditJob`, `DebitJob`의 생성 불변식을 확인합니다.
 2. 한 스레드에서 크레딧과 차감을 정확하게 적용합니다.
 3. 잔액 변경 전체를 하나의 원자성 경계로 묶습니다.
 4. 작업 ID별 완료 결과를 기억해 같은 명령의 중복 효과를 제거합니다.
@@ -36,7 +36,8 @@
 처음에는 skeleton 테스트가 여러 계약에서 실패합니다.
 
 ```sh
-./mvnw -f exercises/04-capstone/01-concurrent-job-ledger/skeleton/pom.xml test
+./scripts/new-workspace.sh exercises/04-capstone/01-concurrent-job-ledger
+./scripts/check-workspace.sh exercises/04-capstone/01-concurrent-job-ledger
 ```
 
 reference는 전체 reactor에서 검증합니다.
@@ -61,6 +62,6 @@ reference는 전체 reactor에서 검증합니다.
 ## 검증
 
 ```sh
-./scripts/mvn-guide.sh -f exercises/04-capstone/01-concurrent-job-ledger/skeleton/pom.xml test
+./scripts/check-workspace.sh exercises/04-capstone/01-concurrent-job-ledger
 ./scripts/mvn-guide.sh -pl :concurrent-job-ledger-reference -am test
 ```

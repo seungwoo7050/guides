@@ -15,7 +15,8 @@
 - 약한 테스트가 중복 효과를 놓치는 이유를 설명합니다.
 
 ```sh
-./mvnw -f exercises/03-build-test-and-evidence/02-state-and-effect-testing/skeleton/pom.xml test
+./scripts/new-workspace.sh exercises/03-build-test-and-evidence/02-state-and-effect-testing
+./scripts/check-workspace.sh exercises/03-build-test-and-evidence/02-state-and-effect-testing
 ./mvnw -pl :state-and-effect-testing-reference -am test
 ```
 
@@ -35,6 +36,6 @@
 ## 검증
 
 ```sh
-./scripts/mvn-guide.sh -f exercises/03-build-test-and-evidence/02-state-and-effect-testing/skeleton/pom.xml test
+./scripts/check-workspace.sh exercises/03-build-test-and-evidence/02-state-and-effect-testing
 ./scripts/mvn-guide.sh -pl :state-and-effect-testing-reference -am test
 ```

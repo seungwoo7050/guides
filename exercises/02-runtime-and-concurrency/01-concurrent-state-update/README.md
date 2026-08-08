@@ -16,7 +16,8 @@
 - 잠금은 읽기·판단·쓰기 전체를 보호합니다.
 
 ```sh
-./mvnw -f exercises/02-runtime-and-concurrency/01-concurrent-state-update/skeleton/pom.xml test
+./scripts/new-workspace.sh exercises/02-runtime-and-concurrency/01-concurrent-state-update
+./scripts/check-workspace.sh exercises/02-runtime-and-concurrency/01-concurrent-state-update
 ./mvnw -pl :concurrent-state-update-reference -am test
 ```
 
@@ -42,6 +43,6 @@ java -cp exercises/02-runtime-and-concurrency/01-concurrent-state-update/referen
 ## 검증
 
 ```sh
-./scripts/mvn-guide.sh -f exercises/02-runtime-and-concurrency/01-concurrent-state-update/skeleton/pom.xml test
+./scripts/check-workspace.sh exercises/02-runtime-and-concurrency/01-concurrent-state-update
 ./scripts/mvn-guide.sh -pl :concurrent-state-update-reference -am test
 ```

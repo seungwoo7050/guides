@@ -1,0 +1,6 @@
+exercises/01-language-and-domain/01-first-program	first-program
+exercises/01-language-and-domain/02-value-object-contract	value-object-contract
+exercises/02-runtime-and-concurrency/01-concurrent-state-update	concurrent-state-update
+exercises/02-runtime-and-concurrency/02-executor-lifecycle	executor-lifecycle
+exercises/03-build-test-and-evidence/02-state-and-effect-testing	state-and-effect-testing
+exercises/04-capstone/01-concurrent-job-ledger	concurrent-job-ledger

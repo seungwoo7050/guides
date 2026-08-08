@@ -8,7 +8,7 @@
 
 ## 구현할 계약
 
-`skeleton`의 `Money`를 수정합니다.
+정본 skeleton을 `.workspace/value-object-contract`로 복사한 뒤 학습자 복사본의 `Money`를 수정합니다.
 
 - 최소 단위 금액은 0 이상입니다.
 - 통화는 `null`일 수 없습니다.
@@ -18,7 +18,8 @@
 - 성공한 연산은 원래 값을 변경하지 않고 새 값을 반환합니다.
 
 ```sh
-./mvnw -f exercises/01-language-and-domain/02-value-object-contract/skeleton/pom.xml test
+./scripts/new-workspace.sh exercises/01-language-and-domain/02-value-object-contract
+./scripts/check-workspace.sh exercises/01-language-and-domain/02-value-object-contract
 ```
 
 완성 예시는 다음 명령으로 확인합니다.
@@ -43,6 +44,6 @@
 ## 검증
 
 ```sh
-./scripts/mvn-guide.sh -f exercises/01-language-and-domain/02-value-object-contract/skeleton/pom.xml test
+./scripts/check-workspace.sh exercises/01-language-and-domain/02-value-object-contract
 ./scripts/mvn-guide.sh -pl :value-object-contract-reference -am test
 ```

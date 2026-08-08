@@ -46,11 +46,11 @@ export JAVA_HOME=${java_path%/bin/java}
 export PATH="$JAVA_HOME/bin:$PATH"
 ```
 
-가이드의 스크립트는 시스템 JDK나 셸 설정을 대신 설치·수정하지 않습니다. `./prepare.sh`는 필요한 명령과 버전을 검사하고 문제가 있으면 변경 없이 중단합니다.
+가이드의 스크립트는 시스템 JDK나 셸 설정을 대신 설치·수정하지 않습니다. `make prepare`는 필요한 명령과 버전을 검사하고 문제가 있으면 변경 없이 중단합니다.
 
 ## 첫 소스 작성
 
-저장소 밖의 임시 디렉터리에서 직접 확인해도 되고, [첫 명령행 프로그램 실습](../../exercises/01-language-and-domain/01-first-program/README.md)의 skeleton을 사용해도 됩니다.
+저장소 밖의 임시 디렉터리에서 직접 확인해도 되고, [첫 명령행 프로그램 실습](../../exercises/01-language-and-domain/01-first-program/README.md)의 정본 명령으로 만든 learner workspace를 사용해도 됩니다.
 
 ```sh
 work_dir=$(mktemp -d)
@@ -143,7 +143,7 @@ Java 버전, 설치 경로, VM 이름, 운영체제, CPU 구조, 문자 인코�
 2. `command -v java`, `command -v javac`로 실제 실행 파일을 확인합니다.
 3. `java -version`, `javac -version`, `./mvnw -version`을 비교합니다.
 4. `JAVA_HOME`이 실제 JDK 루트를 가리키는지 확인합니다.
-5. 터미널의 `./verify.sh`가 실패하는지 먼저 확인합니다.
+5. 터미널의 `VERIFY_LOG=/tmp/guide-java-verify.log make verify`가 실패하는지 먼저 확인합니다.
 6. 터미널은 성공하고 편집기만 실패하면 프로젝트 모델과 캐시를 다시 불러옵니다.
 
 환경 문제를 해결하기 위해 사용자 홈, 전역 Maven 저장소나 편집기 설정을 무작정 삭제하지 않습니다. 관찰된 차이를 하나씩 제거합니다.

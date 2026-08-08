@@ -17,11 +17,12 @@
 - 종료 대기가 인터럽트되면 인터럽트 상태를 복원합니다.
 
 ```sh
-./mvnw -f exercises/02-runtime-and-concurrency/02-executor-lifecycle/skeleton/pom.xml test
+./scripts/new-workspace.sh exercises/02-runtime-and-concurrency/02-executor-lifecycle
+./scripts/check-workspace.sh exercises/02-runtime-and-concurrency/02-executor-lifecycle
 ./mvnw -pl :executor-lifecycle-reference -am test
 ```
 
-검사는 `CountDownLatch`로 작업 순서를 고정합니다. 컴퓨터가 느리거나 빠르다는 사실을 합격 조건으로 사용하지 않습니다. JFR 관찰은 루트 `./verify.sh`에도 포함됩니다.
+검사는 `CountDownLatch`로 작업 순서를 고정합니다. 컴퓨터가 느리거나 빠르다는 사실을 합격 조건으로 사용하지 않습니다. JFR 관찰은 루트 `make verify`에도 포함됩니다.
 
 ## 완료 기준
 
@@ -37,6 +38,6 @@
 ## 검증
 
 ```sh
-./scripts/mvn-guide.sh -f exercises/02-runtime-and-concurrency/02-executor-lifecycle/skeleton/pom.xml test
+./scripts/check-workspace.sh exercises/02-runtime-and-concurrency/02-executor-lifecycle
 ./scripts/mvn-guide.sh -pl :executor-lifecycle-reference -am test
 ```

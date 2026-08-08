@@ -38,14 +38,15 @@ average=13.00
 
 ## 구현 순서
 
-1. `skeleton` 테스트를 실행해 실패를 확인합니다.
-2. `NumberReportApplication.run`을 구현합니다.
+1. 정본 생성 명령으로 `.workspace/first-program`을 만들고 검사해 지정 실패를 확인합니다.
+2. 학습자 workspace의 `NumberReportApplication.run`을 구현합니다.
 3. 입력 검증과 계산을 작은 메서드로 나눕니다.
 4. 정상 결과는 `stdout`, 진단은 `stderr`에만 기록합니다.
 5. 같은 입력으로 직접 실행한 결과와 자동 검사 결과를 비교합니다.
 
 ```sh
-./mvnw -f exercises/01-language-and-domain/01-first-program/skeleton/pom.xml test
+./scripts/new-workspace.sh exercises/01-language-and-domain/01-first-program
+./scripts/check-workspace.sh exercises/01-language-and-domain/01-first-program
 ```
 
 완성 예시는 루트 reactor에서 검증됩니다.
@@ -70,6 +71,6 @@ average=13.00
 ## 검증
 
 ```sh
-./scripts/mvn-guide.sh -f exercises/01-language-and-domain/01-first-program/skeleton/pom.xml test
+./scripts/check-workspace.sh exercises/01-language-and-domain/01-first-program
 ./scripts/mvn-guide.sh -pl :first-program-reference -am test
 ```

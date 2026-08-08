@@ -26,13 +26,15 @@
 최초 적용과 의존성 준비는 저장소 루트에서 수행합니다.
 
 ```sh
-./prepare.sh
+make prepare
+make check
 ```
 
 이후 전체 검증은 다음 한 명령으로 실행합니다.
 
 ```sh
-./verify.sh
+VERIFY_LOG=/tmp/guide-java-verify.log make verify
+make clean
 ```
 
 ## 이 가이드가 소유하는 범위
@@ -69,7 +71,7 @@
 7. 제한된 실행기의 큐, 거절, 취소, 인터럽트와 종료를 검증합니다.
 8. Maven Wrapper로 여러 모듈을 빌드하고 격리된 로컬 저장소에서 의존 관계를 확인합니다.
 9. 단위 테스트, 상태·효과 검사, 코드 품질 검사와 프로파일링 근거를 구분합니다.
-10. 동시 작업 원장 capstone의 skeleton을 직접 완성하고 전체 검증을 통과합니다.
+10. 동시 작업 원장 capstone의 learner workspace를 완성하고 정본 검사와 전체 검증을 통과합니다.
 
 ## 학습 경로
 

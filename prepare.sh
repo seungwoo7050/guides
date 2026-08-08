@@ -37,12 +37,14 @@ assert_repository_root() {
   [[ "$git_root" == "$ROOT" ]] || fail "저장소 루트의 prepare.sh를 실행해야 합니다: $git_root"
   for required in \
     README.md pom.xml mvnw verify.sh scripts/guide_state.py scripts/mvn-guide.sh \
-    scripts/preflight.sh scripts/validate.py docs/00-roadmap.md exercises; do
+    scripts/preflight.sh scripts/validate.py scripts/workspaces.txt \
+    scripts/new-workspace.sh scripts/check-workspace.sh docs/00-roadmap.md exercises; do
     [[ -e "$ROOT/$required" ]] || fail "필수 경로가 없습니다: $required"
   done
   for executable in \
     prepare.sh verify.sh mvnw scripts/mvn-guide.sh scripts/preflight.sh \
     scripts/smoke-javac.sh scripts/record-executor-jfr.sh \
+    scripts/new-workspace.sh scripts/check-workspace.sh \
     exercises/03-build-test-and-evidence/01-multi-repository-maven/verify.sh; do
     [[ -x "$ROOT/$executable" ]] || fail "실행 권한이 필요합니다: $executable"
   done
@@ -153,25 +155,29 @@ PY
 
 main() {
   assert_repository_root
-  local source_before index_before source_after index_after
+  local source_before preparation_before index_before source_after preparation_after index_after
   source_before=$(python3 "$ROOT/scripts/guide_state.py" capture "$ROOT")
-  index_before=$(git -C "$ROOT" write-tree)
+  preparation_before=$(python3 "$ROOT/scripts/guide_state.py" preparation-capture "$ROOT")
+  index_before=$(python3 "$ROOT/scripts/guide_state.py" index-state "$ROOT")
 
   prepare_maven_cache "$source_before"
 
   source_after=$(python3 "$ROOT/scripts/guide_state.py" capture "$ROOT")
-  index_after=$(git -C "$ROOT" write-tree)
+  preparation_after=$(python3 "$ROOT/scripts/guide_state.py" preparation-capture "$ROOT")
+  index_after=$(python3 "$ROOT/scripts/guide_state.py" index-state "$ROOT")
   [[ "$source_before" == "$source_after" ]] \
     || fail "prepare가 source bytes, mode 또는 symlink를 변경했습니다."
   [[ "$index_before" == "$index_after" ]] \
-    || fail "prepare가 Git index를 변경했습니다."
-  pass "prepare 전후 source와 Git index 불변"
+    || fail "prepare가 Git index raw bytes 또는 staged entries를 변경했습니다."
+  [[ "$preparation_before" == "$preparation_after" ]] \
+    || fail "prepare가 준비 fingerprint 입력을 변경했습니다."
+  pass "prepare 전후 source와 Git index raw bytes·staged entries 불변"
 
-  write_marker "$source_after"
-  python3 "$ROOT/scripts/guide_state.py" validate-marker "$MARKER" "$source_after"
+  write_marker "$preparation_after"
+  python3 "$ROOT/scripts/guide_state.py" validate-marker "$MARKER" "$preparation_after"
   pass "원자적 준비 상태 기록: .guide/java/prepared.json"
   printf '\nPREPARE RESULT: PASS\n'
-  printf '다음 명령: VERIFY_LOG=/tmp/guide-java-verify.log ./verify.sh\n'
+  printf '다음 명령: VERIFY_LOG=/tmp/guide-java-verify.log make verify\n'
 }
 
 main "$@"

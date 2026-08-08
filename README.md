@@ -29,16 +29,18 @@ Java를 배우기 위해 C를 먼저 완료할 필요는 없습니다. 조건, �
 
 ## 최초 준비와 전체 검증
 
-저장소 루트에서 다음 두 명령을 순서대로 실행합니다.
+저장소 루트의 공개 명령은 다음 네 가지입니다.
 
 ```sh
-./prepare.sh
-VERIFY_LOG=/tmp/guide-java-verify.log ./verify.sh
+make prepare
+make check
+VERIFY_LOG=/tmp/guide-java-verify.log make verify
+make clean
 ```
 
-`prepare.sh`는 소스·파일 모드·심볼릭 링크·Git index를 바꾸지 않고 Maven Wrapper와 프로젝트 의존성을 `.guide/java/`에 준비합니다. 입력 fingerprint와 도구 버전은 `.guide/java/prepared.json`에 원자적으로 기록되며 같은 상태에서 다시 실행해도 결과가 달라지지 않습니다.
+`make prepare`는 소스·파일 모드·심볼릭 링크·Git index를 바꾸지 않고 Maven Wrapper와 프로젝트 의존성을 `.guide/java/`에 준비합니다. 준비 fingerprint는 canonical curriculum source를 대상으로 하므로 학습자 `.workspace/`를 바꾸어도 cache가 불필요하게 무효화되지 않습니다. fingerprint와 도구 버전은 `.guide/java/prepared.json`에 원자적으로 기록되며 같은 상태에서 다시 실행해도 결과가 달라지지 않습니다. `make check`는 빠른 문서·구조·계약 검사를, `make clean`은 명시된 빌드 생성물만 정리하며 준비 캐시와 학습자 작업공간은 보존합니다.
 
-`verify.sh`는 현재 working tree를 저장소 밖 임시 디렉터리로 복사하고 준비된 의존성을 오프라인으로 사용합니다. 문서 링크, 정확한 tree, 셸 문법, `javac --release 17`, Maven reference 모듈, 실패해야 하는 skeleton, 격리된 로컬 저장소 실습과 JFR 기록을 검사하며 전체 로그는 저장소 밖의 절대 `VERIFY_LOG`에 남깁니다.
+`make verify`는 현재 working tree를 저장소 밖 임시 디렉터리로 복사하고 준비된 의존성을 오프라인으로 사용합니다. 학습자 `.workspace/`도 복사와 source bytes·mode·symlink 불변성 검사에는 포함하지만 정확한 curriculum tree 검사에서는 제외합니다. 문서 링크, 셸 문법, `javac --release 17`, Maven reference 모듈, 실패해야 하는 원본 skeleton, 격리된 로컬 저장소 실습과 JFR 기록을 검사하며 전체 로그는 저장소 밖의 절대 `VERIFY_LOG`에 남깁니다.
 
 ## 읽는 순서
 
@@ -68,7 +70,14 @@ skeleton/   테스트가 계약 위반을 드러내는 시작 상태
 reference/  같은 테스트를 통과하는 비교용 구현
 ```
 
-기본 학습 순서는 `skeleton`을 직접 고치고 공개 테스트를 통과한 뒤 `reference`와 설계 차이를 비교하는 것입니다. `reference`를 먼저 복사하는 것은 완료 기준이 아닙니다.
+원본 `skeleton`은 루트 검증이 지정된 의미 계약에서 실패하는지 확인하는 배포 fixture이므로 직접 고치지 않습니다. 구현 실습은 다음처럼 안전한 학습자 복사본을 만든 뒤 정본 검사 명령으로 실행합니다.
+
+```sh
+./scripts/new-workspace.sh exercises/01-language-and-domain/01-first-program
+./scripts/check-workspace.sh exercises/01-language-and-domain/01-first-program
+```
+
+복사 직후 검사는 의도한 의미 계약에서 실패합니다. `.workspace/first-program/`의 구현만 고쳐 같은 검사를 통과한 뒤 `reference`와 설계 차이를 비교합니다. 공개 테스트와 workspace POM은 검사기가 원본 계약과 같은지 확인하며, `reference`를 먼저 복사하는 것은 완료 기준이 아닙니다. `.workspace/`는 Git과 exact curriculum tree에서는 제외되지만 정식 검증의 격리 복사와 원본 상태 보존 대상에는 포함됩니다.
 
 ## 다음 가이드와의 경계
 

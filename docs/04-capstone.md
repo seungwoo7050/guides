@@ -95,15 +95,14 @@ submit(command)
 ## 완료 순서
 
 ```sh
-./mvnw \
-  -f exercises/04-capstone/01-concurrent-job-ledger/skeleton/pom.xml \
-  test
+./scripts/new-workspace.sh exercises/04-capstone/01-concurrent-job-ledger
+./scripts/check-workspace.sh exercises/04-capstone/01-concurrent-job-ledger
 ```
 
-처음에는 계약 테스트가 실패해야 합니다. skeleton 구현을 수정한 뒤 모든 테스트를 통과시키고 저장소 루트에서 전체 검증을 실행합니다.
+처음에는 계약 테스트가 지정된 의미 계약에서 실패해야 합니다. `.workspace/concurrent-job-ledger/` 구현을 수정한 뒤 같은 정본 검사 명령을 통과시키고 저장소 루트에서 전체 검증을 실행합니다. 원본 skeleton은 배포 fixture이므로 수정하지 않습니다.
 
 ```sh
-./verify.sh
+VERIFY_LOG=/tmp/guide-java-verify.log make verify
 ```
 
 reference는 정답 문구가 아니라 하나의 비교 가능한 설계입니다. 자신의 구현이 같은 외부 계약을 더 명확하게 지킨다면 구조가 달라도 됩니다.

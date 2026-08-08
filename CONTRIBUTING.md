@@ -20,22 +20,20 @@
 - 동시성 검사는 `sleep`의 우연한 순서에 기대지 않고 latch, barrier나 제어 가능한 실행기를 사용합니다.
 - 검사기는 소스 문구보다 외부에서 관찰 가능한 상태, 반환값과 효과를 확인합니다.
 - 임시 파일과 프로세스는 성공·실패·인터럽트 경로에서 모두 정리합니다.
+- 원본 `skeleton`은 지정 실패를 증명하는 배포 fixture로 유지합니다. 학습자 구현은 `./scripts/new-workspace.sh exercises/<경로>`로 만든 `.workspace/` 복사본에서 수행하고 `./scripts/check-workspace.sh exercises/<경로>`로 같은 공개 테스트를 실행합니다.
 
 ## 변경 확인
 
-의존성과 최종 구조를 준비합니다.
+공개 명령 네 가지를 저장소 루트에서 실행합니다.
 
 ```sh
-./prepare.sh
+make prepare
+make check
+VERIFY_LOG=/tmp/guide-java-verify.log make verify
+make clean
 ```
 
-전체 검증은 저장소 루트의 한 명령으로 실행합니다.
-
-```sh
-./verify.sh
-```
-
-검증은 준비된 Maven 저장소를 오프라인으로 사용합니다. 필수 검사가 실행되지 못하면 성공으로 기록하지 않습니다.
+`make prepare`는 의존성을 준비하고, `make check`는 빠른 정적·계약 검사를 실행합니다. `make verify`는 준비된 Maven 저장소를 오프라인으로 사용해 현재 working tree와 `.workspace/`를 외부에 복사하고 원본 불변성을 확인합니다. 필수 검사가 실행되지 못하면 성공으로 기록하지 않습니다. `make clean`은 명시된 빌드 생성물만 지우며 `.guide/java/` 준비 캐시와 학습자 `.workspace/`를 보존합니다.
 
 커밋 전에는 추적 범위와 공백 오류를 확인합니다.
 

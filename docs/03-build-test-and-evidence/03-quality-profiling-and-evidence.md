@@ -6,19 +6,19 @@
 
 | 명령 | 담당하는 일 |
 |---|---|
-| `./prepare.sh` | source를 바꾸지 않고 도구 검사, Maven Wrapper와 의존성 준비 |
+| `make prepare` | source를 바꾸지 않고 도구 검사, Maven Wrapper와 의존성 준비 |
 | `make check` | 문서·정확한 tree·validator mutant·셸 문법과 `javac` 기본 컴파일 |
-| `VERIFY_LOG=/tmp/guide-java-verify.log ./verify.sh` | working tree의 격리 복사본을 오프라인으로 검증 |
-| `make clean` | 저장소 안의 생성물과 검증 workspace 정리 |
+| `VERIFY_LOG=/tmp/guide-java-verify.log make verify` | learner `.workspace/`를 포함한 working tree의 격리 복사본을 오프라인으로 검증 |
+| `make clean` | 명시된 빌드 생성물과 실행별 내부 workspace만 정리하고 학습자 `.workspace/`와 준비 캐시는 보존 |
 
-`prepare.sh`는 테스트 결과를 판정하지 않습니다. `verify.sh`는 필수 검사가 실행되지 못하면 성공을 반환하지 않습니다.
+`make prepare`는 테스트 결과를 판정하지 않습니다. `make verify`는 필수 검사가 실행되지 못하면 성공을 반환하지 않습니다.
 
 ## 전체 검증 단계
 
-`verify.sh`는 다음 순서로 진행합니다.
+`make verify`가 호출하는 검증기는 다음 순서로 진행합니다.
 
 1. JDK, Maven Wrapper와 준비된 dependency cache를 확인합니다.
-2. 최종 디렉터리 구조와 이전 경로의 부재를 검사합니다.
+2. learner `.workspace/`까지 외부에 복사해 bytes·mode·symlink를 보존하고, exact curriculum tree 검사에서만 이 학습자 데이터를 제외합니다.
 3. 모든 Markdown 내부 링크와 POM XML을 검사합니다.
 4. 셸 스크립트 문법과 Java 주 소스를 빠르게 컴파일합니다.
 5. root reactor의 reference 모듈과 품질 플러그인을 실행합니다.
@@ -38,7 +38,7 @@ Spotless는 Google Java Format과 import 정리를 검사합니다. Checkstyle�
 ```sh
 ./mvnw spotless:apply
 git diff --check
-./verify.sh
+VERIFY_LOG=/tmp/guide-java-verify.log make verify
 ```
 
 포매터 성공은 동작의 정확성을 증명하지 않고 정적 검사도 테스트를 대신하지 않습니다. 서로 다른 오류 종류를 줄이는 보완 관계입니다.
@@ -124,7 +124,7 @@ jcmd <pid> JFR.start \
 
 ### 빌드와 검증
 
-- 정본 명령이 `./verify.sh`입니까?
+- 정본 명령이 `make prepare`, `make check`, `make verify`, `make clean`으로 안내됩니까?
 - 준비된 의존성으로 오프라인 검증이 가능합니까?
 - 오래된 local SNAPSHOT이 성공을 만들지 않습니까?
 - 실행하지 못한 검사를 `PASS`로 기록하지 않습니까?
