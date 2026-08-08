@@ -28,7 +28,7 @@ class ProcessGroupRunner:
             return
         try:
             os.killpg(self.process.pid, signum)
-        except ProcessLookupError:
+        except (ProcessLookupError, PermissionError):
             pass
 
     def stop_group(self, grace: float = 5.0) -> None:
