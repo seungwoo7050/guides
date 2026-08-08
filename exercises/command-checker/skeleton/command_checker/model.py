@@ -22,6 +22,9 @@ class Case:
     env: dict[str, str] = field(default_factory=dict)
     output_limit: int = DEFAULT_OUTPUT_LIMIT
 
+    def __post_init__(self) -> None:
+        raise NotImplementedError("stage 02: 불변 Case 모델을 완성하십시오.")
+
     def environment_overrides(self) -> dict[str, str]:
         return dict(self.env)
 
@@ -36,6 +39,9 @@ class Result:
     stdout: str
     stderr: str
     # TODO(stage 02): 수명 제한 상태를 모델에 추가하십시오.
+
+    def __post_init__(self) -> None:
+        raise NotImplementedError("stage 02: 수명 상태를 포함한 Result 모델을 완성하십시오.")
 
 
 class SpecificationError(ValueError):

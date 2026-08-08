@@ -262,6 +262,9 @@ check_workspace_safety() {
 
     "$script" "$exercise" >/dev/null
     [[ -f "$exercise/workspace/command_checker/cli.py" ]]
+    [[ -f "$exercise/workspace/command_checker/py.typed" ]]
+    [[ -f "$exercise/workspace/pyproject.toml" ]]
+    [[ -f "$exercise/workspace/_command_checker_build.py" ]]
     printf 'learner work\n' > "$exercise/workspace/sentinel"
     if "$script" "$exercise" >/dev/null 2>&1; then
         die '기존 Python workspace를 덮어쓸 수 있습니다.'
@@ -278,12 +281,23 @@ check_make_and_clean_contract() {
         \( -type d -name __pycache__ -o -type f \( -name '*.pyc' -o -name '*.pyo' \) \) -print -quit)" ]] || \
         die 'make check이 Python source cache를 만들었습니다.'
     mkdir -p -- "$exercise/workspace" "$repository/.guide/python"
-    printf 'generated workspace\n' > "$exercise/workspace/sentinel"
+    mkdir -p -- "$exercise/workspace/learner/__pycache__" "$exercise/workspace/.guide"
+    printf 'learner workspace\n' > "$exercise/workspace/sentinel"
+    printf 'learner bytecode name is still learner data\n' > "$exercise/workspace/learner/answer.pyc"
+    printf 'learner cache directory is still learner data\n' > \
+        "$exercise/workspace/learner/__pycache__/answer.pyc"
+    printf 'learner hidden state\n' > "$exercise/workspace/.guide/sentinel"
+    chmod 0640 "$exercise/workspace/sentinel" "$exercise/workspace/learner/answer.pyc" \
+        "$exercise/workspace/learner/__pycache__/answer.pyc" "$exercise/workspace/.guide/sentinel"
     printf 'generated state\n' > "$repository/.guide/python/sentinel"
     printf 'preserve skeleton\n' > "$exercise/skeleton/.clean-preserve"
+    local workspace_before
+    workspace_before="$(python3 "$repository/scripts/repository_state.py" fingerprint \
+        --root "$repository" --include-workspace)"
     make -C "$repository" --no-print-directory clean
-    [[ ! -e "$exercise/workspace" && ! -L "$exercise/workspace" ]] || \
-        die 'make clean이 Python workspace를 prune하지 않았습니다.'
+    [[ "$workspace_before" == "$(python3 "$repository/scripts/repository_state.py" fingerprint \
+        --root "$repository" --include-workspace)" ]] || \
+        die 'make clean이 Python learner workspace를 변경했습니다.'
     [[ ! -e "$repository/.guide" && ! -L "$repository/.guide" ]] || \
         die 'make clean이 Python .guide를 prune하지 않았습니다.'
     [[ "$(cat "$exercise/skeleton/.clean-preserve")" == 'preserve skeleton' ]] || \
@@ -295,6 +309,7 @@ if [[ "${GUIDE_VERIFY_TEST_HOLD:-0}" == 1 ]]; then
 fi
 run 'fresh prepared marker and Python 3.12 venv' check_marker
 ORIGINAL_SOURCE="$(python3 "$STATE_TOOL" fingerprint --root "$ROOT")"
+ORIGINAL_LEARNER_SOURCE="$(python3 "$STATE_TOOL" fingerprint --root "$ROOT" --include-workspace)"
 ORIGINAL_INDEX="$(python3 "$STATE_TOOL" index --root "$ROOT")"
 WORK="$(mktemp -d "${TMPDIR:-/tmp}/guide-python-verify.XXXXXX")"
 COPY="$WORK/repository"
@@ -310,15 +325,20 @@ run 'shell entrypoint syntax' sh -n "$COPY/prepare.sh" "$COPY/verify.sh" \
 run 'atomic prepared-marker safety' "$COPY/scripts/test-prepare-safety.sh"
 run 'eight skeleton stage failure contracts' bash -c 'cd "$1" && "$2" -B scripts/check_stage_contracts.py' _ "$COPY" "$PYTHON"
 run 'nine reference test modules' bash -c 'cd "$1" && EXERCISE_IMPL=reference "$2" -B -m unittest discover -s exercises/command-checker/tests -p "test_*.py" -v' _ "$COPY" "$PYTHON"
-run 'five code mutants' bash -c 'cd "$1" && "$2" -B scripts/check_test_quality.py' _ "$COPY" "$PYTHON"
+run 'reference static public type contract' bash -c 'cd "$1" && "$2" -B scripts/check_type_contracts.py --implementation reference' _ "$COPY" "$PYTHON"
+run 'installed reference package and console script' bash -c 'cd "$1" && "$2" -B scripts/check_package_install.py --implementation reference' _ "$COPY" "$PYTHON"
+run 'implementation and project-contract mutants' bash -c 'cd "$1" && "$2" -B scripts/check_test_quality.py' _ "$COPY" "$PYTHON"
 run 'atomic workspace safety' check_workspace_safety
-run 'make check cache-free and clean pruning/preservation' check_make_and_clean_contract
+run 'make check cache-free and clean workspace preservation' check_make_and_clean_contract
 
 run 'no source Python cache after tests' "$PYTHON" -B "$COPY/scripts/validate.py"
 COPY_AFTER="$(python3 "$COPY/scripts/repository_state.py" fingerprint --root "$COPY")"
 [[ "$COPY_BEFORE" == "$COPY_AFTER" ]] || die '격리 검증이 복제 source의 내용·모드·symlink 상태를 바꿨습니다.'
 [[ "$ORIGINAL_SOURCE" == "$(python3 "$STATE_TOOL" fingerprint --root "$ROOT")" ]] || \
     die 'verify가 원본 source tree를 변경했습니다.'
+[[ "$ORIGINAL_LEARNER_SOURCE" == "$(python3 "$STATE_TOOL" fingerprint \
+    --root "$ROOT" --include-workspace)" ]] || \
+    die 'verify가 원본 학습자 workspace를 변경했습니다.'
 [[ "$ORIGINAL_INDEX" == "$(python3 "$STATE_TOOL" index --root "$ROOT")" ]] || \
     die 'verify가 Git index를 변경했습니다.'
 PASS_COUNT=$((PASS_COUNT + 1))

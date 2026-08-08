@@ -14,8 +14,7 @@
 ```text
 현재 단계 문서를 읽는다
 → skeleton을 복사한 workspace에서 한 책임만 구현한다
-→ 현재 단계 검사
-→ 이전 단계 회귀 검사
+→ 현재 단계까지의 누적 검사
 → 실패 원인을 설명한다
 → 수정한다
 → 마지막에 reference와 비교한다
@@ -29,8 +28,8 @@
 command-checker/
 ├── README.md
 ├── fixtures/
-├── skeleton/command_checker/
-├── reference/command_checker/
+├── skeleton/{pyproject.toml, command_checker/}
+├── reference/{pyproject.toml, command_checker/}
 └── tests/
 ```
 
@@ -55,6 +54,8 @@ scripts/new-workspace.sh exercises/command-checker
 ```
 
 기존 `workspace/`가 있으면 실패하며 덮어쓰지 않습니다.
+
+각 `make stage-N EXERCISE_IMPL=workspace`는 1단계부터 N단계까지를 누적 검사합니다. source-level 단계 검사는 구현 경로를 명시적으로 사용하지만, package 검사는 별도의 임시 venv에 설치한 뒤 source 경로 주입 없이 실행합니다.
 
 ## 최종 인터페이스
 
@@ -101,6 +102,7 @@ command-checker --cases CASES [--jobs N]
 구현:
 
 - `python -m command_checker` 진입점
+- `pyproject.toml`의 `command-checker = "command_checker.cli:main"` console script
 - `build_parser()`와 `main(argv)`
 - 도움말은 stdout과 종료 상태 0
 - 사용법 오류는 stderr와 종료 상태 2
@@ -108,6 +110,13 @@ command-checker --cases CASES [--jobs N]
 
 ```sh
 make stage-01 EXERCISE_IMPL=workspace
+```
+
+이 검사는 임시 venv에 workspace를 실제 설치하고 `command-checker --help`를 실행합니다. 1단계를 마친 workspace를 준비된 로컬 venv에 계속 사용하려면 다음처럼 설치합니다.
+
+```sh
+make install-workspace
+.guide/python/venv/bin/command-checker --help
 ```
 
 ## 2단계: 데이터 모델
@@ -203,7 +212,7 @@ make stage-07 EXERCISE_IMPL=workspace
 
 ## 8단계: 병렬 실행과 원자적 보고서
 
-관련 문서: [동시성, 취소와 자원 한계](../../docs/02-automation/03-concurrency-and-cancellation.md)
+관련 문서: [동시성, 취소와 자원 한계](../../docs/02-automation/03-concurrency-and-cancellation.md), [프로젝트 구조, 패키징과 타입 검사](../../docs/03-quality/02-project-structure-packaging-and-typing.md)
 
 구현:
 
@@ -212,6 +221,8 @@ make stage-07 EXERCISE_IMPL=workspace
 - 같은 `Result`에서 JSON·JUnit 생성
 - 같은 디렉터리의 임시 파일을 완성한 뒤 `os.replace`
 - XML 1.0에서 허용하지 않는 문자를 대체
+- 공개 함수와 dataclass 필드의 annotation, 공개 API의 `Any` 금지
+- `py.typed`, package metadata와 설치된 `command-checker` 종단 간 실행
 
 ```sh
 make stage-08 EXERCISE_IMPL=workspace
@@ -231,11 +242,13 @@ make exercise-check EXERCISE_IMPL=workspace
 ./verify.sh
 ```
 
-전체 검증은 정상 구현만 통과시키는 데서 끝나지 않습니다. 결과 채널 비교 누락, 숫자형 검증 오류, 출력 상한 제거, 병렬 결과 순서 역전과 XML 제어 문자 누락을 주입하고 공개 테스트가 각각 거부하는지 확인합니다.
+전체 검증은 정상 구현만 통과시키는 데서 끝나지 않습니다. 결과 채널 비교 누락, 숫자형 검증 오류, 출력 상한 제거, 병렬 결과 순서 역전, XML 제어 문자 누락, 금지 의존성, 공개 타입 annotation 제거와 console script 변경을 주입하고 각각 올바른 검사에서 거부하는지 확인합니다.
 
 ## 완료 기준
 
 - import와 실행 진입점이 분리되어 있습니다.
+- 격리 설치 뒤 `command-checker`가 source 경로 주입 없이 실행됩니다.
+- 공개 API annotation과 `py.typed` 계약을 정적으로 확인합니다.
 - 공유 데이터 모델이 불변입니다.
 - 명세 오류와 결과 불일치를 구분합니다.
 - 세 결과 채널을 정확히 비교합니다.

@@ -74,6 +74,7 @@ mkdir -p -- "$STATE_DIR"
 [[ ! -e "$VENV" || -d "$VENV" ]] || die '.guide/python/venv가 디렉터리가 아닙니다.'
 
 before_source="$(python3 "$STATE_TOOL" fingerprint --root "$ROOT")"
+before_learner_source="$(python3 "$STATE_TOOL" fingerprint --root "$ROOT" --include-workspace)"
 before_index="$(python3 "$STATE_TOOL" index --root "$ROOT")"
 python3 "$ROOT/scripts/validate.py"
 if [[ ! -x "$VENV/bin/python" ]]; then
@@ -96,8 +97,10 @@ import sys
 raise SystemExit(0 if sys.version_info >= (3, 12) else 1)
 PY
 after_source="$(python3 "$STATE_TOOL" fingerprint --root "$ROOT")"
+after_learner_source="$(python3 "$STATE_TOOL" fingerprint --root "$ROOT" --include-workspace)"
 after_index="$(python3 "$STATE_TOOL" index --root "$ROOT")"
 [[ "$before_source" == "$after_source" ]] || die 'prepare가 source tree를 변경했습니다.'
+[[ "$before_learner_source" == "$after_learner_source" ]] || die 'prepare가 학습자 workspace를 변경했습니다.'
 [[ "$before_index" == "$after_index" ]] || die 'prepare가 Git index를 변경했습니다.'
 
 [[ ! -e "$MARKER" && ! -L "$MARKER" || ( -f "$MARKER" && ! -L "$MARKER" ) ]] || \

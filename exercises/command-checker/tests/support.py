@@ -1,4 +1,4 @@
-"""단계 검사에서 skeleton, workspace와 reference를 같은 계약으로 실행합니다."""
+"""Run source-level contracts; installation is checked separately without path injection."""
 
 from __future__ import annotations
 
@@ -36,12 +36,7 @@ def module(name: str):
 
 def run_python(code: str, *, timeout: float = 5.0) -> subprocess.CompletedProcess[str]:
     environment = os.environ.copy()
-    existing = environment.get("PYTHONPATH")
-    environment["PYTHONPATH"] = (
-        str(IMPLEMENTATION_ROOT)
-        if not existing
-        else str(IMPLEMENTATION_ROOT) + os.pathsep + existing
-    )
+    environment["PYTHONPATH"] = str(IMPLEMENTATION_ROOT)
     return subprocess.run(
         [sys.executable, "-c", code],
         text=True,
@@ -61,12 +56,7 @@ def run_cli(
     timeout: float = 8.0,
 ) -> subprocess.CompletedProcess[str]:
     child_environment = os.environ.copy()
-    existing = child_environment.get("PYTHONPATH")
-    child_environment["PYTHONPATH"] = (
-        str(IMPLEMENTATION_ROOT)
-        if not existing
-        else str(IMPLEMENTATION_ROOT) + os.pathsep + existing
-    )
+    child_environment["PYTHONPATH"] = str(IMPLEMENTATION_ROOT)
     if environment:
         child_environment.update(environment)
     return subprocess.run(

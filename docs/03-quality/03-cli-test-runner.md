@@ -30,6 +30,8 @@ stderr
 
 ## 최종 인터페이스
 
+workspace를 `make install-workspace`로 준비된 venv에 설치한 뒤 실제 console script를 사용합니다.
+
 ```text
 command-checker --cases CASES [--jobs N]
                 [--json-report PATH]
@@ -113,7 +115,7 @@ runner → process
 
 ### 1단계: 패키지와 진입점
 
-`python -m command_checker`가 실행되고, 도움말은 stdout/0, 사용법 오류는 stderr/2를 사용합니다.
+`python -m command_checker`와 `pyproject.toml`이 설치한 `command-checker`가 실행되고, 도움말은 stdout/0, 사용법 오류는 stderr/2를 사용합니다.
 
 ### 2단계: 데이터 모델
 
@@ -141,7 +143,7 @@ POSIX 프로세스 그룹, non-blocking 파이프, deadline과 스트림별 출�
 
 ### 8단계: 병렬성과 보고서
 
-동시 실행 수를 제한하고 결과 순서를 보존합니다. 같은 `Result` 목록에서 JSON과 JUnit을 만들고 원자적으로 교체합니다.
+동시 실행 수를 제한하고 결과 순서를 보존합니다. 같은 `Result` 목록에서 JSON과 JUnit을 만들고 원자적으로 교체합니다. 공개 타입 annotation, `py.typed`, package metadata와 설치된 console script도 최종 계약으로 검사합니다.
 
 ## 검증 전략
 
@@ -163,6 +165,8 @@ make stage-08 EXERCISE_IMPL=workspace
 검사는 다음을 포함합니다.
 
 - package import와 `-m` 실행
+- 격리 venv에 설치한 `command-checker` console script
+- 공개 API annotation과 `py.typed` 정적 계약
 - 불변 데이터 모델
 - 정확한 출력 비교
 - 잘못된 JSON과 필드

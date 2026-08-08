@@ -20,7 +20,7 @@ Overlay ZIP을 저장소 루트에 압축 해제한 뒤 다음 두 명령을 순
 ./verify.sh
 ```
 
-`prepare.sh`는 source tree나 Git index를 변경하지 않고 `.guide/python/venv`와 fingerprint marker를 준비합니다. 학습자의 `workspace/`는 삭제하거나 덮어쓰지 않습니다. `verify.sh`는 격리 복제본에서 저장소 전체를 검사하며, 알려진 결함을 주입해 공개 테스트가 실제로 거부하는지도 확인합니다.
+`prepare.sh`는 source tree나 Git index를 변경하지 않고 `.guide/python/venv`와 fingerprint marker를 준비합니다. 학습자의 `workspace/`는 삭제하거나 덮어쓰지 않습니다. `make clean`도 workspace 전체를 보존하고 source cache와 `.guide/`만 정리합니다. `verify.sh`는 격리 복제본에서 저장소 전체를 검사하며, 알려진 결함을 주입해 공개 테스트가 실제로 거부하는지도 확인합니다.
 
 ## 읽기 순서
 
@@ -51,14 +51,14 @@ Overlay ZIP을 저장소 루트에 압축 해제한 뒤 다음 두 명령을 순
 
 | 단계 | 핵심 책임 | 검사 명령 |
 |---:|---|---|
-| 1 | 패키지 실행과 CLI 진입점 | `make stage-01 EXERCISE_IMPL=workspace` |
+| 1 | 패키지 실행과 설치 가능한 CLI 진입점 | `make stage-01 EXERCISE_IMPL=workspace` |
 | 2 | 불변 데이터 모델과 컬렉션 계약 | `make stage-02 EXERCISE_IMPL=workspace` |
 | 3 | 순수 비교 함수와 오류 표현 | `make stage-03 EXERCISE_IMPL=workspace` |
 | 4 | JSON 명세와 실행 시 검증 | `make stage-04 EXERCISE_IMPL=workspace` |
 | 5 | 외부 프로세스 한 건 실행 | `make stage-05 EXERCISE_IMPL=workspace` |
 | 6 | 전체 사례 집계와 종료 정책 | `make stage-06 EXERCISE_IMPL=workspace` |
 | 7 | timeout·출력 상한·프로세스 그룹 | `make stage-07 EXERCISE_IMPL=workspace` |
-| 8 | 병렬 실행과 원자적 보고서 | `make stage-08 EXERCISE_IMPL=workspace` |
+| 8 | 병렬 보고서와 패키징·공개 타입 계약 | `make stage-08 EXERCISE_IMPL=workspace` |
 
 작업 공간은 다음처럼 만듭니다.
 
@@ -67,3 +67,10 @@ scripts/new-workspace.sh exercises/command-checker
 ```
 
 이 스크립트는 기존 `workspace/`를 절대 덮어쓰지 않습니다.
+
+각 `stage-N` 명령은 1단계부터 N단계까지를 순서대로 다시 검사합니다. 1단계는 임시 venv에 package를 설치해 console script를 확인하고, 8단계는 정적 공개 타입 계약과 설치된 명령의 종단 간 실행까지 확인합니다. 완성한 workspace 명령을 준비된 로컬 venv에 설치하려면 다음을 실행합니다.
+
+```sh
+make install-workspace
+.guide/python/venv/bin/command-checker --help
+```

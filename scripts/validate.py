@@ -9,6 +9,7 @@ import re
 import stat
 import subprocess
 import sys
+import tomllib
 import unicodedata
 from pathlib import Path
 from urllib.parse import unquote
@@ -75,7 +76,14 @@ CONFIG = {
             "scripts/test-prepare-safety.sh", "scripts/layout-manifest.txt",
             "scripts/test-verify-negatives.sh",
             "scripts/check_docs.py", "scripts/check_test_quality.py",
-            "scripts/check_stage_contracts.py", "scripts/new-workspace.sh",
+            "scripts/check_package_install.py", "scripts/check_stage_contracts.py",
+            "scripts/check_type_contracts.py", "scripts/new-workspace.sh",
+            "exercises/command-checker/reference/_command_checker_build.py",
+            "exercises/command-checker/reference/pyproject.toml",
+            "exercises/command-checker/reference/command_checker/py.typed",
+            "exercises/command-checker/skeleton/_command_checker_build.py",
+            "exercises/command-checker/skeleton/pyproject.toml",
+            "exercises/command-checker/skeleton/command_checker/py.typed",
         },
         "forbidden": {
             "docs/01-runtime-and-environment.md", "docs/02-objects-and-collections.md",
@@ -88,7 +96,8 @@ CONFIG = {
                         "scripts/test-prepare-safety.sh", "scripts/test-validator.py",
                         "scripts/check_docs.py",
                         "scripts/test-verify-negatives.sh",
-                        "scripts/check_test_quality.py", "scripts/check_stage_contracts.py",
+                        "scripts/check_package_install.py", "scripts/check_test_quality.py",
+                        "scripts/check_type_contracts.py", "scripts/check_stage_contracts.py",
                         "scripts/new-workspace.sh"},
     },
     "unix-systems": {
@@ -312,10 +321,29 @@ if GUIDE == "python":
     expected_modules = {"__init__.py", "__main__.py", "cli.py", "comparison.py", "model.py",
                         "process.py", "reports.py", "runner.py", "specification.py"}
     for implementation in ("reference", "skeleton"):
-        directory = ROOT / "exercises/command-checker" / implementation / "command_checker"
+        project = ROOT / "exercises/command-checker" / implementation
+        directory = project / "command_checker"
         actual = {path.name for path in directory.glob("*.py")}
         if actual != expected_modules:
             error(f"{implementation} 모듈 집합 불일치: {sorted(actual)}")
+        if not (directory / "py.typed").is_file():
+            error(f"{implementation} typed package marker 누락")
+        try:
+            pyproject = tomllib.loads((project / "pyproject.toml").read_text(encoding="utf-8"))
+        except (OSError, tomllib.TOMLDecodeError) as exc:
+            error(f"{implementation} pyproject를 읽을 수 없음: {exc}")
+        else:
+            metadata = pyproject.get("project", {})
+            if metadata.get("name") != "command-checker" or metadata.get("requires-python") != ">=3.12":
+                error(f"{implementation} project metadata 불일치")
+            if metadata.get("dependencies") != []:
+                error(f"{implementation} project runtime dependencies는 비어 있어야 함")
+            if metadata.get("scripts") != {"command-checker": "command_checker.cli:main"}:
+                error(f"{implementation} console script 계약 불일치")
+            if pyproject.get("build-system") != {
+                "requires": [], "build-backend": "_command_checker_build", "backend-path": ["."]
+            }:
+                error(f"{implementation} dependency-free build backend 계약 불일치")
     expected_tests = {"test_command_checker.py", "test_stage_01_entrypoint.py",
                       "test_stage_02_model.py", "test_stage_03_comparison.py",
                       "test_stage_04_specification.py", "test_stage_05_execution.py",

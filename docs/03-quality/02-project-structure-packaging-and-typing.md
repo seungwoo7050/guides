@@ -60,6 +60,8 @@ runner → process, reports
 `command-checker`의 최종 구조는 다음과 같습니다.
 
 ```text
+pyproject.toml
+_command_checker_build.py
 command_checker/
 ├── __init__.py
 ├── __main__.py
@@ -68,6 +70,7 @@ command_checker/
 ├── model.py
 ├── specification.py
 ├── process.py
+├── py.typed
 ├── reports.py
 └── runner.py
 ```
@@ -77,11 +80,19 @@ command_checker/
 프로젝트 메타데이터, 지원 Python 버전과 도구 설정을 한곳에 둘 수 있습니다.
 
 ```toml
+[build-system]
+requires = []
+build-backend = "_command_checker_build"
+backend-path = ["."]
+
 [project]
-name = "sample-app"
-version = "0.1.0"
+name = "command-checker"
+version = "0.0.0"
 requires-python = ">=3.12"
 dependencies = []
+
+[project.scripts]
+command-checker = "command_checker.cli:main"
 ```
 
 외부 패키지를 사용한다면 다음을 구분합니다.
@@ -93,7 +104,7 @@ dependencies = []
 
 `pip install`을 매번 임의 버전으로 실행하는 것은 재현 가능한 환경이 아닙니다. 저장소가 선택한 패키지 관리자와 lockfile을 기준으로 준비 명령을 고정합니다.
 
-이 가이드는 제3자 패키지를 요구하지 않으며 `prepare.sh`는 `.guide/python/venv`만 만듭니다.
+이 가이드는 제3자 패키지를 요구하지 않으며 `prepare.sh`는 `.guide/python/venv`만 만듭니다. 실습의 작은 in-tree PEP 517 backend도 표준 라이브러리만 사용합니다. `make package-check EXERCISE_IMPL=workspace`는 임시 venv에 wheel을 설치하고, 저장소 밖 cwd와 비어 있는 `PYTHONPATH`에서 metadata, `py.typed`, console script와 종단 간 실행을 확인합니다.
 
 ## 타입 검사 경계
 
@@ -116,6 +127,14 @@ def run_cases(
 - dict의 모양이 커져 이름 있는 타입이 필요한 경우
 
 외부 JSON에 곧바로 `cast(Case, raw)`를 적용하지 않습니다. `cast`는 실행 시 검증하지 않습니다.
+
+실습은 외부 도구 없이도 다음 정적 공개 타입 계약을 항상 실행합니다.
+
+```sh
+make type-check EXERCISE_IMPL=workspace
+```
+
+이 검사는 AST에서 모든 함수 인자·반환 annotation, dataclass 필드 annotation, 공개 API의 `Any` 금지와 `py.typed`를 확인합니다. 값 흐름의 타입 적합성까지 증명하는 mypy·pyright의 대체물은 아닙니다. 그런 의미 분석 도구를 추가한다면 아래의 고정된 검증 진입점에 연결해야 합니다.
 
 ## 값 객체와 가변성
 
@@ -143,7 +162,7 @@ class Reporter(Protocol):
 
 ## 품질 도구 선택
 
-프로젝트에 따라 다음 도구를 선택할 수 있습니다.
+표준 라이브러리 기반 `make type-check`와 package 설치 검사는 이 실습의 필수 계약입니다. 프로젝트에 따라 다음 도구를 추가로 선택할 수 있습니다.
 
 - `ruff`: lint와 format
 - `mypy` 또는 `pyright`: 정적 타입 검사
@@ -188,7 +207,7 @@ logging.basicConfig(level=logging.INFO, format="%(levelname)s %(message)s")
 
 ### 테스트만 통과하는 경로 조작
 
-테스트가 무조건 저장소 루트를 `sys.path`에 추가하면 실제 설치·실행 오류를 숨길 수 있습니다. 패키지 실행 계약을 먼저 정합니다.
+source-level 단계 검사는 skeleton, workspace와 reference를 같은 공개 테스트에 연결하기 위해 구현 root를 명시합니다. 이 검사만으로 설치 가능성을 주장하지 않습니다. 별도의 `make package-check`는 격리 venv에 wheel을 설치하고 source root와 `PYTHONPATH` 없이 실행해 설치·console script 오류를 드러냅니다.
 
 ### 과도한 추상화
 
@@ -196,7 +215,7 @@ logging.basicConfig(level=logging.INFO, format="%(levelname)s %(message)s")
 
 ## 연결 실습
 
-- [command-checker 구성](../../exercises/command-checker/README.md)에서 9개 module 책임과 import 방향을 architecture test로 확인합니다.
+- [command-checker 구성](../../exercises/command-checker/README.md)에서 9개 module의 허용 import 방향과 순환 부재를 AST architecture test로 확인하고, stage 1·8에서 실제 설치와 공개 타입 계약을 검사합니다.
 
 ## 완료 기준
 
@@ -204,6 +223,7 @@ logging.basicConfig(level=logging.INFO, format="%(levelname)s %(message)s")
 - 모듈 의존 방향이 순환하지 않습니다.
 - 지원 Python 버전과 준비 명령이 고정되어 있습니다.
 - 타입 힌트와 실행 시 검증을 구분합니다.
+- 설치된 `command-checker`가 source 경로 주입 없이 실행됩니다.
 - 저장소 전체 검증 진입점이 하나입니다.
 
 다음은 [CLI 검사기 설계](03-cli-test-runner.md)입니다.

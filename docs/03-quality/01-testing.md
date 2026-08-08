@@ -120,7 +120,7 @@ for _ in range(500):
 - 문법 오류나 누락된 fixture 때문에 실패해서는 안 됩니다.
 - 한 단계가 통과하면 이전 단계도 계속 통과해야 합니다.
 
-루트 `verify.sh`는 skeleton의 첫 실패가 의도한 경계인지 확인합니다.
+루트 `verify.sh`는 각 stage scaffold를 직접 호출해 정확히 약속한 `NotImplementedError` 메시지에서 멈추는지 확인합니다. `stage-N` 명령은 1단계부터 N단계까지 누적 실행되므로 이전 단계 회귀도 같은 명령에서 거부됩니다.
 
 ## 환경 의존 검사
 

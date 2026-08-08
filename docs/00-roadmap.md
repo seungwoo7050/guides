@@ -100,7 +100,7 @@ Python 경험은 필요하지 않습니다. 변수, 조건, 반복과 함수라�
 | 순서 | 문서 | 연결 실습 |
 |---:|---|---:|
 | 8 | [재현 가능한 테스트](03-quality/01-testing.md) | 전 단계 |
-| 9 | [프로젝트 구조, 패키징과 타입 검사](03-quality/02-project-structure-packaging-and-typing.md) | 8단계 |
+| 9 | [프로젝트 구조, 패키징과 타입 검사](03-quality/02-project-structure-packaging-and-typing.md) | 1·8단계 |
 | 10 | [CLI 검사기 설계](03-quality/03-cli-test-runner.md) | 전체 |
 
 누적 실습의 전체 계약은 [`command-checker`](../exercises/command-checker/README.md)에서 확인합니다.
@@ -139,8 +139,7 @@ Python 경험은 필요하지 않습니다. 변수, 조건, 반복과 함수라�
 문서의 계약을 읽는다
 → skeleton을 workspace로 복사한다
 → 현재 단계만 구현한다
-→ 현재 단계 검사를 실행한다
-→ 이전 단계 회귀 검사를 실행한다
+→ 현재 단계까지의 누적 검사를 실행한다
 → 실패 원인을 설명한 뒤 수정한다
 → 마지막에 reference와 비교한다
 ```

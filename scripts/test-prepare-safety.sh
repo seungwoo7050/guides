@@ -52,7 +52,16 @@ while IFS= read -r relative; do
 done < "$REPOSITORY/scripts/layout-manifest.txt"
 git -C "$REPOSITORY" commit -q -m 'test fixture'
 
+if [[ "$GUIDE_ID" == python ]]; then
+    mkdir -p -- "$REPOSITORY/exercises/command-checker/workspace/learner"
+    printf '학습자 작업을 보존합니다.\n' > \
+        "$REPOSITORY/exercises/command-checker/workspace/learner/sentinel.py"
+    chmod 0640 "$REPOSITORY/exercises/command-checker/workspace/learner/sentinel.py"
+fi
+
 BASE_SOURCE="$(python3 -B "$REPOSITORY/scripts/repository_state.py" fingerprint --root "$REPOSITORY")"
+BASE_LEARNER_SOURCE="$(python3 -B "$REPOSITORY/scripts/repository_state.py" fingerprint \
+    --root "$REPOSITORY" --include-workspace)"
 RAW_INDEX_PATH="$(git -C "$REPOSITORY" rev-parse --path-format=absolute --git-path index)"
 raw_index_hash() {
     python3 - "$RAW_INDEX_PATH" <<'PY'
@@ -234,9 +243,12 @@ assert_snapshot "$MARKER" "$MARKER_SNAPSHOT" 'signal failure marker'
     die '중단 뒤 owned marker temp가 남았습니다.'
 [[ "$BASE_SOURCE" == "$(python3 -B "$REPOSITORY/scripts/repository_state.py" fingerprint --root "$REPOSITORY")" ]] || \
     die 'prepare safety 검사가 source fingerprint를 변경했습니다.'
+[[ "$BASE_LEARNER_SOURCE" == "$(python3 -B "$REPOSITORY/scripts/repository_state.py" fingerprint \
+    --root "$REPOSITORY" --include-workspace)" ]] || \
+    die 'prepare safety 검사가 학습자 workspace를 변경했습니다.'
 [[ "$BASE_RAW_INDEX" == "$(raw_index_hash)" ]] || \
     die 'prepare safety 검사가 raw Git index bytes를 변경했습니다.'
 [[ -z "$(git -C "$REPOSITORY" status --porcelain --untracked-files=all)" ]] || \
     die 'prepare safety 검사가 source/index 상태를 변경했습니다.'
 
-printf 'PREPARE SAFETY: PASS (exclusive temp, tool probes, symlink fail-closed, signal cleanup)\n'
+printf 'PREPARE SAFETY: PASS (workspace preserved, exclusive temp, tool probes, symlink fail-closed, signal cleanup)\n'

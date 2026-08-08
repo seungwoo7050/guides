@@ -11,13 +11,11 @@ import stat
 import subprocess
 from pathlib import Path
 
-EXCLUDED_PARTS = {
-    ".git", ".guide", ".venv", ".pytest_cache", "__pycache__", "workspace"
-}
+EXCLUDED_PARTS = {".git", ".guide", ".venv", ".pytest_cache", "__pycache__"}
 EXCLUDED_SUFFIXES = {".log", ".pyc", ".pyo"}
 
 
-def source_entries(root: Path) -> list[dict[str, object]]:
+def source_entries(root: Path, *, include_workspace: bool = False) -> list[dict[str, object]]:
     """Return a deterministic manifest without following any symlink."""
     entries: list[dict[str, object]] = []
 
@@ -26,11 +24,16 @@ def source_entries(root: Path) -> list[dict[str, object]]:
             children = sorted(iterator, key=lambda item: item.name)
         for child in children:
             relative = prefix / child.name
-            if any(part in EXCLUDED_PARTS for part in relative.parts):
+            in_workspace = "workspace" in relative.parts
+            if (any(part in EXCLUDED_PARTS for part in relative.parts)
+                    and not (include_workspace and in_workspace)):
+                continue
+            if not include_workspace and in_workspace:
                 continue
             metadata = child.stat(follow_symlinks=False)
             path = Path(child.path)
-            if stat.S_ISREG(metadata.st_mode) and path.suffix in EXCLUDED_SUFFIXES:
+            if (stat.S_ISREG(metadata.st_mode) and path.suffix in EXCLUDED_SUFFIXES
+                    and not (include_workspace and in_workspace)):
                 continue
             entry: dict[str, object] = {
                 "path": relative.as_posix(),
@@ -84,12 +87,17 @@ def main() -> int:
     parser.add_argument("command", choices=("fingerprint", "index", "manifest"))
     parser.add_argument("--root", type=Path, required=True)
     parser.add_argument("--output", type=Path)
+    parser.add_argument(
+        "--include-workspace",
+        action="store_true",
+        help="include learner workspace paths and generated suffixes in fingerprints",
+    )
     arguments = parser.parse_args()
     root = arguments.root.resolve()
     if arguments.command == "index":
         print(index_fingerprint(root))
         return 0
-    entries = source_entries(root)
+    entries = source_entries(root, include_workspace=arguments.include_workspace)
     if arguments.command == "fingerprint":
         print(digest(entries))
         return 0
