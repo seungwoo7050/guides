@@ -39,12 +39,20 @@ def build_event(
     inputs: Iterable[Dataset],
     outputs: Iterable[Dataset],
     code_revision: str,
+    event_time: datetime | None = None,
 ) -> RunEvent:
     if event_type not in {"START", "COMPLETE", "FAIL"}:
         raise ValueError("unsupported event type")
+    observed_at = datetime.now(timezone.utc) if event_time is None else event_time
+    if (
+        not isinstance(observed_at, datetime)
+        or observed_at.tzinfo is None
+        or observed_at.utcoffset() is None
+    ):
+        raise ValueError("event_time must be timezone-aware")
     return RunEvent(
         event_type=event_type,
-        event_time=datetime.now(timezone.utc).isoformat(),
+        event_time=observed_at.astimezone(timezone.utc).isoformat(),
         run_id=run_id,
         job_namespace="guides/data-engineering",
         job_name=job_name,

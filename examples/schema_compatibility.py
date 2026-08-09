@@ -18,6 +18,7 @@ PROMOTIONS = {
     ("long", "double"),
     ("float", "double"),
 }
+SUPPORTED_TYPES = {"boolean", "int", "long", "float", "double", "string"}
 
 
 @dataclass(frozen=True)
@@ -49,6 +50,8 @@ def _reader_accepts(writer: dict[str, Field], reader: dict[str, Field]) -> tuple
             if reader_field.required and not reader_field.has_default:
                 reasons.append(f"reader requires missing field: {name}")
             continue
+        if not writer_field.required and reader_field.required and not reader_field.has_default:
+            reasons.append(f"writer may omit field required by reader: {name}")
         if writer_field.type == reader_field.type:
             continue
         if (writer_field.type, reader_field.type) not in PROMOTIONS:
@@ -59,9 +62,26 @@ def _reader_accepts(writer: dict[str, Field], reader: dict[str, Field]) -> tuple
     return not reasons, tuple(reasons)
 
 
+def _index(fields: list[Field], *, role: str) -> dict[str, Field]:
+    indexed: dict[str, Field] = {}
+    for field in fields:
+        if not isinstance(field, Field):
+            raise ValueError(f"{role} fields must be Field values")
+        if not isinstance(field.name, str) or not field.name:
+            raise ValueError(f"{role} field name must be a non-empty string")
+        if field.name in indexed:
+            raise ValueError(f"duplicate {role} field: {field.name}")
+        if not isinstance(field.type, str) or field.type not in SUPPORTED_TYPES:
+            raise ValueError(f"unsupported {role} field type: {field.type!r}")
+        if not isinstance(field.required, bool) or not isinstance(field.has_default, bool):
+            raise ValueError(f"{role} required/has_default flags must be boolean")
+        indexed[field.name] = field
+    return indexed
+
+
 def compare(old: list[Field], new: list[Field]) -> Compatibility:
-    old_by_name = {field.name: field for field in old}
-    new_by_name = {field.name: field for field in new}
+    old_by_name = _index(old, role="old")
+    new_by_name = _index(new, role="new")
 
     # New reader reads old data.
     backward, backward_reasons = _reader_accepts(old_by_name, new_by_name)
