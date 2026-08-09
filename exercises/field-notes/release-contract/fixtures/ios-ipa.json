@@ -23,10 +23,12 @@
     {
       "ref": "ios-archive",
       "kind": "ios-xcarchive",
-      "identity": "local-bytes",
-      "fileName": "FieldNotes-preview.xcarchive",
+      "identity": "directory-tree",
+      "directoryName": "FieldNotes-preview.xcarchive",
+      "fileCount": 24,
       "byteSize": 234566,
-      "sha256": "5656565656565656565656565656565656565656565656565656565656565656"
+      "treeSha256": "5656565656565656565656565656565656565656565656565656565656565656",
+      "treeDigestAlgorithm": "sha256-canonical-tree-v1"
     },
     {
       "ref": "ios-install-ipa",

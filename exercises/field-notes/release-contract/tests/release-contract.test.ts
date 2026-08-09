@@ -64,6 +64,83 @@ test("iOS candidate keeps xcarchive and provisioned IPA distinct", async () => {
   assert.equal("signingVerified" in result, false);
 });
 
+test("directory bundles require the canonical tree identity instead of pretending to be files", async () => {
+  const valid = validateReleaseEvidence(await fixture("ios-ipa.json"));
+  assert.equal(valid.ok, true);
+  if (!valid.ok) return;
+  const archive = valid.evidence.artifacts.find(
+    (artifact) => artifact.kind === "ios-xcarchive",
+  );
+  assert.deepEqual(archive, {
+    ref: "ios-archive",
+    kind: "ios-xcarchive",
+    identity: "directory-tree",
+    directoryName: "FieldNotes-preview.xcarchive",
+    fileCount: 24,
+    byteSize: 234566,
+    treeSha256:
+      "5656565656565656565656565656565656565656565656565656565656565656",
+    treeDigestAlgorithm: "sha256-canonical-tree-v1",
+  });
+
+  const fileClaim = await fixture("ios-ipa.json");
+  fileClaim.artifacts[0] = {
+    ref: "ios-archive",
+    kind: "ios-xcarchive",
+    identity: "local-bytes",
+    fileName: "FieldNotes-preview.xcarchive",
+    byteSize: 234566,
+    sha256:
+      "5656565656565656565656565656565656565656565656565656565656565656",
+  };
+  const fileClaimResult = validateReleaseEvidence(fileClaim);
+  assert.equal(fileClaimResult.ok, false);
+  if (!fileClaimResult.ok) {
+    assert.ok(
+      fileClaimResult.errors.some((error) =>
+        error.includes("identity: expected directory-tree"),
+      ),
+    );
+  }
+
+  const ambiguousArchive = await fixture("ios-ipa.json");
+  ambiguousArchive.artifacts[0].directoryName =
+    "FieldNotes-preview.xcarchive.zip";
+  ambiguousArchive.artifacts[0].treeDigestAlgorithm = "unspecified-tree-hash";
+  const ambiguousResult = validateReleaseEvidence(ambiguousArchive);
+  assert.equal(ambiguousResult.ok, false);
+  if (!ambiguousResult.ok) {
+    assert.ok(
+      ambiguousResult.errors.some((error) => error.includes("must end with .xcarchive")),
+    );
+    assert.ok(
+      ambiguousResult.errors.some((error) =>
+        error.includes("expected sha256-canonical-tree-v1"),
+      ),
+    );
+  }
+});
+
+test("schema v2 manifests stay platform-specific before pair assessment", async () => {
+  const android = await fixture("android-aab.json");
+  const ios = await fixture("ios-ipa.json");
+  android.artifacts.push(...ios.artifacts);
+  android.signing.push(...ios.signing);
+
+  const result = validateReleaseEvidence(android);
+  assert.equal(result.ok, false);
+  if (!result.ok) {
+    assert.ok(
+      result.errors.some((error) =>
+        error.includes("ios-xcarchive does not match android"),
+      ),
+    );
+    assert.ok(
+      result.errors.some((error) => error.includes("ios-ipa does not match android")),
+    );
+  }
+});
+
 test("artifact refs are unique and every artifact has an explicit signing state", async () => {
   const duplicate = await fixture("android-aab.json");
   duplicate.artifacts[1].ref = "android-publishing-aab";
@@ -105,10 +182,12 @@ test("device matrix rejects simulator-app on physical, IPA on simulator, and APK
   simulatorOnPhysical.artifacts.push({
     ref: "ios-simulator",
     kind: "ios-simulator-app",
-    identity: "local-bytes",
-    fileName: "FieldNotes.app",
+    identity: "directory-tree",
+    directoryName: "FieldNotes.app",
+    fileCount: 12,
     byteSize: 345678,
-    sha256: "7777777777777777777777777777777777777777777777777777777777777777",
+    treeSha256: "7777777777777777777777777777777777777777777777777777777777777777",
+    treeDigestAlgorithm: "sha256-canonical-tree-v1",
   });
   simulatorOnPhysical.signing.push(signingNotRun("ios-simulator"));
   simulatorOnPhysical.installation.artifactRef = "ios-simulator";
@@ -149,10 +228,12 @@ test("the allowed non-physical installation paths stay explicit", async () => {
   ios.artifacts.push({
     ref: "ios-simulator",
     kind: "ios-simulator-app",
-    identity: "local-bytes",
-    fileName: "FieldNotes.app",
+    identity: "directory-tree",
+    directoryName: "FieldNotes.app",
+    fileCount: 12,
     byteSize: 345678,
-    sha256: "7777777777777777777777777777777777777777777777777777777777777777",
+    treeSha256: "7777777777777777777777777777777777777777777777777777777777777777",
+    treeDigestAlgorithm: "sha256-canonical-tree-v1",
   });
   ios.signing.push(signingNotRun("ios-simulator"));
   ios.installation.artifactRef = "ios-simulator";
@@ -356,6 +437,7 @@ test("cross-platform physical-device assessment requires valid paired artifacts,
 
   const complete = assessCrossPlatform(android.evidence, ios.evidence);
   assert.equal(complete.sameSource, true);
+  assert.equal(complete.sameReleaseIdentity, true);
   assert.equal(complete.androidArtifactSetComplete, true);
   assert.equal(complete.iosArtifactSetComplete, true);
   assert.equal(complete.androidPhysicalDeviceEvidenceConsistent, true);
@@ -373,6 +455,30 @@ test("cross-platform physical-device assessment requires valid paired artifacts,
   const mismatch = assessCrossPlatform(android.evidence, changedSource);
   assert.equal(mismatch.sameSource, false);
   assert.ok(mismatch.errors.some((error) => error.includes("same source")));
+
+  const changedRelease = structuredClone(ios.evidence);
+  changedRelease.build.profile = "production";
+  changedRelease.application.version = "2.0.0";
+  changedRelease.application.runtimeVersion = "runtime-v2";
+  changedRelease.build.runtimeFingerprintOrPolicy = "runtime-policy-v2";
+  if (changedRelease.installation.status === "verified") {
+    changedRelease.installation.installedVersion = "2.0.0";
+    changedRelease.installation.observedRuntimeVersion = "runtime-v2";
+    changedRelease.installation.observedRuntimeFingerprintOrPolicy =
+      "runtime-policy-v2";
+  }
+  const releaseMismatch = assessCrossPlatform(
+    android.evidence,
+    changedRelease,
+  );
+  assert.equal(releaseMismatch.sameSource, true);
+  assert.equal(releaseMismatch.sameReleaseIdentity, false);
+  assert.equal(releaseMismatch.crossPlatformPhysicalDeviceEvidenceConsistent, false);
+  assert.ok(
+    releaseMismatch.errors.some((error) =>
+      error.includes("same release profile/version/runtime policy"),
+    ),
+  );
 });
 
 test("malformed digests, file-kind suffixes, and empty not-run reasons are rejected", async () => {

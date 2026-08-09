@@ -5,15 +5,20 @@ export type DeviceClass = "physical" | "emulator" | "simulator";
 export type FileArtifactKind =
   | "android-aab"
   | "android-apk"
+  | "ios-ipa";
+
+export type DirectoryArtifactKind =
   | "ios-xcarchive"
-  | "ios-ipa"
   | "ios-simulator-app";
 
 export type StoreArtifactKind =
   | "android-play-split-set"
   | "ios-testflight-build";
 
-export type ArtifactKind = FileArtifactKind | StoreArtifactKind;
+export type ArtifactKind =
+  | FileArtifactKind
+  | DirectoryArtifactKind
+  | StoreArtifactKind;
 
 export type ArtifactRole =
   | "publishing"
@@ -30,6 +35,17 @@ export type FileArtifactEvidence = {
   sha256: string;
 };
 
+export type DirectoryArtifactEvidence = {
+  ref: string;
+  kind: DirectoryArtifactKind;
+  identity: "directory-tree";
+  directoryName: string;
+  fileCount: number;
+  byteSize: number;
+  treeSha256: string;
+  treeDigestAlgorithm: "sha256-canonical-tree-v1";
+};
+
 export type StoreArtifactEvidence = {
   ref: string;
   kind: StoreArtifactKind;
@@ -38,7 +54,10 @@ export type StoreArtifactEvidence = {
   displayName: string;
 };
 
-export type ArtifactEvidence = FileArtifactEvidence | StoreArtifactEvidence;
+export type ArtifactEvidence =
+  | FileArtifactEvidence
+  | DirectoryArtifactEvidence
+  | StoreArtifactEvidence;
 
 export type NotRunCheck = {
   status: "not-run";
@@ -176,6 +195,7 @@ export type ValidationResult =
 
 export type CrossPlatformAssessment = {
   sameSource: boolean;
+  sameReleaseIdentity: boolean;
   androidArtifactSetComplete: boolean;
   iosArtifactSetComplete: boolean;
   androidPhysicalDeviceEvidenceConsistent: boolean;

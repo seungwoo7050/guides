@@ -5,6 +5,7 @@ import type {
   ArtifactSetAssessment,
   CrossPlatformAssessment,
   DeviceClass,
+  DirectoryArtifactKind,
   FileArtifactKind,
   InstallationCheck,
   NotRunCheck,
@@ -23,7 +24,7 @@ type JsonObject = Record<string, unknown>;
 type ArtifactRule = {
   platform: Platform;
   role: ArtifactRole;
-  identity: "local-bytes" | "store-build";
+  identity: "local-bytes" | "directory-tree" | "store-build";
   installDevices: readonly DeviceClass[];
 };
 
@@ -52,7 +53,7 @@ const ARTIFACTS: Record<ArtifactKind, ArtifactRule> = {
   "ios-xcarchive": {
     platform: "ios",
     role: "archive",
-    identity: "local-bytes",
+    identity: "directory-tree",
     installDevices: [],
   },
   "ios-ipa": {
@@ -70,7 +71,7 @@ const ARTIFACTS: Record<ArtifactKind, ArtifactRule> = {
   "ios-simulator-app": {
     platform: "ios",
     role: "simulator-installable",
-    identity: "local-bytes",
+    identity: "directory-tree",
     installDevices: ["simulator"],
   },
 };
@@ -78,8 +79,11 @@ const ARTIFACTS: Record<ArtifactKind, ArtifactRule> = {
 const FILE_SUFFIX: Record<FileArtifactKind, string> = {
   "android-aab": ".aab",
   "android-apk": ".apk",
-  "ios-xcarchive": ".xcarchive",
   "ios-ipa": ".ipa",
+};
+
+const DIRECTORY_SUFFIX: Record<DirectoryArtifactKind, string> = {
+  "ios-xcarchive": ".xcarchive",
   "ios-simulator-app": ".app",
 };
 
@@ -164,6 +168,71 @@ function parseArtifact(value: unknown, index: number, errors: string[]): Artifac
       identity: "store-build",
       storeBuildRef: requiredText(input.storeBuildRef, `${path}.storeBuildRef`, errors),
       displayName: requiredText(input.displayName, `${path}.displayName`, errors),
+    };
+  }
+
+  if (rule?.identity === "directory-tree" || input.identity === "directory-tree") {
+    exactKeys(
+      input,
+      [
+        "ref",
+        "kind",
+        "identity",
+        "directoryName",
+        "fileCount",
+        "byteSize",
+        "treeSha256",
+        "treeDigestAlgorithm",
+      ],
+      path,
+      errors,
+    );
+    if (input.identity !== "directory-tree") {
+      errors.push(`${path}.identity: expected directory-tree`);
+    }
+    if (rule !== undefined && rule.identity !== "directory-tree") {
+      errors.push(`${path}.identity: ${kind} must identify local file bytes`);
+    }
+    const directoryKind = (
+      rule?.identity === "directory-tree" ? kind : "ios-xcarchive"
+    ) as DirectoryArtifactKind;
+    const directoryName = requiredText(
+      input.directoryName,
+      `${path}.directoryName`,
+      errors,
+    );
+    if (
+      directoryName &&
+      !directoryName.toLowerCase().endsWith(DIRECTORY_SUFFIX[directoryKind])
+    ) {
+      errors.push(
+        `${path}.directoryName: ${directoryKind} must end with ${DIRECTORY_SUFFIX[directoryKind]}`,
+      );
+    }
+    if (!Number.isInteger(input.fileCount) || (input.fileCount as number) <= 0) {
+      errors.push(`${path}.fileCount: expected positive integer`);
+    }
+    if (!Number.isInteger(input.byteSize) || (input.byteSize as number) <= 0) {
+      errors.push(`${path}.byteSize: expected positive integer`);
+    }
+    if (input.treeDigestAlgorithm !== "sha256-canonical-tree-v1") {
+      errors.push(
+        `${path}.treeDigestAlgorithm: expected sha256-canonical-tree-v1`,
+      );
+    }
+    return {
+      ref: requiredText(input.ref, `${path}.ref`, errors),
+      kind: directoryKind,
+      identity: "directory-tree",
+      directoryName,
+      fileCount: Number.isInteger(input.fileCount)
+        ? (input.fileCount as number)
+        : 0,
+      byteSize: Number.isInteger(input.byteSize)
+        ? (input.byteSize as number)
+        : 0,
+      treeSha256: digest(input.treeSha256, `${path}.treeSha256`, errors),
+      treeDigestAlgorithm: "sha256-canonical-tree-v1",
     };
   }
 
@@ -657,6 +726,21 @@ export function assessCrossPlatform(
     errors.push("Android and iOS evidence do not identify the same source/lock state");
   }
 
+  const sameReleaseIdentity =
+    android !== undefined &&
+    ios !== undefined &&
+    android.evidence.application.version === ios.evidence.application.version &&
+    android.evidence.application.runtimeVersion ===
+      ios.evidence.application.runtimeVersion &&
+    android.evidence.build.profile === ios.evidence.build.profile &&
+    android.evidence.build.runtimeFingerprintOrPolicy ===
+      ios.evidence.build.runtimeFingerprintOrPolicy;
+  if (android !== undefined && ios !== undefined && !sameReleaseIdentity) {
+    errors.push(
+      "Android and iOS evidence do not identify the same release profile/version/runtime policy",
+    );
+  }
+
   const androidArtifactSetComplete = android?.artifactSet.releaseCandidateArtifactSetComplete ?? false;
   const iosArtifactSetComplete = ios?.artifactSet.releaseCandidateArtifactSetComplete ?? false;
   const androidPhysicalDeviceEvidenceConsistent = android?.physicalDeviceEvidenceConsistent ?? false;
@@ -664,12 +748,14 @@ export function assessCrossPlatform(
 
   return {
     sameSource,
+    sameReleaseIdentity,
     androidArtifactSetComplete,
     iosArtifactSetComplete,
     androidPhysicalDeviceEvidenceConsistent,
     iosPhysicalDeviceEvidenceConsistent,
     crossPlatformPhysicalDeviceEvidenceConsistent:
       sameSource &&
+      sameReleaseIdentity &&
       androidArtifactSetComplete &&
       iosArtifactSetComplete &&
       androidPhysicalDeviceEvidenceConsistent &&
