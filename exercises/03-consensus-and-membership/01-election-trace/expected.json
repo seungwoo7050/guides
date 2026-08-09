@@ -1,0 +1,72 @@
+{
+  "schema_version": 1,
+  "exercise_id": "03-consensus-and-membership/01-election-trace",
+  "automated_checks": [
+    {
+      "id": "cluster-quorum",
+      "fixture": "election.json",
+      "observation": "quorum equals floor(cluster_size / 2) + 1",
+      "expected": 3
+    },
+    {
+      "id": "stale-candidate",
+      "fixture": "election.json#stale-candidate",
+      "observation": "votes after all listed deliveries",
+      "expected": {
+        "candidate": "C",
+        "term": 5,
+        "granted_by": ["C", "D"],
+        "rejected_by": ["A", "E"],
+        "leader": null
+      }
+    },
+    {
+      "id": "split-vote-term-9",
+      "fixture": "election.json#split-vote-and-retry",
+      "observation": "durable votes before event e7",
+      "expected": {
+        "A": ["A", "B"],
+        "D": ["C", "D"],
+        "uncommitted_voter": "E",
+        "leader": null
+      }
+    },
+    {
+      "id": "retry-term-10",
+      "fixture": "election.json#split-vote-and-retry",
+      "observation": "election result after event e10",
+      "expected": {
+        "leader": "D",
+        "term": 10,
+        "minimum_quorum_reached_at": "e9"
+      }
+    },
+    {
+      "id": "unsafe-double-vote",
+      "fixture": "election.json#vote-before-persist",
+      "observation": "first durable-vote safety violation",
+      "expected": {
+        "node": "A",
+        "term": 7,
+        "first_violation_event": "e7",
+        "possible_leaders": ["B", "C"]
+      }
+    }
+  ],
+  "manual_review": [
+    {
+      "id": "safety-versus-liveness",
+      "question": "term 9에서 leader가 없는 상태와 같은 term의 두 leader가 있는 상태를 구분했는가?",
+      "required_evidence": ["term별 vote 표", "quorum 계산", "fairness 가정"]
+    },
+    {
+      "id": "persist-before-send",
+      "question": "granted response 공개 전 durable write가 완료돼야 하는 이유를 crash trace로 설명했는가?",
+      "required_evidence": ["e3-e7 crash 경계", "restart 뒤 voted_for 복원 규칙"]
+    }
+  ],
+  "limits": [
+    "유한 fixture는 모든 election interleaving을 탐색하지 않는다.",
+    "bounded retry 결과는 무조건적인 consensus termination 증명이 아니다."
+  ]
+}

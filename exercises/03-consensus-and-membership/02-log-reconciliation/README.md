@@ -53,3 +53,5 @@ prevLogIndex | prevLogTerm | 성공 여부 | conflict hint | 다음 nextIndex | 
 - 최소한의 conflict hint를 사용한 경우와 index를 하나씩 줄인 경우의 message 수를 비교합니다.
 - old-term entry를 즉시 commit하는 잘못된 rule의 반례를 설명합니다.
 - `append → persist → replicate → commit → apply → reply`의 순서를 자신의 storage API에 맞춰 기록합니다.
+
+직접 추적한 뒤 [`reference.md`](reference.md)의 해설과 [`expected.json`](expected.json)의 관측 결과를 비교합니다.

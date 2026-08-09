@@ -1,0 +1,79 @@
+{
+  "schema_version": 1,
+  "exercise_id": "03-consensus-and-membership/03-client-session",
+  "automated_checks": [
+    {
+      "id": "initial-session-contiguous",
+      "fixture": "sessions.json",
+      "observation": "first request follows durable session sequence",
+      "expected": {
+        "initial_last_sequence": 2,
+        "first_sequence": 3
+      }
+    },
+    {
+      "id": "safe-duplicate-sequence-3",
+      "fixture": "sessions.json#safe-snapshot/e3",
+      "observation": "counter and returned result after retry",
+      "expected": {
+        "counter": 5,
+        "result": 5,
+        "additional_effects": 0
+      }
+    },
+    {
+      "id": "safe-restart-and-retry",
+      "fixture": "sessions.json#safe-snapshot/e8",
+      "observation": "state restored from snapshot and duplicate result",
+      "expected": {
+        "counter": 7,
+        "last_sequence": 4,
+        "result": 7,
+        "additional_effects": 0
+      }
+    },
+    {
+      "id": "conflicting-fingerprint",
+      "fixture": "sessions.json#safe-snapshot/e9",
+      "observation": "same sequence with another command",
+      "expected": {
+        "status": "SEQUENCE_CONFLICT",
+        "counter": 7
+      }
+    },
+    {
+      "id": "strict-gap-policy",
+      "fixture": "sessions.json#safe-snapshot/e10",
+      "observation": "reference contiguous-sequence policy",
+      "expected": {
+        "status": "SEQUENCE_GAP",
+        "counter": 7
+      }
+    },
+    {
+      "id": "unsafe-snapshot-duplicate-effect",
+      "fixture": "sessions.json#unsafe-snapshot/e6",
+      "observation": "result of losing session metadata",
+      "expected": {
+        "counter_in_wrong_implementation": 10,
+        "first_violation_event": "e6"
+      }
+    }
+  ],
+  "manual_review": [
+    {
+      "id": "retry-api",
+      "question": "duplicate, stale, next, gap과 fingerprint conflict 결과를 모두 정의했는가?",
+      "required_evidence": ["status 표", "state mutation 여부", "retry result source"]
+    },
+    {
+      "id": "session-snapshot-contract",
+      "question": "snapshot과 restore가 session metadata를 user state와 같은 boundary에서 보존하는가?",
+      "required_evidence": ["snapshot manifest", "restore 뒤 e8/e9 판정"]
+    }
+  ],
+  "limits": [
+    "단일 client의 순차 요청만 다룬다.",
+    "session GC와 client incarnation 재사용 정책은 검사하지 않는다."
+  ]
+}

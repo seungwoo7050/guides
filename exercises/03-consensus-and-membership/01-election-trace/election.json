@@ -33,7 +33,7 @@
         {"id": "e2", "kind": "timeout", "node": "D", "next_term": 9},
         {"id": "e3", "kind": "deliver_request_vote", "from": "A", "to": "B", "term": 9, "last_log_index": 4, "last_log_term": 8},
         {"id": "e4", "kind": "deliver_request_vote", "from": "D", "to": "C", "term": 9, "last_log_index": 4, "last_log_term": 8},
-        {"id": "e5", "kind": "deliver_request_vote", "from": "A", "to": "E", "term": 9, "last_log_index": 4, "last_log_term": 8},
+        {"id": "e5", "kind": "drop_request_vote", "from": "A", "to": "E", "term": 9, "reason": "split-vote partition"},
         {"id": "e6", "kind": "drop_request_vote", "from": "D", "to": "E", "term": 9},
         {"id": "e7", "kind": "timeout", "node": "D", "next_term": 10},
         {"id": "e8", "kind": "deliver_request_vote", "from": "D", "to": "B", "term": 10, "last_log_index": 4, "last_log_term": 8},

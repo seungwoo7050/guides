@@ -1,0 +1,60 @@
+{
+  "schema_version": 1,
+  "nodes": ["A", "B", "C", "D", "E", "F"],
+  "scenarios": [
+    {
+      "id": "safe-joint-consensus",
+      "initial": {
+        "phase": "STABLE",
+        "voters": ["A", "B", "C"],
+        "learners": [],
+        "leader": "A",
+        "commit_index": 10,
+        "match_index": {"A": 10, "B": 10, "C": 10, "D": 0}
+      },
+      "events": [
+        {"id": "e1", "kind": "add_learner", "node": "D", "configuration_epoch": 11},
+        {"id": "e2", "kind": "catch_up", "node": "D", "through_index": 10},
+        {"id": "e3", "kind": "append_joint_configuration", "index": 11, "term": 6, "old": ["A", "B", "C"], "new": ["B", "C", "D"]},
+        {"id": "e4", "kind": "replicate", "index": 11, "stored_by": ["A", "B", "C", "D"]},
+        {"id": "e5", "kind": "commit_joint_configuration", "index": 11, "old_acks": ["A", "B"], "new_acks": ["B", "C"]},
+        {"id": "e6", "kind": "crash", "node": "A"},
+        {"id": "e7", "kind": "elect", "candidate": "B", "term": 7, "votes": ["B", "C", "D"], "phase": "JOINT"},
+        {"id": "e8", "kind": "append_final_configuration", "leader": "B", "index": 12, "term": 7, "voters": ["B", "C", "D"]},
+        {"id": "e9", "kind": "replicate", "index": 12, "stored_by": ["B", "C", "D"]},
+        {"id": "e10", "kind": "commit_final_configuration", "index": 12, "old_acks": ["B", "C"], "new_acks": ["B", "C", "D"]},
+        {"id": "e11", "kind": "restart_and_attempt_write", "node": "A", "configuration_epoch": 10, "expected_current_epoch": 12}
+      ]
+    },
+    {
+      "id": "unsafe-disjoint-switch",
+      "initial": {
+        "phase": "STABLE",
+        "voters": ["A", "B", "C"],
+        "leader": "A",
+        "commit_index": 20
+      },
+      "events": [
+        {"id": "e1", "kind": "commit_entry", "index": 21, "term": 8, "command": "x=1", "acks": ["A", "B"]},
+        {"id": "e2", "kind": "direct_configuration_switch", "old": ["A", "B", "C"], "new": ["D", "E", "F"]},
+        {"id": "e3", "kind": "elect", "candidate": "D", "term": 9, "votes": ["D", "E"]},
+        {"id": "e4", "kind": "commit_entry", "index": 21, "term": 9, "command": "x=2", "acks": ["D", "E"]}
+      ]
+    },
+    {
+      "id": "unsafe-promote-before-catchup",
+      "initial": {
+        "phase": "STABLE",
+        "voters": ["A", "B", "C"],
+        "leader": "A",
+        "commit_index": 10,
+        "match_index": {"A": 10, "B": 10, "C": 10, "D": 8}
+      },
+      "events": [
+        {"id": "e1", "kind": "promote_learner", "node": "D", "new_voters": ["B", "C", "D"], "node_match_index": 8, "required_index": 10},
+        {"id": "e2", "kind": "crash", "node": "A"},
+        {"id": "e3", "kind": "request_vote", "candidate": "D", "term": 7, "last_log_index": 8, "last_log_term": 4}
+      ]
+    }
+  ]
+}

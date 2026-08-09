@@ -50,3 +50,5 @@ response emitted
 - `unsafe-snapshot`에서 effect가 두 번 생기는 최소 trace를 표시합니다.
 - 자신의 retry API에서 duplicate, stale, next, gap request의 결과를 표로 정의합니다.
 - snapshot manifest에 포함할 client session metadata와 restore 검사를 작성합니다.
+
+직접 추적한 뒤 [`reference.md`](reference.md)의 해설과 [`expected.json`](expected.json)의 관측 결과를 비교합니다.

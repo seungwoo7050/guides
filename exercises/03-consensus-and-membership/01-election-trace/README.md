@@ -51,3 +51,5 @@ node | current_term | role | voted_for | last_log_index | last_log_term
 - 안전성 위반 trace를 가능한 짧게 줄입니다.
 - vote의 영속화 지점과 crash 뒤 복원 규칙을 문장으로 고정합니다.
 - election timeout의 역할을 안전성 증명이 아니라 진행을 위한 시간 가정으로 설명합니다.
+
+직접 추적한 뒤 [`reference.md`](reference.md)의 해설과 [`expected.json`](expected.json)의 관측 결과를 비교합니다.

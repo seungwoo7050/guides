@@ -58,7 +58,7 @@
         {"index": 5, "term": 7, "command": "noop"}
       ],
       "states": [
-        {"id": "s1", "match_index": {"A": 4, "B": 4, "C": 4, "D": 2, "E": 2}, "leader_commit_before": 2},
+        {"id": "s1", "match_index": {"A": 5, "B": 4, "C": 4, "D": 2, "E": 2}, "leader_commit_before": 2},
         {"id": "s2", "match_index": {"A": 5, "B": 5, "C": 5, "D": 2, "E": 2}, "leader_commit_before": 2}
       ]
     }

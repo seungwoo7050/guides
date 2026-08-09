@@ -1,0 +1,63 @@
+{
+  "schema_version": 1,
+  "exercise_id": "03-consensus-and-membership/04-membership-change",
+  "automated_checks": [
+    {
+      "id": "learner-caught-up-before-joint",
+      "fixture": "membership.json#safe-joint-consensus/e2-e3",
+      "observation": "D frontier before voter admission",
+      "expected": {"match_index": 10, "required_index": 10, "eligible": true}
+    },
+    {
+      "id": "joint-configuration-dual-quorum",
+      "fixture": "membership.json#safe-joint-consensus/e5",
+      "observation": "old and new quorum evidence",
+      "expected": {
+        "old_quorum": 2,
+        "new_quorum": 2,
+        "old_acks": ["A", "B"],
+        "new_acks": ["B", "C"]
+      }
+    },
+    {
+      "id": "joint-election-after-crash",
+      "fixture": "membership.json#safe-joint-consensus/e7",
+      "observation": "B vote set under joint rules",
+      "expected": {"leader": "B", "term": 7, "old_votes": ["B", "C"], "new_votes": ["B", "C", "D"]}
+    },
+    {
+      "id": "final-configuration-and-fence",
+      "fixture": "membership.json#safe-joint-consensus/e10-e11",
+      "observation": "active voters and removed-node write",
+      "expected": {"voters": ["B", "C", "D"], "configuration_epoch": 12, "A_status": "STALE_CONFIGURATION"}
+    },
+    {
+      "id": "disjoint-switch-has-no-intersection",
+      "fixture": "membership.json#unsafe-disjoint-switch",
+      "observation": "old and new decision quorum intersection",
+      "expected": {"old_quorum": ["A", "B"], "new_quorum": ["D", "E"], "intersection": [], "safe": false, "first_unsafe_event": "e2"}
+    },
+    {
+      "id": "premature-promotion-rejected",
+      "fixture": "membership.json#unsafe-promote-before-catchup/e1",
+      "observation": "learner frontier versus committed frontier",
+      "expected": {"node": "D", "match_index": 8, "required_index": 10, "eligible": false}
+    }
+  ],
+  "manual_review": [
+    {
+      "id": "configuration-recovery",
+      "question": "leader crash 뒤 joint/final phase를 durable log에서 복원하고 transition을 재개하는가?",
+      "required_evidence": ["configuration log index", "commit state", "restart phase"]
+    },
+    {
+      "id": "removed-node-fencing",
+      "question": "제거된 A가 stale client·term·epoch로 write하지 못하는가?",
+      "required_evidence": ["storage-boundary epoch check", "거절 status", "current configuration source"]
+    }
+  ],
+  "limits": [
+    "단일 joint-consensus transition만 다룬다.",
+    "동시 configuration 변경과 실제 snapshot transfer 성능은 검사하지 않는다."
+  ]
+}
