@@ -117,6 +117,7 @@ def resolve_local_link(source: Path, raw: str, root: Path) -> tuple[Path, str | 
 
 
 def validate(root: Path) -> dict[str, int]:
+    root = root.resolve()
     errors: list[str] = []
     for relative in REQUIRED:
         path = root / relative
@@ -142,6 +143,25 @@ def validate(root: Path) -> dict[str, int]:
             exercise_numbers.append(int(match.group(1)))
     if exercise_numbers != EXPECTED_EXERCISES:
         errors.append(f"실습 번호가 01..06과 다릅니다: {exercise_numbers}")
+    for directory in exercise_dirs:
+        readme = directory / "README.md"
+        if not readme.is_file():
+            continue
+        text = readme.read_text(encoding="utf-8")
+        headings = HEADING.findall(text)
+        required_terms = ("문제", "결과물", "완료 조건")
+        failure_term = any(term in text for term in ("실패", "잘못된 완료", "failure"))
+        if len(text) < 1200 or len(headings) < 6 or not failure_term or any(term not in text for term in required_terms):
+            errors.append(f"교육 계약이 부족한 실습: {readme.relative_to(root)}")
+
+    capstone_files = [
+        root / "capstone/field-sensor-node/README.md",
+        root / "capstone/field-sensor-node/acceptance.md",
+        root / "capstone/field-sensor-node/failure-matrix.md",
+    ]
+    for path in capstone_files:
+        if path.is_file() and len(path.read_text(encoding="utf-8")) < 1000:
+            errors.append(f"교육 계약이 부족한 capstone 문서: {path.relative_to(root)}")
 
     fixtures = sorted((root / "examples").glob("*/fixtures/*.json"))
     if len(fixtures) < 8:

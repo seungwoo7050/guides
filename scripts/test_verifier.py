@@ -48,14 +48,14 @@ class ValidatorTests(unittest.TestCase):
             copy = self.copy_source(Path(temp))
             with (copy / "README.md").open("a", encoding="utf-8") as stream:
                 stream.write("\n[broken](docs/does-not-exist.md)\n")
-            with self.assertRaises(checker.ValidationError):
+            with self.assertRaisesRegex(checker.ValidationError, "깨진 링크"):
                 checker.validate(copy)
 
     def test_missing_required_file_is_rejected(self) -> None:
         with tempfile.TemporaryDirectory(prefix="embedded-validator-") as temp:
             copy = self.copy_source(Path(temp))
             (copy / "docs/00-roadmap.md").unlink()
-            with self.assertRaises(checker.ValidationError):
+            with self.assertRaisesRegex(checker.ValidationError, "필수 파일 누락: docs/00-roadmap.md"):
                 checker.validate(copy)
 
     def test_wrong_model_expectation_is_rejected(self) -> None:
@@ -80,6 +80,14 @@ class ValidatorTests(unittest.TestCase):
             )
             self.assertEqual(1, completed.returncode)
             self.assertIn("CHECK FAILED", completed.stdout)
+
+    def test_heading_only_exercise_is_rejected(self) -> None:
+        with tempfile.TemporaryDirectory(prefix="embedded-validator-") as temp:
+            copy = self.copy_source(Path(temp))
+            exercise = copy / "exercises/06-update-rollback-model/README.md"
+            exercise.write_text("# empty exercise\n", encoding="utf-8")
+            with self.assertRaisesRegex(checker.ValidationError, "교육 계약이 부족"):
+                checker.validate(copy)
 
 
 if __name__ == "__main__":

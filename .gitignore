@@ -4,5 +4,10 @@ __pycache__/
 *.log
 build/
 workspace/
+capstone-workspace/
 .venv/
 .zephyr-env
+.DS_Store
+.pytest_cache/
+.mypy_cache/
+.coverage

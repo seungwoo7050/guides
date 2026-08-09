@@ -8,7 +8,9 @@ import hashlib
 import json
 import os
 import stat
+import subprocess
 import sys
+import tempfile
 from pathlib import Path
 from typing import Iterable
 
@@ -19,6 +21,7 @@ EXCLUDED_NAMES = {
     "__pycache__",
     "build",
     "workspace",
+    "capstone-workspace",
 }
 EXCLUDED_SUFFIXES = {".pyc", ".log"}
 
@@ -86,6 +89,54 @@ def calculate(root: Path) -> dict[str, object]:
     }
 
 
+def git_state(root: Path) -> dict[str, str]:
+    """Return HEAD and raw-index fingerprints without taking Git locks."""
+    try:
+        head = subprocess.run(
+            ["git", "-C", str(root), "rev-parse", "HEAD"],
+            check=True,
+            capture_output=True,
+            text=True,
+            timeout=10,
+        ).stdout.strip()
+        index_text = subprocess.run(
+            ["git", "-C", str(root), "rev-parse", "--git-path", "index"],
+            check=True,
+            capture_output=True,
+            text=True,
+            timeout=10,
+        ).stdout.strip()
+    except (FileNotFoundError, subprocess.SubprocessError):
+        return {}
+    index = Path(index_text)
+    if not index.is_absolute():
+        index = root / index
+    try:
+        index_sha256 = hashlib.sha256(index.read_bytes()).hexdigest()
+    except OSError:
+        index_sha256 = "missing"
+    return {"git_head": head, "git_index_sha256": index_sha256}
+
+
+def write_atomic(path: Path, payload: dict[str, object]) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    if path.is_symlink() or path.parent.is_symlink():
+        raise OSError(f"symlink marker path is not allowed: {path}")
+    data = json.dumps(payload, ensure_ascii=False, indent=2, sort_keys=True) + "\n"
+    descriptor, temporary = tempfile.mkstemp(prefix=".prepared.", dir=path.parent)
+    temporary_path = Path(temporary)
+    try:
+        os.fchmod(descriptor, 0o600)
+        with os.fdopen(descriptor, "w", encoding="utf-8") as stream:
+            stream.write(data)
+            stream.flush()
+            os.fsync(stream.fileno())
+        os.replace(temporary_path, path)
+    finally:
+        if temporary_path.exists():
+            temporary_path.unlink()
+
+
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--root", type=Path, default=Path(__file__).resolve().parents[1])
@@ -101,11 +152,11 @@ def main() -> int:
         "guide": "embedded-systems",
         "python": ".".join(map(str, sys.version_info[:3])),
     })
+    result.update(git_state(root))
 
     if args.write is not None:
         marker = args.write if args.write.is_absolute() else root / args.write
-        marker.parent.mkdir(parents=True, exist_ok=True)
-        marker.write_text(json.dumps(result, ensure_ascii=False, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+        write_atomic(marker, result)
         print(f"PREPARED {marker}")
         print(f"SOURCE SHA256 {result['source_sha256']}")
         return 0
@@ -120,10 +171,12 @@ def main() -> int:
         except (OSError, json.JSONDecodeError) as exc:
             print(f"ERROR: marker를 읽을 수 없습니다: {exc}", file=sys.stderr)
             return 1
-        if expected.get("source_sha256") != result["source_sha256"]:
-            print("ERROR: prepare 뒤 source가 변경됐습니다. ./prepare.sh를 다시 실행하십시오.", file=sys.stderr)
-            print(f"EXPECTED {expected.get('source_sha256')}", file=sys.stderr)
-            print(f"ACTUAL   {result['source_sha256']}", file=sys.stderr)
+        compared = ("source_sha256", "git_head", "git_index_sha256", "python")
+        mismatches = [key for key in compared if expected.get(key) != result.get(key)]
+        if mismatches:
+            print("ERROR: prepare 뒤 source, Git state 또는 Python이 변경됐습니다.", file=sys.stderr)
+            for key in mismatches:
+                print(f"{key}: expected={expected.get(key)!r} actual={result.get(key)!r}", file=sys.stderr)
             return 1
         print(f"FINGERPRINT OK {result['source_sha256']}")
         return 0
