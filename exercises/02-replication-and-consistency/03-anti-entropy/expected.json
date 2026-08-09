@@ -1,0 +1,74 @@
+{
+  "guide_schema": "exercise-expected-v1",
+  "schema_version": 1,
+  "exercise_id": "02-replication-and-consistency/03-anti-entropy",
+  "semantic_checker": "anti-entropy-v1",
+  "required_case_kinds": ["normal", "boundary", "failure"],
+  "cases": [
+    {
+      "id": "dominant-repair",
+      "kind": "normal",
+      "fixture": "repairs.json",
+      "source_path": "/cases/0",
+      "reference_anchor": "dominant-repair",
+      "outcome": {
+        "version_relation": "source-dominates-target",
+        "dominant_version": {"A": 2, "B": 0, "C": 0},
+        "final_values": {"A": ["v2"], "B": ["v2"], "C": ["v2"]},
+        "converged": true
+      },
+      "human_evidence": [
+        "source 선택과 repair epoch를 명시합니다.",
+        "중복 n2가 결과를 바꾸지 않음을 설명합니다."
+      ],
+      "limits": [
+        "checksum과 storage corruption은 판정하지 않습니다."
+      ]
+    },
+    {
+      "id": "concurrent-siblings",
+      "kind": "boundary",
+      "fixture": "repairs.json",
+      "source_path": "/cases/1",
+      "reference_anchor": "concurrent-siblings",
+      "outcome": {
+        "version_relation": "concurrent",
+        "required_siblings": ["blue", "red"],
+        "final_values": {
+          "A": ["blue", "red"],
+          "B": ["blue", "red"],
+          "C": ["blue", "red"]
+        },
+        "duplicate_exchange_idempotent": true
+      },
+      "human_evidence": [
+        "두 vector의 양방향 dominance 실패를 보입니다.",
+        "업무 merge를 선택한다면 대수적 성질을 검토합니다."
+      ],
+      "limits": [
+        "자동 검사는 제품 의미에 맞는 conflict resolution을 선택하지 않습니다."
+      ]
+    },
+    {
+      "id": "tombstone-resurrection",
+      "kind": "failure",
+      "fixture": "repairs.json",
+      "source_path": "/cases/2",
+      "reference_anchor": "tombstone-resurrection",
+      "outcome": {
+        "tombstone_dominates_stale_value": true,
+        "first_contract_violation": "f2",
+        "resurrection_event": "f4",
+        "unsafe_gc_evidence": ["age-threshold-only"],
+        "required_gc_evidence": ["all-active-replica-frontiers", "removed-replica-fencing-or-full-bootstrap", "backup-restore-boundary"]
+      },
+      "human_evidence": [
+        "tombstone과 stale value의 vector relation을 계산합니다.",
+        "offline replica와 backup을 포함한 GC 조건을 작성합니다."
+      ],
+      "limits": [
+        "적절한 실제 retention 기간은 workload와 운영 환경의 추가 측정이 필요합니다."
+      ]
+    }
+  ]
+}

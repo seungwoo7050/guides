@@ -62,3 +62,11 @@ protocol.md
 - concurrent sibling을 보존합니다.
 - partial write와 repair owner를 명시합니다.
 - old/new membership write authority를 fencing합니다.
+
+## 기대 결과와 검토
+
+- [해설](reference.md)은 quorum 교차, vector relation과 membership 전이를 scenario별로 풉니다.
+- [기계 판정값](expected.json)은 실제 replica set과 version vector에서 결과를 다시 계산합니다.
+- 저장소 루트에서 다음 명령을 실행합니다.
+
+    python3 scripts/check_exercises.py exercises/02-replication-and-consistency/02-quorum-register

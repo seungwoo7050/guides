@@ -1,0 +1,89 @@
+{
+  "guide_schema": "exercise-expected-v1",
+  "schema_version": 1,
+  "exercise_id": "02-replication-and-consistency/02-quorum-register",
+  "semantic_checker": "quorum-register-v1",
+  "required_case_kinds": ["normal", "boundary", "failure"],
+  "cases": [
+    {
+      "id": "q1",
+      "kind": "normal",
+      "fixture": "topology.json",
+      "source_path": "/scenarios/0",
+      "reference_anchor": "q1",
+      "outcome": {
+        "write_read_intersection": ["C"],
+        "selected_value": "v1",
+        "selected_version": {"A": 1, "B": 0, "C": 0, "D": 0, "E": 0},
+        "repair_targets": ["D", "E"],
+        "proves_linearizability": false
+      },
+      "human_evidence": [
+        "set intersection과 vector dominance를 별도로 계산합니다.",
+        "response 전후 repair 정책을 명시합니다."
+      ],
+      "limits": [
+        "한 read trace는 protocol 전체의 linearizability를 증명하지 않습니다."
+      ]
+    },
+    {
+      "id": "q2",
+      "kind": "boundary",
+      "fixture": "topology.json",
+      "source_path": "/scenarios/1",
+      "reference_anchor": "q2",
+      "outcome": {
+        "version_relation": "concurrent",
+        "required_values": ["blue", "red"],
+        "single_winner_safe": false,
+        "merge_owner": "application-or-explicit-data-type"
+      },
+      "human_evidence": [
+        "두 vector의 지배 관계를 양방향으로 검사합니다.",
+        "선택한 conflict API와 업무 merge 근거를 적습니다."
+      ],
+      "limits": [
+        "fixture는 업무적으로 올바른 merge result를 결정하지 않습니다."
+      ]
+    },
+    {
+      "id": "q3-sloppy",
+      "kind": "failure",
+      "fixture": "topology.json",
+      "source_path": "/scenarios/2",
+      "reference_anchor": "q3-sloppy",
+      "outcome": {
+        "actual_write_intersection": [],
+        "strict_quorum_intersection_holds": false,
+        "required_metadata": ["home-replica", "home-epoch", "hint-owner", "handoff-status"]
+      },
+      "human_evidence": [
+        "표시된 W와 actual placement를 구분합니다.",
+        "fallback을 포함한 read와 repair owner를 설계합니다."
+      ],
+      "limits": [
+        "fallback node failure와 handoff timing은 fixture에 없습니다."
+      ]
+    },
+    {
+      "id": "q4-membership",
+      "kind": "failure",
+      "fixture": "topology.json",
+      "source_path": "/scenarios/3",
+      "reference_anchor": "q4-membership",
+      "outcome": {
+        "old_new_replica_intersection": [],
+        "direct_cutover_safe": false,
+        "stale_epoch_action": "reject",
+        "required_transition": ["joint-or-overlap-quorum", "durable-epoch-fencing"]
+      },
+      "human_evidence": [
+        "old/new majority가 독립적으로 존재할 수 있음을 set으로 보입니다.",
+        "storage node가 stale epoch를 거절하는 위치를 명시합니다."
+      ],
+      "limits": [
+        "구체적인 membership algorithm의 proof를 대신하지 않습니다."
+      ]
+    }
+  ]
+}

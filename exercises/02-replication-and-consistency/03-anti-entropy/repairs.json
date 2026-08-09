@@ -1,0 +1,49 @@
+{
+  "schema_version": 1,
+  "replicas": ["A", "B", "C"],
+  "cases": [
+    {
+      "id": "dominant-repair",
+      "key": "profile",
+      "initial": {
+        "A": [{"value": "v2", "version": {"A": 2, "B": 0, "C": 0}, "tombstone": false}],
+        "B": [{"value": "v2", "version": {"A": 2, "B": 0, "C": 0}, "tombstone": false}],
+        "C": [{"value": "v1", "version": {"A": 1, "B": 0, "C": 0}, "tombstone": false}]
+      },
+      "events": [
+        {"id": "n1", "kind": "compare", "source": "A", "target": "C"},
+        {"id": "n2", "kind": "send_version", "source": "A", "target": "C", "version": {"A": 2, "B": 0, "C": 0}},
+        {"id": "n3", "kind": "verify_frontier", "replicas": ["A", "B", "C"], "version": {"A": 2, "B": 0, "C": 0}}
+      ]
+    },
+    {
+      "id": "concurrent-siblings",
+      "key": "color",
+      "initial": {
+        "A": [{"value": "red", "version": {"A": 1, "B": 0, "C": 0}, "tombstone": false}],
+        "B": [{"value": "blue", "version": {"A": 0, "B": 1, "C": 0}, "tombstone": false}],
+        "C": [{"value": "clear", "version": {"A": 0, "B": 0, "C": 0}, "tombstone": false}]
+      },
+      "events": [
+        {"id": "b1", "kind": "compare", "source": "A", "target": "B"},
+        {"id": "b2", "kind": "exchange_siblings", "participants": ["A", "B", "C"]},
+        {"id": "b3", "kind": "duplicate_exchange", "participants": ["A", "C"]}
+      ]
+    },
+    {
+      "id": "tombstone-resurrection",
+      "key": "session",
+      "initial": {
+        "A": [{"value": null, "version": {"A": 2, "B": 0, "C": 0}, "tombstone": true}],
+        "B": [{"value": null, "version": {"A": 2, "B": 0, "C": 0}, "tombstone": true}],
+        "C": [{"value": "live-v1", "version": {"A": 1, "B": 0, "C": 0}, "tombstone": false}]
+      },
+      "events": [
+        {"id": "f1", "kind": "partition", "replica": "C"},
+        {"id": "f2", "kind": "gc_tombstone", "replicas": ["A", "B"], "evidence": ["age-threshold-only"]},
+        {"id": "f3", "kind": "heal", "replica": "C"},
+        {"id": "f4", "kind": "repair_from", "source": "C", "targets": ["A", "B"], "version": {"A": 1, "B": 0, "C": 0}}
+      ]
+    }
+  ]
+}

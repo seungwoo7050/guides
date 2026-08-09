@@ -55,3 +55,11 @@ operation을 legal하게 적용할 수 있을 때만 탐색하고, 같은 `(stat
 - linearizability와 sequential consistency의 real-time 차이를 설명합니다.
 - causal dependency를 별도 edge로 다룹니다.
 - pending operation의 여러 해석을 기록합니다.
+
+## 기대 결과와 검토
+
+- [해설](reference.md)은 history별 legal order 또는 최소 모순을 제공합니다.
+- [기계 판정값](expected.json)은 single/two-register sequential model과 pending policy로 다시 검사됩니다.
+- 저장소 루트에서 다음 명령을 실행합니다.
+
+    python3 scripts/check_exercises.py exercises/02-replication-and-consistency/01-consistency-history
