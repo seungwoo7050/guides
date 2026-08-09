@@ -14,13 +14,38 @@ ROOT = Path(__file__).resolve().parents[1]
 PYTHON = sys.executable
 
 
-def run_expect_failure(command: list[str], *, contains: str | None = None) -> None:
-    completed = subprocess.run(command, cwd=ROOT, text=True, capture_output=True, check=False)
+def run_expect_failure(
+    command: list[str], *, contains: str | None = None, timeout: int = 45
+) -> None:
+    completed = subprocess.run(
+        command,
+        cwd=ROOT,
+        text=True,
+        capture_output=True,
+        check=False,
+        timeout=timeout,
+    )
     if completed.returncode == 0:
         raise AssertionError(f"mutation was accepted: {' '.join(command)}")
     combined = completed.stdout + completed.stderr
     if contains is not None and contains not in combined:
         raise AssertionError(f"failure did not mention {contains!r}: {combined}")
+
+
+def run_expect_success(command: list[str], *, contains: str | None = None, timeout: int = 120) -> None:
+    completed = subprocess.run(
+        command,
+        cwd=ROOT,
+        text=True,
+        capture_output=True,
+        check=False,
+        timeout=timeout,
+    )
+    combined = completed.stdout + completed.stderr
+    if completed.returncode != 0:
+        raise AssertionError(f"expected success from {' '.join(command)}: {combined}")
+    if contains is not None and contains not in combined:
+        raise AssertionError(f"success did not mention {contains!r}: {combined}")
 
 
 def update_fixture_hash(fixtures: Path, name: str) -> None:
@@ -101,6 +126,37 @@ def empty_template_mutation(temporary: Path) -> None:
     )
 
 
+def candidate_checker_contracts() -> tuple[int, int]:
+    lifecycle = ROOT / "exercises/model-lifecycle"
+    lifecycle_checker = lifecycle / "tests/check.py"
+    run_expect_success(
+        [PYTHON, str(lifecycle_checker), "--candidate", str(lifecycle / "reference")],
+        contains="MODEL LIFECYCLE OK",
+    )
+    run_expect_failure([PYTHON, str(lifecycle_checker), "--candidate", str(lifecycle / "skeleton")], timeout=120)
+    lifecycle_bad = sorted(
+        path.parent for path in (lifecycle / "known_bad").glob("*/candidate.py")
+    )
+    if len(lifecycle_bad) < 3:
+        raise AssertionError("lifecycle quality check requires at least three known-bad candidates")
+    for candidate in lifecycle_bad:
+        run_expect_failure([PYTHON, str(lifecycle_checker), "--candidate", str(candidate)], timeout=120)
+
+    modern = ROOT / "exercises/modern-model-release"
+    modern_checker = modern / "tests/check.py"
+    run_expect_success(
+        [PYTHON, str(modern_checker), "--candidate", str(modern / "reference")],
+        contains="MODERN MODEL RELEASE OK",
+    )
+    run_expect_failure([PYTHON, str(modern_checker), "--candidate", str(modern / "skeleton")], timeout=120)
+    modern_bad = sorted(path.parent for path in (modern / "known_bad").glob("*/candidate.py"))
+    if not modern_bad:
+        raise AssertionError("modern-model quality check requires known-bad candidates")
+    for candidate in modern_bad:
+        run_expect_failure([PYTHON, str(modern_checker), "--candidate", str(candidate)], timeout=120)
+    return len(lifecycle_bad), len(modern_bad)
+
+
 def main() -> int:
     try:
         with tempfile.TemporaryDirectory(prefix="ml-quality-") as raw:
@@ -110,10 +166,15 @@ def main() -> int:
             contract_gap_mutation(temporary)
             broken_link_mutation(temporary)
             empty_template_mutation(temporary)
-    except (AssertionError, OSError, json.JSONDecodeError) as exc:
+            lifecycle_bad, modern_bad = candidate_checker_contracts()
+    except (AssertionError, OSError, json.JSONDecodeError, subprocess.TimeoutExpired) as exc:
         print(f"ERROR {exc}")
         return 1
-    print("QUALITY OK mutations=5")
+    print(
+        "QUALITY OK "
+        f"mutations=5 lifecycle_reference=pass lifecycle_starter=reject lifecycle_known_bad={lifecycle_bad} "
+        f"modern_reference=pass modern_starter=reject modern_known_bad={modern_bad}"
+    )
     return 0
 
 

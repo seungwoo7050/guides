@@ -17,7 +17,6 @@
     "model-card.md",
     "model.json",
     "preprocessing.json",
-    "reproduction.json",
     "reproduction.json"
   ],
   "fixture_digests": {

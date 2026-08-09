@@ -724,7 +724,7 @@ Any data, feature, fitted state, model, threshold, runtime, intended-use or moni
         "command": "PYTHONPATH=exercises/model-lifecycle/reference/src python3 -m model_project.pipeline --output <directory>",
         "fixture_digests": {name: digest_file(fixtures / name) for name in fixture_names},
         "determinism": {"seed": SEED, "network": False, "threads": 1, "timestamps_in_outputs": False},
-        "expected_files": sorted(tracked + ["checksums.json", "reproduction.json", "manifest.json"]),
+        "expected_files": sorted(set(tracked + ["checksums.json", "manifest.json"])),
     }
     write_json(bundle / "reproduction.json", reproduction)
     write_json(output / "reports/reproduction.json", reproduction)

@@ -13,6 +13,8 @@ from pathlib import Path
 from model_project.inference import ContractError, infer, load_bundle
 from model_project.pipeline import (
     build_reference,
+    canonical,
+    digest_file,
     fit_preprocessing,
     load_rows,
     probabilities,
@@ -101,6 +103,37 @@ class ReferenceTests(unittest.TestCase):
             model = target / "model.json"
             model.write_bytes(model.read_bytes() + b" ")
             with self.assertRaises(ContractError):
+                load_bundle(target)
+
+    def test_missing_required_checksum_is_rejected(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            target = Path(temporary) / "bundle"
+            shutil.copytree(COMMITTED / "artifacts/model-bundle", target)
+            checksums_path = target / "checksums.json"
+            checksums = json.loads(checksums_path.read_text(encoding="utf-8"))
+            del checksums["files"]["preprocessing.json"]
+            checksums_path.write_text(canonical(checksums), encoding="utf-8")
+            with self.assertRaisesRegex(ContractError, "checksums missing manifest reference"):
+                load_bundle(target)
+
+    def test_rechecks_compatibility_after_valid_checksums(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            target = Path(temporary) / "bundle"
+            shutil.copytree(COMMITTED / "artifacts/model-bundle", target)
+            model_path = target / "model.json"
+            model = json.loads(model_path.read_text(encoding="utf-8"))
+            model["feature_schema_version"] = "incompatible-features-v2"
+            model_path.write_text(canonical(model), encoding="utf-8")
+            new_digest = digest_file(model_path)
+            manifest_path = target / "manifest.json"
+            manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+            manifest["model_sha256"] = new_digest
+            manifest_path.write_text(canonical(manifest), encoding="utf-8")
+            checksums_path = target / "checksums.json"
+            checksums = json.loads(checksums_path.read_text(encoding="utf-8"))
+            checksums["files"]["model.json"] = new_digest
+            checksums_path.write_text(canonical(checksums), encoding="utf-8")
+            with self.assertRaisesRegex(ContractError, "feature schema version mismatch"):
                 load_bundle(target)
 
 

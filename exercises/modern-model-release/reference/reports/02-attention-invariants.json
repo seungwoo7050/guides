@@ -2,14 +2,27 @@
   "base_regression": {
     "all_passed": true,
     "cases": [
-      {"name": "single-calm-token", "passed": true},
-      {"name": "single-urgent-token", "passed": true}
+      {
+        "name": "single-calm-token",
+        "passed": true
+      },
+      {
+        "name": "single-urgent-token",
+        "passed": true
+      }
     ]
   },
   "causal_mask": true,
   "maximum_future_weight": 0.0,
-  "row_sums": [1.0, 1.0, 1.0],
-  "shape": [3, 3],
+  "row_sums": [
+    1.0,
+    1.0,
+    1.0
+  ],
+  "shape": [
+    3,
+    3
+  ],
   "softmax_axis": "keys-per-query",
   "stage": 2
 }

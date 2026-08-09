@@ -48,6 +48,21 @@ def load_bundle(bundle: Path) -> dict[str, Any]:
     checksums = read_json(safe_member(bundle, manifest.get("checksums_file")))
     if checksums.get("algorithm") != "sha256" or not isinstance(checksums.get("files"), dict):
         raise ContractError("unsupported checksum manifest")
+    required_references = (
+        "model_file",
+        "input_schema_file",
+        "preprocessing_file",
+        "decision_policy_file",
+        "evaluation_file",
+        "model_card_file",
+        "golden_inputs_file",
+        "golden_predictions_file",
+        "reproduction_file",
+    )
+    for key in required_references:
+        referenced = manifest.get(key)
+        if not isinstance(referenced, str) or referenced not in checksums["files"]:
+            raise ContractError(f"checksums missing manifest reference: {key}")
     for name, expected in checksums["files"].items():
         if not isinstance(expected, str) or len(expected) != 64 or digest_file(safe_member(bundle, name)) != expected:
             raise ContractError(f"checksum mismatch: {name}")
@@ -57,6 +72,8 @@ def load_bundle(bundle: Path) -> dict[str, Any]:
     policy = read_json(safe_member(bundle, manifest.get("decision_policy_file")))
     if model.get("model_version") != manifest.get("model_version"):
         raise ContractError("model version mismatch")
+    if model.get("feature_schema_version") != manifest.get("feature_schema_version"):
+        raise ContractError("feature schema version mismatch")
     if model.get("preprocessing_version") != preprocessing.get("preprocessing_version"):
         raise ContractError("preprocessing version mismatch")
     if model.get("feature_order") != preprocessing.get("feature_order"):

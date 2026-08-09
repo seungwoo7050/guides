@@ -7,7 +7,7 @@
   "bundle_version": "modern-transfer-v1",
   "decision_threshold": 0.5,
   "files": {
-    "adapter.json": "2c09248b7ee18564102e9ce332db073fe7b17942ddc9f9c4ea59ebab4484d262",
+    "adapter.json": "b0af65b8e33d719c14d434f9cfa8e3f270832bacf4849eb3cc710bad40763b22",
     "base-model.json": "361b6adb54c61bc954606363bb5136eeae8d5f00e78cd58722549600c0cf3e93",
     "golden-input.json": "10840fed86f7604e1cd4263e02ecc51d42ac1bc047edbee57117db11a3399f0f",
     "golden-output.json": "2a192366417de8589221fd382fe06477d6e2a5c4a4e41449eabc0b63b85036df",
@@ -17,11 +17,17 @@
   "input_contract": {
     "additional_fields": false,
     "max_length": 6,
-    "required": ["text"],
+    "required": [
+      "text"
+    ],
     "unknown_tokens": "reject"
   },
   "output_contract": {
-    "fields": ["model_version", "probability", "decision"]
+    "fields": [
+      "model_version",
+      "probability",
+      "decision"
+    ]
   },
   "tokenizer": {
     "id": "tiny-sequence-tokenizer",

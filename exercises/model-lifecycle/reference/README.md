@@ -11,6 +11,9 @@ PYTHONPATH=exercises/model-lifecycle/reference/src \
   python3 -m model_project.pipeline --output /tmp/ml-reference
 ```
 
+출력 경로는 존재하지 않거나 비어 있어야 한다. 생성기는 기존 산출물·학습자 작업을
+덮어쓰지 않으므로 반복 실행할 때는 새로운 임시 경로를 사용한다.
+
 검사와 inference smoke test:
 
 ```sh
