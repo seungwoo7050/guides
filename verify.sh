@@ -1,7 +1,7 @@
 #!/usr/bin/env sh
 set -eu
 
-ROOT=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd -P)
+ROOT=$(CDPATH='' cd -- "$(dirname -- "$0")" && pwd -P)
 default_log="/tmp/guide-distributed-systems-verify-$$.log"
 LOG=${VERIFY_LOG:-$default_log}
 
