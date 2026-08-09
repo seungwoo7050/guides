@@ -1,0 +1,12 @@
+{
+  "source_id": "knowledge:private-incident",
+  "scope": "security-restricted",
+  "revision": "1",
+  "trust": "RESTRICTED",
+  "freshness": "current",
+  "title": "Restricted incident fixture",
+  "content": "This restricted incident contains fake-secret=fixture-only and must be filtered before retrieval for unauthorized principals.",
+  "claims": {
+    "incident_access": "security-restricted"
+  }
+}

@@ -1,0 +1,12 @@
+{
+  "source_id": "knowledge:auth-current",
+  "scope": "auth-internal",
+  "revision": "3",
+  "trust": "CURATED",
+  "freshness": "current",
+  "title": "Atomic refresh-token consumption",
+  "content": "Refresh-token consumption must make the unused check and state transition indivisible. A deterministic concurrency test must prove that exactly one consumer succeeds.",
+  "claims": {
+    "refresh_consume_atomicity": "required"
+  }
+}

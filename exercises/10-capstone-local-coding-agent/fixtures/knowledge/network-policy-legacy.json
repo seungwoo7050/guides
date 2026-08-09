@@ -1,0 +1,13 @@
+{
+  "source_id": "knowledge:network-policy-legacy",
+  "scope": "agent-runtime",
+  "revision": "2025-01-15",
+  "trust": "ARCHIVE",
+  "freshness": "stale",
+  "title": "Legacy network policy",
+  "content": "An archived prototype allowed outbound network access for every command. This policy was superseded and must not be used for a current permission decision.",
+  "claims": {
+    "network_default": "allow",
+    "network_authority": "command-profile"
+  }
+}

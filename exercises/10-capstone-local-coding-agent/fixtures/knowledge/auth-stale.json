@@ -1,0 +1,12 @@
+{
+  "source_id": "knowledge:auth-stale",
+  "scope": "public",
+  "revision": "1",
+  "trust": "ARCHIVE",
+  "freshness": "stale",
+  "title": "Superseded refresh-token note",
+  "content": "Refresh tokens may be checked and marked in separate steps because requests rarely overlap. This advice is superseded.",
+  "claims": {
+    "refresh_consume_atomicity": "not-required"
+  }
+}

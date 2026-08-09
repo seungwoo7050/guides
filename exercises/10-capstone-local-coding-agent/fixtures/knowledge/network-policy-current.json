@@ -1,0 +1,13 @@
+{
+  "source_id": "knowledge:network-policy-current",
+  "scope": "agent-runtime",
+  "revision": "2026-08-10",
+  "trust": "POLICY",
+  "freshness": "current",
+  "title": "Current network policy",
+  "content": "The local coding-agent profile denies external network access by default. A task-scoped grant must name the permitted destination and effect before the process runner may use the network.",
+  "claims": {
+    "network_default": "deny",
+    "network_authority": "task-scoped-grant"
+  }
+}

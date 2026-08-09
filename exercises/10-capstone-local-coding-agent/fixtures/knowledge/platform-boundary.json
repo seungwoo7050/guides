@@ -1,0 +1,12 @@
+{
+  "source_id": "knowledge:platform-boundary",
+  "scope": "platform-operations",
+  "revision": "2026-08-10",
+  "trust": "CURATED",
+  "freshness": "current",
+  "title": "Hosted runner boundary",
+  "content": "Multi-tenant scheduling, production credentials, remote artifact retention, and fleet capacity belong to the hosted platform boundary rather than the local coding-agent runtime.",
+  "claims": {
+    "hosted_runner_owner": "platform-engineering"
+  }
+}
