@@ -25,4 +25,4 @@ exercise:
 
 clean:
 	rm -rf .guide
-	find scripts -type d -name __pycache__ -prune -exec rm -rf {} +
+	find scripts examples exercises projects -type d -name __pycache__ -prune -exec rm -rf {} +
