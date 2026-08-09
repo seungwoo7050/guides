@@ -2,7 +2,7 @@
 
 ## 목적
 
-`Relay Arena`라는 작은 top-down arena game의 한 match를 설계합니다. 이 Capstone은 완성 게임이나 범용 엔진을 만드는 과제가 아닙니다. 문서에서 배운 상태·수명·실패·검증을 한 playable feature 경로로 연결하는 과제입니다.
+`Relay Arena`라는 작은 top-down arena game의 한 match를 설계하고 실행 가능한 작은 gameplay slice로 검증합니다. 이 Capstone은 완성 게임이나 범용 엔진을 만드는 과제가 아닙니다. 문서에서 배운 상태·수명·실패·검증을 한 feature 경로와 재현 가능한 증거 묶음으로 연결하는 과제입니다.
 
 ```text
 boot/menu
@@ -12,11 +12,18 @@ boot/menu
 → match rule and result
 → presentation
 → save/replay
-→ optional network authority
+→ client/server authority boundary
 → profile and release decision
 ```
 
 프로젝트 입력, 제출 템플릿과 fixture는 [`projects/relay-arena-vertical-slice`](../projects/relay-arena-vertical-slice/README.md)에 있습니다.
+
+완료에는 두 묶음이 모두 필요합니다.
+
+1. 정확히 13개의 필수 template 기반 설계·검토 산출물
+2. 실행 가능한 구현과 public contract test, 정상·경계·실패·수정 전후 evidence bundle
+
+네트워크 transport 구현과 `ai-and-navigation.md`는 선택 심화입니다. 문서 산출물만 완성한 상태는 브랜치의 세 종료 능력을 모두 충족하지 않습니다.
 
 ## 제품 brief
 
@@ -30,107 +37,82 @@ boot/menu
 
 아트 품질과 콘텐츠 양은 평가하지 않습니다. placeholder로 충분합니다.
 
-## 필수 Profile A — 계약과 검증 산출물
+## 필수 Profile A — 정확히 13개 설계·검토 산출물
 
-엔진이나 대규모 구현 없이 완료할 수 있습니다. 다음 파일을 제출합니다.
+`template/`의 현재 파일 중 `ai-and-navigation.md`만 선택입니다. 다음 13개는 모두 필수입니다.
 
-### 1. `runtime-state-map.md`
+| 번호 | 필수 제출 파일 | 확인할 계약 |
+|---:|---|---|
+| 1 | `runtime-state-map.md` | process→frontend→world→match→entity 전이, owner, 취소와 cleanup |
+| 2 | `time-and-input-contract.md` | real/game/fixed/render/server clock, bounded catch-up, action·command·focus |
+| 3 | `state-ownership.csv` | authoritative owner·writer·reader·직렬화·복제·수명·불변식 |
+| 4 | `world-and-asset-plan.md` | scene/entity lifecycle, stable asset id, dependency, load gate, fallback |
+| 5 | `gameplay-rules.md` | match phase, command acceptance, core/result invariant, commit boundary |
+| 6 | `movement-and-space.md` | 좌표·collision query·movement·correction의 적용 순서와 writer |
+| 7 | `presentation-contract.md` | animation·audio·VFX·UI event와 acknowledgement/dedupe 경계 |
+| 8 | `save-and-replay.md` | save v1→v2 migration, replay hash, determinism 범위와 divergence |
+| 9 | `authority-and-latency.md` | client intent, server validation, duplicate/stale/non-owner 정책 |
+| 10 | `test-and-observability-plan.md` | rule/simulation/system/platform test, trace, known-bad meta-test |
+| 11 | `performance-and-release.md` | target budget, 전후 profile, 접근성·platform gate와 알려진 한계 |
+| 12 | `traceability-matrix.csv` | requirement→owner→implementation→test→telemetry→release evidence |
+| 13 | `change-plan.md` | review 가능한 구현 순서, compatibility, migration과 rollback |
 
-- process, user, frontend, world, match, entity 수명
-- state transition과 owner
-- world load 취소와 partial cleanup
-- suspend/resume와 shutdown
-
-### 2. `time-and-input-contract.md`
-
-- real/game/fixed/render/server clock
-- fixed timestep, accumulator와 max catch-up
-- Move, Dash, Interact action/command schema
-- input buffer, pause와 focus policy
-
-### 3. `state-ownership.csv`
-
-최소 field:
+`state-ownership.csv`의 header는 실제 template과 동일해야 합니다.
 
 ```text
-state_id,scope,owner,writer,readers,serialized,replicated,lifetime,invariant
+state_id,scope,authoritative_owner,writer,readers,serialized_in_save,recorded_in_replay,replicated,lifetime,invariant
 ```
 
-### 4. `world-and-asset-plan.md`
+선택 산출물 `ai-and-navigation.md`는 agent의 sensing·decision·path lifetime을 게임 계층 통합 사례로 확장합니다. 제출하지 않아도 13개 필수 산출물 수는 변하지 않습니다.
 
-- scenes/chunks와 entity lifecycle
-- asset ids, dependency와 load group
-- control-ready와 cosmetic-ready 구분
-- memory/loading budget과 fallback
+Profile A는 구현 전에 상태·책임·실패·검증 판단을 고정합니다. 이것만으로 실제 update/render/asset/tool 경계 복원, 작은 기능 구현, profiling 기반 수정이 모두 입증되지는 않습니다.
 
-### 5. `gameplay-rules.md`
+## 필수 Profile B — 실행 가능한 구현과 evidence bundle
 
-- match phase state machine
-- command accepted/rejected 조건
-- core activation, dash cooldown과 result invariant
-- persistent best-time commit boundary
+기본 경로는 외부 서비스·엔진 설치 없이 Python 3.10 이상에서 실행하는 headless 구현입니다.
 
-### 6. `save-and-replay.md`
+- 의도적으로 미완성인 [`starter/relay_arena.py`](../projects/relay-arena-vertical-slice/starter/relay_arena.py)
+- 공개 행동을 보여 주는 [`reference/relay_arena.py`](../projects/relay-arena-vertical-slice/reference/relay_arena.py)
+- canonical state와 필수 authority rejection oracle인 [`reference/expected-contract.json`](../projects/relay-arena-vertical-slice/reference/expected-contract.json)
+- black-box [`tests/check_contract.py`](../projects/relay-arena-vertical-slice/tests/check_contract.py)
+- reference의 13개 산출물 예시 [`reference/artifacts/`](../projects/relay-arena-vertical-slice/reference/artifacts/)
+- headless/실제 엔진 경계를 복원한 [`reference/boundary-recovery.md`](../projects/relay-arena-vertical-slice/reference/boundary-recovery.md)
 
-- save envelope와 schema version
-- v1→v2 migration
-- replay command stream와 periodic state hash
-- determinism scope와 first-divergence report
+reference가 통과하고 starter가 미완성으로 거부되는지 먼저 확인한 뒤, starter를 저장소 밖 학습자 작업 디렉터리에 복사해 구현합니다.
 
-### 7. `authority-and-latency.md`
+```sh
+python3 projects/relay-arena-vertical-slice/tests/check_contract.py \
+  --implementation projects/relay-arena-vertical-slice/reference/relay_arena.py
+python3 projects/relay-arena-vertical-slice/tests/check_contract.py \
+  --implementation projects/relay-arena-vertical-slice/starter/relay_arena.py \
+  --expect incomplete
+```
 
-- local profile에서도 future network boundary를 표시
-- network 선택 profile에서는 authority table, prediction/correction와 fault matrix
-- client가 제출하는 intent와 server result 구분
+학습자 구현은 다음 세 CLI를 제공해야 합니다.
 
-### 8. `test-and-observability-plan.md`
+| CLI | 필수 공개 행동 |
+|---|---|
+| `simulate` | smooth/jittered/hitch schedule에서 같은 canonical gameplay state, bounded catch-up, command·presentation dedupe, stale resource와 optional cosmetic fallback, authority 거부 근거 |
+| `migrate-save` | v1 save를 v2로 migration하고 corrupt 입력 실패 때 기존 출력을 덮어쓰지 않는 atomic publish |
+| `profile` | 재현한 dependency/loading hotspot의 수정 전후 비교와 gameplay invariant 보존 |
 
-- pure rule, simulation, scene, platform tests
-- build/content/session/tick 식별자
-- structured events와 bounded replay trace
-- known-bad fixture와 meta-test
+구체적인 실행 명령과 evidence bundle layout은 [프로젝트 README](../projects/relay-arena-vertical-slice/README.md)의 “기본 offline 실행 경로”를 따릅니다. 최소 bundle에는 구현 identity, 실행 명령, 정상·hitch·duplicate·non-owner·stale-load·missing-cosmetic 결과, save migration과 corrupt rejection, profile 전후 결과, reference/starter/학습자 contract test 로그, 알려진 한계가 들어갑니다.
 
-### 9. `performance-and-release.md`
+### 실제 엔진의 동등 구현
 
-- target device와 frame/memory/loading budget
-- representative workload
-- accessibility/input/localization/suspend checks
-- build/content/save/protocol identity
-- release gate, known issue와 rollback
+Unity, Unreal Engine, Godot 또는 자체 framework의 작은 구현으로 headless path를 대체할 수 있습니다. 이 경우에도 Move/Dash/Interact→authoritative state→presentation→save 경로와 같은 실패 불변식을 실행해 보여 주고, project/build/content revision, 재현 명령, test 결과, profile capture와 cleanup 절차를 evidence bundle에 남깁니다. Python contract와 같은 JSON을 내는 adapter를 제공하거나, 각 공개 assertion에 대응하는 엔진 test·trace를 mapping 문서로 제시합니다.
 
-### 10. `traceability-matrix.csv`
+### headless 경로가 보장하지 않는 것
 
-각 requirement를 owner, implementation/profile, test, telemetry와 release evidence에 연결합니다.
+기본 reference/test 통과는 다음을 증명하지 않습니다.
 
-## 선택 Profile B — Local playable slice
+- 실제 엔진 callback 순서, scene/object 수명과 thread/job scheduling
+- GPU rendering, shader, animation·audio·VFX 출력과 frame capture
+- target hardware의 CPU/GPU frame time, memory residence와 loading 시간
+- 실제 플랫폼 input remap, focus, suspend/resume, storage durability와 접근성 동작
+- 실제 network transport의 latency·loss·reordering, reconnect, bandwidth와 보안
 
-Unity, Unreal Engine, Godot 또는 자체 framework를 사용할 수 있습니다.
-
-### 최소 기능
-
-- menu와 arena transition
-- remappable Move/Dash/Interact
-- fixed-step 또는 명시적 simulation policy
-- player, relay core, hazard와 restart
-- pause/focus loss 처리
-- save 또는 replay 중 하나의 실제 구현
-- target build와 profile capture
-
-### 구현 제한
-
-- 엔진 sample을 그대로 복사하지 않습니다.
-- gameplay state를 widget/animation에 소유시키지 않습니다.
-- asset path를 persistent id로 사용하지 않습니다.
-- frame rate에 따라 dash 거리나 cooldown이 달라지지 않게 합니다.
-- missing cosmetic에서 gameplay가 계속되는 fallback을 둡니다.
-
-### 검증
-
-- 30/60/120 render FPS 또는 가능한 서로 다른 frame condition에서 같은 command trace 결과
-- pause/focus loss 뒤 stuck input 없음
-- arena 재진입 반복 뒤 entity/subscription/resource 증가 없음
-- corrupt/old save의 안전한 처리 또는 replay first-divergence 탐지
-- target-device frame/memory/loading capture
+이 항목을 종료 근거로 주장하려면 실제 엔진·기기·플랫폼·network 환경의 추가 수동/자동 증거가 필요합니다.
 
 ## 선택 Profile C — Networked slice
 
@@ -191,6 +173,8 @@ Unity, Unreal Engine, Godot 또는 자체 framework를 사용할 수 있습니�
 - 문장 “정상 동작한다” 대신 실행·trace·test·profile 조건이 있습니다.
 - known-bad fixture가 실제로 거부됩니다.
 - replay 또는 state transition에서 first wrong point를 찾을 수 있습니다.
+- reference 통과, starter 거부와 학습자 구현 통과를 함께 기록합니다.
+- 같은 workload의 profile 수정 전후와 보존한 gameplay invariant를 evidence bundle에서 추적할 수 있습니다.
 
 ### 프로젝트 진입성
 
@@ -207,7 +191,7 @@ Unity, Unreal Engine, Godot 또는 자체 framework를 사용할 수 있습니�
 - anti-cheat system
 - live economy와 payment
 - multi-region dedicated server platform
-- 완성된 reference answer
+- reference와 동일한 내부 구현 구조
 
 ## 완료 뒤 확장
 

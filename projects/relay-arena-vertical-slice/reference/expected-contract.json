@@ -1,0 +1,20 @@
+{
+  "schema_version": 1,
+  "canonical_state_hash": "08b46cfd916e4e2173847c113eaca7c413f912504930004634cd953ca1156d0e",
+  "active_cores": [
+    "core-a",
+    "core-b",
+    "core-c"
+  ],
+  "result_commit_ids": [
+    "match-1"
+  ],
+  "first_divergent_checkpoint_tick": 60,
+  "required_authority_rejections": [
+    "client_result_claim",
+    "duplicate",
+    "non_owner",
+    "stale_snapshot"
+  ],
+  "headless_limit": "This oracle covers the synthetic public contract, not an engine, GPU, target platform, or network transport."
+}
