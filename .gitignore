@@ -1,0 +1,8 @@
+.guide/
+__pycache__/
+*.pyc
+*.log
+build/
+workspace/
+.venv/
+.zephyr-env

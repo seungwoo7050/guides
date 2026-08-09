@@ -1,0 +1,21 @@
+{
+  "events": [
+    {
+      "op": "DOWNLOAD",
+      "version": "v2",
+      "valid": false
+    },
+    {
+      "op": "CORRUPT",
+      "slot": "A"
+    },
+    {
+      "op": "RESET"
+    }
+  ],
+  "expected": {
+    "mode": "RECOVERY",
+    "current": null,
+    "last_reason": "no_bootable_confirmed_image"
+  }
+}

@@ -1,0 +1,33 @@
+{
+  "events": [
+    {
+      "op": "DOWNLOAD",
+      "version": "v2",
+      "valid": false,
+      "compatible": true
+    },
+    {
+      "op": "MARK_PENDING"
+    },
+    {
+      "op": "RESET"
+    }
+  ],
+  "expected": {
+    "mode": "CONFIRMED",
+    "current": "A",
+    "pending": false,
+    "errors": [
+      "candidate_invalid"
+    ],
+    "last_reason": "normal_reset",
+    "slots": {
+      "A": {
+        "version": "v1",
+        "valid": true,
+        "compatible": true,
+        "confirmed": true
+      }
+    }
+  }
+}

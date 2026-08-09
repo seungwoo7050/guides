@@ -1,0 +1,22 @@
+{
+  "events": [
+    {
+      "op": "DOWNLOAD",
+      "version": "v2"
+    },
+    {
+      "op": "MARK_PENDING"
+    },
+    {
+      "op": "RESET"
+    },
+    {
+      "op": "SELF_TEST_FAIL"
+    }
+  ],
+  "expected": {
+    "mode": "CONFIRMED",
+    "current": "A",
+    "last_reason": "self_test_failed"
+  }
+}

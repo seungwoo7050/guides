@@ -1,0 +1,29 @@
+{
+  "max_trial_attempts": 2,
+  "events": [
+    {
+      "op": "DOWNLOAD",
+      "version": "v2"
+    },
+    {
+      "op": "MARK_PENDING"
+    },
+    {
+      "op": "RESET"
+    },
+    {
+      "op": "RESET"
+    },
+    {
+      "op": "RESET"
+    }
+  ],
+  "expected": {
+    "mode": "CONFIRMED",
+    "current": "A",
+    "candidate": null,
+    "previous": null,
+    "trial_attempts": 0,
+    "last_reason": "trial_attempt_limit"
+  }
+}

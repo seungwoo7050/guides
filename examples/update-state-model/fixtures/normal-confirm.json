@@ -1,0 +1,39 @@
+{
+  "max_trial_attempts": 2,
+  "events": [
+    {
+      "op": "DOWNLOAD",
+      "version": "v2",
+      "valid": true,
+      "compatible": true
+    },
+    {
+      "op": "MARK_PENDING"
+    },
+    {
+      "op": "RESET"
+    },
+    {
+      "op": "BOOT_OK"
+    },
+    {
+      "op": "CONFIRM"
+    }
+  ],
+  "expected": {
+    "mode": "CONFIRMED",
+    "current": "B",
+    "candidate": null,
+    "previous": null,
+    "trial_attempts": 0,
+    "last_reason": "trial_confirmed",
+    "slots": {
+      "B": {
+        "version": "v2",
+        "valid": true,
+        "compatible": true,
+        "confirmed": true
+      }
+    }
+  }
+}

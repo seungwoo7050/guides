@@ -1,0 +1,33 @@
+{
+  "capacity": 1,
+  "events": [
+    {
+      "op": "ENABLE"
+    },
+    {
+      "op": "RAISE",
+      "sample": 10
+    },
+    {
+      "op": "ISR"
+    },
+    {
+      "op": "RAISE",
+      "sample": 11
+    },
+    {
+      "op": "ISR"
+    },
+    {
+      "op": "WORK"
+    }
+  ],
+  "expected": {
+    "handled_samples": [
+      10
+    ],
+    "acknowledged": 2,
+    "dropped": 1,
+    "queue": []
+  }
+}
