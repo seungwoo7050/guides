@@ -17,7 +17,7 @@
 
 프로그래밍·TypeScript·React 자체를 처음 배우는 과정은 아니다. macOS가 아닌 host에서도 문서와 대부분의 domain 검사를 진행할 수 있지만, iOS native build는 macOS와 호환되는 Xcode가 필요하고 실제 기기·서명·store 제출은 별도의 장치·계정·권한이 필요하다.
 
-`main`의 **모바일 애플리케이션 개발** 트랙에서는 `git` 공통 기반과 `web-app` 뒤에 이 브랜치를 필수로 진행하고, `web-front-react-nextjs`·`computer-networks`·`cybersecurity`·`web-infra`를 필요에 따라 권장 경로로 연결한다. **웹 프런트엔드 개발** 트랙에서는 모바일 실행 환경으로 확장하려는 독자의 심화 선택지다. 어느 경로에서도 이 브랜치가 일반 웹·네트워크·보안·운영 정본을 대체하지 않는다.
+`main`의 **모바일 애플리케이션 개발** 트랙에서 엄밀한 필수 항목은 `git` 공통 기반, `web-app`, 이 브랜치다. 처음 접하는 독자에게 제시된 기본 선형 경로는 `git → web-app → web-front-react-nextjs → mobile-app`이며, 여기서 `web-front-react-nextjs`는 필수 의존성이 아니라 모바일 진입 전에 React 상태·접근성 경계를 보강하는 권장 단계다. `computer-networks`·`cybersecurity`·`web-infra`도 필요에 따라 연결한다. **웹 프런트엔드 개발** 트랙에서는 모바일 실행 환경으로 확장하려는 독자의 심화 선택지다. 어느 경로에서도 이 브랜치가 일반 웹·네트워크·보안·운영 정본을 대체하지 않는다.
 
 ## 이 브랜치가 소유하는 것
 

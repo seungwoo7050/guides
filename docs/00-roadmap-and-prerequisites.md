@@ -23,6 +23,8 @@
 - async 작업의 완료 순서가 시작 순서와 다를 수 있음을 안다.
 - Git 저장소에서 install·build·test 명령을 찾고 작은 변경과 근거를 제출한다.
 
+`main` 모바일 트랙의 기본 선형 경로는 `git → web-app → web-front-react-nextjs → mobile-app`이다. 이 순서는 처음 진입하는 독자를 위한 권장 진행 순서이며 엄밀한 의존성 계약과 같지 않다. `mobile-app`의 필수 의존성은 `web-app`이고, `web-front-react-nextjs`는 아래 역량이 약할 때 먼저 거치는 권장 보강 단계다.
+
 권장 기준선은 다음과 같다.
 
 - [`web-front-react-nextjs`](https://github.com/seungwoo7050/guides/tree/web-front-react-nextjs)의 상태 소유권·request generation·접근성 원리
