@@ -207,7 +207,7 @@ trace에는 최소한 다음을 남깁니다.
 
 ## 실습
 
-[causality trace 실습](../../exercises/01-model-and-time/01-causality-trace/README.md)은 세 node와 두 client가 만든 event를 local state, message와 causal edge로 다시 구성합니다.
+[causality trace 실습](../../exercises/01-model-and-time/01-causality-trace/README.md)은 세 process가 만든 local·send·receive event를 process order, message와 causal edge로 다시 구성합니다.
 
 [deterministic network 예제](../../examples/deterministic-network/README.md)는 동일한 schedule이 같은 trace를 만드는지 확인합니다.
 

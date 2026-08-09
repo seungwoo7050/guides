@@ -1,40 +1,133 @@
 {
   "schema_version": 1,
   "id": "distributed-systems",
-  "title": "분산 시스템 설계·구현·검증 가이드",
+  "title": "분산 시스템과 복제 상태 기계",
+  "kind": "specialization",
+  "summary": "시간·순서·장애 모델부터 복제·일관성·합의·sharding·재구성까지 분산 저장 시스템의 핵심을 구현·검증한다.",
   "runtime": {
     "python": ">=3.12",
     "external_dependencies": []
   },
-  "required_foundations": [
-    "computer-networks",
-    "algorithms",
-    "one of python, java, cpp"
-  ],
-  "recommended_foundations": [
+  "requires": [
     "operating-systems",
-    "database-systems",
+    "computer-networks",
+    "database-systems"
+  ],
+  "recommends": [
+    "algorithms",
     "distributed-services"
   ],
-  "owns": [
-    "distributed execution and failure models",
-    "causality and logical time",
-    "replication and consistency",
-    "consensus and replicated logs",
-    "snapshots and membership",
-    "sharding and atomic commit boundaries",
-    "deterministic simulation and history checking"
+  "connects": [
+    "data-engineering",
+    "platform-engineering"
   ],
-  "does_not_own": [
-    "service-level saga and outbox workflows",
-    "network protocol fundamentals",
-    "single-node DBMS internals",
-    "host and container operations"
+  "continues_to": [],
+  "owns": [
+    "분산 시간·순서·failure detector",
+    "복제와 일관성 모델",
+    "leader election·합의·replicated log",
+    "snapshot·membership change·sharding",
+    "결정적 장애 주입과 history 검증"
+  ],
+  "excludes": [
+    "서비스 업무 saga 재교육",
+    "DBMS 단일 노드 내부 전체",
+    "Kubernetes 운영",
+    "특정 클라우드 제품"
+  ],
+  "exit_capabilities": [
+    "복제 상태 기계의 safety·liveness를 설명한다",
+    "partition과 leader 교체를 재현한다",
+    "작은 분산 저장소를 구현·검증한다"
+  ],
+  "language_profile": {
+    "track_required_any": [
+      "c",
+      "cpp",
+      "java",
+      "python"
+    ],
+    "published_runtime": "python",
+    "published_runtime_version": ">=3.12",
+    "published_dependencies": "standard-library-only",
+    "portable_reimplementations": [
+      "c",
+      "cpp",
+      "java"
+    ],
+    "portable_reimplementation_limit": "배포된 capstone starter, public tests, 예제와 저장소 verifier는 Python 전용이며 다른 언어 구현에는 동등한 adapter, 행동 검사, trace와 사람 검토가 필요하다."
+  },
+  "tracks": [
+    {
+      "id": "distributed-systems",
+      "placement": "required",
+      "linear_paths": [
+        {
+          "id": "default",
+          "branches": [
+            "git",
+            "c",
+            "computer-architecture",
+            "operating-systems",
+            "computer-networks",
+            "database-systems",
+            "distributed-systems"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "data-engineering",
+      "placement": "recommended",
+      "linear_paths_containing_branch": []
+    },
+    {
+      "id": "web-backend",
+      "placement": "advanced",
+      "linear_paths_containing_branch": []
+    },
+    {
+      "id": "cloud-engineering",
+      "placement": "advanced",
+      "linear_paths_containing_branch": []
+    },
+    {
+      "id": "infrastructure-platform",
+      "placement": "advanced",
+      "linear_paths_containing_branch": []
+    },
+    {
+      "id": "cybersecurity",
+      "placement": "advanced",
+      "linear_paths_containing_branch": []
+    },
+    {
+      "id": "machine-learning",
+      "placement": "advanced",
+      "linear_paths_containing_branch": []
+    },
+    {
+      "id": "database-engineering",
+      "placement": "advanced",
+      "linear_paths_containing_branch": []
+    },
+    {
+      "id": "game-server",
+      "placement": "advanced",
+      "linear_paths_containing_branch": []
+    },
+    {
+      "id": "game-security-anticheat",
+      "placement": "advanced",
+      "linear_paths_containing_branch": []
+    }
   ],
   "capstone": {
     "name": "deterministic replicated key-value store",
     "reference_implementation_included": false,
     "starter_included": true,
-    "public_contract_tests_included": true
+    "public_contract_tests_included": true,
+    "public_contract_tests_are_complete_solution_grader": false,
+    "required_human_evidence": "reference/completion-evidence-rubric.md"
   }
 }

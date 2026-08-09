@@ -1,6 +1,6 @@
 # 실습 안내
 
-실습은 완성된 reference 구현을 제공하지 않습니다. 각 문제는 초기 상태, event fixture, 제출 산출물과 완료 조건을 제공합니다. 정답 코드를 복사하는 대신 trace를 판정하고 자신의 구현 또는 설계를 공개 계약에 맞춥니다.
+실습은 완성된 protocol 구현을 제공하지 않습니다. 대신 각 문제는 초기 상태, event fixture, 제출 산출물, `expected.json`, 해설용 `reference.md`를 제공합니다. 정답 코드를 복사하는 대신 trace를 판정하고 자신의 구현 또는 설계를 공개 계약에 맞춥니다.
 
 ## 진행 순서
 
@@ -19,11 +19,14 @@
 |---|---|---|
 | 1 | [causality trace](01-model-and-time/01-causality-trace/README.md) | 어떤 사건이 causal하고 어떤 사건이 concurrent합니까? |
 | 1 | [failure model](01-model-and-time/02-failure-model/README.md) | 같은 trace에서 어떤 보장을 주장할 수 있습니까? |
+| 1 | [failure detector](01-model-and-time/03-failure-detector/README.md) | 지연과 장애를 구분하지 못할 때 suspicion·lease·fencing을 어떻게 제한합니까? |
 | 2 | [consistency history](02-replication-and-consistency/01-consistency-history/README.md) | client history가 어떤 consistency를 만족합니까? |
 | 2 | [quorum register](02-replication-and-consistency/02-quorum-register/README.md) | quorum 교차와 version 선택이 충분합니까? |
+| 2 | [anti-entropy](02-replication-and-consistency/03-anti-entropy/README.md) | sibling·tombstone·repair frontier가 수렴과 삭제를 어떻게 보존합니까? |
 | 3 | [election trace](03-consensus-and-membership/01-election-trace/README.md) | vote·term·log freshness가 election safety를 지킵니까? |
 | 3 | [log reconciliation](03-consensus-and-membership/02-log-reconciliation/README.md) | conflicting suffix와 commit을 어떻게 복구합니까? |
 | 3 | [client session](03-consensus-and-membership/03-client-session/README.md) | response loss와 snapshot 뒤 effect를 한 번으로 유지합니까? |
+| 3 | [membership change](03-consensus-and-membership/04-membership-change/README.md) | joint quorum·catch-up·removed-node fencing이 재구성 safety를 지킵니까? |
 | 4 | [shard rebalance](04-partitioning-and-atomicity/01-shard-rebalance/README.md) | migration 중 write authority가 하나입니까? |
 | 4 | [atomic commit](04-partitioning-and-atomicity/02-atomic-commit/README.md) | PREPARED·decision·recovery가 atomicity를 보존합니까? |
 | 5 | [linearizability](05-validation/01-linearizability/README.md) | legal sequential ordering이 존재합니까? |
@@ -52,7 +55,7 @@
 
 ## 정답 확인
 
-고정된 답지 대신 다음 방식으로 검토합니다.
+`expected.json`과 `reference.md`를 첫 비교점으로 삼고 다음 방식으로 검토합니다.
 
 - 문서의 definition과 invariant에 다시 대입합니다.
 - 작은 checker를 직접 작성합니다.

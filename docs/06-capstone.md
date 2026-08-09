@@ -2,7 +2,7 @@
 
 ## 목표
 
-앞선 문서의 실행 모델, consistency, Raft, crash recovery와 검증 방식을 하나의 작은 시스템에 연결합니다. production database를 만드는 것이 아니라 **어떤 event order에서도 committed state와 client-visible history를 지키는 protocol core**를 구현하는 것이 목적입니다.
+앞선 문서의 실행 모델, consistency, Raft, crash recovery와 검증 방식을 하나의 작은 시스템에 연결합니다. production database를 만드는 것이 아니라 **명시한 failure model과 실제 실행·탐색한 schedule 범위에서 committed state와 client-visible history를 검사할 수 있는 protocol core**를 구현하는 것이 목적입니다.
 
 완성할 시스템:
 
@@ -16,7 +16,7 @@
 + history·invariant 검사
 ```
 
-sharding, membership change와 real socket runtime은 core 완료 뒤 선택 확장입니다.
+membership change·sharding의 실제 코드와 real socket runtime은 core 완료 뒤 선택 구현입니다. 다만 membership·sharding의 상태 전이, 불변식, 대표 실패를 분석한 capstone dossier는 필수입니다.
 
 ## 비범위
 
@@ -48,16 +48,27 @@ dskv/
 학습 공간:
 
 ```sh
-mkdir -p .workspace
-cp -R capstone/starter .workspace/replicated-kv
+./scripts/new-capstone-workspace.sh
 ```
+
+helper는 기존 `.workspace/replicated-kv`를 덮어쓰지 않습니다. 이미 만든 학습 공간이 있다면 그대로 사용합니다.
 
 검사는 환경 변수로 구현 경로를 지정할 수 있습니다.
 
 ```sh
-CAPSTONE_ROOT=.workspace/replicated-kv \
+CAPSTONE_ROOT="$PWD/.workspace/replicated-kv" \
   python3 -m unittest discover -s capstone/tests -v
 ```
+
+`CAPSTONE_ROOT`를 생략하면 `.workspace`가 아니라 canonical starter를 검사합니다.
+
+## 검증의 세 층
+
+1. `make check`와 `make verify`는 저장소 구조, 문서·fixture, canonical starter 계약을 검사합니다.
+2. 위 `CAPSTONE_ROOT` 명령은 학습자 구현에 공개된 storage·protocol 계약의 일부를 검사합니다.
+3. [`completion-evidence-rubric`](../reference/completion-evidence-rubric.md)에 따라 추가 schedule·trace·history·설계 증거를 사람이 검토합니다.
+
+공개 tests 통과만으로 모든 schedule, 전체 Raft safety·liveness, membership·sharding 구현 또는 production 적합성을 증명하지는 않습니다.
 
 ## Sequential specification
 
@@ -354,12 +365,28 @@ schedule:
 
 완료 조건:
 
-- 같은 schedule이 같은 trace hash를 만듭니다.
-- safety invariant가 모든 step에서 유지됩니다.
+- 같은 source·runtime·configuration·initial state·seed·schedule이 같은 canonical trace hash를 만듭니다.
+- 실제 실행하고 기록한 모든 schedule의 각 step에서 safety invariant가 유지됩니다.
 - client history가 선택한 consistency model을 만족합니다.
 - 실패한 run은 최소 counterexample과 source identity를 남깁니다.
 
-## 선택 확장 A. Membership 변경
+## Milestone 8. Membership·sharding 누적 검토
+
+실제 코드를 확장하지 않더라도 다음 두 dossier는 필수입니다.
+
+```text
+.workspace/replicated-kv/evidence/
+├── membership-review.md
+└── sharding-review.md
+```
+
+`membership-review.md`에는 learner catch-up, configuration transition, quorum overlap, transition 중 leader crash·restart, snapshot의 configuration 복원, removed node fencing을 하나의 상태 전이와 대표 trace로 연결합니다. conflicting majority가 생기지 않는 근거와 아직 자동 검사하지 못한 가정을 분리합니다.
+
+`sharding-review.md`에는 snapshot + change catch-up, source fence, metadata cutover, stale router rejection, duplicate transfer, cleanup을 연결합니다. 각 key의 write authority가 한 곳뿐인 시점, cutover 전 acknowledged write의 보존, 중복 transfer의 idempotence를 trace로 제시합니다.
+
+평가 기준과 필요한 trace 필드는 [`completion-evidence-rubric`](../reference/completion-evidence-rubric.md)과 [`trace-schema`](../reference/trace-schema.md)를 따릅니다.
+
+## 선택 구현 확장 A. Membership 변경
 
 - learner 추가와 catch-up
 - 한 번에 한 voter 변경 또는 joint consensus
@@ -372,7 +399,7 @@ schedule:
 - leader crash 뒤 transition을 재개합니다.
 - removed node write가 거절됩니다.
 
-## 선택 확장 B. Sharding
+## 선택 구현 확장 B. Sharding
 
 두 Raft group과 metadata group을 둡니다.
 
@@ -389,7 +416,7 @@ schedule:
 - cutover 전 acknowledged write가 target에서 보입니다.
 - duplicate transfer가 effect를 추가하지 않습니다.
 
-## 선택 확장 C. 실제 runtime
+## 선택 구현 확장 C. 실제 runtime
 
 protocol core를 변경하지 않고 adapter를 추가합니다.
 
@@ -415,6 +442,8 @@ simulation과 실제 runtime이 같은 message·state schema를 사용하도록 
 
 ## 제출 산출물
 
+상세 판정 기준은 [`completion-evidence-rubric`](../reference/completion-evidence-rubric.md)을 사용합니다. 최소 dossier는 다음과 같습니다.
+
 ```text
 implementation/
 - protocol core와 storage·network adapter
@@ -433,11 +462,17 @@ tests/
 - history checker
 - fault matrix
 
-artifacts/
-- 최소 한 개의 실패 counterexample
-- 최종 검증 report
-- source·config·seed·schedule identity
+evidence/
+- manifest: source·runtime·config·seed·schedule·failure model identity
+- public-tests.log와 추가 검사 결과
+- schedules/와 traces/: 정상·경계·대표 실패 실행
+- invariants.md와 histories.md
+- 최소 한 개의 알려진 오답 또는 실패 counterexample와 regression
+- membership-review.md와 sharding-review.md
+- final-report.md: 통과·실패·UNVERIFIED와 알려진 한계
 ```
+
+trace와 manifest는 [`trace-schema`](../reference/trace-schema.md)를 따릅니다. test 이름이나 존재만 나열하지 말고 실제 command, 결과, trace hash와 사람이 확인할 판단 근거를 남깁니다.
 
 ## 최종 완료 조건
 
@@ -448,6 +483,8 @@ artifacts/
 3. 같은 log index에 서로 다른 command를 apply하지 않습니다.
 4. response가 사라져 client가 retry해도 application effect는 한 번입니다.
 5. snapshot과 compaction 뒤에도 state·session·configuration 의미가 같습니다.
-6. 지원하는 failure model 안의 모든 생성 trace에서 safety invariant가 유지됩니다.
+6. 기록한 source·config·seed·schedule로 실제 생성·실행한 모든 trace step에서 safety invariant가 유지됩니다.
 7. liveness 주장은 majority·delivery·storage·timer의 구체적인 조건과 함께 기록됩니다.
 8. client-visible history는 선택한 consistency model의 checker를 통과합니다.
+
+이 완료 조건은 제출한 유한한 실행과 명시한 가정에 대한 증거입니다. 자동 검사 결과를 탐색하지 않은 event order 전체나 production 안전성에 대한 보편 증명으로 확대하지 않습니다. 최종 판정에는 rubric에 따른 human review가 필요합니다.
