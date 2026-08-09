@@ -74,6 +74,19 @@ class CapstoneValidatorTests(unittest.TestCase):
         self.assertIn("CAPSTONE FAIL [E_REFERENCE]", result.stderr)
         self.assertIn("heading does not resolve", result.stderr)
 
+    def test_required_heading_inside_code_fence_is_rejected(self) -> None:
+        with tempfile.TemporaryDirectory(prefix=".capstone-test-", dir=ROOT) as directory:
+            artifact = self.copied_reference(Path(directory))
+            path = artifact / "01-product.md"
+            text = path.read_text(encoding="utf-8")
+            path.write_text(
+                text.replace("## Golden path", "```text\n## Golden path\n```", 1),
+                encoding="utf-8",
+            )
+            result = run_validator(artifact)
+        self.assertEqual(result.returncode, 1)
+        self.assertIn("CAPSTONE FAIL [E_HEADING]", result.stderr)
+
     def test_dangling_json_pointer_is_rejected(self) -> None:
         with tempfile.TemporaryDirectory(prefix=".capstone-test-", dir=ROOT) as directory:
             artifact = self.copied_reference(Path(directory))

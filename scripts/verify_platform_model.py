@@ -165,7 +165,10 @@ def worker(implementation: str) -> int:
 
 def invoke_worker(implementation: Path, timeout_seconds: int) -> list[dict[str, Any]]:
     environment = os.environ.copy()
+    for key in ("PYTHONHOME", "PYTHONPATH", "PYTHONSTARTUP", "PYTHONINSPECT"):
+        environment.pop(key, None)
     environment["PYTHONDONTWRITEBYTECODE"] = "1"
+    environment["PYTHONNOUSERSITE"] = "1"
     environment["PYTHONHASHSEED"] = "0"
     try:
         completed = subprocess.run(

@@ -171,9 +171,11 @@ projects/internal-developer-platform/template/08-migration-runbook.md
 projects/internal-developer-platform/template/09-evidence.md
 projects/internal-developer-platform/template/evidence-manifest.json
 projects/internal-developer-platform/template/evidence/platform-model-report.json
+reference/contract-evidence-map.md
 reference/decision-record-template.md
 reference/evidence-checklist.md
 reference/glossary.md
+reference/manual-review-guide.md
 reference/ownership-matrix.md
 reference/platform-contract-template.md
 reference/platform-slo-template.md
@@ -183,10 +185,12 @@ reference/service-catalog-template.yaml
 reference/service-scorecard-template.md
 reference/source-index.md
 scripts/source_fingerprint.py
+scripts/test_repository_safety.py
 scripts/test_verify_capstone.py
 scripts/test_verify_platform_model.py
 scripts/test_verify_submission.py
 scripts/verify_capstone.py
+scripts/verify_isolated.py
 scripts/verify_platform_model.py
 scripts/verify_repository.py
 scripts/verify_submission.py

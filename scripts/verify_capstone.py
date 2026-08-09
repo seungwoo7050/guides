@@ -13,7 +13,7 @@ import subprocess
 import sys
 import tempfile
 from pathlib import Path, PurePosixPath
-from typing import Any
+from typing import Any, Iterable
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -22,6 +22,7 @@ CONTRACT_PATH = PROJECT / "contract.json"
 MANIFEST_NAME = "evidence-manifest.json"
 HARNESS_EXIT = 2
 HEADING = re.compile(r"^#{1,6}\s+(.+?)\s*#*\s*$")
+FENCE = re.compile(r"^\s*(`{3,}|~{3,})")
 
 
 class CapstoneError(RuntimeError):
@@ -64,6 +65,27 @@ def display(path: Path) -> str:
         return path.relative_to(ROOT).as_posix()
     except ValueError:
         return str(path)
+
+
+def external_temp_root(candidates: Iterable[Path] | None = None) -> Path:
+    choices = list(candidates) if candidates is not None else [
+        Path(tempfile.gettempdir()), Path('/private/tmp'), Path('/tmp'),
+    ]
+    inspected: set[Path] = set()
+    for candidate in choices:
+        try:
+            resolved = candidate.resolve(strict=True)
+        except (OSError, RuntimeError):
+            continue
+        if resolved in inspected:
+            continue
+        inspected.add(resolved)
+        if not resolved.is_dir():
+            continue
+        if resolved == ROOT or ROOT in resolved.parents:
+            continue
+        return resolved
+    raise CapstoneError("E_MODEL_RUN", "no temporary directory outside the repository is available")
 
 
 def digest(path: Path) -> str:
@@ -147,10 +169,26 @@ def read_text(path: Path, code: str) -> str:
 
 def headings(text: str) -> list[str]:
     found: list[str] = []
+    fence_character: str | None = None
+    fence_length = 0
     for line in text.splitlines():
+        fence = FENCE.match(line)
+        if fence:
+            marker = fence.group(1)
+            if fence_character is None:
+                fence_character = marker[0]
+                fence_length = len(marker)
+            elif marker[0] == fence_character and len(marker) >= fence_length:
+                fence_character = None
+                fence_length = 0
+            continue
+        if fence_character is not None:
+            continue
         match = HEADING.match(line)
         if match:
             found.append(match.group(1).strip())
+    if fence_character is not None:
+        raise CapstoneError("E_CONTENT", "Markdown contains an unclosed code fence")
     return found
 
 
@@ -362,10 +400,13 @@ def validate_model(artifact: Path, manifest: dict[str, Any], contract: dict[str,
 
     verifier = ROOT / "scripts/verify_platform_model.py"
     environment = os.environ.copy()
+    for key in ("PYTHONHOME", "PYTHONPATH", "PYTHONSTARTUP", "PYTHONINSPECT"):
+        environment.pop(key, None)
     environment["PYTHONDONTWRITEBYTECODE"] = "1"
+    environment["PYTHONNOUSERSITE"] = "1"
     environment["PYTHONHASHSEED"] = "0"
     try:
-        with tempfile.TemporaryDirectory(prefix="capstone-model-", dir="/private/tmp") as directory:
+        with tempfile.TemporaryDirectory(prefix="capstone-model-", dir=external_temp_root()) as directory:
             regenerated_path = Path(directory) / "report.json"
             completed = subprocess.run(
                 [
