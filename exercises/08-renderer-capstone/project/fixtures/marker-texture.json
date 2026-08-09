@@ -1,0 +1,17 @@
+{
+  "schema_version": 1,
+  "id": "marker-2x2",
+  "extent": [2, 2],
+  "origin": "top-left",
+  "encoding": "sRGB",
+  "alpha": "straight",
+  "rgba8_rows": [
+    [[255, 0, 0, 255], [0, 255, 0, 255]],
+    [[0, 0, 255, 255], [255, 255, 255, 255]]
+  ],
+  "provenance": {
+    "kind": "repository-generated-fixture",
+    "external_asset": false,
+    "license": "MIT"
+  }
+}

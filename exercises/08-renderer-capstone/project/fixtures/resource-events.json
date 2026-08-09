@@ -1,0 +1,19 @@
+{
+  "schema_version": 1,
+  "initial_extent": [64, 64],
+  "frame_slot_count": 3,
+  "events": [
+    {"seq": 1, "event": "submit", "slot": 0, "submission": 1, "generation": 1},
+    {"seq": 2, "event": "submit", "slot": 1, "submission": 2, "generation": 1},
+    {"seq": 3, "event": "zero-extent", "extent": [0, 0], "create_target": false},
+    {"seq": 4, "event": "resize", "extent": [96, 72], "new_generation": 2},
+    {"seq": 5, "event": "complete", "completion": 2},
+    {"seq": 6, "event": "retire", "generation": 1, "after_completion": 2},
+    {"seq": 7, "event": "readback", "submission": 2, "after_completion": 2}
+  ],
+  "known_bad": [
+    {"id": "overwrite-frame-slot", "violation": "write-before-slot-completion"},
+    {"id": "stale-resize-attachment", "violation": "generation-1-used-after-generation-2"},
+    {"id": "readback-before-completion", "violation": "map-before-submission-completion"}
+  ]
+}

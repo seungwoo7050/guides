@@ -1,10 +1,15 @@
 #include "cg/artifact.hpp"
 #include "cg/contracts.hpp"
+#include "cg/scene.hpp"
 #include <algorithm>
 #include <array>
 #include <cmath>
 #include <cstddef>
+#include <cstdint>
+#include <functional>
 #include <iomanip>
+#include <limits>
+#include <optional>
 #include <sstream>
 #include <string>
 #include <string_view>
@@ -675,19 +680,700 @@ int run_perspective_depth_blend(const RunOptions& options) {
   return all_invariants_hold(invariants) ? exit_ok : exit_contract_failure;
 }
 
+struct Vector3d {
+  double x{};
+  double y{};
+  double z{};
+};
+
+Vector3d operator+(const Vector3d left, const Vector3d right) {
+  return {left.x + right.x, left.y + right.y, left.z + right.z};
+}
+
+Vector3d operator-(const Vector3d left, const Vector3d right) {
+  return {left.x - right.x, left.y - right.y, left.z - right.z};
+}
+
+Vector3d operator*(const Vector3d value, const double scale) {
+  return {value.x * scale, value.y * scale, value.z * scale};
+}
+
+double dot(const Vector3d left, const Vector3d right) {
+  return left.x * right.x + left.y * right.y + left.z * right.z;
+}
+
+Vector3d cross(const Vector3d left, const Vector3d right) {
+  return {
+      left.y * right.z - left.z * right.y,
+      left.z * right.x - left.x * right.z,
+      left.x * right.y - left.y * right.x,
+  };
+}
+
+double length(const Vector3d value) { return std::sqrt(dot(value, value)); }
+
+Vector3d normalized(const Vector3d value) {
+  const double magnitude = length(value);
+  return magnitude <= 1.0e-12 ? Vector3d{} : value * (1.0 / magnitude);
+}
+
+struct Matrix3d {
+  std::array<std::array<double, 3>, 3> value{};
+};
+
+Vector3d multiply(const Matrix3d& matrix, const Vector3d vector) {
+  return {
+      matrix.value[0][0] * vector.x + matrix.value[0][1] * vector.y + matrix.value[0][2] * vector.z,
+      matrix.value[1][0] * vector.x + matrix.value[1][1] * vector.y + matrix.value[1][2] * vector.z,
+      matrix.value[2][0] * vector.x + matrix.value[2][1] * vector.y + matrix.value[2][2] * vector.z,
+  };
+}
+
+Matrix3d transpose(const Matrix3d& matrix) {
+  Matrix3d result;
+  for (std::size_t row = 0; row < 3; ++row) {
+    for (std::size_t column = 0; column < 3; ++column) {
+      result.value[row][column] = matrix.value[column][row];
+    }
+  }
+  return result;
+}
+
+double determinant(const Matrix3d& matrix) {
+  const auto& m = matrix.value;
+  return m[0][0] * (m[1][1] * m[2][2] - m[1][2] * m[2][1]) -
+      m[0][1] * (m[1][0] * m[2][2] - m[1][2] * m[2][0]) +
+      m[0][2] * (m[1][0] * m[2][1] - m[1][1] * m[2][0]);
+}
+
+std::optional<Matrix3d> inverse(const Matrix3d& matrix) {
+  const double det = determinant(matrix);
+  if (std::abs(det) <= 1.0e-12) return std::nullopt;
+  const auto& m = matrix.value;
+  Matrix3d result;
+  result.value = {{
+      {{(m[1][1] * m[2][2] - m[1][2] * m[2][1]) / det,
+        (m[0][2] * m[2][1] - m[0][1] * m[2][2]) / det,
+        (m[0][1] * m[1][2] - m[0][2] * m[1][1]) / det}},
+      {{(m[1][2] * m[2][0] - m[1][0] * m[2][2]) / det,
+        (m[0][0] * m[2][2] - m[0][2] * m[2][0]) / det,
+        (m[0][2] * m[1][0] - m[0][0] * m[1][2]) / det}},
+      {{(m[1][0] * m[2][1] - m[1][1] * m[2][0]) / det,
+        (m[0][1] * m[2][0] - m[0][0] * m[2][1]) / det,
+        (m[0][0] * m[1][1] - m[0][1] * m[1][0]) / det}},
+  }};
+  return result;
+}
+
+struct Bounds3d {
+  Vector3d minimum{
+      std::numeric_limits<double>::infinity(),
+      std::numeric_limits<double>::infinity(),
+      std::numeric_limits<double>::infinity()};
+  Vector3d maximum{
+      -std::numeric_limits<double>::infinity(),
+      -std::numeric_limits<double>::infinity(),
+      -std::numeric_limits<double>::infinity()};
+};
+
+void expand(Bounds3d& bounds, const Vector3d point) {
+  bounds.minimum.x = std::min(bounds.minimum.x, point.x);
+  bounds.minimum.y = std::min(bounds.minimum.y, point.y);
+  bounds.minimum.z = std::min(bounds.minimum.z, point.z);
+  bounds.maximum.x = std::max(bounds.maximum.x, point.x);
+  bounds.maximum.y = std::max(bounds.maximum.y, point.y);
+  bounds.maximum.z = std::max(bounds.maximum.z, point.z);
+}
+
+Vector3d transform_point(const Matrix3d& linear, const Vector3d translation, const Vector3d point) {
+  return multiply(linear, point) + translation;
+}
+
+std::array<Vector3d, 8> bounds_corners(const Bounds3d& bounds) {
+  return {{
+      {bounds.minimum.x, bounds.minimum.y, bounds.minimum.z},
+      {bounds.maximum.x, bounds.minimum.y, bounds.minimum.z},
+      {bounds.minimum.x, bounds.maximum.y, bounds.minimum.z},
+      {bounds.maximum.x, bounds.maximum.y, bounds.minimum.z},
+      {bounds.minimum.x, bounds.minimum.y, bounds.maximum.z},
+      {bounds.maximum.x, bounds.minimum.y, bounds.maximum.z},
+      {bounds.minimum.x, bounds.maximum.y, bounds.maximum.z},
+      {bounds.maximum.x, bounds.maximum.y, bounds.maximum.z},
+  }};
+}
+
+Bounds3d transform_bounds_all_corners(
+    const Bounds3d& local,
+    const Matrix3d& linear,
+    const Vector3d translation) {
+  Bounds3d world;
+  for (const Vector3d corner : bounds_corners(local)) expand(world, transform_point(linear, translation, corner));
+  return world;
+}
+
+Bounds3d transform_bounds_two_points(
+    const Bounds3d& local,
+    const Matrix3d& linear,
+    const Vector3d translation) {
+  Bounds3d world;
+  expand(world, transform_point(linear, translation, local.minimum));
+  expand(world, transform_point(linear, translation, local.maximum));
+  return world;
+}
+
+bool contains(const Bounds3d& bounds, const Vector3d point) {
+  constexpr double epsilon = 1.0e-9;
+  return point.x >= bounds.minimum.x - epsilon && point.x <= bounds.maximum.x + epsilon &&
+      point.y >= bounds.minimum.y - epsilon && point.y <= bounds.maximum.y + epsilon &&
+      point.z >= bounds.minimum.z - epsilon && point.z <= bounds.maximum.z + epsilon;
+}
+
+bool hierarchy_is_acyclic(const std::vector<int>& parents) {
+  std::vector<int> state(parents.size(), 0);
+  std::function<bool(std::size_t)> visit = [&](const std::size_t node) {
+    if (state[node] == 1) return false;
+    if (state[node] == 2) return true;
+    state[node] = 1;
+    const int parent = parents[node];
+    if (parent < -1 || parent >= static_cast<int>(parents.size())) return false;
+    if (parent >= 0 && !visit(static_cast<std::size_t>(parent))) return false;
+    state[node] = 2;
+    return true;
+  };
+  for (std::size_t node = 0; node < parents.size(); ++node) {
+    if (!visit(node)) return false;
+  }
+  return true;
+}
+
+bool mesh_contract_valid(
+    const std::size_t position_count,
+    const std::size_t uv_count,
+    const std::size_t normal_count,
+    const std::vector<std::uint16_t>& indices) {
+  if (position_count == 0 || position_count != uv_count || position_count != normal_count ||
+      indices.size() % 3 != 0) {
+    return false;
+  }
+  return std::all_of(indices.begin(), indices.end(), [position_count](const std::uint16_t index) {
+    return static_cast<std::size_t>(index) < position_count;
+  });
+}
+
+double triangle_area_magnitude(const Vector3d a, const Vector3d b, const Vector3d c) {
+  return length(cross(b - a, c - a)) * 0.5;
+}
+
+double wrap_repeat(const double coordinate) { return coordinate - std::floor(coordinate); }
+
+int wrap_texel(const int value) {
+  const int remainder = value % 2;
+  return remainder < 0 ? remainder + 2 : remainder;
+}
+
+LinearRgb mix(const LinearRgb left, const LinearRgb right, const double amount) {
+  return {
+      left.red * (1.0 - amount) + right.red * amount,
+      left.green * (1.0 - amount) + right.green * amount,
+      left.blue * (1.0 - amount) + right.blue * amount,
+  };
+}
+
+LinearRgb sample_bilinear_repeat(const std::array<LinearRgb, 4>& texture, const Uv uv) {
+  const double continuous_x = wrap_repeat(uv.u) * 2.0 - 0.5;
+  const double continuous_y = wrap_repeat(uv.v) * 2.0 - 0.5;
+  const int base_x = static_cast<int>(std::floor(continuous_x));
+  const int base_y = static_cast<int>(std::floor(continuous_y));
+  const double fraction_x = continuous_x - std::floor(continuous_x);
+  const double fraction_y = continuous_y - std::floor(continuous_y);
+  const auto texel = [&](const int x, const int y) {
+    return texture[static_cast<std::size_t>(wrap_texel(y) * 2 + wrap_texel(x))];
+  };
+  return mix(
+      mix(texel(base_x, base_y), texel(base_x + 1, base_y), fraction_x),
+      mix(texel(base_x, base_y + 1), texel(base_x + 1, base_y + 1), fraction_x),
+      fraction_y);
+}
+
+LinearRgb linear_mip_average(const std::array<LinearRgb, 4>& texture) {
+  LinearRgb total;
+  for (const LinearRgb color : texture) {
+    total.red += color.red;
+    total.green += color.green;
+    total.blue += color.blue;
+  }
+  return {total.red * 0.25, total.green * 0.25, total.blue * 0.25};
+}
+
+LinearRgb encoded_mip_average(const std::array<LinearRgb, 4>& texture) {
+  LinearRgb encoded;
+  for (const LinearRgb color : texture) {
+    encoded.red += linear_to_srgb(color.red);
+    encoded.green += linear_to_srgb(color.green);
+    encoded.blue += linear_to_srgb(color.blue);
+  }
+  return {
+      srgb_to_linear(encoded.red * 0.25),
+      srgb_to_linear(encoded.green * 0.25),
+      srgb_to_linear(encoded.blue * 0.25),
+  };
+}
+
+Vector3d decode_normal_map(const LinearRgb encoded, const bool apply_srgb) {
+  const auto decode_channel = [apply_srgb](const double value) {
+    const double decoded = apply_srgb ? srgb_to_linear(value) : value;
+    return decoded * 2.0 - 1.0;
+  };
+  return normalized({
+      decode_channel(encoded.red),
+      decode_channel(encoded.green),
+      decode_channel(encoded.blue),
+  });
+}
+
+enum class FrustumRelation { outside, intersecting, inside };
+
+FrustumRelation classify_frustum(const Bounds3d& bounds) {
+  if (bounds.maximum.x < -1.0 || bounds.minimum.x > 1.0 || bounds.maximum.y < -1.0 ||
+      bounds.minimum.y > 1.0 || bounds.maximum.z < 0.0 || bounds.minimum.z > 1.0) {
+    return FrustumRelation::outside;
+  }
+  if (bounds.minimum.x >= -1.0 && bounds.maximum.x <= 1.0 && bounds.minimum.y >= -1.0 &&
+      bounds.maximum.y <= 1.0 && bounds.minimum.z >= 0.0 && bounds.maximum.z <= 1.0) {
+    return FrustumRelation::inside;
+  }
+  return FrustumRelation::intersecting;
+}
+
+int choose_lod_with_hysteresis(const double metric, const int current) {
+  if (current == 0 && metric < 0.45) return 1;
+  if (current == 1 && metric > 0.55) return 0;
+  return current;
+}
+
+int choose_lod_without_hysteresis(const double metric) { return metric >= 0.5 ? 0 : 1; }
+
+int transition_count(const std::vector<int>& levels) {
+  int transitions = 0;
+  for (std::size_t index = 1; index < levels.size(); ++index) {
+    if (levels[index] != levels[index - 1]) ++transitions;
+  }
+  return transitions;
+}
+
+std::size_t position_only_unique_count(const std::vector<std::pair<Vector3d, Uv>>& vertices) {
+  std::vector<Vector3d> unique;
+  for (const auto& [position, uv] : vertices) {
+    (void)uv;
+    const bool found = std::any_of(unique.begin(), unique.end(), [position](const Vector3d value) {
+      return nearly_equal(value.x, position.x) && nearly_equal(value.y, position.y) &&
+          nearly_equal(value.z, position.z);
+    });
+    if (!found) unique.push_back(position);
+  }
+  return unique.size();
+}
+
+std::size_t semantic_unique_count(const std::vector<std::pair<Vector3d, Uv>>& vertices) {
+  std::vector<std::pair<Vector3d, Uv>> unique;
+  for (const auto& candidate : vertices) {
+    const bool found = std::any_of(unique.begin(), unique.end(), [&candidate](const auto& value) {
+      return nearly_equal(value.first.x, candidate.first.x) &&
+          nearly_equal(value.first.y, candidate.first.y) &&
+          nearly_equal(value.first.z, candidate.first.z) && nearly_equal(value.second.u, candidate.second.u) &&
+          nearly_equal(value.second.v, candidate.second.v);
+    });
+    if (!found) unique.push_back(candidate);
+  }
+  return unique.size();
+}
+
+std::string vector_json(const Vector3d value) {
+  std::ostringstream output;
+  output << std::fixed << std::setprecision(6) << '[' << value.x << ", " << value.y << ", " << value.z << ']';
+  return output.str();
+}
+
+std::string color_json(const LinearRgb value) {
+  std::ostringstream output;
+  output << std::fixed << std::setprecision(6) << '[' << value.red << ", " << value.green << ", "
+         << value.blue << ']';
+  return output.str();
+}
+
+struct LitRenderArtifacts {
+  std::vector<unsigned char> final_color;
+  std::vector<unsigned char> base_color;
+  std::vector<unsigned char> normal_world;
+  std::vector<unsigned char> ndotl;
+  std::vector<unsigned char> mip_level;
+  std::vector<unsigned char> object_id;
+  std::vector<unsigned char> primitive_id;
+  std::vector<double> depth;
+  int covered_samples{};
+  Uv traced_uv{};
+  LinearRgb traced_base{};
+};
+
+LitRenderArtifacts render_lit_triangle(
+    const SceneSnapshot& scene,
+    const std::array<LinearRgb, 4>& texture,
+    const Vector3d world_normal,
+    const bool use_wrong_mip) {
+  constexpr int width = 16;
+  constexpr int height = 16;
+  LitRenderArtifacts output{
+      .final_color = std::vector<unsigned char>(static_cast<std::size_t>(width * height * 3), 0),
+      .base_color = std::vector<unsigned char>(static_cast<std::size_t>(width * height * 3), 0),
+      .normal_world = std::vector<unsigned char>(static_cast<std::size_t>(width * height * 3), 0),
+      .ndotl = std::vector<unsigned char>(static_cast<std::size_t>(width * height * 3), 0),
+      .mip_level = std::vector<unsigned char>(static_cast<std::size_t>(width * height * 3), 0),
+      .object_id = std::vector<unsigned char>(static_cast<std::size_t>(width * height * 3), 0),
+      .primitive_id = std::vector<unsigned char>(static_cast<std::size_t>(width * height * 3), 0),
+      .depth = std::vector<double>(static_cast<std::size_t>(width * height), 1.0),
+  };
+
+  std::array<AttributeVertex, 3> vertices;
+  for (std::size_t index = 0; index < vertices.size(); ++index) {
+    const auto& source = scene.vertices[static_cast<std::size_t>(scene.indices[index])];
+    vertices[index] = AttributeVertex{
+        .position = {
+            (static_cast<double>(source.position.x) * 0.5 + 0.5) * static_cast<double>(width),
+            (1.0 - (static_cast<double>(source.position.y) * 0.5 + 0.5)) * static_cast<double>(height)},
+        .uv = {static_cast<double>(source.uv.x), static_cast<double>(source.uv.y)},
+        .inverse_w = 1.0,
+        .depth = static_cast<double>(source.position.z),
+    };
+  }
+  if (orient2d(vertices[0].position, vertices[1].position, vertices[2].position) < 0.0) {
+    std::swap(vertices[1], vertices[2]);
+  }
+  const std::array<bool, 3> top_left{
+      is_top_left(vertices[0].position, vertices[1].position),
+      is_top_left(vertices[1].position, vertices[2].position),
+      is_top_left(vertices[2].position, vertices[0].position),
+  };
+  const Vector3d light = normalized({0.2, 0.4, 1.0});
+  const double ndotl_value = std::max(dot(normalized(world_normal), light), 0.0);
+  const LinearRgb wrong_mip = encoded_mip_average(texture);
+  for (int y = 0; y < height; ++y) {
+    for (int x = 0; x < width; ++x) {
+      const Point2d point{static_cast<double>(x) + 0.5, static_cast<double>(y) + 0.5};
+      const std::array<double, 3> edge{
+          orient2d(vertices[0].position, vertices[1].position, point),
+          orient2d(vertices[1].position, vertices[2].position, point),
+          orient2d(vertices[2].position, vertices[0].position, point),
+      };
+      if (!edge_accepts(edge[0], top_left[0], EdgeTie::top_left) ||
+          !edge_accepts(edge[1], top_left[1], EdgeTie::top_left) ||
+          !edge_accepts(edge[2], top_left[2], EdgeTie::top_left)) {
+        continue;
+      }
+      const auto sample = interpolate_attribute(vertices, point, true);
+      const LinearRgb base = use_wrong_mip ? wrong_mip : sample_bilinear_repeat(texture, sample.uv);
+      const LinearRgb lit{
+          base.red * (0.1 + 0.9 * ndotl_value),
+          base.green * (0.1 + 0.9 * ndotl_value),
+          base.blue * (0.1 + 0.9 * ndotl_value),
+      };
+      set_rgb(output.final_color, width, x, y, lit);
+      set_rgb(output.base_color, width, x, y, base);
+      set_rgb(
+          output.normal_world,
+          width,
+          x,
+          y,
+          {world_normal.x * 0.5 + 0.5, world_normal.y * 0.5 + 0.5, world_normal.z * 0.5 + 0.5});
+      set_rgb(output.ndotl, width, x, y, {ndotl_value, ndotl_value, ndotl_value});
+      set_rgb(output.mip_level, width, x, y, {0.08, 0.25, 0.85});
+      const std::size_t pixel = static_cast<std::size_t>(y * width + x);
+      output.object_id[pixel * 3] = 40;
+      output.object_id[pixel * 3 + 1] = 180;
+      output.object_id[pixel * 3 + 2] = 240;
+      output.primitive_id[pixel * 3] = 230;
+      output.primitive_id[pixel * 3 + 1] = 80;
+      output.primitive_id[pixel * 3 + 2] = 40;
+      output.depth[pixel] = sample.depth;
+      ++output.covered_samples;
+      if (x == 8 && y == 8) {
+        output.traced_uv = sample.uv;
+        output.traced_base = base;
+      }
+    }
+  }
+  return output;
+}
+
 int run_textured_lit_scene(const RunOptions& options) {
   ensure_output_directory(options.output);
-  Invariants invariants{
-      {"indices_and_attribute_counts_are_valid", false},
-      {"scene_hierarchy_is_acyclic", false},
-      {"world_bounds_conservatively_contain_geometry", false},
-      {"normals_are_valid_after_nonuniform_scale", false},
-      {"normal_maps_are_data_textures", false},
-      {"lighting_uses_linear_rgb", false},
-      {"lod_hysteresis_prevents_boundary_oscillation", false},
+  const std::string mutation = options.mutation.value_or("");
+  const std::array<std::string_view, 8> accepted_mutations{{
+      "deduplicate_by_position_only",
+      "transform_normal_with_model_matrix",
+      "mark_normal_map_as_srgb",
+      "average_encoded_color_for_mips",
+      "transform_only_aabb_min_and_max",
+      "accept_scene_cycle",
+      "remove_lod_hysteresis",
+      "skip_srgb_decode",
+  }};
+  const bool known_mutation = mutation.empty() ||
+      std::find(accepted_mutations.begin(), accepted_mutations.end(), mutation) != accepted_mutations.end();
+
+  const SceneSnapshot scene = shared_triangle_scene();
+  const std::vector<std::uint16_t> valid_indices(scene.indices.begin(), scene.indices.end());
+  const std::vector<std::uint16_t> invalid_indices{0, 1, 3};
+  const bool valid_mesh = mesh_contract_valid(
+      scene.vertices.size(), scene.vertices.size(), scene.vertices.size(), valid_indices);
+  const bool invalid_index_rejected = !mesh_contract_valid(
+      scene.vertices.size(), scene.vertices.size(), scene.vertices.size(), invalid_indices);
+  const bool mismatch_rejected = !mesh_contract_valid(scene.vertices.size(), 2, scene.vertices.size(), valid_indices);
+  const double valid_area = triangle_area_magnitude(
+      {scene.vertices[0].position.x, scene.vertices[0].position.y, scene.vertices[0].position.z},
+      {scene.vertices[1].position.x, scene.vertices[1].position.y, scene.vertices[1].position.z},
+      {scene.vertices[2].position.x, scene.vertices[2].position.y, scene.vertices[2].position.z});
+  const bool degenerate_rejected = triangle_area_magnitude({0.0, 0.0, 0.0}, {1.0, 1.0, 1.0}, {2.0, 2.0, 2.0}) <=
+      1.0e-12;
+
+  const std::vector<std::pair<Vector3d, Uv>> seam_vertices{
+      {{0.0, 0.0, 0.0}, {0.0, 0.0}},
+      {{1.0, 0.0, 0.0}, {1.0, 0.0}},
+      {{0.0, 1.0, 0.0}, {0.0, 1.0}},
+      {{0.0, 0.0, 0.0}, {1.0, 1.0}},
   };
+  const std::size_t position_unique = position_only_unique_count(seam_vertices);
+  const std::size_t semantic_unique = semantic_unique_count(seam_vertices);
+  const bool seam_identity_preserved = semantic_unique == 4 && position_unique == 3;
+
+  const bool valid_hierarchy = hierarchy_is_acyclic({-1, 0, 1});
+  const bool cycle_rejected = !hierarchy_is_acyclic({1, 0});
+
+  constexpr double cosine = 0.7071067811865476;
+  constexpr double sine = 0.7071067811865476;
+  const Matrix3d nonuniform_rotated{
+      .value = {{{2.0 * cosine, -sine, 0.0},
+                 {2.0 * sine, cosine, 0.0},
+                 {0.0, 0.0, 0.5}}},
+  };
+  const Matrix3d singular{
+      .value = {{{1.0, 0.0, 0.0},
+                 {0.0, 0.0, 0.0},
+                 {0.0, 0.0, 1.0}}},
+  };
+  const auto inverse_model = inverse(nonuniform_rotated);
+  const auto singular_inverse = inverse(singular);
+  const Vector3d local_normal = normalized({1.0, 1.0, 1.0});
+  const Vector3d local_tangent = normalized({1.0, -1.0, 0.0});
+  const Vector3d transformed_tangent = normalized(multiply(nonuniform_rotated, local_tangent));
+  const Vector3d correct_normal = inverse_model
+      ? normalized(multiply(transpose(*inverse_model), local_normal))
+      : Vector3d{};
+  const Vector3d wrong_normal = normalized(multiply(nonuniform_rotated, local_normal));
+  const double correct_orthogonality = std::abs(dot(correct_normal, transformed_tangent));
+  const double wrong_orthogonality = std::abs(dot(wrong_normal, transformed_tangent));
+  const bool normal_valid = inverse_model.has_value() && !singular_inverse.has_value() &&
+      correct_orthogonality <= 1.0e-9 && wrong_orthogonality > 0.1;
+
+  const Bounds3d local_bounds{{-0.5, -0.5, -0.5}, {0.5, 0.5, 0.5}};
+  const Vector3d translation{0.25, -0.1, 0.5};
+  const Bounds3d conservative_bounds = transform_bounds_all_corners(local_bounds, nonuniform_rotated, translation);
+  const Bounds3d two_point_bounds = transform_bounds_two_points(local_bounds, nonuniform_rotated, translation);
+  bool conservative_contains_all = true;
+  bool two_point_misses_corner = false;
+  for (const Vector3d corner : bounds_corners(local_bounds)) {
+    const Vector3d transformed = transform_point(nonuniform_rotated, translation, corner);
+    conservative_contains_all = conservative_contains_all && contains(conservative_bounds, transformed);
+    two_point_misses_corner = two_point_misses_corner || !contains(two_point_bounds, transformed);
+  }
+
+  const std::array<LinearRgb, 4> texture{{
+      {1.0, 0.0, 0.0},
+      {0.0, 1.0, 0.0},
+      {0.0, 0.0, 1.0},
+      {1.0, 1.0, 1.0},
+  }};
+  const LinearRgb center_sample = sample_bilinear_repeat(texture, {0.5, 0.5});
+  const LinearRgb negative_uv_sample = sample_bilinear_repeat(texture, {-0.25, -0.25});
+  const LinearRgb out_of_range_uv_sample = sample_bilinear_repeat(texture, {1.25, 1.25});
+  const LinearRgb mip_linear = linear_mip_average(texture);
+  const LinearRgb mip_encoded = encoded_mip_average(texture);
+  const Vector3d flat_normal_data = decode_normal_map({0.5, 0.5, 1.0}, false);
+  const Vector3d flat_normal_srgb = decode_normal_map({0.5, 0.5, 1.0}, true);
+  const bool normal_map_data = color_distance(center_sample, mip_linear) <= 1.0e-12 &&
+      std::abs(dot(flat_normal_data, {0.0, 0.0, 1.0}) - 1.0) <= 1.0e-12 &&
+      length(flat_normal_data - flat_normal_srgb) > 0.1;
+  const bool linear_lighting = color_distance(mip_linear, mip_encoded) > 0.1;
+
+  const Bounds3d inside_bounds{{-0.5, -0.5, 0.2}, {0.5, 0.5, 0.8}};
+  const Bounds3d outside_bounds{{1.2, -0.2, 0.2}, {1.8, 0.2, 0.8}};
+  const Bounds3d intersecting_bounds{{0.8, -0.2, 0.2}, {1.2, 0.2, 0.8}};
+  const std::array<FrustumRelation, 3> visibility{
+      classify_frustum(inside_bounds),
+      classify_frustum(outside_bounds),
+      classify_frustum(intersecting_bounds),
+  };
+  const int visible_count = static_cast<int>(std::count_if(
+      visibility.begin(), visibility.end(), [](const FrustumRelation relation) {
+        return relation != FrustumRelation::outside;
+      }));
+
+  const std::vector<double> lod_metrics{0.60, 0.52, 0.48, 0.51, 0.47, 0.44, 0.49, 0.56};
+  std::vector<int> lod_with_hysteresis;
+  std::vector<int> lod_without_hysteresis;
+  int current_lod = 0;
+  for (const double metric : lod_metrics) {
+    current_lod = choose_lod_with_hysteresis(metric, current_lod);
+    lod_with_hysteresis.push_back(current_lod);
+    lod_without_hysteresis.push_back(choose_lod_without_hysteresis(metric));
+  }
+  const bool stable_lod = transition_count(lod_with_hysteresis) == 2 &&
+      transition_count(lod_without_hysteresis) > transition_count(lod_with_hysteresis);
+
+  Invariants invariants{
+      {"indices_and_attribute_counts_are_valid",
+       valid_mesh && invalid_index_rejected && mismatch_rejected && valid_area > 0.0 && degenerate_rejected &&
+           seam_identity_preserved},
+      {"scene_hierarchy_is_acyclic", valid_hierarchy && cycle_rejected},
+      {"world_bounds_conservatively_contain_geometry", conservative_contains_all && two_point_misses_corner},
+      {"normals_are_valid_after_nonuniform_scale", normal_valid},
+      {"normal_maps_are_data_textures", normal_map_data},
+      {"lighting_uses_linear_rgb", linear_lighting},
+      {"lod_hysteresis_prevents_boundary_oscillation", stable_lod},
+  };
+  if (mutation == "deduplicate_by_position_only") {
+    set_invariant(invariants, "indices_and_attribute_counts_are_valid", false);
+  } else if (mutation == "transform_normal_with_model_matrix") {
+    set_invariant(invariants, "normals_are_valid_after_nonuniform_scale", false);
+  } else if (mutation == "mark_normal_map_as_srgb") {
+    set_invariant(invariants, "normal_maps_are_data_textures", false);
+  } else if (mutation == "average_encoded_color_for_mips" || mutation == "skip_srgb_decode") {
+    set_invariant(invariants, "lighting_uses_linear_rgb", false);
+  } else if (mutation == "transform_only_aabb_min_and_max") {
+    set_invariant(invariants, "world_bounds_conservatively_contain_geometry", false);
+  } else if (mutation == "accept_scene_cycle") {
+    set_invariant(invariants, "scene_hierarchy_is_acyclic", false);
+  } else if (mutation == "remove_lod_hysteresis") {
+    set_invariant(invariants, "lod_hysteresis_prevents_boundary_oscillation", false);
+  } else if (!known_mutation) {
+    set_invariant(invariants, "indices_and_attribute_counts_are_valid", false);
+  }
+
+  const Vector3d render_normal = mutation == "transform_normal_with_model_matrix" ? wrong_normal : correct_normal;
+  const bool use_wrong_mip = mutation == "average_encoded_color_for_mips" || mutation == "skip_srgb_decode";
+  const LitRenderArtifacts rendered = render_lit_triangle(scene, texture, render_normal, use_wrong_mip);
+  write_ppm_p3(options.output / "final.ppm", 16, 16, rendered.final_color);
+  write_ppm_p3(options.output / "base-color.ppm", 16, 16, rendered.base_color);
+  write_ppm_p3(options.output / "normal-world.ppm", 16, 16, rendered.normal_world);
+  write_ppm_p3(options.output / "ndotl.ppm", 16, 16, rendered.ndotl);
+  write_ppm_p3(options.output / "mip-level.ppm", 16, 16, rendered.mip_level);
+  write_ppm_p3(options.output / "object-id.ppm", 16, 16, rendered.object_id);
+  write_ppm_p3(options.output / "primitive-id.ppm", 16, 16, rendered.primitive_id);
+
+  std::ostringstream asset;
+  asset << std::fixed << std::setprecision(6)
+        << "{\n  \"schema_version\": 1,\n  \"scene_schema_version\": " << SceneSnapshot::schema_version
+        << ",\n  \"scene_id\": \"" << SceneSnapshot::id << "\",\n  \"cases\": {\n"
+        << "    \"valid_mesh\": {\"accepted\": " << (valid_mesh ? "true" : "false") << "},\n"
+        << "    \"invalid_index\": {\"accepted\": false, \"reason\": \"index_out_of_range\"},\n"
+        << "    \"attribute_count_mismatch\": {\"accepted\": false, \"reason\": \"attribute_count_mismatch\"},\n"
+        << "    \"cycle_hierarchy\": {\"accepted\": "
+        << (mutation == "accept_scene_cycle" ? "true" : "false") << ", \"reason\": \"cycle\"},\n"
+        << "    \"singular_normal_matrix\": {\"accepted\": false, \"reason\": \"singular_inverse\"},\n"
+        << "    \"degenerate_triangle\": {\"accepted\": false, \"reason\": \"zero_area\"},\n"
+        << "    \"uv_negative_repeat\": {\"input\": [-0.25, -0.25], \"wrapped\": [0.75, 0.75], \"sample\": "
+        << color_json(negative_uv_sample) << "},\n"
+        << "    \"uv_out_of_range_repeat\": {\"input\": [1.25, 1.25], \"wrapped\": [0.25, 0.25], \"sample\": "
+        << color_json(out_of_range_uv_sample) << "}\n  },\n"
+        << "  \"seam_vertices\": {\"semantic_unique\": " << semantic_unique
+        << ", \"position_only_unique\": " << position_unique << "},\n"
+        << "  \"normal\": {\"correct\": " << vector_json(correct_normal)
+        << ", \"model_matrix_mutation\": " << vector_json(wrong_normal)
+        << ", \"correct_tangent_dot\": " << correct_orthogonality
+        << ", \"mutation_tangent_dot\": " << wrong_orthogonality << "},\n"
+        << "  \"normal_map\": {\"encoding\": \"data-linear\", \"flat_decoded\": "
+        << vector_json(mutation == "mark_normal_map_as_srgb" ? flat_normal_srgb : flat_normal_data) << "}\n}\n";
+  write_text(options.output / "asset-validation.json", asset.str());
+
+  const Bounds3d selected_bounds = mutation == "transform_only_aabb_min_and_max" ? two_point_bounds : conservative_bounds;
+  const std::vector<int>& selected_lod = mutation == "remove_lod_hysteresis"
+      ? lod_without_hysteresis
+      : lod_with_hysteresis;
+  std::ostringstream culling;
+  culling << std::fixed << std::setprecision(6)
+          << "{\n  \"schema_version\": 1,\n  \"frustum\": {\"input\": 3, \"visible\": "
+          << visible_count << ", \"inside\": 1, \"intersecting\": 1, \"outside\": 1},\n"
+          << "  \"world_bounds\": {\"minimum\": " << vector_json(selected_bounds.minimum)
+          << ", \"maximum\": " << vector_json(selected_bounds.maximum) << "},\n"
+          << "  \"bounds_all_corners_contained\": "
+          << (mutation == "transform_only_aabb_min_and_max" ? "false" : "true") << ",\n"
+          << "  \"lod\": {\"threshold\": 0.5, \"hysteresis\": "
+          << (mutation == "remove_lod_hysteresis" ? 0.0 : 0.05) << ", \"levels\": [";
+  for (std::size_t index = 0; index < selected_lod.size(); ++index) {
+    culling << selected_lod[index] << (index + 1 == selected_lod.size() ? "" : ", ");
+  }
+  culling << "], \"transitions\": " << transition_count(selected_lod) << "}\n}\n";
+  write_text(options.output / "culling-lod.json", culling.str());
+
+  double minimum_depth = 1.0;
+  double maximum_depth = 0.0;
+  for (const double value : rendered.depth) {
+    if (value < 1.0) {
+      minimum_depth = std::min(minimum_depth, value);
+      maximum_depth = std::max(maximum_depth, value);
+    }
+  }
+  std::ostringstream depth;
+  depth << std::fixed << std::setprecision(6)
+        << "{\n  \"schema_version\": 1,\n  \"extent\": [16, 16],\n  \"clear\": 1.0,\n"
+        << "  \"covered_samples\": " << rendered.covered_samples << ",\n"
+        << "  \"minimum\": " << minimum_depth << ",\n  \"maximum\": " << maximum_depth << "\n}\n";
+  write_text(options.output / "depth.json", depth.str());
+
+  const LinearRgb selected_mip = use_wrong_mip ? mip_encoded : mip_linear;
+  const Vector3d selected_normal_map = mutation == "mark_normal_map_as_srgb" ? flat_normal_srgb : flat_normal_data;
+  std::ostringstream trace;
+  trace << std::fixed << std::setprecision(6)
+        << "{\n  \"schema_version\": 1,\n  \"pixel\": [8, 8],\n  \"uv\": ["
+        << rendered.traced_uv.u << ", " << rendered.traced_uv.v << "],\n"
+        << "  \"base_color_linear\": " << color_json(rendered.traced_base) << ",\n"
+        << "  \"mip_1x1_linear\": " << color_json(selected_mip) << ",\n"
+        << "  \"normal_world\": " << vector_json(render_normal) << ",\n"
+        << "  \"normal_map_decoded\": " << vector_json(selected_normal_map) << ",\n"
+        << "  \"light_direction\": " << vector_json(normalized({0.2, 0.4, 1.0})) << ",\n"
+        << "  \"ndotl\": " << std::max(dot(normalized(render_normal), normalized({0.2, 0.4, 1.0})), 0.0)
+        << "\n}\n";
+  write_text(options.output / "trace.json", trace.str());
+
+  std::ostringstream statistics;
+  statistics << "{\n  \"schema_version\": 1,\n  \"input_vertices\": " << scene.vertices.size()
+             << ",\n  \"input_triangles\": 1,\n  \"covered_samples\": " << rendered.covered_samples
+             << ",\n  \"depth_passed_samples\": " << rendered.covered_samples
+             << ",\n  \"invalid_fixture_count\": 5,\n  \"visible_objects\": " << visible_count
+             << ",\n  \"lod_transitions\": " << transition_count(selected_lod) << "\n}\n";
+  write_text(options.output / "statistics.json", statistics.str());
+
+  std::ostringstream frame;
+  frame << "{\n  \"schema_version\": 1,\n  \"scene\": \"" << SceneSnapshot::id
+        << "\",\n  \"extent\": [16, 16],\n  \"sample\": \"pixel-center\",\n"
+        << "  \"input_primitives\": 1,\n  \"output_primitives\": 1,\n"
+        << "  \"covered_samples\": " << rendered.covered_samples
+        << ",\n  \"invalid_non_finite_values\": 0,\n  \"color_encoding\": \"sRGB-output\"\n}\n";
+  write_text(options.output / "frame.json", frame.str());
+
+  std::ostringstream mutation_report;
+  mutation_report << "{\n  \"schema_version\": 1,\n  \"mutation\": ";
+  if (options.mutation) {
+    mutation_report << '"' << json_escape(*options.mutation) << '"';
+  } else {
+    mutation_report << "null";
+  }
+  mutation_report << ",\n  \"recognized\": " << (known_mutation ? "true" : "false")
+                  << ",\n  \"rejected\": "
+                  << (options.mutation && !all_invariants_hold(invariants) ? "true" : "false") << "\n}\n";
+  write_text(options.output / "mutation-report.json", mutation_report.str());
+
   write_run_json(options, invariants);
-  return exit_not_implemented;
+  return all_invariants_hold(invariants) ? exit_ok : exit_contract_failure;
 }
 
 }  // namespace
