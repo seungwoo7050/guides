@@ -15,6 +15,8 @@ build manifest와 분야별 evidence를 읽고 “기능이 플레이된다”�
 - [`template/release-review.md`](template/release-review.md)
 - [`template/gate-matrix.csv`](template/gate-matrix.csv)
 
+`template/`은 의도적으로 미완성이다. candidate identity와 gate 판정의 한 가지 유효한 예시는 [`reference/release-review.md`](reference/release-review.md)와 [`reference/gate-matrix.csv`](reference/gate-matrix.csv)에 있다. waiver와 residual-risk 결정은 조직 권한을 가진 사람이 별도로 승인해야 한다.
+
 ## 대표 오답
 
 - editor에서 한 번 플레이했으므로 ship한다.
@@ -36,3 +38,5 @@ build manifest와 분야별 evidence를 읽고 “기능이 플레이된다”�
 - 각 gate를 pass/fail/waived/unknown으로 판정한다.
 - unknown을 pass로 취급하지 않는다.
 - block 또는 conditional ship 결정을 근거와 owner로 제출한다.
+
+제출 검사기는 candidate, evidence status/build, stale·unknown·fail 처리와 blocking gate를 자동 확인한다. 실제 ship 권한, waiver와 사용자 영향 평가는 자동화하지 않는다.

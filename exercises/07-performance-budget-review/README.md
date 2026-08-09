@@ -16,6 +16,8 @@ target device의 frame·memory·loading profile을 읽고 평균 FPS가 아니�
 - [`template/performance-review.md`](template/performance-review.md)
 - [`template/budget-decision.csv`](template/budget-decision.csv)
 
+`template/`은 header와 질문만 있는 의도적으로 미완성인 시작 상태다. fixture 계산과 근거 연결을 비교할 수 있는 한 가지 유효한 예시는 [`reference/performance-review.md`](reference/performance-review.md)와 [`reference/budget-decision.csv`](reference/budget-decision.csv)에 있다. 예시의 변경 가설이 유일한 정답은 아니다.
+
 ## 대표 오답
 
 - editor/development machine 결과를 target 결과로 사용한다.
@@ -38,3 +40,5 @@ target device의 frame·memory·loading profile을 읽고 평균 FPS가 아니�
 - memory resident/peak와 loading p95를 budget과 비교한다.
 - 최소 두 개의 변경 가설과 반증 profile을 작성한다.
 - low/medium/high scalability 계약을 제출한다.
+
+제출 검사기는 percentile 방식, budget·marker·pass 판정과 source evidence를 자동 확인한다. workload 대표성, 변경 가설, 화질·접근성 trade-off와 실제 target 결과는 사람 검토가 필요하다.

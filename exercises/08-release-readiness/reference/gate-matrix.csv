@@ -1,0 +1,10 @@
+gate,required_platforms,status,evidence_id,evidence_build,owner,blocking_condition,waiver,follow_up
+functional_rules,all,pass,tests-rules,relay-client@1.0.0-rc3,gameplay,rule regression,,retain
+replay_regression,all,pass,replay-regression,relay-client@1.0.0-rc3,gameplay-runtime,replay divergence,,retain
+save_v1_migration,all,unknown,old-save-matrix,relay-client@1.0.0-rc2,platform-save,stale or wrong candidate,,rerun on rc3
+handheld_cold_load,handheld-linux,fail,handheld-profile,relay-client@1.0.0-rc3,content-streaming,cold load p95 over 5s,,profile corrected candidate
+controller_remap,all,pass,controller-remap,relay-client@1.0.0-rc3,input-accessibility,remap regression,,retain
+subtitle_completeness,all,unknown,,relay-client@1.0.0-rc3,accessibility,review evidence missing,,attach completeness review
+protocol_compat,networked,pass,protocol-compat,relay-server@1.0.0-rc3,network,client-server combination mismatch,,confirm joint manifest
+crash_symbolication,all,pass,crash-symbolication,relay-client@1.0.0-rc3,operations,missing symbols,,retain provenance
+suspend_result_commit,handheld-linux,fail,suspend-result-commit,relay-client@1.0.0-rc3,platform-save,duplicate best-time commit,,fix idempotent commit and rerun fault

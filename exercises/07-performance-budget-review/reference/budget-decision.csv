@@ -1,0 +1,9 @@
+metric,budget,observed,percentile_or_marker,pass,confidence,evidence,action,owner
+frame_p95_ms,16.67,55.4,p95,false,medium,frame-samples.csv,profile checkpoint_save main-thread path,gameplay-runtime
+frame_p99_ms,25.0,55.4,p99,false,medium,frame-samples.csv,repeat larger target capture,performance
+single_hitch_ms,50.0,55.4,checkpoint_save,false,high,frame-samples.csv,move bounded save work off critical path,platform-save
+resident_memory_mib,900,1040,arena_cosmetic_ready,false,high,memory-samples.csv,defer optional cosmetic bundle,content-streaming
+peak_memory_mib,1100,1350,agent_wave_peak,false,high,memory-samples.csv,reduce transient duplication and audit refcounts,content-streaming
+cold_load_p95_ms,5000,5520,p95,false,medium,load-samples.csv,separate control-ready from cosmetic-ready,content-streaming
+post_exit_resident_mib,430,520,post_exit,false,high,memory-samples.csv,diff remaining bundle owner,engine-runtime
+control_ready_ms,5000,3490,worst_cold,true,medium,load-samples.csv,preserve degraded optional-content path,content-streaming
