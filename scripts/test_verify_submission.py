@@ -193,6 +193,15 @@ class CliExitCodeTests(unittest.TestCase):
         self.assertEqual(result.returncode, 2)
         self.assertIn('ERROR', result.stderr)
 
+    def test_unicode_digit_pointer_is_contract_error(self) -> None:
+        contract = contract_fixture()
+        contract['requiredPaths'].append('/items/²')
+        _, submission_text = self.valid_json()
+        result = self.run_cli(json.dumps(contract, ensure_ascii=False), submission_text)
+        self.assertEqual(result.returncode, 2, result.stderr)
+        self.assertIn('ERROR', result.stderr)
+        self.assertNotIn('Traceback', result.stderr)
+
 
 class ExerciseFixtureTests(unittest.TestCase):
     def test_all_reference_starter_and_known_bad_outcomes(self) -> None:

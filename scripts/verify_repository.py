@@ -396,11 +396,16 @@ def _mapping_colon(value: str) -> int | None:
     return None
 
 
-def _flow_balance(value: str, initial: int, relative: str, line_number: int) -> int:
+def _flow_balance(
+    value: str,
+    stack: list[str],
+    relative: str,
+    line_number: int,
+) -> None:
     quote: str | None = None
     escaped = False
     index = 0
-    depth = initial
+    closing = {'[': ']', '{': '}'}
     while index < len(value):
         character = value[index]
         if escaped:
@@ -422,14 +427,13 @@ def _flow_balance(value: str, initial: int, relative: str, line_number: int) -> 
             index += 1
             continue
         if quote is None:
-            if character in '[{':
-                depth += 1
+            if character in closing:
+                stack.append(closing[character])
             elif character in ']}':
-                depth -= 1
-                if depth < 0:
+                if not stack or stack[-1] != character:
                     fail(f'unbalanced YAML flow collection: {relative}:{line_number}')
+                stack.pop()
         index += 1
-    return depth
 
 
 def check_yaml_subset(paths: Iterable[Path] | None = None) -> int:
@@ -448,7 +452,7 @@ def check_yaml_subset(paths: Iterable[Path] | None = None) -> int:
             fail(f'YAML tabs are not allowed: {relative}')
         documents: list[set[str]] = [set()]
         top_seen: set[str] = set()
-        bracket_depth = 0
+        flow_stack: list[str] = []
         meaningful = False
         document_index = 0
         parent_stack: list[tuple[int, str]] = []
@@ -514,9 +518,9 @@ def check_yaml_subset(paths: Iterable[Path] | None = None) -> int:
                         fail(f'duplicate top-level YAML key: {relative}:{line_number}: {key}')
                     top_seen.add(key)
                     documents[-1].add(key)
-            bracket_depth = _flow_balance(content, bracket_depth, relative, line_number)
+            _flow_balance(content, flow_stack, relative, line_number)
             meaningful = True
-        if bracket_depth != 0:
+        if flow_stack:
             fail(f'unbalanced YAML flow collection: {relative}')
         if not meaningful and not any(documents):
             fail(f'empty YAML file: {relative}')

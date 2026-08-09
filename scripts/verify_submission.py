@@ -88,6 +88,9 @@ def validate_pointer(pointer: Any, *, wildcard: bool = False) -> str:
     for raw in pointer.split('/')[1:]:
         if re.search(r'~(?![01])', raw):
             raise ContractError(f'잘못된 JSON Pointer escape입니다: {pointer!r}')
+        token = decode_pointer_token(raw)
+        if token.isdigit() and not token.isascii():
+            raise ContractError(f'배열 index는 ASCII 숫자여야 합니다: {pointer!r}')
         if '*' in raw and (not wildcard or raw != '*'):
             raise ContractError(f'와일드카드는 valueTypes의 전체 segment로만 사용할 수 있습니다: {pointer!r}')
     return pointer
@@ -108,7 +111,7 @@ def pointer_get(value: Any, pointer: str) -> Any:
                 return MISSING
             current = current[token]
         elif isinstance(current, list):
-            if not token.isdigit():
+            if not token.isascii() or not token.isdigit():
                 return MISSING
             index = int(token)
             if index >= len(current):
@@ -134,7 +137,12 @@ def pointer_values(value: Any, pointer: str) -> list[tuple[str, Any]]:
                 next_states.extend((f'{path}/{index}', item) for index, item in enumerate(current))
             elif isinstance(current, dict) and token in current:
                 next_states.append((f'{path}/{raw}', current[token]))
-            elif isinstance(current, list) and token.isdigit() and int(token) < len(current):
+            elif (
+                isinstance(current, list)
+                and token.isascii()
+                and token.isdigit()
+                and int(token) < len(current)
+            ):
                 next_states.append((f'{path}/{token}', current[int(token)]))
             else:
                 next_states.append((f'{path}/{raw}', MISSING))

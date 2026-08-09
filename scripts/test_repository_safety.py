@@ -180,6 +180,16 @@ class RepositoryPrimitiveTests(unittest.TestCase):
             )
             self.assertEqual(check_yaml_subset([path]), 1)
 
+    def test_yaml_subset_rejects_mismatched_flow_delimiters(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            path = Path(temporary) / 'invalid.yaml'
+            path.write_text(
+                'apiVersion: v1\nkind: ConfigMap\ndata: [}\n',
+                encoding='utf-8',
+            )
+            with self.assertRaises(VerificationError):
+                check_yaml_subset([path])
+
     def test_yaml_subset_rejects_nested_duplicate_key(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
             path = Path(temporary) / 'duplicate.yaml'
