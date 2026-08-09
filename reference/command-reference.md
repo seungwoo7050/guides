@@ -1,0 +1,127 @@
+# 명령 참고
+
+이 문서는 명령어 암기표가 아니다. 각 명령이 어떤 상태를 만들고 무엇을 증명하는지 함께 적는다. version과 option은 프로젝트 lockfile과 최신 공식 문서를 확인한다.
+
+## 프로젝트 생성
+
+```sh
+npx create-expo-app@latest field-notes --template default@sdk-57
+```
+
+- SDK transition의 기본 template 차이를 피하기 위해 SDK를 명시한다.
+- 생성 뒤 package.json과 lockfile의 실제 versions를 기록한다.
+- 이 브랜치의 기준은 Expo SDK 57, React Native 0.86, React 19.2.3, Node 24.19.0이다. Expo가 지원하는 최소 Node와 이 저장소가 고정한 재현 runtime을 구분한다.
+- 2026-08 현재 공식 시작 문서는 transition 동안 **물리 기기 Expo Go**를 쓰려면 SDK 54를 선택하라고 안내한다. SDK 57 실습은 emulator/simulator 또는 프로젝트 development build를 기본으로 하고, Expo Go는 실제 포함 module/runtime이 호환될 때만 제한적 확인에 쓴다.
+
+## 개발 server
+
+```sh
+npx expo start
+npx expo start --dev-client
+```
+
+`--dev-client`는 프로젝트용 development build에 연결한다. Metro가 떴다는 사실은 native binary가 새 config를 포함한다는 뜻이 아니다.
+
+이 저장소에서는 고정 runtime으로 다음처럼 실행한다.
+
+```sh
+fnm exec --using=24.19.0 npm ci
+fnm exec --using=24.19.0 npm test
+```
+
+## compatible package 설치
+
+```sh
+npx expo install <package>
+```
+
+현재 Expo SDK와 맞는 package version을 선택한다. 설치 뒤 native config/plugin과 새 build 필요 여부를 확인한다.
+
+## local native build
+
+```sh
+npx expo run:android
+npx expo run:ios
+```
+
+- native project가 없으면 prebuild가 실행될 수 있다.
+- 실제 command의 generation side effect를 `git diff`로 확인한다.
+- iOS device build에는 macOS/Xcode와 signing 조건이 필요하다.
+
+## clean native generation
+
+```sh
+npx expo prebuild --clean
+```
+
+CNG 프로젝트에서 app config와 plugins가 native project를 재현하는지 검사한다. 직접 소유하는 `android/`·`ios/` 변경을 무심코 지우지 않는다.
+
+package install 없이 generation 결과만 볼 필요가 있다면 현재 CLI가 지원하는 option을 공식 문서에서 확인한다.
+
+## project 검사
+
+```sh
+npx expo-doctor
+```
+
+package/version/config 문제를 찾는 보조 도구다. 실제 device behavior와 release smoke를 대체하지 않는다.
+
+## EAS development·preview·production build 예
+
+```sh
+eas build --platform android --profile development
+eas build --platform ios --profile preview
+eas build --platform all --profile production
+```
+
+cloud service는 선택 사항이다. local native build나 다른 CI를 사용할 수 있다. 어느 경로든 source·profile·toolchain·artifact digest를 기록한다.
+
+## update
+
+```sh
+eas update --channel preview --message "검증 설명"
+```
+
+실행 전에 build의 runtimeVersion과 update의 native API 호환성을 확인한다. native module/config 변경은 remote update만으로 전달하지 않는다.
+
+## 제출
+
+```sh
+eas submit --platform android
+eas submit --platform ios
+```
+
+upload와 public release를 구분한다. store console의 track/TestFlight, metadata, review와 rollout을 별도로 확인한다.
+
+## Android 기기·process 관찰 예
+
+```sh
+adb devices
+adb shell am force-stop <application-id>
+adb shell monkey -p <application-id> 1
+adb logcat
+```
+
+`force-stop`은 일반 process kill이나 recent 제거와 의미가 다르다. 테스트 목적과 기대 상태를 기록한다.
+
+설치·activity·job scheduler 명령은 Android version에 따라 달라질 수 있으므로 현재 platform tools help를 사용한다.
+
+## iOS simulator 예
+
+```sh
+xcrun simctl list devices
+xcrun simctl install booted <path-to-app>
+xcrun simctl launch booted <bundle-id>
+xcrun simctl terminate booted <bundle-id>
+```
+
+simulator는 camera·background scheduler·push·biometric·battery의 실제 기기 행동을 완전히 대체하지 않는다.
+
+## 이 브랜치 검사
+
+```sh
+./prepare.sh
+./verify.sh
+```
+
+검사 결과에는 자동 실행, `not-run` 수동 항목과 environment limitation이 구분돼야 한다. 자동 통과는 교육적 완성이나 stable 판정이 아니며, cloud build·signing·store upload·실제 Android/iOS device 결과를 대신하지 않는다.
