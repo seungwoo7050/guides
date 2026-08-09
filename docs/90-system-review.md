@@ -99,6 +99,10 @@
 - tokenization·vocabulary·context limit이 version되는가?
 - attention mask와 position contract가 맞는가?
 - pretrained model의 source·license·revision이 기록되는가?
+- base·tokenizer·adapter의 ID·version·digest가 정확히 결합되는가?
+- frozen baseline과 partial fine-tuning을 같은 validation 계약에서 비교했는가?
+- test label을 바꿔도 선택 mode·epoch와 학습 artifact가 그대로인가?
+- fine-tuning 전후 base regression을 확인했는가?
 - fine-tuning evaluation이 memorization과 contamination을 고려하는가?
 - 생성 평가가 단일 자동 score에 의존하지 않는가?
 

@@ -230,7 +230,7 @@ make clean
 
 - `make prepare`: Python 환경과 source fingerprint를 기록한다.
 - `make check`: 문서·예제·fixture·exercise 계약을 네트워크 없이 검사한다.
-- `make quality-check`: 잘못된 split, dataset 변조와 계약 누락을 검사기가 실제로 거부하는지 확인한다.
+- `make quality-check`: 잘못된 split·dataset 변조·계약 누락뿐 아니라 두 실습의 starter와 9개 known-bad를 검사기가 실제로 거부하는지 확인한다.
 - `make verify`: 저장소 밖 격리 복사본에서 전체 검사를 실행하고 source 무변경을 확인한다.
 - `make clean`: `.guide/`와 저장소가 만든 cache만 지우며 learner workspace는 보존한다.
 

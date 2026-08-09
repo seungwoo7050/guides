@@ -59,10 +59,11 @@
 ```sh
 make prepare
 make check
+make quality-check
 make verify
 ```
 
-`prepare.sh`는 source tree나 Git index를 바꾸지 않고 `.guide/machine-learning/prepared.json`에 입력 fingerprint와 Python 판본을 기록한다. `verify.sh`는 저장소 밖 임시 복사본에서 문서 링크, 예제, 합성 dataset 재생성, split 불변식, 실습 계약과 mutation 검사를 수행한다. 학습자의 `workspace/`는 만들거나 덮어쓰거나 삭제하지 않는다.
+`prepare.sh`는 source tree나 Git index를 바꾸지 않고 `.guide/machine-learning/prepared.json`에 HEAD·index·source·workspace fingerprint와 Python 판본을 기록한다. `verify.sh`는 저장소 밖 임시 복사본에서 문서 링크, 예제, 합성 dataset 재생성, split 불변식, 두 reference, starter·known-bad와 artifact mutation을 제한된 wall/CPU 시간으로 검사한다. 검사 로그는 새 `/tmp` 파일에 남고 기존 `VERIFY_LOG`는 덮어쓰지 않는다. 학습자의 `workspace/`는 만들거나 덮어쓰거나 삭제하지 않는다.
 
 ## 읽기 순서
 

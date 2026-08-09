@@ -21,6 +21,20 @@
 - 예제는 한 개념의 공개 입력·출력만 검증하며 프레임워크 내부 구현에 의존하지 않는다.
 - 학습자의 `workspace/`를 자동 삭제하거나 덮어쓰지 않는다.
 - `make clean`은 workspace 아래 파일을 변경하지 않는다.
+- Reference builder는 새 빈 output에만 쓰고 기존 결과·학습자 source를 덮어쓰지 않는다.
+- Reference를 바꾸면 새 임시 디렉터리에서 다시 생성해 committed report·artifact와 byte parity를 확인한다.
+- 공개 checker는 reference를 통과시키고 starter와 각 `known_bad`를 해당 공개 불변식에서 거부해야 한다.
+- 제출 검사는 learner code를 import하거나 실행하지 않고 제출된 문서·artifact의 공개 계약만 읽는다.
+- 실제 고객 data, credential, 권한이 필요한 endpoint와 외부 model weight를 fixture나 테스트에 넣지 않는다.
+
+## 출처·라이선스와 안전 경계를 고칠 때
+
+- 새 외부 dataset·weight·코드·그림은 source, revision, license와 변경 여부를 기록한다.
+- 사용 권한이 불명확한 data와 weight는 예제에 포함하지 않는다. 합성 fixture라도 실제 개인을 재현한다고 주장하지 않는다.
+- 유료 cloud, network download, GPU와 remote-code 실행은 필수 검증 경로에 추가하지 않는다.
+- 선택 확장은 비용·권한·공급망 위험, CPU·memory·wall-time 한도, cleanup과 rollback을 문서화한다.
+- Model score나 자동 검사 결과를 실제 서비스 release, 법적 적합성, 공정성·안전성 승인으로 표현하지 않는다.
+- 문서에는 자동으로 확인하는 공개 행동과 사람이 검토할 근거·한계를 분리한다.
 
 ## 변경 확인
 
@@ -40,6 +54,8 @@ make check
 ```sh
 make quality-check
 ```
+
+`make check`는 두 reference와 lifecycle stage 8 계약까지 실행한다. `make quality-check`는 starter와 알려진 오답을 예상 실패로 재생한다. 실패한 필수 검사를 성공으로 기록하지 않는다.
 
 커밋 전에는 변경 범위와 공백 오류를 확인한다.
 

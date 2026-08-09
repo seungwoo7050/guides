@@ -43,6 +43,15 @@
 - [ ] 여러 seed 또는 stability evidence가 있다.
 - [ ] 실패한 run과 선택하지 않은 대안을 보존한다.
 
+## Attention·transfer
+
+- [ ] Tokenizer와 base의 ID·version·digest·context limit이 함께 고정된다.
+- [ ] Attention shape, causal mask 방향과 key-axis softmax를 probe로 확인한다.
+- [ ] Frozen baseline과 partial fine-tuning을 같은 split·metric에서 비교한다.
+- [ ] Mode·epoch 선택은 validation에만 의존하고 test-label mutation에 불변이다.
+- [ ] Adapter가 exact base·tokenizer identity를 가리키며 base regression이 통과한다.
+- [ ] 외부 weight·tokenizer·code의 source, revision, license와 remote-code 경계를 기록한다.
+
 ## Artifact·inference
 
 - [ ] Model·preprocessing·schema·label map이 함께 version된다.
@@ -50,6 +59,7 @@
 - [ ] Output 의미와 policy version이 명확하다.
 - [ ] Invalid input·timeout·fallback을 정의한다.
 - [ ] Compatibility와 rollback을 검사한다.
+- [ ] Manifest checksum, golden input/output와 reproduction evidence가 실제 파일을 가리킨다.
 
 ## Monitoring·risk
 

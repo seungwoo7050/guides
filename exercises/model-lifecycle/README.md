@@ -1,6 +1,6 @@
 # 누적 실습: Model lifecycle
 
-이 실습은 작은 합성 churn dataset을 사용해 문제 정의부터 model release review까지 누적한다. **정답 model 코드는 제공하지 않는다.** Model library와 구현 세부는 학습자가 선택하지만, dataset·split·보고서·artifact와 검증 경계는 고정한다.
+이 실습은 작은 합성 churn dataset을 사용해 문제 정의부터 model release review까지 누적한다. 학습자 workspace에는 정답 코드를 복사하지 않으며 model library와 구현 세부는 학습자가 선택한다. 대신 결과·실패를 비교할 수 있는 표준 라이브러리 CPU [`reference`](reference/README.md), dataset·split·보고서·artifact 계약과 공개 검사를 제공한다.
 
 ## 목적
 
@@ -28,6 +28,8 @@
 - Markdown·JSON template
 - workspace 생성기
 - 구조·fixture·mutation 검사기
+- 8단계 완성 reference와 결정성·clean-process inference test
+- 미완성 starter와 대표적인 알려진 오답
 
 ### 학습자가 구현하는 것
 
@@ -82,6 +84,15 @@ exercises/model-lifecycle/workspace/
 
 기존 workspace는 덮어쓰지 않는다. `skeleton/`, `fixtures/`와 `templates/`는 직접 수정하지 않는다.
 
+생성 도중 중단돼 `.workspace.lock`만 남았다면 먼저 다른 `new-workspace.sh`가 실행 중이 아닌지 확인한다. `workspace/`가 존재하지 않고 lock 디렉터리가 비어 있을 때만 저장소 루트에서 다음처럼 복구한다.
+
+```sh
+rmdir exercises/model-lifecycle/.workspace.lock
+./scripts/new-workspace.sh
+```
+
+기존 `workspace/`는 stale lock 복구를 위해 이동·삭제하지 않는다. Reference builder와 현대 모델 builder도 지정한 **새 빈 output**만 사용하며 기존 결과가 있으면 실패한다.
+
 ## 단계 검사
 
 ```sh
@@ -122,8 +133,8 @@ python3 scripts/check-submission.py \
 2. Test는 model·feature·hyperparameter·threshold 선택에 사용하지 않는다.
 3. Preprocessing state는 training split에만 fit한다.
 4. 모든 report에 dataset·split version 또는 digest를 기록한다.
-5. 숫자를 만들지 않았으면 `not-run` 또는 `not-included`로 표시한다.
-6. Actual model artifact가 없는데 존재하는 것처럼 digest를 작성하지 않는다.
+5. 실행하지 않은 선택 측정은 근거와 함께 `not-run`으로 표시하되 필수 측정을 건너뛴 단계를 완료로 표시하지 않는다.
+6. Actual model artifact가 없으면 7단계 중간 manifest에서만 `not-included`를 사용한다. 8단계는 실제 artifact·digest·golden inference가 필수다.
 7. Report에는 선택하지 않은 대안과 limitation을 남긴다.
 8. 실제 개인·고객 data를 이 workspace에 넣지 않는다.
 
@@ -417,6 +428,18 @@ python3 ../../scripts/check-submission.py --workspace workspace --stage 8
 ```
 
 그 뒤 [`시스템 종합 검토`](../../docs/90-system-review.md)의 질문으로 동료 review를 수행한다.
+
+공개 reference와 negative control을 재생하려면 저장소 루트에서 다음을 실행한다.
+
+```sh
+python3 exercises/model-lifecycle/tests/check.py --candidate exercises/model-lifecycle/reference
+python3 exercises/model-lifecycle/tests/check.py --candidate exercises/model-lifecycle/skeleton
+for candidate in exercises/model-lifecycle/known_bad/*/; do
+  python3 exercises/model-lifecycle/tests/check.py --candidate "$candidate"
+done
+```
+
+첫 명령만 성공해야 한다. 필수 검증은 작은 합성 fixture와 CPU에서 제한된 시간 안에 실행되며 네트워크·GPU·유료 자원을 사용하지 않는다.
 
 최종 결과에 다음을 함께 남긴다.
 
