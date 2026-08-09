@@ -8,7 +8,19 @@
 
 [소프트웨어 capstone](../02-software-rasterization/09-software-rasterizer-capstone.md)의 고정 fixture와 CPU reference가 있어야 합니다. GPU API를 먼저 구현했다면 최소한 transform·coverage·depth·color fixture를 별도 CPU 계산으로 준비합니다.
 
-전체 요구사항은 [`08-renderer-capstone`](../../exercises/08-renderer-capstone/README.md)의 `contract.json`이 정본입니다.
+전체 요구사항은 [`08-renderer-capstone`](../../exercises/08-renderer-capstone/README.md)의 설명과 `contract.json`을 함께 적용합니다. JSON은 artifact·invariant·mutation id의 기계 판독 정본이고, 이 문서의 구현 범위와 사람 검토를 대신하지 않습니다. 실행·capture 전에는 [안전 및 운영 계약](../../SAFETY.md)을 따릅니다.
+
+### 현재 번들 reference가 증명하는 범위
+
+| 증거 | 번들 reference의 자동 범위 | 최종 학습자 capstone에 추가할 근거 |
+|---|---|---|
+| 실제 GPU draw | macOS Metal/MSL offscreen RGBA8+D16, position·vertex color indexed triangle, readback과 fence | texture/sampler/material bind, normal·lighting shader와 debug attachment |
+| scene 비교 | 동일 scene id/hash, primitive·extent, 고정 color/depth image의 제한된 byte tolerance | UV·normal·material input, linear lighting과 final encoding의 첫 차이 보고서 |
+| 수명 | 같은 Metal device의 실제 2 slots·3 submits·12 events, completion 뒤 slot 0 재사용, zero-extent skip, 64×64→96×72 offscreen generation·readback·retire와 결정적 상태 모델 | window/swapchain resize·minimize·restore·high-DPI, 장시간 frames-in-flight, reload와 shutdown stress |
+| debug | fatal/warning baseline, 추적 label/manifest, synthetic defect reports | 지원 capture tool의 실제 event/resource label과 driver message 조사 |
+| 성능 | `required`에서는 실제 Metal offscreen workload의 CPU record/submit 및 submit-to-fence wall time, fallback에서는 결정적 report 형식 | 실제 GPU timestamp/counter, 대표 workload의 raw sample·환경과 측정 기반 변경 |
+
+현재 `triangle.metal`과 `triangle.hlsl`은 position과 vertex color만 소비합니다. actual GPU reference의 성공은 texture, normal map, material 또는 lighting을 GPU로 옮겼다는 증거가 아닙니다. `resize-trace.json`에는 결정적 모델 사건과 실제 offscreen extent 전이가 함께 있지만 어느 쪽도 platform window/swapchain event는 아닙니다. 아래 범위는 **학습자가 완료해야 할 목표**이고 자동 reference 범위를 설명하는 목록이 아닙니다.
 
 ## 범위
 
@@ -96,6 +108,8 @@ world/view 공간을 정하고 normal matrix, directional light와 linear color�
 
 pass/draw/resource label, validation baseline과 한 frame capture를 남깁니다. CPU frame 구간과 GPU pass timestamp를 분리하고 최소 세 workload를 측정합니다.
 
+번들 report의 `submit_to_fence_ns`는 submit 직전부터 fence wait 반환까지의 CPU wall time이며 GPU pass timestamp가 아닙니다. `--gpu required`의 세 workload는 실제 Metal offscreen submit/fence를 반복하지만 작은 proxy scene이며, `lifecycle-sim` fallback은 결정적 모델 sample입니다. 어느 쪽도 GPU timestamp나 대표 제품 workload 없이 실제 GPU 병목 결론을 증명하지 않습니다.
+
 ## 비교 정책
 
 ### 정확히 같아야 하는 항목
@@ -139,6 +153,8 @@ pass/draw/resource label, validation baseline과 한 frame capture를 남깁니�
 - blend factor 오류
 
 validation이 잡는 mutation과 image/test가 잡는 mutation을 구분합니다. 모든 오답이 API validation으로 검출되지는 않습니다.
+
+번들 GPU mutation은 잘못된 state를 driver에 제출하지 않고 계약 경계에서 안전하게 거부하며 `mutation-diagnostic.json`에 `executed_on_gpu: false`를 기록합니다. 이 음성 대조군은 false invariant와 진단 경로를 검증하지만, 실제 driver validation이 해당 오답을 잡았다는 증거는 아닙니다.
 
 ## 성능 제출물
 
@@ -186,3 +202,5 @@ validation이 잡는 mutation과 image/test가 잡는 mutation을 구분합니�
 - validation, frame capture와 단계별 attachment로 알려진 오답을 거부합니다.
 - software/GPU 차이를 coverage·depth·attribute·linear color·output 순서로 설명합니다.
 - CPU/GPU frame budget과 한 가지 측정 기반 변경을 재현 가능한 보고서로 남깁니다.
+
+`--gpu required` 자동 검사만으로 위 목록 전체를 완료 처리하지 않습니다. 자동 검사에서는 actual GPU 실행 여부, scene/color/depth 비교, manifest·lifecycle·validation·report schema와 known-bad 거부를 확인합니다. 사람 검토에서는 texture/material/lighting GPU 경로, 실제 window/swapchain resize·minimize·high-DPI와 capture, 진짜 GPU timestamp, tolerance 이유와 한계가 있는지 확인합니다. 지원 환경 때문에 항목을 실행하지 못했다면 대체 상태 모델과 그 한계를 함께 제출하되 “통과”로 바꾸어 쓰지 않습니다.

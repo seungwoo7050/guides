@@ -219,6 +219,7 @@ def _load_json_strict(path: Path) -> dict[str, object]:
 def check_required_files() -> None:
     paths = [
         "README.md",
+        "SAFETY.md",
         "CONTRIBUTING.md",
         "LICENSE.md",
         "LICENSES/CC-BY-4.0.txt",

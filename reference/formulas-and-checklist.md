@@ -18,6 +18,7 @@
 - [ ] top-left rule이 shared edge를 한 번만 소유하는가?
 - [ ] degenerate·culled·clipped 통계가 분리되는가?
 - [ ] flat/affine/perspective attribute가 구분되는가?
+- [ ] perspective attribute와 달리 NDC depth는 screen barycentric으로 affine하게 보간되는가?
 - [ ] depth convention, clear, compare와 write가 일치하는가?
 
 ## color·texture
@@ -43,6 +44,7 @@
 - [ ] resource descriptor의 usage와 실제 pass 사용이 맞는가?
 - [ ] C++ layout과 shader offset/format을 검증하는가?
 - [ ] shader compiler·target·binding manifest가 있는가?
+- [ ] “textured/lighting GPU”라고 보고한다면 shader가 실제 texture·sampler·material·normal·light를 소비하는가?
 - [ ] pipeline key가 모든 고정 state와 attachment format을 포함하는가?
 - [ ] frame slot 재사용이 completion에 연결되는가?
 - [ ] reload/resize resource를 last-use 완료 뒤 파괴하는가?
@@ -56,6 +58,17 @@
 - [ ] CPU와 GPU timing을 다른 방식으로 측정하는가?
 - [ ] median/p95와 workload/environment를 기록하는가?
 - [ ] 최적화 전후 correctness hash와 memory/complexity 비용이 있는가?
+- [ ] CPU wall time, submit-to-fence 대기와 실제 GPU timestamp를 이름과 단위로 구분하는가?
+
+## 증거 수준
+
+- [ ] `actual_gpu`, `lifecycle-sim`, `not-evaluated`를 결과에서 구분하는가?
+- [ ] offscreen draw를 window/swapchain·resize 검증으로 확대 해석하지 않는가?
+- [ ] 실제 offscreen extent generation 전이와 platform window/swapchain resize·minimize·high-DPI를 구분하는가?
+- [ ] capture label 참조 문자열과 실제 capture file을 구분하는가?
+- [ ] synthetic workload와 실제 raw measurement를 구분하는가?
+- [ ] mutation이 pre-submit에서 거부됐는지 실제 driver에 제출됐는지 기록하는가?
+- [ ] 자동 검사가 판정하지 못하는 texture/lighting parity·설계·운영 판단에 사람 검토 근거가 있는가?
 
 ## 공개 전
 
@@ -65,3 +78,4 @@
 - [ ] reference image 변경 이유와 diff가 있는가?
 - [ ] 외부 asset·shader·도구의 라이선스를 확인했는가?
 - [ ] 구현하지 않은 범위와 지원 환경을 숨기지 않는가?
+- [ ] [`SAFETY.md`](../SAFETY.md)의 GPU·capture·cleanup·복구 항목을 확인했는가?

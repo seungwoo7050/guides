@@ -12,6 +12,8 @@
 
 checker는 reference를 학습자 workspace에 복사하지 않습니다. expected artifact와 공개 invariant를 비교하고, starter와 알려진 오답이 성공으로 오인되지 않는지도 검사합니다.
 
+`reference`의 CPU 부분은 nontrivial LH camera, six-plane attribute clipping, screen-affine NDC depth, `SceneSnapshot` vertex color·normal+texture+단순 lighting, mutation 첫 차이와 culling/LOD work probe를 자동 검증합니다. cube·mirrored TBN과 범용 loader는 learner/human 범위입니다. GPU 부분도 전체 learner capstone 정답은 아닙니다. actual 자동 경로는 position·vertex color indexed triangle과 같은 Metal device의 2 slots·3 submits·12 events, zero skip, 64×64→96×72 offscreen generation·readback·retire를 검증합니다. GPU texture/material/lighting, 실제 window/swapchain resize·capture, GPU timestamp와 Vulkan/D3D12는 사람 검토 근거로 남습니다.
+
 ## 진행 원칙
 
 ```text
@@ -78,6 +80,8 @@ python3 exercises/check.py --impl starter --stage all --expect not-implemented -
 
 실제 GPU 장비·driver·window 환경의 증거가 필수인 검사는 지원 환경에서 `--gpu required`로 실행합니다. `auto`는 지원 여부를 탐지해 CPU/상태 모델 검사를 계속하지만, 실행하지 못한 GPU 검사를 성공으로 기록하지 않습니다. `off`는 결정적 CPU reference와 repository CI에 사용하며 실제 GPU 완료의 대체물이 아닙니다.
 
+checker에서 `--gpu off`를 선택하면 `06-gpu-first-frame`과 `08-renderer-capstone` actual GPU stage는 실행하지 않고 `GPU_NOT_EVALUATED`로 기록합니다. `07-frame-debugging`의 lifecycle simulator는 별도 stage로 실행됩니다. 따라서 `--stage all --gpu off`의 exit 0은 GPU 두 stage가 통과했다는 뜻이 아닙니다.
+
 reference 또는 starter를 별도로 build할 때는 같은 CMake source에서 구현만 바꿉니다.
 
 ```sh
@@ -135,3 +139,5 @@ python3 exercises/check.py --impl workspace --stage all --expect pass --gpu auto
 ```
 
 마지막 명령에서 GPU 검사가 생략됐다면 CPU capstone 완료만 증명합니다. 같은 장면의 실제 GPU pipeline 이전과 frame-time 측정 능력은 `--gpu required` 결과, validation/capture와 환경 보고서를 사람이 최종 확인해야 합니다.
+
+`--gpu required`가 통과해도 번들 shader가 사용하지 않는 texture/material/lighting, 실제 window/swapchain resize·minimize·high-DPI, 외부 capture, GPU timestamp와 Vulkan/D3D12는 자동 판정되지 않습니다. 학습자 완료에는 해당 구현 artifact 또는 명시적 미지원 근거, 첫 차이 설명과 [안전 및 운영 계약](../SAFETY.md)에 따른 사람 검토가 필요합니다.

@@ -6,7 +6,9 @@
 
 ## 시작하기 전에
 
-이 capstone은 정답 구현을 제공하지 않습니다. [`08-renderer-capstone`](../../exercises/08-renderer-capstone/README.md)의 전체 계약 중 CPU 정본을 먼저 완성하고, GPU 단계에서 같은 scene과 artifact 의미를 재사용합니다.
+[`08-renderer-capstone`](../../exercises/08-renderer-capstone/README.md)의 누적 project에는 공개 계약을 설명하는 작은 결정적 `reference`가 있습니다. checker가 그 source를 learner `workspace`로 복사하지 않으며, reference는 임의 scene을 처리하는 완제품 renderer나 제출용 정답이 아닙니다. 학습자는 starter의 미완성 경계를 직접 구현해 CPU 정본을 완성하고, GPU 단계에서 같은 scene id와 artifact 의미를 재사용합니다.
+
+실행 전 [안전 및 운영 계약](../../SAFETY.md)을 읽고 생성물은 `build/`, `out/` 또는 새 임시 디렉터리에 둡니다. 실패 trace와 learner workspace를 정리 명령으로 덮어쓰거나 삭제하지 않습니다.
 
 ### 최소 기능 범위
 
@@ -98,6 +100,23 @@ out/<case>/
 
 pixel trace는 선택한 소수의 pixel만 생성합니다. 모든 fragment를 JSON으로 남기면 상태보다 I/O가 커집니다.
 
+위 트리는 학습자 capstone의 제출 역할을 설명합니다. 번들 reference는 같은 역할을 stage별 파일명으로 나눕니다. `01`의 transform/rejection JSON, `02`의 sample·mip·alpha PPM/JSON, `03`의 coverage·primitive-id, `04`의 perspective·depth·blend, `05`의 asset·lighting·LOD·debug attachment를 공개 checker가 독립 값과 고정 artifact에 대조합니다. 파일명이 예시 트리와 다르다는 이유로 의미 증거를 생략하지 않습니다.
+
+번들 CPU reference의 자동 범위도 구체적으로 제한합니다. `01`은 identity가 아닌 left-handed look-at camera와 유효 basis를 계산하고, attribute를 보존한 채 left/right/top/bottom/near/far 여섯 homogeneous plane을 clip합니다. `04`의 depth는 perspective attribute와 달리 화면 barycentric으로 affine한 NDC z를 검사합니다. `05`는 공통 `SceneSnapshot`의 vertex color·normal·UV, marker texture, inverse-transpose normal과 단순 linear lighting을 실제 attachment까지 연결하고, culling/LOD 선택이 visible count뿐 아니라 vertex/sample work count를 바꾸는지도 검사합니다. 각 선언 mutation은 false invariant만 미리 뒤집는 대신 첫 차이 artifact를 남겨 checker가 재계산합니다.
+
+이 자동 reference는 cube 전체, mirrored UV island의 TBN handedness나 glTF 같은 범용 loader를 구현하지 않습니다. 그것들은 아래 단계와 실습 05에서 학습자가 추가하고, seam·normal 공간·import validation 근거를 사람이 확인할 범위입니다.
+
+## 자동 근거와 사람 검토
+
+| 근거 | 자동으로 판정하는 범위 | 사람이 확인할 범위 |
+|---|---|---|
+| 정상·경계 fixture | 고정 scene의 수치, sample 소유권, depth/color 값과 추적 PPM | 단계 경계와 자료구조가 새 입력에도 설명 가능한지 |
+| known-bad mutation | 선언한 오답이 exit 4와 false invariant로 거부되는지 | 오답이 실제로 어느 계산을 바꿨고 첫 차이가 왜 그 artifact인지 |
+| 성능 artifact | sample 수·hash·측정 형식 같은 재현 계약 | 최적화 선택, 환경 잡음과 정확성·복잡도 trade-off |
+| asset/provenance | 저장소 fixture의 id와 결정적 결과 | 외부 asset을 추가한 경우 source·hash·license·import 변환 |
+
+자동 검사는 고정 fixture에 대한 회귀 oracle입니다. 화면의 미적 품질, 모든 부동소수점 플랫폼, 설명의 충분성이나 일반 renderer 설계를 자동으로 증명하지 않습니다.
+
 ## 단계별 완료 순서
 
 ### 단계 1. output과 marker
@@ -172,3 +191,4 @@ sRGB texture를 linear로 sample하고 straight/premultiplied alpha fixture를 �
 - 알려진 오답 mutation이 정확한 단계의 검사에서 실패합니다.
 - 최적화 전후 결과 계약을 보존하고 시간 측정의 환경과 범위를 기록합니다.
 - GPU renderer가 같은 scene과 비교 정책을 사용할 수 있는 CPU 정본을 제공합니다.
+- 자동 검사 결과와 별도로 첫 차이·tolerance·비범위·외부 asset 출처를 사람이 검토할 수 있게 기록합니다.

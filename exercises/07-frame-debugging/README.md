@@ -4,6 +4,8 @@
 
 의도적으로 주입한 GPU 결함을 validation message·debug label·frame capture·software/debug attachment·CPU/GPU timing으로 분류합니다. 화면을 보고 추측하지 않고 마지막 정상 상태와 첫 비정상 상태를 갖는 bug report를 만듭니다.
 
+번들 reference는 이 조사 양식을 결정적으로 연습하기 위해 `lifecycle-sim`을 사용합니다. frame-slot overwrite, stale resize attachment와 completion 전 readback은 상태 기계에 실제 transition을 입력해 각각의 위반으로 거부합니다. 각 case의 before PPM은 설명용 synthetic postprocess이며 lifecycle model이 거부한 입력도, 실행된 renderer-pipeline mutation도 아닙니다. 나머지 case도 synthetic before diff 또는 static preflight 분류입니다. capture label **참조 문자열**, synthetic workload와 CPU wall-time 통계를 검사하지만 실제 driver validation message, GPU submission, capture file 또는 GPU timestamp를 생성하지 않습니다.
+
 관련 문서:
 
 - [debugging·validation·frame capture](../../docs/04-gpu-rendering/18-debugging-validation-and-frame-capture.md)
@@ -100,8 +102,8 @@ python3 exercises/check.py --impl workspace --stage 07-frame-debugging --expect 
 python3 exercises/check.py --impl reference --stage 07-frame-debugging --expect pass --gpu off
 ```
 
-checker는 최소 여섯 결함 보고서의 artifact, before/after oracle, trace/capture label 관계와 CPU/GPU timing 구분을 검사합니다. 실제 validation·capture·timestamp 증거는 지원 환경에서 `--gpu required`로 다시 수집하며 생략을 성공으로 바꾸지 않습니다.
+checker는 최소 여섯 결함 보고서의 artifact, synthetic before/after의 출처, lifecycle transition 실행 여부와 정확한 rejection 사건, trace/capture label 참조 관계를 구분해 검사합니다. `submit_to_fence_ns`도 GPU timestamp가 아닙니다. 이 stage는 `--gpu required`에서도 `lifecycle-sim`으로 실행되므로 그 option만으로 실제 validation·capture·timestamp가 수집되지 않습니다. 지원 환경에서는 학습자 renderer와 선택한 capture/profiling tool로 해당 근거를 별도로 만들고 version·backend·event/resource label을 report에 연결합니다.
 
-사람 검토에서는 validation이 검출한 오류와 의미 오류를 구분하고, 각 case의 마지막 정상/첫 비정상 상태를 지목하며, 세 workload 실험이 병목 가설을 어떻게 지지하거나 반박했는지 설명합니다.
+사람 검토에서는 simulation이 분류한 오류와 실제 validation이 검출한 오류를 구분하고, 각 case의 마지막 정상/첫 비정상 상태를 지목하며, 실제 raw sample을 사용한 세 workload 실험이 병목 가설을 어떻게 지지하거나 반박했는지 설명합니다. 번들 synthetic workload의 median/p95만으로 실제 성능 결론을 내리지 않습니다.
 
 `make clean`은 생성 build/out만 제거합니다. 실패 case의 환경·capture metadata·trace는 재현이 끝날 때까지 보존하고 workspace는 삭제하지 않습니다. capture binary를 보관할 수 없으면 재현 명령과 event/resource label을 남깁니다.

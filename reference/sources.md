@@ -41,7 +41,7 @@ WebGPU/WGSL은 Candidate Recommendation Draft 상태가 갱신될 수 있으므�
 - [KTX specification](https://registry.khronos.org/KTX/): texture container 후속 학습 자료
 - [PNG specification](https://www.w3.org/TR/png-3/): PNG format의 공식 W3C specification
 
-이 압축파일은 외부 asset을 포함하지 않습니다. 후속 실습에 추가할 때 라이선스와 source hash를 기록합니다.
+현재 저장소는 외부 image·mesh·scene asset을 포함하지 않습니다. `scene-v1.json`과 `marker-texture.json`은 저장소가 만든 MIT fixture이고, invalid/event JSON도 저장소 test input입니다. 외부 asset을 추가할 때는 source URL·가져온 날짜·content hash·원본 license·재배포 가능 여부와 import profile을 기록하며, 저장소 생성 fixture라고 잘못 표시하지 않습니다. 자세한 조건은 [라이선스](../LICENSE.md)와 [안전 및 운영 계약](../SAFETY.md)을 따릅니다.
 
 ## color와 수치
 

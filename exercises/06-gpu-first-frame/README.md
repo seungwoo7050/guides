@@ -4,6 +4,8 @@
 
 선택한 GPU profile에서 device·shader·resource·pipeline·command buffer·render pass·submission·swapchain의 첫 완전한 frame을 만듭니다. 삼각형 출력만이 아니라 backend·shader manifest·resource generation·frame lifecycle을 artifact로 남깁니다.
 
+위 문장은 learner 구현의 단계 목표입니다. 번들 reference의 actual 경로는 window/swapchain 대신 macOS Metal offscreen RGBA8+D16 target에 position·vertex color triangle을 그립니다. 또한 같은 Metal device 안에서 실제 frame slot 2개와 submission 3개를 사용해 completion 뒤 slot 0을 재사용하고, zero extent를 건너뛰며, 64×64→96×72 offscreen generation 생성·readback·retire를 12개 사건으로 검사합니다. texture sampling과 실제 window/swapchain resize·minimize·high-DPI는 자동 증거가 아니며 사람 검토로 구분합니다.
+
 관련 문서:
 
 - [GPU 실행과 command](../../docs/04-gpu-rendering/14-gpu-execution-and-command-model.md)
@@ -78,12 +80,12 @@ python3 exercises/check.py --impl workspace --stage 06-gpu-first-frame --expect 
 python3 exercises/check.py --impl reference --stage 06-gpu-first-frame --expect pass --gpu off
 ```
 
-두 번째 명령은 결정적 state/lifetime 기준선이지 실제 GPU 실행의 대체물이 아닙니다. 지원 환경에서 최종 GPU 증거를 만들 때는 CMake와 checker를 모두 `required`로 다시 실행합니다.
+두 번째 명령은 이 stage를 실행하지 않고 `GPU_NOT_EVALUATED`로 기록합니다. CPU 01–05와 lifecycle stage 07의 결정적 기준선을 계속 검사할 때 쓰는 mode이지, 06의 state/lifetime 통과나 실제 GPU 실행의 대체물이 아닙니다. 지원 환경에서 이 stage의 actual GPU 증거를 만들 때는 checker를 `required`로 다시 실행합니다.
 
 ```sh
 python3 exercises/check.py --impl workspace --stage 06-gpu-first-frame --expect pass --gpu required
 ```
 
-자동 증거는 shader manifest, layout/pipeline attachment, upload completion, frame-slot 재사용, zero extent와 resize generation을 검사합니다. starter와 최소 세 known-bad mutation이 validation 또는 의미/image oracle에서 거부돼야 합니다.
+actual GPU 자동 증거는 고정 scene/hash, position·vertex-color shader와 vertex layout, RGBA8+D16 pass, upload→submit→fence→readback 순서와 color/depth hash를 검사합니다. 별도 same-device probe의 2 slots·3 submits·12 events, zero-target skip, 64×64→96×72 generation, completion 기반 재사용·retire·readback은 결정적 model trace와 정확히 대조됩니다. 이것은 실제 offscreen resource 수명 증거지만 window event, swapchain 재생성, 장시간 stress 증거는 아닙니다. starter와 최소 세 known-bad mutation은 안전한 pre-submit 계약 또는 lifecycle/image oracle에서 거부돼야 하며, `mutation-diagnostic.json`의 `executed_on_gpu: false`를 driver validation 성공으로 해석하지 않습니다.
 
-사람 검토에서는 submit과 completion의 차이, old resource의 last-use 사건, validation이 잡지 못한 의미 오류와 미지원 backend의 한계를 환경 artifact로 설명합니다. `make clean`은 생성물만 제거하고 workspace는 보존합니다. GPU 실패 로그·validation baseline을 남긴 채 CPU 회귀와 실제 device 문제를 분리해 복구합니다.
+사람 검토에서는 자동 trace의 submit/completion·last-use 관계를 설명하고, 별도로 실제 window resize/minimize/restore·high-DPI, texture bind가 포함된 다음 단계, validation이 잡지 못한 의미 오류와 미지원 backend의 한계를 환경 artifact로 확인합니다. `make clean`은 생성물만 제거하고 workspace는 보존합니다. GPU 실패 로그·validation baseline을 남긴 채 CPU 회귀와 실제 device 문제를 분리해 복구합니다.

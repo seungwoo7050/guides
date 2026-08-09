@@ -13,7 +13,7 @@
 
 ## 입력 fixture
 
-외부 format loader보다 먼저 코드/JSON fixture를 사용합니다.
+다음은 learner가 완성할 scene fixture 범위입니다. 외부 format loader보다 먼저 코드/JSON fixture를 사용합니다.
 
 - UV seam과 hard normal edge가 있는 cube
 - non-uniform scale parent와 child mesh
@@ -24,6 +24,8 @@
 - invalid index, mismatched attribute, cycle hierarchy, stale handle
 
 외부 glTF를 추가한다면 같은 내부 validation을 통과해야 합니다.
+
+번들 reference의 자동 fixture는 이 목록보다 작습니다. 공통 `SceneSnapshot`의 한 indexed triangle에서 vertex color·normal·UV와 marker texture를 보간하고, inverse-transpose normal transform·flat data normal·단순 linear lighting을 final/debug attachment까지 검사합니다. 별도 culling/LOD probe는 inside/outside/intersecting 결정을 visible count와 vertex/sample work count에 연결합니다. cube geometry, mirrored UV island의 TBN handedness와 범용 glTF loader는 자동 reference에 포함되지 않으며 learner 구현과 사람 검토 근거가 필요합니다.
 
 ## 구현할 경계
 
@@ -93,7 +95,7 @@ python3 exercises/check.py --impl workspace --stage 05-textured-lit-scene --expe
 python3 exercises/check.py --impl reference --stage 05-textured-lit-scene --expect pass --gpu off
 ```
 
-checker는 정상 scene뿐 아니라 invalid index·attribute, cycle, stale handle, conservative bounds, non-uniform normal, data texture와 LOD hysteresis를 검사하고 final/debug attachment를 reference와 비교합니다. starter와 최소 네 known-bad mutation은 거부돼야 합니다.
+checker는 `SceneSnapshot` vertex color·normal·texture·단순 lighting을 독립 계산하고, invalid index·attribute, cycle, singular normal transform·degenerate triangle, conservative bounds, non-uniform normal, flat data normal과 LOD hysteresis/work count를 검사합니다. final/debug attachment와 known-bad별 첫 차이 artifact도 reference에 대조하며 starter와 최소 네 mutation은 거부돼야 합니다. 이 통과를 cube, mirrored TBN 또는 범용 loader 완료로 표시하지 않습니다.
 
 사람 검토에서는 raw asset과 renderable asset의 실패 경계, mirrored UV·normal 공간의 선택, frustum/LOD 결정이 결과와 work count를 함께 보존하는지 설명합니다. 외부 asset을 사용했다면 source·hash·license도 확인합니다.
 

@@ -203,7 +203,16 @@ shader source와 binary format은 환경에 맞게 선택하되 다음을 기록
 
 문서 12–13의 asset·scene·visibility 계약은 위 소유 범위를 capstone 장면에 연결합니다. 일반 asset pipeline이나 게임 엔진 전체를 새 범위로 만들지 않고, renderable validation·bounds·LOD가 픽셀과 frame budget에 미치는 부분만 다룹니다.
 
-자동 증거는 `python3 exercises/check.py --impl workspace --stage <id> --expect pass --gpu <mode>`로 모읍니다. 설계 판단은 각 실습의 사람 검토 질문과 artifact를 함께 제출합니다. 자동 검사가 통과해도 설명·비교·안전 판단까지 자동 증명됐다고 간주하지 않습니다.
+위 표의 `capstone 증거`는 학습자가 완료 시 제출할 전체 계약입니다. 현재 번들 reference의 자동 근거 범위와 혼동하지 않습니다.
+
+| 근거 층 | 현재 확인하는 것 | 확인하지 않는 것 |
+|---|---|---|
+| CPU reference 01–05 | 비자명한 left-handed camera, 여섯 plane attribute clipping, screen-affine NDC depth, sampling/color와 `SceneSnapshot` vertex color·normal+texture+단순 lighting, mutation 첫 차이, culling/LOD work probe | cube 전체, mirrored-UV TBN, 범용 loader, 임의 scene·해상도·외부 asset의 일반적 정확성 |
+| actual GPU reference 06/08 | 동일 scene id의 position·vertex-color indexed triangle과 color/depth 비교; 같은 Metal device의 2 slots·3 submits·12 events, zero-extent skip, 64×64→96×72 offscreen generation·readback·retire | GPU texture/material/normal/lighting parity, window/swapchain resize·minimize·high-DPI, capture, GPU timestamp, Vulkan·D3D12 |
+| lifecycle/debug reference 07 | completion/generation/zero-extent/readback 상태 모델의 실제 전이와 lifecycle defect 거부; 명시적으로 합성된 before PPM·preflight 분류·CPU wall-time workload 통계 | 실제 driver validation/capture, GPU timestamp, 장시간 race; 합성 PPM을 실행된 pipeline mutation으로 보는 해석 |
+| 사람 검토 | 첫 차이 설명, texture/material/lighting debug attachment, 실제 window/swapchain resize·capture 또는 미지원 근거, GPU timestamp와 성능 판단 | checker가 대신 판정할 수 없는 설계·운영의 충분성 |
+
+자동 증거는 `python3 exercises/check.py --impl workspace --stage <id> --expect pass --gpu <mode>`로 모읍니다. `--gpu off`는 실제 GPU stage를 **미평가**로 남기며, `auto`도 runtime이 없으면 같은 제한을 보고합니다. 설계 판단은 각 실습의 사람 검토 질문과 artifact를 함께 제출합니다. 자동 검사가 통과해도 설명·비교·안전 판단까지 자동 증명됐다고 간주하지 않습니다.
 
 ## 경로 선택
 

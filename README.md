@@ -139,6 +139,14 @@ GPU 개념은 Vulkan·Metal·Direct3D 12 계열의 명시적 모델을 기준으
 
 SDL3 자체와 shader compiler binary는 이 브랜치에 vendoring하지 않습니다. 설치·버전·backend·shader format은 [SDL3 GPU 구현 프로필](docs/90-appendix/02-api-profile-sdl3-gpu.md)과 [버전 기준](reference/version-baseline.md)에서 확인합니다.
 
+### 번들 reference와 최종 학습자 증거의 경계
+
+CPU reference는 고정 fixture에서 비자명한 left-handed camera, 여섯 homogeneous clip plane을 가로지르는 attribute 보존 clipping, 화면에서 affine한 NDC depth, `SceneSnapshot`의 vertex color·normal과 marker texture·단순 lighting을 실제로 계산합니다. 공개 checker는 독립 계산과 golden artifact로 mutation의 첫 차이, culling/LOD의 선택과 work count까지 확인합니다. 반면 cube 전체, mirrored-UV TBN과 범용 외부 asset loader는 번들 자동 구현이 아니라 learner 구현과 사람 검토 범위입니다.
+
+현재 번들 SDL reference가 실제 GPU에서 자동 확인하는 범위는 **동일한 고정 scene id와 position·vertex color를 쓰는 indexed triangle**, RGBA8 color·D16 depth offscreen pass와 같은 Metal device 안의 좁은 lifecycle probe입니다. probe는 실제 frame slot 2개로 submission 3개를 수행하고, completion 뒤 slot 0을 재사용하며, zero extent에서 target을 만들지 않고, 64×64 generation에서 96×72 generation으로 바꾼 뒤 이전 resource를 retire하고 새 color/depth를 readback합니다. 현재 MSL/HLSL shader는 position과 vertex color만 소비하므로 actual GPU 비교가 통과해도 문서 10–11과 실습 05의 texture·normal·lighting 전체가 GPU로 이전됐다는 증거는 아닙니다.
+
+학습자는 [GPU renderer capstone](docs/04-gpu-rendering/20-gpu-renderer-capstone.md)의 전체 범위에 따라 texture/material/lighting debug attachment, 실제 window/swapchain resize·minimize·high-DPI 또는 그 미지원 근거, capture label 대응과 진짜 GPU timestamp를 별도로 제출합니다. 실제 offscreen extent 전이와 lifecycle simulator는 window event의 대체 증거가 아니며, `submit_to_fence_ns`도 CPU wall time이지 GPU pass duration이 아닙니다.
+
 ## 준비와 검증
 
 새 checkout에서 실행합니다.
@@ -176,14 +184,15 @@ python3 exercises/check.py \
 
 `verify.sh`는 원본 밖 임시 복사본에서 다음을 검사합니다.
 
-- 정본 디렉터리와 문서 공통 절
-- Markdown 상대 링크
-- 실습 `contract.json` schema와 참조
-- 좌표·색·alpha·sample 규약의 단일 정본
-- PPM 비교기의 정상·오답 self-test
-- 임시 검증 뒤 원본 source 지문 불변
+- 정본 디렉터리, 문서·상대 링크·anchor와 실습 `contract.json`
+- repository verifier의 의도적 문서·계약 변조 거부
+- PPM oracle, starter의 명시적 미완성 경계와 reference 공개 행동
+- known-bad mutation 거부와 learner workspace 비파괴 생성
+- release build·CTest와 지원 compiler의 sanitizer
+- `VERIFY_GPU=auto|required|off`에 따른 실제 GPU 평가 또는 명시적 미평가
+- 임시 검증 뒤 원본 source 지문과 tracked Git 상태 불변
 
-`verify.sh`는 저장소와 교육 계약의 정합성을 검사하고, 위 CMake·CTest·exercise checker가 실제 구현 행동을 검사합니다. 둘 중 하나를 다른 하나의 대체물로 사용하지 않습니다.
+`verify.sh`는 저장소와 공개 구현의 회귀 근거를 검사합니다. 검사 통과만으로 설명의 교육적 충분성, texture/lighting GPU parity, 실제 window resize·high-DPI, 외부 capture file, 장시간 device-loss 동작이나 실행하지 않은 backend가 증명되지는 않습니다. 각 실습의 사람 검토 루브릭과 [안전 및 운영 계약](SAFETY.md)을 함께 적용합니다.
 
 빠른 구조 검사는 다음으로 실행할 수 있습니다.
 
@@ -216,3 +225,5 @@ make check
 - 상용 asset 제작 도구의 사용법
 
 이 가이드의 종료점은 완성된 게임 엔진이나 최첨단 renderer가 아닙니다. **그래픽스 결과를 상태·수학·resource·동기화·측정 근거로 설명하고, 실제 그래픽스 프로젝트에 진입할 수 있는 상태**입니다.
+
+기여·출처·배포 조건은 [기여 가이드](CONTRIBUTING.md), [안전 및 운영 계약](SAFETY.md), [라이선스](LICENSE.md)에서 확인합니다.
