@@ -113,7 +113,7 @@ make verify
 
 ## 누적 실습
 
-[`exercises/model-lifecycle`](exercises/model-lifecycle/README.md)는 합성된 이탈 예측 문제를 사용한다. 정답 코드는 제공하지 않는다. 대신 단계별 산출물, dataset·split fixture, 문서 template과 제출 구조 검사기를 제공한다.
+[`exercises/model-lifecycle`](exercises/model-lifecycle/README.md)는 합성된 이탈 예측 문제를 사용한다. 미완성 starter와 단계별 산출물 계약, dataset·split fixture, 문서 template, 비교 가능한 CPU reference와 제출 검사기를 제공한다.
 
 | 단계 | 핵심 책임 | 권장 산출물 |
 |---:|---|---|
@@ -125,6 +125,15 @@ make verify
 | 6 | 작은 신경망과 training trace | `reports/neural-experiment.json` |
 | 7 | model bundle과 inference contract | `artifacts/model-bundle/` |
 | 8 | model card·monitoring·rollback 계획 | `reports/model-card.md`, `reports/monitoring-plan.md` |
+
+[`exercises/modern-model-release`](exercises/modern-model-release/README.md)는 현대 모델 단원의 핵심 경계를 네 단계로 누적한다. 로컬 toy base와 tokenizer로 attention 불변식을 관찰하고, frozen head와 partial fine-tuning을 같은 validation 계약에서 비교한 뒤 base identity·adapter·golden inference를 하나의 release bundle로 묶는다. 이 실습은 외부 model download나 GPU를 요구하지 않는다.
+
+| 단계 | 핵심 책임 | 권장 산출물 |
+|---:|---|---|
+| 1 | tokenizer와 base의 version·digest 계약 | `reports/01-tokenizer-contract.json` |
+| 2 | causal mask·shape·softmax axis 불변식 | `reports/02-attention-invariants.json` |
+| 3 | frozen·partial transfer의 validation-only 선택 | `reports/03-transfer-comparison.json` |
+| 4 | base regression·bundle·golden inference·model card | `artifacts/bundle/`, `reports/04-release-review.md` |
 
 작업 공간 생성:
 

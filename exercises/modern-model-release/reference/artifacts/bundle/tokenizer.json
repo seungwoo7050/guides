@@ -1,0 +1,24 @@
+{
+  "max_length": 6,
+  "normalization": "lowercase-whitespace-v1",
+  "tokenizer_id": "tiny-sequence-tokenizer",
+  "version": "tok-v1",
+  "vocab": {
+    "[PAD]": 0,
+    "broken": 9,
+    "calm": 1,
+    "cancel": 8,
+    "clear": 2,
+    "error": 15,
+    "help": 3,
+    "kind": 4,
+    "now": 13,
+    "please": 12,
+    "refund": 10,
+    "rude": 6,
+    "safe": 14,
+    "slow": 5,
+    "thanks": 11,
+    "urgent": 7
+  }
+}

@@ -1,0 +1,31 @@
+{
+  "contract_version": "modern-model-release-v1",
+  "stages": [
+    {
+      "stage": 1,
+      "name": "tokenizer-and-base-contract",
+      "artifacts": ["reports/01-tokenizer-contract.json"]
+    },
+    {
+      "stage": 2,
+      "name": "attention-invariants",
+      "artifacts": ["reports/02-attention-invariants.json"]
+    },
+    {
+      "stage": 3,
+      "name": "transfer-comparison-and-regression",
+      "artifacts": ["reports/03-transfer-comparison.json"]
+    },
+    {
+      "stage": 4,
+      "name": "release-bundle-and-review",
+      "artifacts": [
+        "reports/04-release-review.md",
+        "artifacts/bundle/manifest.json",
+        "artifacts/bundle/model-card.md",
+        "artifacts/bundle/golden-input.json",
+        "artifacts/bundle/golden-output.json"
+      ]
+    }
+  ]
+}

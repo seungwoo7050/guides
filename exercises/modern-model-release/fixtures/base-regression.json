@@ -1,0 +1,16 @@
+{
+  "contract_version": "base-regression-v1",
+  "cases": [
+    {
+      "name": "single-calm-token",
+      "token_ids": [1],
+      "expected_context": [[0.8, 0.2, 0.1]]
+    },
+    {
+      "name": "single-urgent-token",
+      "token_ids": [7],
+      "expected_context": [[-0.3, 0.1, 0.8]]
+    }
+  ],
+  "absolute_tolerance": 1e-12
+}

@@ -1,0 +1,31 @@
+{
+  "base_model": {
+    "id": "tiny-sequence-encoder",
+    "sha256": "361b6adb54c61bc954606363bb5136eeae8d5f00e78cd58722549600c0cf3e93",
+    "version": "base-v1"
+  },
+  "bundle_version": "modern-transfer-v1",
+  "decision_threshold": 0.5,
+  "files": {
+    "adapter.json": "2c09248b7ee18564102e9ce332db073fe7b17942ddc9f9c4ea59ebab4484d262",
+    "base-model.json": "361b6adb54c61bc954606363bb5136eeae8d5f00e78cd58722549600c0cf3e93",
+    "golden-input.json": "10840fed86f7604e1cd4263e02ecc51d42ac1bc047edbee57117db11a3399f0f",
+    "golden-output.json": "2a192366417de8589221fd382fe06477d6e2a5c4a4e41449eabc0b63b85036df",
+    "model-card.md": "5a85ceff3e7123935f4c52731057be4424c80933008c41842b058b2584114970",
+    "tokenizer.json": "aea1accbee5056d93fc06e78c74c00594f44c9096ed1bfa659f53bb734769210"
+  },
+  "input_contract": {
+    "additional_fields": false,
+    "max_length": 6,
+    "required": ["text"],
+    "unknown_tokens": "reject"
+  },
+  "output_contract": {
+    "fields": ["model_version", "probability", "decision"]
+  },
+  "tokenizer": {
+    "id": "tiny-sequence-tokenizer",
+    "sha256": "aea1accbee5056d93fc06e78c74c00594f44c9096ed1bfa659f53bb734769210",
+    "version": "tok-v1"
+  }
+}

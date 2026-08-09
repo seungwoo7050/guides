@@ -1,0 +1,19 @@
+{
+  "adapter_scale": [2.7442185998682964, 2.03783201919774, 1.3346563458079332],
+  "adapter_shift": [-0.0794271557488342, -0.12233332351798808, -0.3225189176606367],
+  "artifact_version": "adapter-v1",
+  "base_model": {
+    "id": "tiny-sequence-encoder",
+    "sha256": "361b6adb54c61bc954606363bb5136eeae8d5f00e78cd58722549600c0cf3e93",
+    "version": "base-v1"
+  },
+  "head_bias": -0.10520485738495475,
+  "head_weights": [-3.711892282618903, -1.9788910503088621, 1.0572879899425454],
+  "mode": "partial",
+  "selected_epoch": 60,
+  "tokenizer": {
+    "id": "tiny-sequence-tokenizer",
+    "sha256": "aea1accbee5056d93fc06e78c74c00594f44c9096ed1bfa659f53bb734769210",
+    "version": "tok-v1"
+  }
+}

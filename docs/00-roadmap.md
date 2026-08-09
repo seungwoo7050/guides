@@ -133,9 +133,9 @@ fine-tuning과 모델 artifact
 
 | 순서 | 문서 | 연결 실습 |
 |---:|---|---:|
-| 18 | [Embedding과 tokenization](05-modern-models/01-embeddings-and-tokenization.md) | 선택 |
-| 19 | [Attention과 transformer](05-modern-models/02-attention-and-transformers.md) | 선택 |
-| 20 | [Pretraining, transfer와 fine-tuning](05-modern-models/03-pretraining-transfer-and-fine-tuning.md) | 선택 |
+| 18 | [Embedding과 tokenization](05-modern-models/01-embeddings-and-tokenization.md) | 현대 모델 1단계 |
+| 19 | [Attention과 transformer](05-modern-models/02-attention-and-transformers.md) | 현대 모델 2단계 |
+| 20 | [Pretraining, transfer와 fine-tuning](05-modern-models/03-pretraining-transfer-and-fine-tuning.md) | 현대 모델 3단계 |
 | 21 | [생성 모델과 평가](05-modern-models/04-generative-models-and-evaluation.md) | 선택 |
 
 ### 6부: 모델 수명 주기
@@ -212,7 +212,11 @@ fine-tuning과 모델 artifact
 
 [모델 release review](07-capstones/03-model-release-review.md)는 모델 파일, preprocessing, schema, model card, monitoring과 rollback이 하나의 release unit인지 검토한다. 실제 모델 serving platform 구현은 요구하지 않는다.
 
-누적 구현 계약은 [`exercises/model-lifecycle`](../exercises/model-lifecycle/README.md)에 있다.
+### D. Modern-model transfer와 release
+
+[Modern-model transfer와 release](07-capstones/04-modern-model-transfer-release.md)는 tokenizer/base identity, causal attention, frozen·partial fine-tuning 비교, base regression과 adapter bundle을 하나의 근거 사슬로 묶는다. 실제 foundation model의 성능이나 대규모 GPU 운영 적합성은 자동 판정하지 않는다.
+
+누적 구현 계약은 [`exercises/model-lifecycle`](../exercises/model-lifecycle/README.md)과 [`exercises/modern-model-release`](../exercises/modern-model-release/README.md)에 있다.
 
 ## 실행 계약
 

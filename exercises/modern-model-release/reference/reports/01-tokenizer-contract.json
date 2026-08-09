@@ -1,0 +1,16 @@
+{
+  "base_model": {
+    "id": "tiny-sequence-encoder",
+    "sha256": "361b6adb54c61bc954606363bb5136eeae8d5f00e78cd58722549600c0cf3e93",
+    "version": "base-v1"
+  },
+  "max_length": 6,
+  "normalization": "lowercase-whitespace-v1",
+  "stage": 1,
+  "tokenizer": {
+    "id": "tiny-sequence-tokenizer",
+    "sha256": "b5c31e9c24112ed4b8b177e44dc64d9a628b74c09cbc99f37eb5a0b189d77e27",
+    "version": "tok-v1"
+  },
+  "unknown_tokens": "reject"
+}
