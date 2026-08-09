@@ -1,0 +1,52 @@
+{
+  "schema_version": 1,
+  "system": "NoteRelay",
+  "claims": [
+    {
+      "id": "CLM-001",
+      "claim": "preview-worker는 인터넷에 직접 egress할 수 없다.",
+      "sources": [
+        "architecture diagram",
+        "operator interview"
+      ],
+      "last_observed": "2026-08-09",
+      "runtime_evidence": false
+    },
+    {
+      "id": "CLM-002",
+      "claim": "한 사용자는 다른 사용자의 object를 읽을 수 없다.",
+      "sources": [
+        "API design note"
+      ],
+      "last_observed": "2026-06-22",
+      "runtime_evidence": false
+    },
+    {
+      "id": "CLM-003",
+      "claim": "staging credential은 production resource에 접근할 수 없다.",
+      "sources": [
+        "operator interview"
+      ],
+      "last_observed": "2026-08-09",
+      "runtime_evidence": false
+    },
+    {
+      "id": "CLM-004",
+      "claim": "모든 object read는 actor와 resource를 포함해 감사된다.",
+      "sources": [
+        "sample audit events"
+      ],
+      "last_observed": "2026-08-08",
+      "runtime_evidence": true
+    },
+    {
+      "id": "CLM-005",
+      "claim": "service token은 24시간 안에 자동 회전된다.",
+      "sources": [
+        "configuration snapshot"
+      ],
+      "last_observed": "2026-08-06",
+      "runtime_evidence": false
+    }
+  ]
+}

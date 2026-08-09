@@ -1,0 +1,69 @@
+{
+  "schema_version": 1,
+  "assets": [
+    {
+      "id": "AST-001",
+      "name": "source archive",
+      "owner": "build-api",
+      "security_goals": [
+        "confidentiality",
+        "integrity"
+      ],
+      "recovery_source": "developer resubmission"
+    },
+    {
+      "id": "AST-002",
+      "name": "build artifact",
+      "owner": "artifact-store",
+      "security_goals": [
+        "integrity",
+        "authorization",
+        "provenance"
+      ],
+      "recovery_source": "trusted rebuild"
+    },
+    {
+      "id": "AST-003",
+      "name": "runner credential",
+      "owner": "credential-broker",
+      "security_goals": [
+        "confidentiality",
+        "least-privilege",
+        "expiry"
+      ],
+      "recovery_source": "reissue"
+    },
+    {
+      "id": "AST-004",
+      "name": "runner image identity",
+      "owner": "platform-team",
+      "security_goals": [
+        "integrity",
+        "provenance"
+      ],
+      "recovery_source": "registry digest"
+    },
+    {
+      "id": "AST-005",
+      "name": "build log",
+      "owner": "build-api",
+      "security_goals": [
+        "confidentiality",
+        "integrity",
+        "accountability"
+      ],
+      "recovery_source": null
+    },
+    {
+      "id": "AST-006",
+      "name": "security event stream",
+      "owner": "security-operations",
+      "security_goals": [
+        "integrity",
+        "availability",
+        "actor-attribution"
+      ],
+      "recovery_source": null
+    }
+  ]
+}
