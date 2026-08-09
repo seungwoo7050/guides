@@ -21,6 +21,30 @@ workflow definition
 
 task instance가 `success`여도 output이 누락되거나 잘못될 수 있다. 반대로 task가 timeout됐어도 외부 write는 이미 성공했을 수 있다.
 
+## 네 identity와 run ledger
+
+재시도와 publish를 안전하게 판단하려면 네 identity를 분리한다.
+
+| identity | 의미 | 예 |
+|---|---|---|
+| job | 반복 가능한 논리 작업 | `daily_sales` |
+| run | 한 logical interval을 특정 input·version으로 처리하려는 의도 | `run=R42, interval=2026-08-09` |
+| task attempt | run 내부 task의 실제 실행·재시도 | `aggregate/attempt=3` |
+| output version | consumer가 읽는 immutable dataset commit | `sales_daily/snapshot=V7` |
+
+Retry는 새 attempt일 수 있지만 같은 run/input을 유지한다. Failed run은 output이 없을 수 있고, 한 run이 validation에서 끝나 여러 output을 publish하지 않을 수 있으며, corrective rerun은 새 output version을 만들 수 있다. 이 관계를 1:1로 가정하지 않는다.
+
+Run ledger는 최소한 다음 전이를 기록한다.
+
+```text
+PLANNED → RUNNING → VALIDATING → PUBLISHED
+              └──→ FAILED
+                         VALIDATING → QUARANTINED
+                         PUBLISHED  → SUPERSEDED
+```
+
+각 transition에는 expected prior state, actor, time, input/output identity와 reason을 남긴다. 같은 interval의 active run 중복, `PUBLISHED → RUNNING` 같은 역전과 이미 superseded된 output의 재승인을 거부한다. Scheduler의 단일 `SUCCESS`로 validation과 consumer-visible publish를 합치지 않는다.
+
 ## logical date와 data interval
 
 예를 들어 daily pipeline이 2026-08-10 01:00에 실행돼 2026-08-09의 데이터를 처리한다.
@@ -61,6 +85,23 @@ publish ID: sales_daily/2026-08-09/v4
 - cleanup과 partial state
 
 하나의 task가 너무 많은 외부 상태를 바꾸면 retry와 root cause가 복잡해진다. 반대로 file 하나마다 task를 만들면 scheduler overhead와 관리 복잡성이 커진다.
+
+## 재현 가능한 version set
+
+Run identity에는 Git SHA 하나보다 넓은 실행 판본을 고정한다.
+
+```text
+code/artifact revision
+runtime와 dependency lock
+config와 feature flags
+input snapshot/source positions
+schema와 semantic contract version
+reference/dimension snapshot
+state serializer/checkpoint version
+output schema와 publish target
+```
+
+동일 artifact를 environment 사이에 promote하고 environment별로 다시 build하지 않는다. Secret과 environment endpoint는 artifact 밖의 runtime binding으로 주입하되 실제 사용한 config identity를 민감 값 없이 기록한다. 중단된 run을 “현재 최신 code”로 재개해 한 output에 서로 다른 transform version을 섞지 않는다.
 
 ## idempotent task
 
@@ -229,6 +270,8 @@ schema mismatch를 계속 재시도해 alert가 늦어진다. error classificati
 - 모든 run을 explicit interval·input snapshot·publish identity로 표현한다.
 - retry·timeout·catchup이 외부 effect를 중복시키지 않도록 설계한다.
 - downstream dependency를 dataset snapshot과 quality contract로 고정한다.
+- job·run·task attempt·output version과 run-state transition을 ledger로 분리한다.
+- code·runtime·config·schema·input·reference·state 판본을 재현 가능한 실행 집합으로 기록한다.
 
 ## 공식 자료 연결
 

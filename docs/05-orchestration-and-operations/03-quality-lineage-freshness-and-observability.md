@@ -120,6 +120,23 @@ schema mismatch, duplicate primary key, source coverage gap처럼 consumer가 �
 
 업무 영향과 잘못된 data 사용 비용을 비교한다. 조용히 default로 대체하지 않는다.
 
+## Sticky quarantine와 repair
+
+같은 stable ID에 서로 다른 payload가 나타나면 도착 순서로 첫 record를 채택하지 않는다. 해당 ID를 evaluation scope 전체에서 conflict로 표시하고, 이후 첫 payload와 같은 record가 다시 와도 자동으로 valid 집합에 재승인하지 않는다. 그렇지 않으면 input permutation에 따라 결과가 달라진다.
+
+Quarantine record에는 다음 control metadata를 남긴다.
+
+- source identity와 input snapshot/position
+- record/event ID와 payload checksum
+- violated rule ID·version, severity와 observed time
+- raw payload의 보호된 위치 또는 redacted evidence
+- owner, disposition과 repair run ID
+- `OPEN`, `APPROVED_EXCEPTION`, `REPAIRED`, `DISCARDED` 같은 상태와 actor
+
+Rule 수정, source correction 또는 schema migration 뒤에는 original snapshot과 같은 conflict set을 대상으로 repair/reprocess한다. Repaired record는 새 quality result와 lineage로 publish하고 원 quarantine을 덮어쓰지 않는다. Exception에는 scope와 expiry가 필요하다.
+
+Source와 target을 독립적으로 검사한다. Count와 amount가 같아도 missing/extra/changed key가 서로 상쇄될 수 있으므로 key set, aggregate, deterministic fingerprint와 detail sample을 함께 대사한다.
+
 ## lineage 모델
 
 최소 entity:
@@ -172,6 +189,29 @@ run마다 권장:
 - duration and resource summary
 
 민감 payload를 log/trace에 넣지 않는다.
+
+## Freshness 지연과 cost evidence
+
+하나의 `MAX(event_time)` 대신 지연을 분해한다.
+
+```text
+source delay   = source observed/commit time - event occurred time
+pipeline delay = consumer-visible publish time - source observed/commit time
+total age      = now - latest trusted event time
+oldest backlog = now - oldest unprocessed observed time
+```
+
+미래 timestamp와 일부 빠른 partition이 전체 freshness를 정상처럼 보이게 할 수 있다. Source position coverage, partition별 oldest age, watermark, publish time과 plausibility rule을 함께 본다. Alert는 freshness breach만 알리지 않고 source outage, queue/backpressure, transform failure, quality block, publish failure 중 어느 계층에서 지연이 생겼는지 좁힐 근거를 제공한다.
+
+비용도 shared platform 총액이 아니라 dataset/run과 owner에 귀속한다.
+
+- input/output bytes와 rows, shuffle·state·checkpoint volume
+- source extraction, compute, storage, catalog/metadata와 query 비용
+- live, backfill, replay, compaction과 quality/reconciliation 비용 분리
+- `cost per successful interval`, `cost per GiB processed`, `cost per million records` 같은 unit cost
+- 실패·retry·quarantine·unused copy가 만든 waste
+
+Freshness를 낮추기 위해 micro-batch를 짧게 하면 small file, metadata와 compaction 비용이 커질 수 있다. 비용 절감이 retention, correction window, recovery capacity와 quality evidence를 훼손하지 않는지 검토한다.
 
 ## alert design
 
@@ -272,6 +312,8 @@ runtime dynamic input과 actual snapshot이 누락된다. run event와 artifact 
 - consumer contract에 맞춘 quality/freshness rule을 설계한다.
 - run·dataset snapshot·code revision을 연결하는 lineage를 남긴다.
 - alert, publish gate, incident와 recovery evidence를 한 흐름으로 운영한다.
+- conflict identity를 sticky quarantine으로 유지하고 repair를 새 quality·lineage 결과로 추적한다.
+- source/pipeline delay와 dataset/run unit cost를 freshness·capacity 판단에 함께 사용한다.
 
 ## 공식 자료 연결
 

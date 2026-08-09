@@ -224,6 +224,33 @@ worker local file이 아니라 durable control table/manifest를 사용한다. �
 
 기술적으로 맞아도 consumer가 old/new를 혼합하면 잘못된 의사결정을 할 수 있다.
 
+### Contract-changing cutover
+
+Schema, metric 의미, history 또는 correction 정책이 바뀌는 backfill은 단순 partition repair가 아니다. 다음 순서로 release를 운영한다.
+
+```text
+old/new reader-writer·semantic matrix
+→ immutable old/new output을 같은 source cutoff로 생성
+→ key·aggregate·sample reconciliation
+→ 대표적인 canary consumer cutover
+→ consumer별 migration·sign-off 추적
+→ remaining consumer cutover
+→ old dataset read-only와 deprecation
+→ retention 뒤 retirement·cleanup
+```
+
+Canary는 단지 작은 tenant가 아니라 schema version, volume, late correction, query pattern과 권한을 대표해야 한다. Dual publish 기간에는 어느 output이 정본인지, mismatch owner와 종료 날짜를 정한다.
+
+Rollback과 roll-forward도 높이를 구분한다.
+
+- code/artifact rollback
+- reader/writer 또는 state schema rollback
+- dataset pointer를 previous snapshot으로 복원
+- correction version을 새로 publish하는 roll-forward
+- 이미 materialize된 downstream의 재처리와 consumer cache 정리
+
+Consumer inventory에는 contract/version, last verified read, migration status, owner와 deprecation deadline을 남긴다. Cutover 완료를 deploy 성공이나 lineage edge 존재만으로 추정하지 않는다.
+
 ## 실패 모드
 
 ### direct production write
@@ -270,3 +297,4 @@ upstream table만 되돌리고 이미 materialized된 downstream 결과를 남�
 - live와 historical workload를 격리한다.
 - reconciliation으로 누락·중복·의미 drift를 증명한다.
 - canary, stop, resume, publish, rollback과 consumer communication을 한 runbook에 연결한다.
+- 의미 변경은 representative canary와 consumer별 sign-off를 거쳐 deprecation·retirement까지 추적한다.
