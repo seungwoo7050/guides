@@ -22,32 +22,63 @@ export function normalizeRecordId(input: string): RecordIdResult {
   return { kind: "valid", recordId };
 }
 
-function rawPathSegments(input: string): string[] | null {
+type RawPathResult =
+  | { kind: "segments"; segments: string[] }
+  | { kind: "malformed" }
+  | { kind: "unexpected-scheme" };
+
+function rawPathSegments(input: string, expectedScheme: string): RawPathResult {
   try {
-    const url = input.startsWith("/")
-      ? new URL(input, "https://field-notes.invalid")
-      : new URL(input);
+    if (input.startsWith("/")) {
+      const url = new URL(input, "https://field-notes.invalid");
+      return {
+        kind: "segments",
+        segments: url.pathname
+          .split("/")
+          .filter(Boolean)
+          .map((segment) => decodeURIComponent(segment)),
+      };
+    }
+
+    const url = new URL(input);
+    const actualScheme = url.protocol.slice(0, -1).toLocaleLowerCase("en-US");
+    const normalizedExpectedScheme = expectedScheme.toLocaleLowerCase("en-US");
+    const isExpoDevelopmentLink = actualScheme === "exp" || actualScheme === "exps";
+    if (actualScheme !== normalizedExpectedScheme && !isExpoDevelopmentLink) {
+      return { kind: "unexpected-scheme" };
+    }
     const customSchemeHost =
-      url.protocol === "fieldnotes:" && url.hostname ? [url.hostname] : [];
+      actualScheme === normalizedExpectedScheme && url.hostname ? [url.hostname] : [];
     const encodedSegments = url.pathname.split("/").filter(Boolean);
     const segments = [...customSchemeHost, ...encodedSegments].map((segment) =>
       decodeURIComponent(segment),
     );
     const expoSeparator = segments.indexOf("--");
-    return expoSeparator >= 0 ? segments.slice(expoSeparator + 1) : segments;
+    if (isExpoDevelopmentLink && expoSeparator < 0) {
+      return { kind: "unexpected-scheme" };
+    }
+    return {
+      kind: "segments",
+      segments: expoSeparator >= 0 ? segments.slice(expoSeparator + 1) : segments,
+    };
   } catch {
-    return null;
+    return { kind: "malformed" };
   }
 }
 
 export function parseNavigationIntent(
   input: string,
   source: NavigationIntentSource = "link",
+  expectedScheme = "fieldnotes",
 ): NavigationIntent {
-  const segments = rawPathSegments(input);
-  if (segments === null) {
+  const result = rawPathSegments(input, expectedScheme);
+  if (result.kind === "malformed") {
     return { kind: "invalid", reason: "malformed-encoding", source };
   }
+  if (result.kind === "unexpected-scheme") {
+    return { kind: "invalid", reason: "unexpected-scheme", source };
+  }
+  const { segments } = result;
   if (segments.length === 0 || (segments.length === 1 && segments[0] === "records")) {
     return { kind: "records", source };
   }
@@ -100,4 +131,3 @@ export const stage01Navigation: Stage01NavigationImplementation = {
   intentKey,
   decideDraftBack,
 };
-

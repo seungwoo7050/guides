@@ -1,6 +1,10 @@
 import { FIELD_RECORD_FIXTURES } from "@field-notes/shared";
 import { evaluateStage01Contract } from "@field-notes/shared/testkit";
 import {
+  ExpoLinkIntentAdapter,
+  resolvedAppScheme,
+} from "../src/adapters/ExpoLinkIntentAdapter";
+import {
   RecentIntentSet,
   resolveNavigationIntent,
   StartupIntentCoordinator,
@@ -53,6 +57,89 @@ describe("Stage 01 navigation behavior", () => {
       kind: "navigate",
       href: "/records/forest-edge/edit",
     });
+  });
+
+  it("accepts only the resolved profile scheme (plus bounded Expo development links)", () => {
+    expect(
+      parseNavigationIntent(
+        "fieldnotes-development:///records/forest-edge",
+        "link",
+        "fieldnotes-development",
+      ),
+    ).toMatchObject({ kind: "open-record", recordId: "forest-edge" });
+    expect(
+      parseNavigationIntent(
+        "fieldnotes-preview://records/forest-edge/edit",
+        "link",
+        "fieldnotes-preview",
+      ),
+    ).toMatchObject({ kind: "open-record", destination: "edit" });
+    expect(
+      parseNavigationIntent(
+        "fieldnotes:///records/forest-edge",
+        "link",
+        "fieldnotes-preview",
+      ),
+    ).toEqual({
+      kind: "invalid",
+      reason: "unexpected-scheme",
+      source: "link",
+    });
+    expect(
+      parseNavigationIntent(
+        "https://attacker.invalid/records/forest-edge",
+        "link",
+        "fieldnotes",
+      ),
+    ).toEqual({
+      kind: "invalid",
+      reason: "unexpected-scheme",
+      source: "link",
+    });
+    expect(
+      parseNavigationIntent(
+        "exp://127.0.0.1:8081/records/forest-edge",
+        "link",
+        "fieldnotes-development",
+      ),
+    ).toEqual({
+      kind: "invalid",
+      reason: "unexpected-scheme",
+      source: "link",
+    });
+  });
+
+  it("binds initial and warm links to the adapter's resolved scheme", async () => {
+    let warmListener: ((event: { url: string }) => void) | undefined;
+    const source = {
+      getInitialURL: async () => "fieldnotes-preview:///sync",
+      addEventListener: (
+        _eventName: "url",
+        listener: (event: { url: string }) => void,
+      ) => {
+        warmListener = listener;
+        return { remove: jest.fn() };
+      },
+    };
+    const adapter = new ExpoLinkIntentAdapter("fieldnotes-preview", source);
+    await expect(adapter.initial()).resolves.toEqual({
+      kind: "open-sync",
+      source: "link",
+    });
+    const received: unknown[] = [];
+    adapter.subscribe((intent) => received.push(intent));
+    warmListener?.({ url: "fieldnotes:///settings" });
+    expect(received).toEqual([
+      { kind: "invalid", reason: "unexpected-scheme", source: "link" },
+    ]);
+  });
+
+  it("requires one concrete scheme from resolved Expo config", () => {
+    expect(resolvedAppScheme("fieldnotes-preview")).toBe("fieldnotes-preview");
+    expect(() => resolvedAppScheme(["fieldnotes", "fieldnotes-preview"])).toThrow(
+      "exactly one",
+    );
+    expect(() => resolvedAppScheme(undefined)).toThrow("exactly one");
   });
 
   it("rejects the same delivered intent and bounds retained keys", () => {
