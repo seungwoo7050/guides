@@ -55,10 +55,18 @@ export function StartupNavigationBridge() {
       bootstrapped.current = true;
     };
 
-    void bootstrap();
+    void bootstrap().catch((error: unknown) => {
+      if (!active) return;
+      const notice = `storage:${String(error)}`;
+      router.replace(`/records?startupNotice=${encodeURIComponent(notice)}`);
+    });
     const unsubscribe = adapter.subscribe((intent) => {
       if (bootstrapped.current) {
-        void deliver(intent);
+        void deliver(intent).catch((error: unknown) => {
+          if (!active) return;
+          const notice = `storage:${String(error)}`;
+          router.replace(`/records?startupNotice=${encodeURIComponent(notice)}`);
+        });
       }
     });
     return () => {

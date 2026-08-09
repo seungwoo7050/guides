@@ -3,10 +3,13 @@ import type {
   CapabilityAvailability,
   FieldRecord,
   NavigationIntent,
+  LocalDatabaseSnapshot,
+  OutboxEntry,
   PermissionState,
   RecordCommand,
   RecordConflict,
   RecordPayload,
+  StorageReconciliationReport,
 } from "./contracts";
 
 export interface Clock {
@@ -54,11 +57,27 @@ export interface AttachmentFileStore {
   }>;
   remove(ownedUri: string): Promise<void>;
   listOrphans(): Promise<string[]>;
+  exists(ownedUri: string): Promise<boolean>;
+  cleanupStaging(): Promise<number>;
 }
 
 export interface AttachmentRepository {
   attachOwnedFile(input: Omit<Attachment, "state">): Promise<Attachment>;
   markMissing(id: string): Promise<void>;
+  markRemoved(id: string): Promise<void>;
+  listAttachments(recordId?: string): Promise<Attachment[]>;
+}
+
+export interface OutboxRepository {
+  listOutbox(state?: OutboxEntry["state"]): Promise<OutboxEntry[]>;
+}
+
+export interface LocalStoreInspection {
+  snapshot(): Promise<LocalDatabaseSnapshot>;
+}
+
+export interface StorageMaintenance {
+  reconcile(): Promise<StorageReconciliationReport>;
 }
 
 export type SyncResult =
@@ -134,4 +153,3 @@ export interface NavigationIntentPort {
   initial(): Promise<NavigationIntent | null>;
   subscribe(listener: (intent: NavigationIntent) => void): () => void;
 }
-

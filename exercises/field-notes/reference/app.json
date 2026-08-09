@@ -15,7 +15,7 @@
       "package": "dev.openai.guides.fieldnotes.reference",
       "predictiveBackGestureEnabled": true
     },
-    "plugins": ["expo-router", "expo-dev-client"],
+    "plugins": ["expo-router", "expo-dev-client", "expo-sqlite"],
     "experiments": {
       "typedRoutes": false
     }

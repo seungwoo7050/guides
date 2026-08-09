@@ -25,11 +25,13 @@
   "scripts": {
     "typecheck": "npm run typecheck --workspaces --if-present",
     "test:stage01": "npm run test:stage01 --workspace=@field-notes/reference",
+    "test:stage02": "npm run test:stage02 --workspace=@field-notes/reference",
     "test:stage01:skeleton": "npm run test:stage01 --workspace=@field-notes/skeleton",
     "bundle:android": "npm run bundle:android --workspace=@field-notes/reference",
     "bundle:ios": "npm run bundle:ios --workspace=@field-notes/reference",
     "bundle:android:skeleton": "npm run bundle:android --workspace=@field-notes/skeleton",
     "bundle:ios:skeleton": "npm run bundle:ios --workspace=@field-notes/skeleton",
-    "check:stage01": "npm run typecheck && npm run test:stage01"
+    "check:stage01": "npm run typecheck && npm run test:stage01",
+    "check:stage02": "npm run typecheck && npm run test:stage01 && npm run test:stage02"
   }
 }

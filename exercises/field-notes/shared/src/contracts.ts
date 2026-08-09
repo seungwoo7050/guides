@@ -38,6 +38,8 @@ export type AttachmentState =
   | "uploading"
   | "uploaded"
   | "missing-local-file"
+  | "cleanup-pending"
+  | "removed"
   | "failed";
 
 export type Attachment = {
@@ -59,6 +61,41 @@ export type RecordCommand = {
   localRevision: number;
   payload: RecordPayload | null;
   createdAt: string;
+};
+
+export type OutboxState =
+  | "pending"
+  | "claimed"
+  | "retry-wait"
+  | "blocked-auth"
+  | "conflict"
+  | "permanent-failure"
+  | "applied";
+
+export type OutboxEntry = RecordCommand & {
+  state: OutboxState;
+  attemptCount: number;
+  payloadVersion: 1;
+  claimedAt?: string;
+  lastError?: string;
+};
+
+export type StorageReconciliationReport = {
+  removedOrphanUris: string[];
+  missingAttachmentIds: string[];
+  removedAttachmentIds: string[];
+  stagingFilesRemoved: number;
+  failures: { resource: string; reason: string }[];
+};
+
+export type LocalDatabaseSnapshot = {
+  schemaVersion: number;
+  records: FieldRecord[];
+  attachments: Attachment[];
+  outbox: OutboxEntry[];
+  conflicts: RecordConflict[];
+  processedIntentKeys: string[];
+  migrationHistory: { fromVersion: number; toVersion: number }[];
 };
 
 export type RecordConflict = {
@@ -120,4 +157,3 @@ export interface Stage01NavigationImplementation {
   intentKey(intent: NavigationIntent): string;
   decideDraftBack(dirty: boolean): DraftBackDecision;
 }
-
