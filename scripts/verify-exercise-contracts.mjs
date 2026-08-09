@@ -48,7 +48,7 @@ for (const name of ["04-fastify-zod-api", "05-postgresql-kysely", "06-security",
 
 const requiredPhrases = new Map([
   ["04-fastify-zod-api", ["invalid_request", "not_found", "internal_error", "statusCode).toBe(409"]],
-  ["05-postgresql-kysely", ["reservation_audit", "afterReservation", "Promise.allSettled"]],
+  ["05-postgresql-kysely", ["reservation_audit", "afterReservation", "Promise.allSettled", "drop table"]],
   ["06-security", ["origin_forbidden", "httpOnly", "statusCode).toBe(401", "statusCode).toBe(403"]],
   ["07-websocket", ["board.snapshot", "board.patch", "viewer", "baseVersion"]],
   ["08-testing", ["decrement", "getByRole", "status"]]
@@ -58,6 +58,14 @@ for (const [name, phrases] of requiredPhrases) {
   for (const phrase of phrases) {
     if (!source.includes(phrase)) errors.push(`${name}: 검증 계약 단서 누락 (${phrase})`);
   }
+}
+
+const databaseRepository = await readFile(
+  path.join(root, "exercises", "05-postgresql-kysely", "reference", "src", "repository.ts"),
+  "utf8"
+);
+if (/\bsql\.raw\b/.test(databaseRepository)) {
+  errors.push("05-postgresql-kysely: repository 사용자 값 경로에서 sql.raw 사용 금지");
 }
 
 for (const name of ["00-first-web-app", "02-browser"]) {

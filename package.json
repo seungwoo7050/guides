@@ -7,7 +7,12 @@
     "node": ">=24.19.0 <25"
   },
   "scripts": {
-    "check": "node scripts/verify-guide-structure.mjs && node scripts/verify-links.mjs && node scripts/verify-snippets.mjs && node exercises/collaboration-board/checks/verify-stage-specs.mjs && node scripts/verify-collaboration-board.mjs",
+    "check:repository": "node scripts/verify-guide-structure.mjs && node scripts/verify-links.mjs && node scripts/verify-snippets.mjs && node exercises/collaboration-board/checks/verify-stage-specs.mjs && node scripts/verify-collaboration-board.mjs",
+    "check:contracts": "node scripts/verify-exercise-contracts.mjs",
+    "check:capstone-verifier": "node exercises/collaboration-board/checks/verify-work-verifier.mjs",
+    "check:capstone-db-runner": "node scripts/verify-collaboration-postgresql.mjs --self-test",
+    "check:checker-quality": "node scripts/verify-checker-quality.mjs",
+    "check": "pnpm check:repository && pnpm check:contracts && pnpm check:capstone-verifier && pnpm check:capstone-db-runner && pnpm check:checker-quality",
     "check:walkthrough": "node scripts/verify-patches.mjs",
     "verify:foundations": "node exercises/00-first-web-app/tests/verify.mjs reference && node exercises/02-browser/tests/verify.mjs reference",
     "verify:runtime": "pnpm --dir exercises/01-runtime/reference typecheck && pnpm --dir exercises/01-runtime/reference demo",
@@ -17,7 +22,8 @@
     "verify:security": "pnpm --dir exercises/06-security/reference typecheck && pnpm --dir exercises/06-security/reference test",
     "verify:realtime": "pnpm --dir exercises/07-websocket/reference typecheck && pnpm --dir exercises/07-websocket/reference test",
     "verify:testing": "pnpm --dir exercises/08-testing/reference typecheck && pnpm --dir exercises/08-testing/reference test && pnpm --dir exercises/08-testing/reference test:e2e",
-    "verify:collaboration": "pnpm --dir projects/collaboration-board typecheck && pnpm --dir projects/collaboration-board test && pnpm --dir projects/collaboration-board build && pnpm --dir projects/collaboration-board test:e2e",
+    "verify:collaboration:database": "node scripts/verify-collaboration-postgresql.mjs --database-only",
+    "verify:collaboration": "node scripts/verify-collaboration-postgresql.mjs",
     "verify": "pnpm check && pnpm verify:foundations && pnpm verify:runtime && pnpm verify:react && pnpm verify:api && pnpm verify:database && pnpm verify:security && pnpm verify:realtime && pnpm verify:testing && pnpm verify:collaboration",
     "serve:static": "node scripts/serve-static.mjs",
     "clean": "node scripts/clean-generated.mjs"

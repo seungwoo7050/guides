@@ -38,7 +38,7 @@ function checkNodeSyntax(file) {
 async function collect(directory) {
   const out = [];
   for (const entry of await readdir(directory, { withFileTypes: true })) {
-    if (["node_modules", ".git", ".next", "coverage", "dist", "target"].includes(entry.name)) continue;
+    if (["node_modules", ".git", ".next", ".guide-tmp", "coverage", "dist", "target"].includes(entry.name)) continue;
     const full = path.join(directory, entry.name);
     if (entry.isDirectory()) out.push(...await collect(full));
     else if (/\.(md|json|mjs|js|ts|tsx|yaml|yml|css|html|sql|patch)$/.test(entry.name)) out.push(full);

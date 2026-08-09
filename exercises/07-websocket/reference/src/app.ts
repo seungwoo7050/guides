@@ -1,19 +1,33 @@
 import { randomUUID } from "node:crypto";
 import websocket from "@fastify/websocket";
-import Fastify from "fastify";
+import Fastify, { type FastifyRequest } from "fastify";
 import { WebSocket } from "ws";
 import { ClientEventSchema, type BoardSnapshot, type ServerEvent } from "./protocol";
 
-type Client = { id: string; socket: WebSocket; boardId: string | null; alive: boolean };
+type Role = "editor" | "viewer";
+type Client = {
+  id: string;
+  socket: WebSocket;
+  boardId: string | null;
+  alive: boolean;
+  role: Role;
+};
+type ResolveRole = (request: FastifyRequest) => Role;
 
-export async function buildApp() {
+export async function buildApp(resolveRole: ResolveRole = () => "editor") {
   const app = Fastify({ logger: false });
   const clients = new Set<Client>();
   const boards = new Map<string, BoardSnapshot>();
   await app.register(websocket);
 
-  app.get("/ws", { websocket: true }, (socket) => {
-    const client: Client = { id: randomUUID(), socket: socket as WebSocket, boardId: null, alive: true };
+  app.get("/ws", { websocket: true }, (socket, request) => {
+    const client: Client = {
+      id: randomUUID(),
+      socket: socket as WebSocket,
+      boardId: null,
+      alive: true,
+      role: resolveRole(request)
+    };
     clients.add(client);
     socket.on("pong", () => { client.alive = true; });
     socket.on("close", () => clients.delete(client));
@@ -30,6 +44,9 @@ export async function buildApp() {
       if (event.type === "snapshot.request") {
         return send(client, { type: "board.snapshot", snapshot: board(event.boardId) });
       }
+      if (client.role === "viewer" && event.type !== "cursor.move") {
+        return client.socket.close(1008, "write permission required");
+      }
       const current = board(event.boardId);
       if (event.type === "item.create") {
         current.version += 1;
@@ -42,7 +59,34 @@ export async function buildApp() {
           version: 1
         });
       }
-      if (event.type === "cursor.move") current.sequence += 1;
+      if (event.type === "item.update" || event.type === "item.move") {
+        const item = current.items.find((candidate) => candidate.id === event.itemId);
+        if (!item || item.version !== event.baseVersion) {
+          return send(client, { type: "board.snapshot", snapshot: current });
+        }
+        if (event.type === "item.update") item.content = event.content;
+        if (event.type === "item.move") {
+          if (!event.final) {
+            const preview = {
+              type: "item.preview" as const,
+              preview: {
+                boardId: event.boardId,
+                itemId: event.itemId,
+                x: event.x,
+                y: event.y,
+                baseVersion: event.baseVersion
+              }
+            };
+            for (const target of clients) if (target.boardId === event.boardId) send(target, preview);
+            return;
+          }
+          item.x = event.x;
+          item.y = event.y;
+        }
+        item.version += 1;
+        current.version += 1;
+        current.sequence += 1;
+      }
       const patch = {
         type: "board.patch" as const,
         patch: { boardId: event.boardId, sequence: current.sequence, operation: event.type }

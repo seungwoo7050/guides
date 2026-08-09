@@ -96,6 +96,10 @@ docs/04-data-and-security/01-sql-relational-model.md
 docs/05-realtime-and-quality/01-websocket-protocol.md
 docs/06-capstones/04-collaboration-board.md
 exercises/collaboration-board/README.md
+exercises/collaboration-board/checks/verify-work-verifier.mjs
+exercises/collaboration-board/checks/stage5-postgresql.test.ts
+exercises/collaboration-board/checks/postgresql.compose.yml
+scripts/verify-collaboration-postgresql.mjs
 scripts/verify-exercise-contracts.mjs
 scripts/verify-checker-quality.mjs
 prepare.sh

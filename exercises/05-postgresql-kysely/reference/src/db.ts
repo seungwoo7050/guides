@@ -13,7 +13,17 @@ interface ReservationTable {
   seat_no: number;
   created_at: Generated<Date>;
 }
-export interface Database { events: EventTable; reservations: ReservationTable }
+interface ReservationAuditTable {
+  id: Generated<string>;
+  reservation_id: string;
+  action: "reserved";
+  created_at: Generated<Date>;
+}
+export interface Database {
+  events: EventTable;
+  reservations: ReservationTable;
+  reservation_audit: ReservationAuditTable;
+}
 export type EventRow = Selectable<EventTable>;
 export type NewEvent = Insertable<EventTable>;
 

@@ -1,13 +1,13 @@
-From b09acbe2f6fbfaae7c595f6c6f1c790fbb2c638b Mon Sep 17 00:00:00 2001
+From ea767121bb34e5d2fb8f4d8ff7e0bfc79ee75c14 Mon Sep 17 00:00:00 2001
 From: Seungwoo Kim <seungwoo7050@naver.com>
 Date: Tue, 7 Oct 2025 20:49:00 +0900
 Subject: [PATCH] fix(security): 세션과 권한 경계 보완
 
 diff --git a/src/app.ts b/src/app.ts
-index 555cb4e..0f32503 100644
+index 555cb4e..9eece8c 100644
 --- a/src/app.ts
 +++ b/src/app.ts
-@@ -17,7 +17,7 @@ const ProfileSchema = z.object({ displayName: z.string().trim().min(1).max(40) }
+@@ -17,23 +17,39 @@ const ProfileSchema = z.object({ displayName: z.string().trim().min(1).max(40) }
 
  export function buildApp(allowedOrigins = ["http://localhost:3000"]) {
    const app = Fastify({ logger: false });
@@ -15,8 +15,32 @@ index 555cb4e..0f32503 100644
 +  app.register(cors, { origin: allowedOrigins, credentials: true });
    app.register(cookie);
 
++  app.addHook("preHandler", async (request, reply) => {
++    const changesState = ["POST", "PUT", "PATCH", "DELETE"].includes(request.method);
++    const hasSessionCookie = Boolean(request.cookies.board_session);
++    if (!changesState || !hasSessionCookie) return;
++    const origin = request.headers.origin;
++    if (!origin || !allowedOrigins.includes(origin)) {
++      return reply.code(403).send({ code: "origin_forbidden" });
++    }
++  });
++
    app.post("/auth/login", async (request, reply) => {
-@@ -32,8 +32,8 @@ export function buildApp(allowedOrigins = ["http://localhost:3000"]) {
+     const parsed = LoginSchema.safeParse(request.body);
+     if (!parsed.success) return reply.code(400).send({ code: "invalid_request" });
+     const user = users.get(parsed.data.handle)!;
+     const token = randomUUID();
+     sessions.set(token, user.id);
+-    reply.setCookie("board_session", token, { path: "/", httpOnly: true, sameSite: "lax", maxAge: 3600 });
++    reply.setCookie("board_session", token, {
++      path: "/",
++      httpOnly: true,
++      secure: process.env.NODE_ENV === "production",
++      sameSite: "lax",
++      maxAge: 3600
++    });
+     return { user };
+   });
 
    app.post("/auth/logout", async (request, reply) => {
      const token = request.cookies.board_session;
@@ -27,7 +51,7 @@ index 555cb4e..0f32503 100644
      return { ok: true };
    });
 
-@@ -47,7 +47,7 @@ export function buildApp(allowedOrigins = ["http://localhost:3000"]) {
+@@ -47,7 +63,7 @@ export function buildApp(allowedOrigins = ["http://localhost:3000"]) {
      const actor = currentUser(request);
      if (!actor) return unauthorized(reply);
      const { id } = request.params as { id: string };
@@ -36,7 +60,7 @@ index 555cb4e..0f32503 100644
      const parsed = ProfileSchema.safeParse(request.body);
      if (!parsed.success) return reply.code(400).send({ code: "invalid_request" });
      const target = [...users.values()].find((user) => user.id === id);
-@@ -59,7 +59,7 @@ export function buildApp(allowedOrigins = ["http://localhost:3000"]) {
+@@ -59,7 +75,7 @@ export function buildApp(allowedOrigins = ["http://localhost:3000"]) {
    app.get("/admin/users", async (request, reply) => {
      const actor = currentUser(request);
      if (!actor) return unauthorized(reply);

@@ -1,9 +1,13 @@
 import websocket from "@fastify/websocket";
-import Fastify from "fastify";
+import Fastify, { type FastifyRequest } from "fastify";
 import { ClientEventSchema } from "./protocol";
 
-export async function buildApp() {
+type Role = "editor" | "viewer";
+type ResolveRole = (request: FastifyRequest) => Role;
+
+export async function buildApp(resolveRole: ResolveRole = () => "editor") {
   const app = Fastify({ logger: false });
+  void resolveRole;
   await app.register(websocket);
   app.get("/ws", { websocket: true }, (socket) => {
     socket.on("message", (raw) => {

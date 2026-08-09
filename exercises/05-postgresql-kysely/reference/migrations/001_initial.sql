@@ -12,3 +12,9 @@ create table if not exists reservations (
   created_at timestamptz not null default now(),
   unique (event_id, seat_no)
 );
+create table if not exists reservation_audit (
+  id uuid primary key default gen_random_uuid(),
+  reservation_id uuid not null references reservations(id) on delete cascade,
+  action text not null check (action in ('reserved')),
+  created_at timestamptz not null default now()
+);

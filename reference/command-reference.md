@@ -18,7 +18,7 @@ Part 01은 Docker 없이 진행할 수 있습니다. 브라우저 실행 파일�
 외부 서비스와 설치된 package 없이 문서 구조, 내부 링크, 코드 블록과 단계 명세를 확인합니다.
 
 ```sh
-pnpm check
+pnpm check:repository
 ```
 
 동일한 검사를 Node.js로 직접 실행할 수도 있습니다.
@@ -30,6 +30,8 @@ node scripts/verify-snippets.mjs
 node exercises/collaboration-board/checks/verify-stage-specs.mjs
 node scripts/verify-collaboration-board.mjs
 ```
+
+실습 계약과 검사기 mutation 검출까지 포함한 공식 품질 게이트는 의존성·Docker·브라우저를 준비한 뒤 `pnpm check`로 실행합니다.
 
 ## 정적 파일 서버
 

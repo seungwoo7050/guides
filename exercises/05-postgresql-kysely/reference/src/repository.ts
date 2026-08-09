@@ -3,25 +3,43 @@ import type { Database } from "./db";
 
 export class SeatTakenError extends Error {}
 
+export interface ReserveSeatOptions {
+  afterReservation?: () => void | Promise<void>;
+}
+
 export async function createEvent(db: Kysely<Database>, name: string) {
   return db.insertInto("events").values({ name }).returningAll().executeTakeFirstOrThrow();
 }
 
-export async function reserveSeat(db: Kysely<Database>, input: { eventId: string; userId: string; seatNo: number }) {
+export async function reserveSeat(
+  db: Kysely<Database>,
+  input: { eventId: string; userId: string; seatNo: number },
+  options: ReserveSeatOptions = {}
+) {
   try {
-    return await db.transaction().execute(async (trx) => reserveInTransaction(trx, input));
+    return await db.transaction().execute(async (trx) => reserveInTransaction(trx, input, options));
   } catch (error: unknown) {
     if (isUniqueViolation(error)) throw new SeatTakenError("seat_taken");
     throw error;
   }
 }
 
-async function reserveInTransaction(trx: Transaction<Database>, input: { eventId: string; userId: string; seatNo: number }) {
-  return trx.insertInto("reservations").values({
+async function reserveInTransaction(
+  trx: Transaction<Database>,
+  input: { eventId: string; userId: string; seatNo: number },
+  options: ReserveSeatOptions
+) {
+  const reservation = await trx.insertInto("reservations").values({
     event_id: input.eventId,
     user_id: input.userId,
     seat_no: input.seatNo
   }).returningAll().executeTakeFirstOrThrow();
+  await trx.insertInto("reservation_audit").values({
+    reservation_id: reservation.id,
+    action: "reserved"
+  }).executeTakeFirstOrThrow();
+  await options.afterReservation?.();
+  return reservation;
 }
 
 function isUniqueViolation(error: unknown): boolean {

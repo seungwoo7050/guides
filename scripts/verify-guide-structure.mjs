@@ -52,6 +52,9 @@ const requiredSupport = [
   "scripts/verify-snippets.mjs",
   "scripts/capture-source-state.mjs",
   "scripts/verify-postgresql-exercise.mjs",
+  "scripts/verify-collaboration-postgresql.mjs",
+  "scripts/verify-exercise-contracts.mjs",
+  "scripts/verify-checker-quality.mjs",
   "exercises/03-react-nextjs/reference/.gitignore",
   "exercises/03-react-nextjs/reference/next.config.mjs",
   "exercises/03-react-nextjs/skeleton/.gitignore",
@@ -62,6 +65,9 @@ const requiredSupport = [
   "exercises/03-react-nextjs/tests/verify-browser.mjs",
   "exercises/collaboration-board/checks/verify-stage-specs.mjs",
   "exercises/collaboration-board/checks/verify-work.mjs",
+  "exercises/collaboration-board/checks/verify-work-verifier.mjs",
+  "exercises/collaboration-board/checks/stage5-postgresql.test.ts",
+  "exercises/collaboration-board/checks/postgresql.compose.yml",
   "exercises/collaboration-board/walkthrough-base/README.md",
   "exercises/collaboration-board/walkthrough-base/.gitignore",
   "scripts/verify-patches.mjs",
@@ -87,9 +93,10 @@ const obsoleteDocs = [
   "docs/09-collaboration-board.md"
 ];
 const requiredScripts = [
-  "check", "check:walkthrough", "verify:foundations", "verify:runtime", "verify:react",
+  "check", "check:repository", "check:contracts", "check:capstone-verifier", "check:capstone-db-runner",
+  "check:checker-quality", "check:walkthrough", "verify:foundations", "verify:runtime", "verify:react",
   "verify:api", "verify:database", "verify:security", "verify:realtime", "verify:testing",
-  "verify:collaboration", "verify", "serve:static"
+  "verify:collaboration:database", "verify:collaboration", "verify", "serve:static"
 ];
 const errors = [];
 
@@ -205,6 +212,32 @@ for (const relative of [
 for (const name of requiredScripts) {
   if (!packageJson.scripts?.[name]) errors.push(`package script 누락: ${name}`);
 }
+for (const name of ["check:repository", "check:contracts", "check:capstone-verifier", "check:capstone-db-runner", "check:checker-quality"]) {
+  if (!packageJson.scripts?.check?.includes(`pnpm ${name}`)) {
+    errors.push(`공식 check에서 품질 gate 호출 누락: ${name}`);
+  }
+}
+if (!packageJson.scripts?.verify?.includes("pnpm check")) {
+  errors.push("공식 verify에서 check 호출 누락");
+}
+if (packageJson.scripts?.["verify:collaboration"] !== "node scripts/verify-collaboration-postgresql.mjs") {
+  errors.push("협업 보드 공식 검증에서 PostgreSQL 통합 gate 호출 누락");
+}
+if (!packageJson.scripts?.verify?.includes("pnpm verify:collaboration")) {
+  errors.push("공식 verify에서 협업 보드 gate 호출 누락");
+}
+const rootVerify = await readFile(path.join(root, "verify.sh"), "utf8");
+if (!rootVerify.includes("pnpm verify:collaboration")) {
+  errors.push("verify.sh에서 협업 보드 공식 gate 호출 누락");
+}
+for (const verifier of [
+  "scripts/verify-exercise-contracts.mjs",
+  "exercises/collaboration-board/checks/verify-work-verifier.mjs --database",
+  "scripts/verify-collaboration-postgresql.mjs --self-test",
+  "scripts/verify-checker-quality.mjs"
+]) {
+  if (!rootVerify.includes(verifier)) errors.push(`verify.sh 품질 gate 호출 누락: ${verifier}`);
+}
 
 
 const capstoneStarter = JSON.parse(await readFile(path.join(root, "exercises/collaboration-board/skeleton/package.json"), "utf8"));
@@ -216,6 +249,11 @@ for (const packagePath of [
   const manifestPath = path.join(root, "exercises/collaboration-board/skeleton", packagePath);
   const manifest = JSON.parse(await readFile(manifestPath, "utf8"));
   if (!manifest.scripts?.typecheck) errors.push(`협업 보드 starter typecheck 누락: ${packagePath}`);
+}
+
+const capstoneDatabase = JSON.parse(await readFile(path.join(root, "projects/collaboration-board/packages/db/package.json"), "utf8"));
+if (capstoneDatabase.scripts?.test !== "vitest run") {
+  errors.push(`capstone DB unit test 명령 불일치: ${capstoneDatabase.scripts?.test ?? "<missing>"}`);
 }
 
 const markdownToScan = [

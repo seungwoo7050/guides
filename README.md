@@ -45,7 +45,7 @@ node tests/verify.mjs work
 문서 구조, 내부 링크, 코드 블록과 실습 계약은 외부 서비스 없이 확인합니다.
 
 ```sh
-pnpm check
+pnpm check:repository
 ```
 
 초기 브라우저 실습을 실제 Chrome 또는 Chromium으로 확인합니다.
@@ -62,6 +62,8 @@ pnpm --dir exercises/08-testing/reference exec playwright install chromium
 pnpm --dir projects/collaboration-board exec playwright install chromium
 pnpm verify
 ```
+
+`pnpm check`도 구조 검사에 실습 계약·capstone 검사기 자체 검증·known-bad mutation 검출을 더한 공식 품질 게이트이므로 같은 의존성·Docker·브라우저 환경에서 실행합니다.
 
 표준 전체 검증은 `./prepare.sh` 다음 `./verify.sh` 순서로 실행합니다. 전체 로그는 성공·실패와 관계없이 저장소 밖의 임시 디렉터리에 남고 마지막에 `VERIFY LOG` 경로가 출력됩니다. 다른 위치가 필요하면 저장소 밖의 절대 경로를 지정합니다.
 

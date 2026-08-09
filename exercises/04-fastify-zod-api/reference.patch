@@ -1,14 +1,15 @@
-From ef506814f7e615d22bea85dc97d11a164f952f56 Mon Sep 17 00:00:00 2001
+From b397b6171ab343367c781731b4d93a4f43e03dca Mon Sep 17 00:00:00 2001
 From: Seungwoo Kim <seungwoo7050@naver.com>
 Date: Mon, 22 Sep 2025 20:37:00 +0900
 Subject: [PATCH] feat(api): Fastify API 계약 구현
 
 diff --git a/src/app.ts b/src/app.ts
-index f32e341..ee42b6e 100644
+index f32e341..d46a70e 100644
 --- a/src/app.ts
 +++ b/src/app.ts
-@@ -1,9 +1,33 @@
- import Fastify from "fastify";
+@@ -1,9 +1,46 @@
+-import Fastify from "fastify";
++import Fastify, { type FastifyError } from "fastify";
 +import { CreateMemoSchema } from "./contracts";
 +import { ConflictError, createMemo } from "./service";
  import type { MemoRepository } from "./repository";
@@ -17,6 +18,19 @@ index f32e341..ee42b6e 100644
    const app = Fastify({ logger: false });
 -  // TODO: 목록 조회·단건 조회·생성 라우트를 구현해 주세요.
 -  // TODO: CreateMemoSchema.safeParse를 사용하고, 400·404·409를 구분하며, 저장소를 주입해 주세요.
++
++  app.setErrorHandler((error: FastifyError, _request, reply) => {
++    if (error.statusCode && error.statusCode >= 400 && error.statusCode < 500) {
++      return reply.code(error.statusCode).send({
++        code: "invalid_request",
++        message: "요청이 올바르지 않습니다."
++      });
++    }
++    return reply.code(500).send({
++      code: "internal_error",
++      message: "요청을 처리하지 못했습니다."
++    });
++  });
 +
 +  app.get("/memos", async () => ({ memos: await repo.list() }));
 +
@@ -30,7 +44,7 @@ index f32e341..ee42b6e 100644
 +  app.post("/memos", async (request, reply) => {
 +    const parsed = CreateMemoSchema.safeParse(request.body);
 +    if (!parsed.success) {
-+      return reply.code(400).send({ code: "invalid_request", message: "메모 형식이 올바르지 않습니다.", issues: parsed.error.issues });
++      return reply.code(400).send({ code: "invalid_request", message: "요청이 올바르지 않습니다." });
 +    }
 +    try {
 +      const memo = await createMemo(repo, parsed.data);

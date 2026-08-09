@@ -188,8 +188,20 @@ run "capstone-specs" \
 run "collaboration-structure" \
     node scripts/verify-collaboration-board.mjs
 
+run "exercise-contracts" \
+    node scripts/verify-exercise-contracts.mjs
+
+run "capstone-verifier-quality" \
+    node exercises/collaboration-board/checks/verify-work-verifier.mjs --database
+
+run "capstone-postgresql-runner-quality" \
+    node scripts/verify-collaboration-postgresql.mjs --self-test
+
 run "walkthrough-patches" \
     pnpm check:walkthrough
+
+run "checker-quality" \
+    node scripts/verify-checker-quality.mjs
 
 # ----------------------------------------------------------------------
 # Reference implementations

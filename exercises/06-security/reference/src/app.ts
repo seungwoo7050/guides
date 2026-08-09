@@ -20,13 +20,29 @@ export function buildApp(allowedOrigins = ["http://localhost:3000"]) {
   app.register(cors, { origin: allowedOrigins, credentials: true });
   app.register(cookie);
 
+  app.addHook("preHandler", async (request, reply) => {
+    const changesState = ["POST", "PUT", "PATCH", "DELETE"].includes(request.method);
+    const hasSessionCookie = Boolean(request.cookies.board_session);
+    if (!changesState || !hasSessionCookie) return;
+    const origin = request.headers.origin;
+    if (!origin || !allowedOrigins.includes(origin)) {
+      return reply.code(403).send({ code: "origin_forbidden" });
+    }
+  });
+
   app.post("/auth/login", async (request, reply) => {
     const parsed = LoginSchema.safeParse(request.body);
     if (!parsed.success) return reply.code(400).send({ code: "invalid_request" });
     const user = users.get(parsed.data.handle)!;
     const token = randomUUID();
     sessions.set(token, user.id);
-    reply.setCookie("board_session", token, { path: "/", httpOnly: true, sameSite: "lax", maxAge: 3600 });
+    reply.setCookie("board_session", token, {
+      path: "/",
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "lax",
+      maxAge: 3600
+    });
     return { user };
   });
 

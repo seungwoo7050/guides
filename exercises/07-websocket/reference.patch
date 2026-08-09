@@ -1,58 +1,46 @@
-From 14945c7da42f1e0e86d271bafe3512c0c978c23a Mon Sep 17 00:00:00 2001
+From b008224f74e91681801d3ad3947c6c836b85e36c Mon Sep 17 00:00:00 2001
 From: Seungwoo Kim <seungwoo7050@naver.com>
 Date: Wed, 15 Oct 2025 21:31:00 +0900
 Subject: [PATCH] feat(realtime): WebSocket 상태 동기화 구현
 
-diff --git a/src/app.test.ts b/src/app.test.ts
-index ff45dca..e0581bd 100644
---- a/src/app.test.ts
-+++ b/src/app.test.ts
-@@ -20,12 +20,22 @@ function next(socket: WebSocket, type: string): Promise<any> {
- describe("실시간 보드", () => {
-   let app: Awaited<ReturnType<typeof buildApp>> | undefined;
-   afterEach(async () => app?.close());
--  it("재연결 요청에 스냅숏을 반환합니다", async () => {
-+  it("재연결 요청에 최신 스냅숏을 반환합니다", async () => {
-     app = await buildApp();
-     await app.ready();
-     const socket = await app.injectWS("/ws") as WebSocket;
-     socket.send(JSON.stringify({ type: "board.join", boardId: "planning" }));
-     expect((await next(socket, "board.snapshot")).snapshot.boardId).toBe("planning");
-+    socket.send(JSON.stringify({
-+      type: "item.create",
-+      boardId: "planning",
-+      content: "검토할 항목",
-+      x: 100,
-+      y: 120
-+    }));
-+    expect((await next(socket, "board.patch")).patch.operation).toBe("item.create");
-+    socket.send(JSON.stringify({ type: "snapshot.request", boardId: "planning" }));
-+    expect((await next(socket, "board.snapshot")).snapshot.items).toHaveLength(1);
-     socket.terminate();
-   });
- });
 diff --git a/src/app.ts b/src/app.ts
-index 3061c75..39501ec 100644
+index 6ce409a..f21de1f 100644
 --- a/src/app.ts
 +++ b/src/app.ts
-@@ -1,17 +1,91 @@
+@@ -1,21 +1,135 @@
 +import { randomUUID } from "node:crypto";
  import websocket from "@fastify/websocket";
- import Fastify from "fastify";
+ import Fastify, { type FastifyRequest } from "fastify";
 -import { ClientEventSchema } from "./protocol";
 +import { WebSocket } from "ws";
 +import { ClientEventSchema, type BoardSnapshot, type ServerEvent } from "./protocol";
-+
-+type Client = { id: string; socket: WebSocket; boardId: string | null; alive: boolean };
 
- export async function buildApp() {
+ type Role = "editor" | "viewer";
++type Client = {
++  id: string;
++  socket: WebSocket;
++  boardId: string | null;
++  alive: boolean;
++  role: Role;
++};
+ type ResolveRole = (request: FastifyRequest) => Role;
+
+ export async function buildApp(resolveRole: ResolveRole = () => "editor") {
    const app = Fastify({ logger: false });
+-  void resolveRole;
 +  const clients = new Set<Client>();
 +  const boards = new Map<string, BoardSnapshot>();
    await app.register(websocket);
+-  app.get("/ws", { websocket: true }, (socket) => {
 +
-   app.get("/ws", { websocket: true }, (socket) => {
-+    const client: Client = { id: randomUUID(), socket: socket as WebSocket, boardId: null, alive: true };
++  app.get("/ws", { websocket: true }, (socket, request) => {
++    const client: Client = {
++      id: randomUUID(),
++      socket: socket as WebSocket,
++      boardId: null,
++      alive: true,
++      role: resolveRole(request)
++    };
 +    clients.add(client);
 +    socket.on("pong", () => { client.alive = true; });
 +    socket.on("close", () => clients.delete(client));
@@ -72,6 +60,9 @@ index 3061c75..39501ec 100644
 +      if (event.type === "snapshot.request") {
 +        return send(client, { type: "board.snapshot", snapshot: board(event.boardId) });
 +      }
++      if (client.role === "viewer" && event.type !== "cursor.move") {
++        return client.socket.close(1008, "write permission required");
++      }
 +      const current = board(event.boardId);
 +      if (event.type === "item.create") {
 +        current.version += 1;
@@ -84,7 +75,34 @@ index 3061c75..39501ec 100644
 +          version: 1
 +        });
 +      }
-+      if (event.type === "cursor.move") current.sequence += 1;
++      if (event.type === "item.update" || event.type === "item.move") {
++        const item = current.items.find((candidate) => candidate.id === event.itemId);
++        if (!item || item.version !== event.baseVersion) {
++          return send(client, { type: "board.snapshot", snapshot: current });
++        }
++        if (event.type === "item.update") item.content = event.content;
++        if (event.type === "item.move") {
++          if (!event.final) {
++            const preview = {
++              type: "item.preview" as const,
++              preview: {
++                boardId: event.boardId,
++                itemId: event.itemId,
++                x: event.x,
++                y: event.y,
++                baseVersion: event.baseVersion
++              }
++            };
++            for (const target of clients) if (target.boardId === event.boardId) send(target, preview);
++            return;
++          }
++          item.x = event.x;
++          item.y = event.y;
++        }
++        item.version += 1;
++        current.version += 1;
++        current.sequence += 1;
++      }
 +      const patch = {
 +        type: "board.patch" as const,
 +        patch: { boardId: event.boardId, sequence: current.sequence, operation: event.type }

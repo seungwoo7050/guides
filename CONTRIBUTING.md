@@ -27,7 +27,7 @@
 먼저 의존성 없이 실행되는 구조 검사를 수행합니다.
 
 ```sh
-pnpm check
+pnpm check:repository
 ```
 
 초기 브라우저 실습은 실제 Chrome 또는 Chromium으로 확인합니다.
@@ -44,6 +44,8 @@ pnpm --dir exercises/08-testing/reference exec playwright install chromium
 pnpm --dir projects/collaboration-board exec playwright install chromium
 pnpm verify
 ```
+
+실습 계약과 검사기의 결함 검출력만 다시 확인할 때는 같은 환경에서 `pnpm check`를 실행합니다.
 
 기존 누적 patch는 선택적 walkthrough 자료입니다. patch 무결성만 확인하려면 다음 명령을 사용합니다.
 

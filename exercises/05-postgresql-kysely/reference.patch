@@ -1,18 +1,57 @@
-From e192ee0e9f0939c1c42fd98026129b3db94be4ed Mon Sep 17 00:00:00 2001
+From 751a222d436198e506d7b23ccc28d43e54ca651a Mon Sep 17 00:00:00 2001
 From: Seungwoo Kim <seungwoo7050@naver.com>
 Date: Tue, 30 Sep 2025 21:16:00 +0900
 Subject: [PATCH] feat(data): PostgreSQL 트랜잭션 구현
 
+diff --git a/migrations/001_initial.sql b/migrations/001_initial.sql
+index d2f2081..8f85f34 100644
+--- a/migrations/001_initial.sql
++++ b/migrations/001_initial.sql
+@@ -12,3 +12,9 @@ create table if not exists reservations (
+   created_at timestamptz not null default now(),
+   unique (event_id, seat_no)
+ );
++create table if not exists reservation_audit (
++  id uuid primary key default gen_random_uuid(),
++  reservation_id uuid not null references reservations(id) on delete cascade,
++  action text not null check (action in ('reserved')),
++  created_at timestamptz not null default now()
++);
+diff --git a/src/db.ts b/src/db.ts
+index 7c51667..0cf4e40 100644
+--- a/src/db.ts
++++ b/src/db.ts
+@@ -13,7 +13,17 @@ interface ReservationTable {
+   seat_no: number;
+   created_at: Generated<Date>;
+ }
+-export interface Database { events: EventTable; reservations: ReservationTable }
++interface ReservationAuditTable {
++  id: Generated<string>;
++  reservation_id: string;
++  action: "reserved";
++  created_at: Generated<Date>;
++}
++export interface Database {
++  events: EventTable;
++  reservations: ReservationTable;
++  reservation_audit: ReservationAuditTable;
++}
+ export type EventRow = Selectable<EventTable>;
+ export type NewEvent = Insertable<EventTable>;
+
 diff --git a/src/repository.ts b/src/repository.ts
-index 68d76f3..f56f206 100644
+index ade8b1a..d39b751 100644
 --- a/src/repository.ts
 +++ b/src/repository.ts
-@@ -1,14 +1,29 @@
+@@ -1,4 +1,4 @@
 -import type { Kysely } from "kysely";
 +import type { Kysely, Transaction } from "kysely";
  import type { Database } from "./db";
 
  export class SeatTakenError extends Error {}
+@@ -8,8 +8,7 @@ export interface ReserveSeatOptions {
+ }
 
  export async function createEvent(db: Kysely<Database>, name: string) {
 -  // TODO: INSERT ... RETURNING 쿼리를 구현해 주세요.
@@ -20,23 +59,39 @@ index 68d76f3..f56f206 100644
 +  return db.insertInto("events").values({ name }).returningAll().executeTakeFirstOrThrow();
  }
 
- export async function reserveSeat(db: Kysely<Database>, input: { eventId: string; userId: string; seatNo: number }) {
+ export async function reserveSeat(
+@@ -17,8 +16,32 @@ export async function reserveSeat(
+   input: { eventId: string; userId: string; seatNo: number },
+   options: ReserveSeatOptions = {}
+ ) {
 -  // TODO: 트랜잭션을 사용하고 고유 제약 위반 코드 23505를 변환해 주세요.
+-  // 예약·감사 insert 뒤 `options.afterReservation`을 호출해 두 기록의 rollback 경계를 검증해 주세요.
+-  void options;
 -  throw new Error("TODO");
 +  try {
-+    return await db.transaction().execute(async (trx) => reserveInTransaction(trx, input));
++    return await db.transaction().execute(async (trx) => reserveInTransaction(trx, input, options));
 +  } catch (error: unknown) {
 +    if (isUniqueViolation(error)) throw new SeatTakenError("seat_taken");
 +    throw error;
 +  }
 +}
 +
-+async function reserveInTransaction(trx: Transaction<Database>, input: { eventId: string; userId: string; seatNo: number }) {
-+  return trx.insertInto("reservations").values({
++async function reserveInTransaction(
++  trx: Transaction<Database>,
++  input: { eventId: string; userId: string; seatNo: number },
++  options: ReserveSeatOptions
++) {
++  const reservation = await trx.insertInto("reservations").values({
 +    event_id: input.eventId,
 +    user_id: input.userId,
 +    seat_no: input.seatNo
 +  }).returningAll().executeTakeFirstOrThrow();
++  await trx.insertInto("reservation_audit").values({
++    reservation_id: reservation.id,
++    action: "reserved"
++  }).executeTakeFirstOrThrow();
++  await options.afterReservation?.();
++  return reservation;
 +}
 +
 +function isUniqueViolation(error: unknown): boolean {
