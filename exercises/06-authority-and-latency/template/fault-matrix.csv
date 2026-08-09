@@ -1,0 +1,2 @@
+fault_profile,case,precondition,expected_server_state,expected_client_state,player_visible_behavior,telemetry,recovery,pass_condition
+baseline,duplicate_command,,,,,,,

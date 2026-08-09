@@ -1,0 +1,133 @@
+{
+  "trace_id": "relay-runtime-03",
+  "events": [
+    {
+      "index": 1,
+      "event": "process_start",
+      "scope": "process",
+      "generation": 1
+    },
+    {
+      "index": 2,
+      "event": "frontend_ready",
+      "scope": "world",
+      "generation": 1
+    },
+    {
+      "index": 3,
+      "event": "arena_load_request",
+      "scope": "arena_session",
+      "generation": 20
+    },
+    {
+      "index": 4,
+      "event": "critical_content_request",
+      "scope": "arena_session",
+      "generation": 20
+    },
+    {
+      "index": 5,
+      "event": "cosmetic_content_request",
+      "scope": "arena_session",
+      "generation": 20
+    },
+    {
+      "index": 6,
+      "event": "arena_world_created",
+      "scope": "world",
+      "generation": 20
+    },
+    {
+      "index": 7,
+      "event": "match_created",
+      "scope": "match",
+      "generation": 20
+    },
+    {
+      "index": 8,
+      "event": "player_spawned",
+      "scope": "entity",
+      "generation": 20
+    },
+    {
+      "index": 9,
+      "event": "control_ready",
+      "scope": "arena_session",
+      "generation": 20
+    },
+    {
+      "index": 10,
+      "event": "load_cancel",
+      "scope": "arena_session",
+      "generation": 20
+    },
+    {
+      "index": 11,
+      "event": "match_destroyed",
+      "scope": "match",
+      "generation": 20
+    },
+    {
+      "index": 12,
+      "event": "arena_world_unloaded",
+      "scope": "world",
+      "generation": 20
+    },
+    {
+      "index": 13,
+      "event": "cosmetic_content_completed",
+      "scope": "async_request",
+      "generation": 20
+    },
+    {
+      "index": 14,
+      "event": "arena_load_request",
+      "scope": "arena_session",
+      "generation": 21
+    },
+    {
+      "index": 15,
+      "event": "arena_world_created",
+      "scope": "world",
+      "generation": 21
+    },
+    {
+      "index": 16,
+      "event": "navigation_completed",
+      "scope": "async_request",
+      "generation": 20
+    },
+    {
+      "index": 17,
+      "event": "match_created",
+      "scope": "match",
+      "generation": 21
+    },
+    {
+      "index": 18,
+      "event": "os_suspend",
+      "scope": "process",
+      "generation": 1
+    },
+    {
+      "index": 19,
+      "event": "result_commit_attempt",
+      "scope": "profile",
+      "generation": 21,
+      "attempt": 1
+    },
+    {
+      "index": 20,
+      "event": "os_resume",
+      "scope": "process",
+      "generation": 1
+    },
+    {
+      "index": 21,
+      "event": "result_commit_attempt",
+      "scope": "profile",
+      "generation": 21,
+      "attempt": 2
+    }
+  ]
+}

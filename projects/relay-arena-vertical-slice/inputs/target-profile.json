@@ -1,0 +1,42 @@
+{
+  "capture": "handheld-rc3-arena",
+  "target": "handheld-low",
+  "build": "relay-client@1.0.0-rc3",
+  "content": "arena-rules@17",
+  "workload": {
+    "duration_seconds": 90,
+    "agents": 12,
+    "hazards": 24,
+    "quality": "medium",
+    "thermal": "warm"
+  },
+  "budget": {
+    "frame_p95_ms": 16.67,
+    "frame_p99_ms": 25.0,
+    "single_hitch_ms": 50.0,
+    "resident_mib": 900,
+    "peak_mib": 1100,
+    "control_ready_p95_ms": 4000
+  },
+  "observed": {
+    "frame_p50_ms": 15.2,
+    "frame_p95_ms": 18.4,
+    "frame_p99_ms": 31.0,
+    "worst_hitch_ms": 58.0,
+    "resident_mib": 842,
+    "peak_mib": 1088,
+    "control_ready_p95_ms": 4320
+  },
+  "markers": [
+    {
+      "name": "worst_hitch",
+      "cause_candidate": "checkpoint serialization on main thread",
+      "evidence": "profile-marker-55"
+    },
+    {
+      "name": "cold_load",
+      "cause_candidate": "optional music blocks cosmetic-ready only but control-ready gate includes stale dependency",
+      "evidence": "load-trace-12"
+    }
+  ]
+}

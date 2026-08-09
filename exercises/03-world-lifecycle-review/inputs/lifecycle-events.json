@@ -1,0 +1,118 @@
+{
+  "events": [
+    {
+      "index": 1,
+      "event": "process_started",
+      "object": "GameProcess",
+      "generation": 1
+    },
+    {
+      "index": 2,
+      "event": "world_loaded",
+      "object": "FrontEndWorld",
+      "generation": 1
+    },
+    {
+      "index": 3,
+      "event": "arena_load_requested",
+      "object": "ArenaSession",
+      "generation": 7
+    },
+    {
+      "index": 4,
+      "event": "world_created",
+      "object": "ArenaWorld",
+      "generation": 7
+    },
+    {
+      "index": 5,
+      "event": "async_load_started",
+      "object": "NavMeshRequest",
+      "generation": 7
+    },
+    {
+      "index": 6,
+      "event": "async_load_started",
+      "object": "CosmeticBundleRequest",
+      "generation": 7
+    },
+    {
+      "index": 7,
+      "event": "match_created",
+      "object": "MatchState",
+      "generation": 7
+    },
+    {
+      "index": 8,
+      "event": "entity_spawned",
+      "object": "PlayerEntity:p1",
+      "generation": 7
+    },
+    {
+      "index": 9,
+      "event": "hud_bound",
+      "object": "ArenaHud:local-1",
+      "generation": 7
+    },
+    {
+      "index": 10,
+      "event": "arena_cancel_requested",
+      "object": "ArenaSession",
+      "generation": 7
+    },
+    {
+      "index": 11,
+      "event": "world_unload_started",
+      "object": "ArenaWorld",
+      "generation": 7
+    },
+    {
+      "index": 12,
+      "event": "match_destroyed",
+      "object": "MatchState",
+      "generation": 7
+    },
+    {
+      "index": 13,
+      "event": "world_unloaded",
+      "object": "ArenaWorld",
+      "generation": 7
+    },
+    {
+      "index": 14,
+      "event": "async_load_completed",
+      "object": "CosmeticBundleRequest",
+      "generation": 7
+    },
+    {
+      "index": 15,
+      "event": "hud_callback",
+      "object": "ArenaHud:local-1",
+      "generation": 7
+    },
+    {
+      "index": 16,
+      "event": "arena_load_requested",
+      "object": "ArenaSession",
+      "generation": 8
+    },
+    {
+      "index": 17,
+      "event": "world_created",
+      "object": "ArenaWorld",
+      "generation": 8
+    },
+    {
+      "index": 18,
+      "event": "async_load_completed",
+      "object": "NavMeshRequest",
+      "generation": 7
+    },
+    {
+      "index": 19,
+      "event": "match_created",
+      "object": "MatchState",
+      "generation": 8
+    }
+  ]
+}

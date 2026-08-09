@@ -1,0 +1,31 @@
+{
+  "capture_id": "handheld-arena-20260809-a",
+  "target": {
+    "device_class": "handheld-low",
+    "resolution": "1280x720",
+    "refresh_hz": 60,
+    "thermal_state": "warm",
+    "power_mode": "balanced"
+  },
+  "build": {
+    "id": "relay-client@1.0.0-profile",
+    "configuration": "development-profile",
+    "content": "arena-rules@17"
+  },
+  "workload": {
+    "scene": "arena-01",
+    "duration_seconds": 90,
+    "players": 1,
+    "agents": 12,
+    "hazards": 24,
+    "vfx_quality": "medium"
+  },
+  "budgets": {
+    "frame_p95_ms": 16.67,
+    "frame_p99_ms": 25.0,
+    "single_hitch_ms": 50.0,
+    "resident_memory_mib": 900,
+    "peak_memory_mib": 1100,
+    "cold_load_p95_ms": 5000
+  }
+}

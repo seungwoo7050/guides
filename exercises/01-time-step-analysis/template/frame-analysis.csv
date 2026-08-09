@@ -1,0 +1,2 @@
+frame,raw_delta_us,clamped_delta_us,pause_reasons,accumulator_before_us,executed_ticks,consumed_sequences,accumulator_after_us,dropped_us,notes
+1,,,,,,,,,

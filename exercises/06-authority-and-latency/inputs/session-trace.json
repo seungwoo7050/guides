@@ -1,0 +1,111 @@
+{
+  "events": [
+    {
+      "index": 1,
+      "at_ms": 0,
+      "source": "client-a",
+      "type": "join",
+      "protocol_version": 4,
+      "content_version": "arena-rules@17"
+    },
+    {
+      "index": 2,
+      "at_ms": 12,
+      "source": "client-b",
+      "type": "join",
+      "protocol_version": 3,
+      "content_version": "arena-rules@17"
+    },
+    {
+      "index": 3,
+      "at_ms": 100,
+      "source": "client-a",
+      "type": "command",
+      "player": "p1",
+      "sequence": 10,
+      "tick": 100,
+      "kind": "move",
+      "value": [
+        1000,
+        0
+      ]
+    },
+    {
+      "index": 4,
+      "at_ms": 105,
+      "source": "client-b",
+      "type": "command",
+      "player": "p1",
+      "sequence": 1,
+      "tick": 100,
+      "kind": "dash",
+      "value": true
+    },
+    {
+      "index": 5,
+      "at_ms": 130,
+      "source": "client-a",
+      "type": "command",
+      "player": "p1",
+      "sequence": 11,
+      "tick": 101,
+      "kind": "activate_core",
+      "value": "core-a"
+    },
+    {
+      "index": 6,
+      "at_ms": 142,
+      "source": "client-a",
+      "type": "command",
+      "player": "p1",
+      "sequence": 11,
+      "tick": 101,
+      "kind": "activate_core",
+      "value": "core-a"
+    },
+    {
+      "index": 7,
+      "at_ms": 170,
+      "source": "server",
+      "type": "snapshot",
+      "snapshot_sequence": 44,
+      "authoritative_tick": 101,
+      "player": "p1",
+      "position": [
+        10.0,
+        0.0
+      ]
+    },
+    {
+      "index": 8,
+      "at_ms": 180,
+      "source": "server",
+      "type": "snapshot",
+      "snapshot_sequence": 43,
+      "authoritative_tick": 99,
+      "player": "p1",
+      "position": [
+        7.0,
+        0.0
+      ]
+    },
+    {
+      "index": 9,
+      "at_ms": 210,
+      "source": "client-a",
+      "type": "result_claim",
+      "kind": "match_won",
+      "value": true
+    },
+    {
+      "index": 10,
+      "at_ms": 250,
+      "source": "server",
+      "type": "command_result",
+      "player": "p1",
+      "sequence": 11,
+      "decision": "rejected",
+      "reason": "out_of_range"
+    }
+  ]
+}

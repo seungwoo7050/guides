@@ -1,0 +1,15 @@
+{
+  "candidate": "relay-client@1.0.0-rc3",
+  "commit": "a10c9e4-fixture",
+  "configuration": "release",
+  "platforms": [
+    "windows-x64",
+    "handheld-linux"
+  ],
+  "content_manifest": "arena-rules@17",
+  "save_schema": 2,
+  "replay_format": 1,
+  "network_protocol": 4,
+  "symbols": "stored://symbol-store/relay-client/1.0.0-rc3",
+  "build_time_utc": "2026-08-09T00:30:00Z"
+}

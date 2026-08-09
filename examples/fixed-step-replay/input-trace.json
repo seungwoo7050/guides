@@ -1,0 +1,29 @@
+{
+  "trace_version": 1,
+  "initial_state": {
+    "tick": 0,
+    "x_milli": 0,
+    "y_milli": 0,
+    "move_x_milli": 0,
+    "move_y_milli": 0,
+    "dash_cooldown_ticks": 0,
+    "dash_count": 0,
+    "accepted_commands": 0,
+    "rejected_commands": 0
+  },
+  "commands": [
+    {"tick": 0, "sequence": 1, "kind": "move", "value": [1000, 0]},
+    {"tick": 3, "sequence": 2, "kind": "dash", "value": true},
+    {"tick": 5, "sequence": 3, "kind": "move", "value": [0, 1000]},
+    {"tick": 8, "sequence": 4, "kind": "dash", "value": true},
+    {"tick": 10, "sequence": 5, "kind": "move", "value": [-1000, 0]},
+    {"tick": 12, "sequence": 6, "kind": "dash", "value": true},
+    {"tick": 14, "sequence": 7, "kind": "move", "value": [0, -1000]},
+    {"tick": 16, "sequence": 8, "kind": "move", "value": [0, 0]}
+  ],
+  "frame_schedules": {
+    "smooth": [16667, 16667, 16667, 16667, 16667, 16667, 16667, 16667, 16667, 16667, 16667, 16667, 16667, 16667, 16667, 16667, 16667, 16667, 16667, 16667],
+    "jittered": [8000, 25000, 12000, 18000, 33000, 9000, 24000, 10000, 22000, 16000, 28000, 15000, 20000, 17000, 23000, 13000, 19000, 21000, 14000, 26000],
+    "overload": [200000, 16667, 16667, 16667, 16667, 16667, 16667, 16667, 16667, 16667, 16667, 16667, 16667, 16667, 16667, 16667, 16667, 16667, 16667, 16667, 16667, 16667, 16667, 16667]
+  }
+}

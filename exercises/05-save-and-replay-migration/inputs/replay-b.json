@@ -1,0 +1,57 @@
+{
+  "replay_format": 1,
+  "build_id": "relay-client@1.0.0",
+  "content_version": "arena-rules@17",
+  "fixed_step_us": 16667,
+  "initial_state_hash": "h0-7ac1",
+  "commands": [
+    {
+      "tick": 1,
+      "sequence": 1,
+      "kind": "move",
+      "value": [
+        1000,
+        0
+      ]
+    },
+    {
+      "tick": 4,
+      "sequence": 2,
+      "kind": "dash",
+      "value": true
+    },
+    {
+      "tick": 8,
+      "sequence": 3,
+      "kind": "move",
+      "value": [
+        0,
+        900
+      ]
+    },
+    {
+      "tick": 12,
+      "sequence": 4,
+      "kind": "interact",
+      "value": "core-a"
+    }
+  ],
+  "checkpoints": [
+    {
+      "tick": 0,
+      "state_hash": "h0-7ac1"
+    },
+    {
+      "tick": 5,
+      "state_hash": "h5-f110"
+    },
+    {
+      "tick": 10,
+      "state_hash": "h10-5c99"
+    },
+    {
+      "tick": 15,
+      "state_hash": "h15-943a"
+    }
+  ]
+}

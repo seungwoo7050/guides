@@ -1,0 +1,21 @@
+{
+  "expected_format": 1,
+  "determinism_scope": "same Python runtime, config, trace, integer simulation rules, and target tick",
+  "canonical_state": {
+    "tick": 20,
+    "x_milli": 996,
+    "y_milli": 2998,
+    "move_x_milli": 0,
+    "move_y_milli": 0,
+    "dash_cooldown_ticks": 0,
+    "dash_count": 2,
+    "accepted_commands": 7,
+    "rejected_commands": 1
+  },
+  "canonical_state_hash": "1573d81a20dd4b0cfb3dfa7dcec48fda7c396fe8d11c40928f34e4c09115dad7",
+  "required_schedules": [
+    "jittered",
+    "overload",
+    "smooth"
+  ]
+}

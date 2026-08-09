@@ -1,0 +1,85 @@
+{
+  "map_version": 3,
+  "actions": [
+    {
+      "id": "Move",
+      "value_type": "vec2",
+      "contexts": [
+        "Gameplay"
+      ],
+      "rebindable": true,
+      "bindings": [
+        "Keyboard.WASD",
+        "Gamepad.LeftStick"
+      ]
+    },
+    {
+      "id": "Dash",
+      "value_type": "button_edge",
+      "contexts": [
+        "Gameplay"
+      ],
+      "rebindable": true,
+      "bindings": [
+        "Keyboard.LeftShift",
+        "Gamepad.South"
+      ]
+    },
+    {
+      "id": "Interact",
+      "value_type": "button_edge",
+      "contexts": [
+        "Gameplay"
+      ],
+      "rebindable": true,
+      "bindings": [
+        "Keyboard.E",
+        "Gamepad.West"
+      ]
+    },
+    {
+      "id": "Navigate",
+      "value_type": "vec2",
+      "contexts": [
+        "Menu"
+      ],
+      "rebindable": true,
+      "bindings": [
+        "Keyboard.Arrows",
+        "Gamepad.DPad"
+      ]
+    },
+    {
+      "id": "Confirm",
+      "value_type": "button_edge",
+      "contexts": [
+        "Menu"
+      ],
+      "rebindable": true,
+      "bindings": [
+        "Keyboard.Enter",
+        "Gamepad.South"
+      ]
+    },
+    {
+      "id": "Pause",
+      "value_type": "button_edge",
+      "contexts": [
+        "Gameplay",
+        "Menu"
+      ],
+      "rebindable": true,
+      "bindings": [
+        "Keyboard.Escape",
+        "Gamepad.Start"
+      ]
+    }
+  ],
+  "context_priority": [
+    "TextEntry",
+    "Modal",
+    "Menu",
+    "Gameplay"
+  ],
+  "consumption": "highest_active_context_first"
+}

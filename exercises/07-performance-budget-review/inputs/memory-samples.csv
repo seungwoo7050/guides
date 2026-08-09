@@ -1,0 +1,7 @@
+marker,cpu_resident_mib,gpu_resident_mib,transient_mib,live_entities,resident_bundles
+frontend,310,120,20,24,8
+arena_control_ready,540,260,88,140,16
+arena_cosmetic_ready,650,390,140,188,23
+agent_wave_peak,720,420,210,260,25
+post_restart,678,392,80,190,23
+post_exit,370,150,30,30,9

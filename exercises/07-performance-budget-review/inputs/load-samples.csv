@@ -1,0 +1,6 @@
+run,target,scenario,total_ms,control_ready_ms,cosmetic_ready_ms,peak_transient_mib,result
+1,handheld-low,cold,5280,3380,5280,152,success
+2,handheld-low,cold,4760,3200,4760,145,success
+3,handheld-low,cold,5520,3490,5520,160,success
+4,handheld-low,warm,2890,1840,2890,100,success
+5,handheld-low,missing-cosmetic,3430,3300,,92,degraded-success

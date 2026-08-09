@@ -1,0 +1,51 @@
+{
+  "trace_id": "time-trace-01",
+  "initial_tick": 120,
+  "initial_accumulator_us": 0,
+  "frames": [
+    {
+      "frame": 1,
+      "real_delta_us": 8000,
+      "pause_reasons": []
+    },
+    {
+      "frame": 2,
+      "real_delta_us": 12000,
+      "pause_reasons": []
+    },
+    {
+      "frame": 3,
+      "real_delta_us": 50000,
+      "pause_reasons": []
+    },
+    {
+      "frame": 4,
+      "real_delta_us": 200000,
+      "pause_reasons": []
+    },
+    {
+      "frame": 5,
+      "real_delta_us": 16667,
+      "pause_reasons": [
+        "menu"
+      ]
+    },
+    {
+      "frame": 6,
+      "real_delta_us": 16667,
+      "pause_reasons": [
+        "menu"
+      ]
+    },
+    {
+      "frame": 7,
+      "real_delta_us": 10000,
+      "pause_reasons": []
+    },
+    {
+      "frame": 8,
+      "real_delta_us": 24000,
+      "pause_reasons": []
+    }
+  ]
+}

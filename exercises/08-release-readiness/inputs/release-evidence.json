@@ -1,0 +1,86 @@
+{
+  "candidate": "relay-client@1.0.0-rc3",
+  "evidence": [
+    {
+      "id": "tests-rules",
+      "area": "gameplay",
+      "status": "pass",
+      "build": "relay-client@1.0.0-rc3",
+      "age_hours": 2
+    },
+    {
+      "id": "replay-regression",
+      "area": "save-replay",
+      "status": "pass",
+      "build": "relay-client@1.0.0-rc3",
+      "age_hours": 2
+    },
+    {
+      "id": "old-save-matrix",
+      "area": "save-replay",
+      "status": "pass",
+      "build": "relay-client@1.0.0-rc2",
+      "age_hours": 26
+    },
+    {
+      "id": "handheld-profile",
+      "area": "performance",
+      "status": "fail",
+      "build": "relay-client@1.0.0-rc3",
+      "age_hours": 3,
+      "finding": "cold_load_p95_over_budget"
+    },
+    {
+      "id": "controller-remap",
+      "area": "accessibility-input",
+      "status": "pass",
+      "build": "relay-client@1.0.0-rc3",
+      "age_hours": 4
+    },
+    {
+      "id": "subtitle-review",
+      "area": "accessibility-input",
+      "status": "unknown",
+      "build": "relay-client@1.0.0-rc3",
+      "age_hours": null
+    },
+    {
+      "id": "protocol-compat",
+      "area": "network",
+      "status": "pass",
+      "build": "relay-server@1.0.0-rc3",
+      "age_hours": 5
+    },
+    {
+      "id": "crash-symbolication",
+      "area": "operations",
+      "status": "pass",
+      "build": "relay-client@1.0.0-rc3",
+      "age_hours": 1
+    },
+    {
+      "id": "suspend-result-commit",
+      "area": "platform",
+      "status": "fail",
+      "build": "relay-client@1.0.0-rc3",
+      "age_hours": 1,
+      "finding": "duplicate_best_time_commit"
+    }
+  ],
+  "known_issues": [
+    {
+      "id": "ISSUE-42",
+      "summary": "handheld cold load p95 exceeds 5s",
+      "severity": "medium",
+      "owner": "content-streaming",
+      "fallback": "control-ready at 3.4s; cosmetic delayed"
+    },
+    {
+      "id": "ISSUE-47",
+      "summary": "suspend during result commit may duplicate local notification",
+      "severity": "high",
+      "owner": "platform-save",
+      "fallback": "none"
+    }
+  ]
+}

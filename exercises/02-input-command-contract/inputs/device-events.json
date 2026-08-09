@@ -1,0 +1,89 @@
+{
+  "events": [
+    {
+      "sequence": 1,
+      "time_ms": 100,
+      "device": "keyboard-1",
+      "control": "W",
+      "phase": "pressed",
+      "value": 1
+    },
+    {
+      "sequence": 2,
+      "time_ms": 140,
+      "device": "gamepad-2",
+      "control": "LeftStick",
+      "phase": "changed",
+      "value": [
+        0.6,
+        0.0
+      ]
+    },
+    {
+      "sequence": 3,
+      "time_ms": 220,
+      "device": "keyboard-1",
+      "control": "LeftShift",
+      "phase": "pressed",
+      "value": 1
+    },
+    {
+      "sequence": 4,
+      "time_ms": 920,
+      "device": "gamepad-1",
+      "control": "South",
+      "phase": "pressed",
+      "value": 1
+    },
+    {
+      "sequence": 5,
+      "time_ms": 1200,
+      "device": "keyboard-1",
+      "control": "Enter",
+      "phase": "pressed",
+      "value": 1
+    },
+    {
+      "sequence": 6,
+      "time_ms": 1600,
+      "device": "keyboard-1",
+      "control": "E",
+      "phase": "pressed",
+      "value": 1
+    },
+    {
+      "sequence": 7,
+      "time_ms": 1920,
+      "device": "keyboard-1",
+      "control": "W",
+      "phase": "released",
+      "value": 0
+    },
+    {
+      "sequence": 8,
+      "time_ms": 2000,
+      "device": "gamepad-2",
+      "control": "disconnected",
+      "phase": "device_removed",
+      "value": null
+    },
+    {
+      "sequence": 9,
+      "time_ms": 2350,
+      "device": "keyboard-1",
+      "control": "W",
+      "phase": "pressed",
+      "value": 1
+    },
+    {
+      "sequence": 10,
+      "time_ms": 2400,
+      "device": "keyboard-1",
+      "control": "E",
+      "phase": "pressed",
+      "value": 1
+    }
+  ],
+  "tick_rate_hz": 60,
+  "session_start_ms": 0
+}

@@ -1,0 +1,80 @@
+{
+  "candidate": "relay-client@1.0.0-rc3",
+  "server_candidate": "relay-server@1.0.0-rc3",
+  "evidence": [
+    {
+      "id": "rules-tests",
+      "status": "pass",
+      "build": "relay-client@1.0.0-rc3",
+      "requirements": [
+        "REQ-002"
+      ]
+    },
+    {
+      "id": "input-remap",
+      "status": "pass",
+      "build": "relay-client@1.0.0-rc3",
+      "requirements": [
+        "REQ-001",
+        "REQ-003"
+      ]
+    },
+    {
+      "id": "load-cancel",
+      "status": "unknown",
+      "build": "relay-client@1.0.0-rc3",
+      "requirements": [
+        "REQ-004"
+      ]
+    },
+    {
+      "id": "save-matrix",
+      "status": "stale",
+      "build": "relay-client@1.0.0-rc2",
+      "requirements": [
+        "REQ-006"
+      ]
+    },
+    {
+      "id": "replay-regression",
+      "status": "pass",
+      "build": "relay-client@1.0.0-rc3",
+      "requirements": [
+        "REQ-007"
+      ]
+    },
+    {
+      "id": "network-authority",
+      "status": "pass",
+      "build": "relay-server@1.0.0-rc3",
+      "requirements": [
+        "REQ-008"
+      ]
+    },
+    {
+      "id": "handheld-profile",
+      "status": "fail",
+      "build": "relay-client@1.0.0-rc3",
+      "requirements": [
+        "REQ-009",
+        "REQ-010"
+      ]
+    },
+    {
+      "id": "accessibility-review",
+      "status": "unknown",
+      "build": "relay-client@1.0.0-rc3",
+      "requirements": [
+        "REQ-011"
+      ]
+    },
+    {
+      "id": "suspend-result-commit",
+      "status": "fail",
+      "build": "relay-client@1.0.0-rc3",
+      "requirements": [
+        "REQ-012"
+      ]
+    }
+  ]
+}

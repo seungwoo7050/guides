@@ -1,0 +1,155 @@
+{
+  "content_version": "arena-rules@17",
+  "assets": [
+    {
+      "id": "scene.arena.01",
+      "kind": "scene",
+      "group": "critical",
+      "cpu_mib": 8,
+      "gpu_mib": 4,
+      "dependencies": [
+        "mesh.arena.01",
+        "rules.arena.default"
+      ]
+    },
+    {
+      "id": "mesh.arena.01",
+      "kind": "mesh",
+      "group": "critical",
+      "cpu_mib": 3,
+      "gpu_mib": 42,
+      "dependencies": [
+        "material.arena.01"
+      ]
+    },
+    {
+      "id": "material.arena.01",
+      "kind": "material",
+      "group": "critical",
+      "cpu_mib": 1,
+      "gpu_mib": 2,
+      "dependencies": [
+        "texture.arena.01"
+      ]
+    },
+    {
+      "id": "texture.arena.01",
+      "kind": "texture",
+      "group": "critical",
+      "cpu_mib": 1,
+      "gpu_mib": 72,
+      "dependencies": []
+    },
+    {
+      "id": "rules.arena.default",
+      "kind": "data",
+      "group": "critical",
+      "cpu_mib": 1,
+      "gpu_mib": 0,
+      "dependencies": []
+    },
+    {
+      "id": "player.base",
+      "kind": "entity",
+      "group": "critical",
+      "cpu_mib": 6,
+      "gpu_mib": 18,
+      "dependencies": [
+        "anim.player.base",
+        "audio.player.core"
+      ]
+    },
+    {
+      "id": "anim.player.base",
+      "kind": "animation",
+      "group": "critical",
+      "cpu_mib": 14,
+      "gpu_mib": 2,
+      "dependencies": []
+    },
+    {
+      "id": "audio.player.core",
+      "kind": "audio",
+      "group": "critical",
+      "cpu_mib": 14,
+      "gpu_mib": 0,
+      "dependencies": []
+    },
+    {
+      "id": "agent.chaser",
+      "kind": "entity",
+      "group": "agents",
+      "cpu_mib": 5,
+      "gpu_mib": 12,
+      "dependencies": [
+        "nav.arena.01"
+      ]
+    },
+    {
+      "id": "nav.arena.01",
+      "kind": "navigation",
+      "group": "agents",
+      "cpu_mib": 22,
+      "gpu_mib": 0,
+      "dependencies": [
+        "scene.arena.01"
+      ]
+    },
+    {
+      "id": "cosmetic.player.gold",
+      "kind": "cosmetic",
+      "group": "optional",
+      "cpu_mib": 4,
+      "gpu_mib": 38,
+      "dependencies": [
+        "player.base",
+        "vfx.player.gold"
+      ]
+    },
+    {
+      "id": "vfx.player.gold",
+      "kind": "vfx",
+      "group": "optional",
+      "cpu_mib": 2,
+      "gpu_mib": 24,
+      "dependencies": []
+    },
+    {
+      "id": "music.arena.01",
+      "kind": "audio",
+      "group": "optional",
+      "cpu_mib": 64,
+      "gpu_mib": 0,
+      "dependencies": []
+    }
+  ],
+  "gates": {
+    "control_ready": [
+      "scene.arena.01",
+      "player.base",
+      "rules.arena.default"
+    ],
+    "agent_ready": [
+      "nav.arena.01",
+      "agent.chaser"
+    ],
+    "cosmetic_ready": [
+      "cosmetic.player.gold",
+      "music.arena.01"
+    ]
+  },
+  "target_budgets": {
+    "handheld-low": {
+      "cpu_resident_mib": 800,
+      "gpu_resident_mib": 400,
+      "transient_mib": 160,
+      "control_ready_p95_ms": 4000
+    },
+    "windows-mid": {
+      "cpu_resident_mib": 1400,
+      "gpu_resident_mib": 800,
+      "transient_mib": 300,
+      "control_ready_p95_ms": 2200
+    }
+  }
+}

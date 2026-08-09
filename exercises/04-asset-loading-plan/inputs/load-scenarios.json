@@ -1,0 +1,76 @@
+{
+  "scenarios": [
+    {
+      "id": "cold-entry",
+      "already_resident": [
+        "ui.frontend"
+      ],
+      "requested": [
+        "scene.arena.core",
+        "player.base",
+        "music.arena",
+        "nav.arena",
+        "cosmetic.player.gold"
+      ],
+      "cancel_at_ms": null
+    },
+    {
+      "id": "cancel-at-40ms",
+      "already_resident": [
+        "ui.frontend"
+      ],
+      "requested": [
+        "scene.arena.core",
+        "player.base",
+        "music.arena",
+        "nav.arena",
+        "cosmetic.player.gold"
+      ],
+      "cancel_at_ms": 40
+    },
+    {
+      "id": "low-memory-entry",
+      "already_resident": [
+        "ui.frontend"
+      ],
+      "requested": [
+        "scene.arena.core",
+        "player.base",
+        "music.arena",
+        "nav.arena",
+        "cosmetic.player.gold"
+      ],
+      "quality_tier": "low-memory"
+    },
+    {
+      "id": "missing-cosmetic",
+      "already_resident": [
+        "ui.frontend"
+      ],
+      "requested": [
+        "scene.arena.core",
+        "player.base",
+        "music.arena",
+        "nav.arena",
+        "cosmetic.player.gold"
+      ],
+      "missing": [
+        "cosmetic.player.gold"
+      ]
+    }
+  ],
+  "gates": {
+    "control_ready_requires": [
+      "scene.arena.core",
+      "player.base",
+      "rules.arena.default"
+    ],
+    "agent_ready_requires": [
+      "nav.arena"
+    ],
+    "cosmetic_ready_requires": [
+      "music.arena",
+      "cosmetic.player.gold"
+    ]
+  }
+}

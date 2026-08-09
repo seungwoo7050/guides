@@ -1,0 +1,28 @@
+{
+  "targets": [
+    {
+      "id": "desktop-mid",
+      "cpu_resident_mib": 512,
+      "gpu_resident_mib": 256,
+      "transient_io_mib": 96,
+      "cold_entry_p95_ms": 2500
+    },
+    {
+      "id": "handheld-low",
+      "cpu_resident_mib": 180,
+      "gpu_resident_mib": 128,
+      "transient_io_mib": 40,
+      "cold_entry_p95_ms": 5000
+    }
+  ],
+  "baseline_resident": {
+    "desktop-mid": {
+      "cpu_mib": 190,
+      "gpu_mib": 70
+    },
+    "handheld-low": {
+      "cpu_mib": 120,
+      "gpu_mib": 54
+    }
+  }
+}

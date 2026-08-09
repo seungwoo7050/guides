@@ -1,0 +1,64 @@
+{
+  "events": [
+    {
+      "sequence": 1,
+      "arrival_frame": 1,
+      "action": "Move",
+      "phase": "changed",
+      "value": [
+        1000,
+        0
+      ]
+    },
+    {
+      "sequence": 2,
+      "arrival_frame": 2,
+      "action": "Dash",
+      "phase": "pressed",
+      "value": true
+    },
+    {
+      "sequence": 3,
+      "arrival_frame": 4,
+      "action": "Interact",
+      "phase": "pressed",
+      "value": true
+    },
+    {
+      "sequence": 4,
+      "arrival_frame": 5,
+      "action": "Confirm",
+      "phase": "pressed",
+      "value": true
+    },
+    {
+      "sequence": 5,
+      "arrival_frame": 6,
+      "action": "Dash",
+      "phase": "released",
+      "value": false
+    },
+    {
+      "sequence": 6,
+      "arrival_frame": 7,
+      "action": "Move",
+      "phase": "changed",
+      "value": [
+        0,
+        0
+      ]
+    }
+  ],
+  "rules": {
+    "edge_events": "consume_once_at_first_eligible_fixed_tick",
+    "continuous_actions": "latest_sample_at_tick_boundary",
+    "menu_context_blocks": [
+      "Dash",
+      "Interact",
+      "Move"
+    ],
+    "menu_context_allows": [
+      "Confirm"
+    ]
+  }
+}

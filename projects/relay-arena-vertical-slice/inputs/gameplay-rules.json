@@ -1,0 +1,69 @@
+{
+  "rules_version": "arena-rules@17",
+  "fixed_tick_hz": 60,
+  "match_phases": [
+    "loading",
+    "countdown",
+    "playing",
+    "result_pending",
+    "result_committed",
+    "abandoned"
+  ],
+  "commands": [
+    {
+      "kind": "move",
+      "intent_fields": [
+        "axis_x_milli",
+        "axis_y_milli"
+      ],
+      "accepted_in": [
+        "playing"
+      ]
+    },
+    {
+      "kind": "dash",
+      "intent_fields": [
+        "pressed"
+      ],
+      "accepted_in": [
+        "playing"
+      ],
+      "preconditions": [
+        "cooldown_zero",
+        "nonzero_move"
+      ]
+    },
+    {
+      "kind": "interact",
+      "intent_fields": [
+        "target_stable_id"
+      ],
+      "accepted_in": [
+        "playing"
+      ],
+      "preconditions": [
+        "target_in_range",
+        "target_inactive"
+      ]
+    }
+  ],
+  "core_state": [
+    "inactive",
+    "activating",
+    "active"
+  ],
+  "invariants": [
+    "active_core_count equals number of active stable core ids",
+    "match result is committed at most once per match id",
+    "best time changes only after result commit succeeds",
+    "presentation event cannot mutate core or result state"
+  ],
+  "dash": {
+    "distance_milli": 3000,
+    "cooldown_ticks": 8
+  },
+  "hazard": {
+    "effect": "reset_player_to_checkpoint",
+    "preserve_active_cores": true
+  }
+}

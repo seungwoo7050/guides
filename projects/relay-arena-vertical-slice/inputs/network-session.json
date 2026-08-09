@@ -1,0 +1,93 @@
+{
+  "session": "relay-match-500",
+  "protocol": 4,
+  "content": "arena-rules@17",
+  "players": {
+    "client-a": "p1",
+    "client-b": "p2"
+  },
+  "events": [
+    {
+      "index": 1,
+      "source": "client-a",
+      "kind": "command",
+      "player": "p1",
+      "sequence": 10,
+      "tick": 100,
+      "command": "move",
+      "value": [
+        1000,
+        0
+      ]
+    },
+    {
+      "index": 2,
+      "source": "client-b",
+      "kind": "command",
+      "player": "p1",
+      "sequence": 1,
+      "tick": 100,
+      "command": "dash",
+      "value": true
+    },
+    {
+      "index": 3,
+      "source": "client-a",
+      "kind": "command",
+      "player": "p1",
+      "sequence": 11,
+      "tick": 101,
+      "command": "interact",
+      "value": "core-a"
+    },
+    {
+      "index": 4,
+      "source": "client-a",
+      "kind": "command",
+      "player": "p1",
+      "sequence": 11,
+      "tick": 101,
+      "command": "interact",
+      "value": "core-a"
+    },
+    {
+      "index": 5,
+      "source": "server",
+      "kind": "snapshot",
+      "snapshot_sequence": 52,
+      "tick": 101,
+      "active_cores": [
+        "core-a"
+      ]
+    },
+    {
+      "index": 6,
+      "source": "server",
+      "kind": "snapshot",
+      "snapshot_sequence": 51,
+      "tick": 99,
+      "active_cores": []
+    },
+    {
+      "index": 7,
+      "source": "client-a",
+      "kind": "result_claim",
+      "value": "match_won"
+    },
+    {
+      "index": 8,
+      "source": "server",
+      "kind": "command_result",
+      "sequence": 11,
+      "decision": "rejected",
+      "reason": "out_of_range"
+    }
+  ],
+  "fault_profile": {
+    "latency_ms": 100,
+    "jitter_ms": 40,
+    "loss_percent": 5,
+    "duplicate_percent": 1,
+    "reorder_percent": 3
+  }
+}

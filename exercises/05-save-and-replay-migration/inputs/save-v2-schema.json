@@ -1,0 +1,28 @@
+{
+  "format": "relay-arena-save",
+  "schema_version": 2,
+  "required_payload_fields": [
+    "best_time_ms",
+    "unlocked_cosmetics",
+    "input_settings",
+    "accessibility",
+    "audio_settings"
+  ],
+  "field_types": {
+    "best_time_ms": "integer_or_null",
+    "unlocked_cosmetics": "array_of_stable_ids",
+    "input_settings": "object",
+    "accessibility": "object",
+    "audio_settings": "object"
+  },
+  "defaults": {
+    "accessibility": {
+      "dash_mode": "hold",
+      "camera_shake_scale": 1.0
+    },
+    "input_settings": {
+      "bindings_version": 2
+    }
+  },
+  "atomic_write": "temp_validate_replace_keep_previous"
+}

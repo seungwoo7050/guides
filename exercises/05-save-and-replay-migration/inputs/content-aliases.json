@@ -1,0 +1,15 @@
+{
+  "from_content": "arena-rules@12",
+  "to_content": "arena-rules@17",
+  "aliases": {
+    "skin.default": "cosmetic.player.default",
+    "skin.founder-blue": "cosmetic.player.founder-blue"
+  },
+  "removed": {
+    "skin.test-red": {
+      "policy": "replace",
+      "replacement": "cosmetic.player.default",
+      "user_message": "cosmetic no longer supported"
+    }
+  }
+}

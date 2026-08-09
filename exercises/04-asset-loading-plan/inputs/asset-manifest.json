@@ -1,0 +1,116 @@
+{
+  "manifest_version": "arena-content@17",
+  "assets": [
+    {
+      "id": "scene.arena.core",
+      "kind": "scene",
+      "group": "arena-critical",
+      "cpu_mib": 8,
+      "gpu_mib": 4,
+      "dependencies": [
+        "mesh.arena.floor",
+        "rules.arena.default"
+      ]
+    },
+    {
+      "id": "mesh.arena.floor",
+      "kind": "mesh",
+      "group": "arena-critical",
+      "cpu_mib": 2,
+      "gpu_mib": 18,
+      "dependencies": [
+        "material.arena.floor"
+      ]
+    },
+    {
+      "id": "material.arena.floor",
+      "kind": "material",
+      "group": "arena-critical",
+      "cpu_mib": 1,
+      "gpu_mib": 1,
+      "dependencies": [
+        "texture.arena.floor"
+      ]
+    },
+    {
+      "id": "texture.arena.floor",
+      "kind": "texture",
+      "group": "arena-critical",
+      "cpu_mib": 1,
+      "gpu_mib": 64,
+      "dependencies": []
+    },
+    {
+      "id": "rules.arena.default",
+      "kind": "data",
+      "group": "arena-critical",
+      "cpu_mib": 1,
+      "gpu_mib": 0,
+      "dependencies": []
+    },
+    {
+      "id": "player.base",
+      "kind": "prefab",
+      "group": "player-critical",
+      "cpu_mib": 3,
+      "gpu_mib": 12,
+      "dependencies": [
+        "anim.player.base",
+        "audio.player.core"
+      ]
+    },
+    {
+      "id": "anim.player.base",
+      "kind": "animation",
+      "group": "player-critical",
+      "cpu_mib": 12,
+      "gpu_mib": 2,
+      "dependencies": []
+    },
+    {
+      "id": "audio.player.core",
+      "kind": "audio",
+      "group": "player-critical",
+      "cpu_mib": 16,
+      "gpu_mib": 0,
+      "dependencies": []
+    },
+    {
+      "id": "cosmetic.player.gold",
+      "kind": "cosmetic",
+      "group": "optional-cosmetic",
+      "cpu_mib": 4,
+      "gpu_mib": 48,
+      "dependencies": [
+        "player.base",
+        "vfx.gold.trail"
+      ]
+    },
+    {
+      "id": "vfx.gold.trail",
+      "kind": "vfx",
+      "group": "optional-cosmetic",
+      "cpu_mib": 2,
+      "gpu_mib": 28,
+      "dependencies": []
+    },
+    {
+      "id": "music.arena",
+      "kind": "audio",
+      "group": "arena-audio",
+      "cpu_mib": 72,
+      "gpu_mib": 0,
+      "dependencies": []
+    },
+    {
+      "id": "nav.arena",
+      "kind": "navigation",
+      "group": "arena-agents",
+      "cpu_mib": 20,
+      "gpu_mib": 0,
+      "dependencies": [
+        "scene.arena.core"
+      ]
+    }
+  ]
+}

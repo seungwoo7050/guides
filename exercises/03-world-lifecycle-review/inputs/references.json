@@ -1,0 +1,52 @@
+{
+  "edges": [
+    {
+      "from": "GameProcess",
+      "to": "AudioDirector",
+      "kind": "strong",
+      "purpose": "process_service"
+    },
+    {
+      "from": "GameProcess",
+      "to": "TelemetryClient",
+      "kind": "strong",
+      "purpose": "process_service"
+    },
+    {
+      "from": "ArenaSession",
+      "to": "ArenaWorld",
+      "kind": "strong",
+      "purpose": "owns_world"
+    },
+    {
+      "from": "ArenaHud:local-1",
+      "to": "MatchState",
+      "kind": "raw_runtime_reference",
+      "purpose": "display_score"
+    },
+    {
+      "from": "AudioDirector",
+      "to": "PlayerEntity:p1",
+      "kind": "raw_runtime_reference",
+      "purpose": "follow_listener"
+    },
+    {
+      "from": "CosmeticBundleRequest",
+      "to": "ArenaWorld",
+      "kind": "completion_callback",
+      "purpose": "attach_cosmetic"
+    },
+    {
+      "from": "NavMeshRequest",
+      "to": "MatchState",
+      "kind": "completion_callback",
+      "purpose": "enable_agents"
+    },
+    {
+      "from": "TelemetryClient",
+      "to": "MatchState",
+      "kind": "subscription",
+      "purpose": "match_events"
+    }
+  ]
+}

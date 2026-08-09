@@ -1,0 +1,79 @@
+{
+  "replay_format": 1,
+  "build": "relay-client@1.0.0-rc3",
+  "content": "arena-rules@17",
+  "fixed_step_us": 16667,
+  "initial_state_hash": "tick0-1f0a",
+  "commands": [
+    {
+      "tick": 1,
+      "player": "p1",
+      "sequence": 1,
+      "kind": "move",
+      "value": [
+        1000,
+        0
+      ]
+    },
+    {
+      "tick": 4,
+      "player": "p1",
+      "sequence": 2,
+      "kind": "dash",
+      "value": true
+    },
+    {
+      "tick": 12,
+      "player": "p1",
+      "sequence": 3,
+      "kind": "interact",
+      "value": "core-a"
+    },
+    {
+      "tick": 30,
+      "player": "p1",
+      "sequence": 4,
+      "kind": "move",
+      "value": [
+        0,
+        1000
+      ]
+    },
+    {
+      "tick": 45,
+      "player": "p1",
+      "sequence": 5,
+      "kind": "interact",
+      "value": "core-b"
+    },
+    {
+      "tick": 70,
+      "player": "p1",
+      "sequence": 6,
+      "kind": "interact",
+      "value": "core-c"
+    }
+  ],
+  "checkpoints": [
+    {
+      "tick": 0,
+      "state_hash": "tick0-1f0a"
+    },
+    {
+      "tick": 30,
+      "state_hash": "tick30-17ac"
+    },
+    {
+      "tick": 60,
+      "state_hash": "tick60-923e"
+    },
+    {
+      "tick": 90,
+      "state_hash": "tick90-c015"
+    }
+  ],
+  "known_bad_variant": {
+    "changed_command_sequence": 5,
+    "expected_first_affected_checkpoint_tick": 60
+  }
+}

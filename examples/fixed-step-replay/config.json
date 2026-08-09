@@ -1,0 +1,10 @@
+{
+  "fixed_step_us": 16667,
+  "max_frame_delta_us": 100000,
+  "max_steps_per_frame": 4,
+  "target_ticks": 20,
+  "move_speed_milli_per_second": 60000,
+  "dash_distance_milli": 3000,
+  "dash_cooldown_ticks": 8,
+  "overload_policy": "drop_whole_backlog_steps_keep_fraction"
+}

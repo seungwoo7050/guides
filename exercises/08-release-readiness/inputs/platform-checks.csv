@@ -1,0 +1,9 @@
+platform,check,status,candidate,evidence_id,notes
+windows-x64,install-launch-uninstall,pass,relay-client@1.0.0-rc3,win-install-22,
+windows-x64,controller-hotplug,pass,relay-client@1.0.0-rc3,win-input-18,
+windows-x64,alt-tab-focus-reset,pass,relay-client@1.0.0-rc3,win-focus-11,
+handheld-linux,cold-boot-load,fail,relay-client@1.0.0-rc3,handheld-profile,p95 5.19s
+handheld-linux,suspend-resume-gameplay,pass,relay-client@1.0.0-rc3,hh-suspend-31,
+handheld-linux,suspend-during-result-commit,fail,relay-client@1.0.0-rc3,suspend-result-commit,duplicate commit notification
+all,subtitle-completeness,unknown,relay-client@1.0.0-rc3,,review not attached
+all,save-v1-migration,stale,relay-client@1.0.0-rc2,old-save-matrix,not rerun on rc3

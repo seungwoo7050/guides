@@ -1,0 +1,62 @@
+{
+  "local_users": [
+    {
+      "local_user": "local-1",
+      "player_entity": "player-a",
+      "devices": [
+        "keyboard-1",
+        "gamepad-1"
+      ]
+    },
+    {
+      "local_user": "local-2",
+      "player_entity": "player-b",
+      "devices": [
+        "gamepad-2"
+      ]
+    }
+  ],
+  "segments": [
+    {
+      "from_ms": 0,
+      "to_ms": 900,
+      "contexts": [
+        "Gameplay"
+      ],
+      "focus": "game-view"
+    },
+    {
+      "from_ms": 900,
+      "to_ms": 1500,
+      "contexts": [
+        "Gameplay",
+        "Menu"
+      ],
+      "focus": "pause-menu"
+    },
+    {
+      "from_ms": 1500,
+      "to_ms": 1900,
+      "contexts": [
+        "Gameplay",
+        "Menu",
+        "TextEntry"
+      ],
+      "focus": "profile-name"
+    },
+    {
+      "from_ms": 1900,
+      "to_ms": 2300,
+      "contexts": [],
+      "focus": "os-lost"
+    },
+    {
+      "from_ms": 2300,
+      "to_ms": 3000,
+      "contexts": [
+        "Gameplay"
+      ],
+      "focus": "game-view"
+    }
+  ]
+}

@@ -1,0 +1,17 @@
+{
+  "format": "relay-arena-save",
+  "schema_version": 1,
+  "content_version": "arena-rules@12",
+  "profile_id": "local-1",
+  "payload": {
+    "bestTimeSeconds": 51.72,
+    "unlockedSkins": [
+      "skin.default",
+      "skin.founder-blue"
+    ],
+    "dashKey": "LeftShift",
+    "holdToDash": true,
+    "subtitle": true
+  },
+  "checksum": "fixture-valid-v1"
+}

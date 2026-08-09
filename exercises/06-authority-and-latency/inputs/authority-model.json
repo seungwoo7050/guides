@@ -1,0 +1,57 @@
+{
+  "session_id": "match-204",
+  "protocol_version": 4,
+  "content_version": "arena-rules@17",
+  "actors": [
+    {
+      "id": "client-a",
+      "owns_player": "p1"
+    },
+    {
+      "id": "client-b",
+      "owns_player": "p2"
+    },
+    {
+      "id": "server",
+      "role": "authority"
+    }
+  ],
+  "state": [
+    {
+      "id": "input_intent",
+      "writer": "owning_client",
+      "validator": "server",
+      "replication": "client_to_server"
+    },
+    {
+      "id": "player_transform",
+      "writer": "server",
+      "prediction": "owning_client",
+      "replication": "server_to_all"
+    },
+    {
+      "id": "dash_cooldown",
+      "writer": "server",
+      "prediction": "owning_client",
+      "replication": "server_to_owner"
+    },
+    {
+      "id": "relay_core_state",
+      "writer": "server",
+      "prediction": "none",
+      "replication": "server_to_all"
+    },
+    {
+      "id": "match_result",
+      "writer": "server",
+      "prediction": "none",
+      "replication": "server_to_all"
+    },
+    {
+      "id": "camera_shake",
+      "writer": "local_presentation",
+      "prediction": "not_applicable",
+      "replication": "none"
+    }
+  ]
+}

@@ -1,0 +1,16 @@
+{
+  "trace_version": 1,
+  "commands": [
+    {
+      "tick": "TODO_INTEGER",
+      "player": "TODO",
+      "sequence": "TODO_INTEGER",
+      "kind": "TODO",
+      "value": "TODO",
+      "source_event_sequences": [],
+      "decision": "accepted_or_rejected",
+      "reason": "TODO"
+    }
+  ],
+  "synthetic_cleanup_events": []
+}

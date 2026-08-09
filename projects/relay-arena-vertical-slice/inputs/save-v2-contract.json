@@ -1,0 +1,21 @@
+{
+  "format": "relay-arena-save",
+  "schema_version": 2,
+  "required": [
+    "best_time_ms",
+    "unlocked_cosmetics",
+    "input_settings",
+    "accessibility",
+    "result_commit_ids"
+  ],
+  "stable_id_aliases": {
+    "skin.default": "cosmetic.player.default",
+    "skin.founder-blue": "cosmetic.player.founder-blue"
+  },
+  "invariants": [
+    "best_time_ms is null or non-negative integer",
+    "result_commit_ids contains unique match ids",
+    "bindings reference known logical actions"
+  ],
+  "write_policy": "temp_validate_replace_keep_previous"
+}

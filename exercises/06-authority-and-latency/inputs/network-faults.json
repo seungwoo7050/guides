@@ -1,0 +1,36 @@
+{
+  "profiles": [
+    {
+      "id": "baseline",
+      "latency_ms": 20,
+      "jitter_ms": 5,
+      "loss_percent": 0,
+      "duplicate_percent": 0,
+      "reorder_percent": 0
+    },
+    {
+      "id": "home-wifi",
+      "latency_ms": 80,
+      "jitter_ms": 35,
+      "loss_percent": 3,
+      "duplicate_percent": 0.5,
+      "reorder_percent": 2
+    },
+    {
+      "id": "degraded-mobile",
+      "latency_ms": 160,
+      "jitter_ms": 70,
+      "loss_percent": 8,
+      "duplicate_percent": 1,
+      "reorder_percent": 5
+    }
+  ],
+  "required_cases": [
+    "duplicate_command",
+    "old_snapshot",
+    "non_owner_command",
+    "late_rejection",
+    "disconnect_and_reconnect",
+    "content_mismatch"
+  ]
+}

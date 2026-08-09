@@ -1,0 +1,2 @@
+target,scenario,cpu_baseline_mib,cpu_added_mib,cpu_peak_mib,gpu_baseline_mib,gpu_added_mib,gpu_peak_mib,transient_peak_mib,within_budget,degradation_or_decision,evidence
+handheld-low,cold-entry,,,,,,,,,,

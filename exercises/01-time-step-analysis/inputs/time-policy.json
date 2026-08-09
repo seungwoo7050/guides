@@ -1,0 +1,52 @@
+{
+  "policy_id": "relay-time-v1",
+  "fixed_step_us": 16667,
+  "max_frame_delta_us": 100000,
+  "max_steps_per_render_frame": 4,
+  "overload_policy": "drop_whole_backlog_steps_keep_fraction",
+  "clocks": [
+    {
+      "id": "real_monotonic",
+      "pauses_for": [],
+      "uses": [
+        "network_deadline",
+        "profile_duration"
+      ]
+    },
+    {
+      "id": "game_time",
+      "pauses_for": [
+        "menu",
+        "focus_loss",
+        "suspend"
+      ],
+      "uses": [
+        "match_timer",
+        "cooldown"
+      ]
+    },
+    {
+      "id": "fixed_tick",
+      "pauses_for": [
+        "menu",
+        "focus_loss",
+        "suspend"
+      ],
+      "uses": [
+        "movement",
+        "rules",
+        "replay"
+      ]
+    },
+    {
+      "id": "render_time",
+      "pauses_for": [
+        "suspend"
+      ],
+      "uses": [
+        "camera_blend",
+        "ui_animation"
+      ]
+    }
+  ]
+}

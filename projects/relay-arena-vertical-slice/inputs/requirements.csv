@@ -1,0 +1,13 @@
+requirement_id,summary,priority,source,acceptance_hint
+REQ-001,Move Dash Interact are remappable,must,product brief,same actions from keyboard and gamepad
+REQ-002,Gameplay result does not depend on render FPS,must,gameplay,command trace reaches same state hash
+REQ-003,Focus loss clears held gameplay input,must,platform,no stuck movement after restore
+REQ-004,Arena load can be cancelled safely,must,runtime,no stale completion mutates new world
+REQ-005,Missing optional cosmetic does not block control-ready,should,content,defined fallback and evidence
+REQ-006,Old save migrates without data loss,must,save,v1 to v2 invariant validation
+REQ-007,Replay reports first divergence,must,QA,checkpoint and tick-level narrowing
+REQ-008,Client cannot assert core activation result,must,network,server validates intent
+REQ-009,Handheld cold control-ready p95 <= 4000ms,must,performance,target-device captures
+REQ-010,Frame p95 <= 16.67ms in representative arena,should,performance,warm target profile
+REQ-011,Subtitle and non-color cues cover critical events,must,accessibility,review and fixture
+REQ-012,Result commit is idempotent across suspend/retry,must,platform/save,duplicate attempt changes durable state once

@@ -1,0 +1,13 @@
+sample,frame_ms,main_ms,render_thread_ms,gpu_ms,fixed_steps,scene_marker
+1,14.2,7.8,5.0,11.9,1,steady
+2,15.1,8.1,5.3,12.8,1,steady
+3,16.4,9.0,5.7,13.7,1,steady
+4,18.9,17.2,6.0,14.1,1,agent_spawn
+5,42.0,39.5,7.2,16.0,2,stream_complete
+6,15.6,8.5,5.6,13.1,1,steady
+7,17.8,10.2,6.0,15.9,1,vfx_burst
+8,55.4,52.0,8.0,18.4,3,checkpoint_save
+9,14.9,8.2,5.1,12.4,1,steady
+10,16.8,9.3,5.9,14.4,1,steady
+11,28.0,13.4,6.1,26.5,1,full_screen_vfx
+12,15.2,8.0,5.2,12.9,1,steady
