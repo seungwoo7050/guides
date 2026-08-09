@@ -14,6 +14,7 @@ import type {
   RecordConflict,
   RecordPayload,
   RecordRepository,
+  SyncCheckpoint,
 } from "@field-notes/shared";
 import {
   openDatabaseAsync,
@@ -59,6 +60,38 @@ type OutboxRow = {
   claimed_at: string | null;
   last_error: string | null;
   created_at: string;
+  attempted_json: string | null;
+  sequence: number | null;
+  lease_token: string | null;
+  lease_owner: string | null;
+  lease_expires_at: number | null;
+  next_attempt_at: number | null;
+  completed_at: number | null;
+  completed_remote_version: number | null;
+  conflict_id: string | null;
+};
+
+type ConflictRow = {
+  conflict_id: string;
+  command_id: string;
+  record_id: string;
+  attempted_json: string | null;
+  local_payload_json: string | null;
+  local_revision: number;
+  remote_payload_json: string | null;
+  remote_version: number | null;
+  remote_deleted: number | null;
+  created_at: number;
+  resolution_kind: string | null;
+  resolved_at: number | null;
+  resolution_command_id: string | null;
+};
+
+type SyncCheckpointRow = {
+  sequence: number;
+  command_id: string;
+  lease_token: string;
+  outcome: string;
 };
 
 type AttachmentRow = {
@@ -119,8 +152,13 @@ function parseLocation(value: string | null): RecordPayload["location"] {
     if (
       parsed === undefined ||
       !Number.isFinite(parsed.latitude) ||
+      parsed.latitude < -90 ||
+      parsed.latitude > 90 ||
       !Number.isFinite(parsed.longitude) ||
+      parsed.longitude < -180 ||
+      parsed.longitude > 180 ||
       !Number.isFinite(parsed.accuracyMeters) ||
+      parsed.accuracyMeters < 0 ||
       !Number.isFinite(Date.parse(parsed.measuredAt))
     ) {
       throw new Error("invalid location values");
@@ -265,6 +303,39 @@ function rowToOutbox(row: OutboxRow): OutboxEntry {
       "operation and payload disagree",
     );
   }
+  let attempted: RecordCommand | undefined;
+  if (row.attempted_json !== null) {
+    try {
+      const parsed = JSON.parse(row.attempted_json) as RecordCommand;
+      if (
+        parsed.commandId !== row.command_id ||
+        parsed.recordId !== row.record_id ||
+        !(parsed.operation === "upsert" || parsed.operation === "delete") ||
+        !Number.isInteger(parsed.localRevision) ||
+        !Number.isFinite(Date.parse(parsed.createdAt)) ||
+        (parsed.operation === "upsert") !== (parsed.payload !== null)
+      ) {
+        throw new Error("attempted command does not match outbox identity");
+      }
+      if (parsed.payload !== null) validateRecordPayload(parsed.payload);
+      attempted = parsed;
+    } catch (error) {
+      throw new CorruptLocalDataError(
+        `outbox:${row.command_id}:attempted`,
+        String(error),
+      );
+    }
+  }
+  const leaseParts = [row.lease_token, row.lease_owner, row.lease_expires_at];
+  if (
+    leaseParts.some((value) => value !== null) &&
+    leaseParts.some((value) => value === null)
+  ) {
+    throw new CorruptLocalDataError(
+      `outbox:${row.command_id}:lease`,
+      "partial lease fields",
+    );
+  }
   return {
     commandId: row.command_id,
     recordId: row.record_id,
@@ -278,6 +349,116 @@ function rowToOutbox(row: OutboxRow): OutboxEntry {
     attemptCount: row.attempt_count,
     claimedAt: row.claimed_at ?? undefined,
     lastError: row.last_error ?? undefined,
+    attempted,
+    lease:
+      row.lease_token === null ||
+      row.lease_owner === null ||
+      row.lease_expires_at === null
+        ? undefined
+        : {
+            token: row.lease_token,
+            owner: row.lease_owner,
+            expiresAt: row.lease_expires_at,
+          },
+    nextAttemptAt: row.next_attempt_at ?? undefined,
+    completedAt: row.completed_at ?? undefined,
+    completedRemoteVersion:
+      row.completed_at === null ? undefined : row.completed_remote_version,
+    conflictId: row.conflict_id ?? undefined,
+    sequence: row.sequence ?? undefined,
+  };
+}
+
+function rowToConflict(
+  row: ConflictRow,
+  command: OutboxEntry | undefined,
+): RecordConflict {
+  const attemptedSource = row.attempted_json ??
+    (command?.attempted === undefined ? null : JSON.stringify(command.attempted));
+  if (attemptedSource === null) {
+    throw new CorruptLocalDataError(
+      `conflict:${row.conflict_id}`,
+      "attempted command evidence is missing",
+    );
+  }
+  let attempted: RecordCommand;
+  let local: RecordPayload | null;
+  let remotePayload: RecordPayload | null;
+  try {
+    attempted = JSON.parse(attemptedSource) as RecordCommand;
+    local = row.local_payload_json === null
+      ? null
+      : (JSON.parse(row.local_payload_json) as RecordPayload);
+    remotePayload = row.remote_payload_json === null
+      ? null
+      : (JSON.parse(row.remote_payload_json) as RecordPayload);
+    if (attempted.payload !== null) validateRecordPayload(attempted.payload);
+    if (local !== null) validateRecordPayload(local);
+    if (remotePayload !== null) validateRecordPayload(remotePayload);
+  } catch (error) {
+    throw new CorruptLocalDataError(`conflict:${row.conflict_id}`, String(error));
+  }
+  const remote = row.remote_version === null
+    ? null
+    : {
+        recordId: row.record_id,
+        payload: remotePayload,
+        version: row.remote_version,
+        deleted: row.remote_deleted === 1,
+      };
+  let resolution: RecordConflict["resolution"];
+  if (row.resolution_kind === "remote" && row.resolved_at !== null) {
+    resolution = { kind: "remote", resolvedAt: row.resolved_at };
+  } else if (
+    (row.resolution_kind === "local" || row.resolution_kind === "merge") &&
+    row.resolved_at !== null &&
+    row.resolution_command_id !== null
+  ) {
+    resolution = {
+      kind: row.resolution_kind,
+      resolvedAt: row.resolved_at,
+      resolutionCommandId: row.resolution_command_id,
+    };
+  } else if (
+    row.resolution_kind !== null ||
+    row.resolved_at !== null ||
+    row.resolution_command_id !== null
+  ) {
+    throw new CorruptLocalDataError(
+      `conflict:${row.conflict_id}`,
+      "partial resolution evidence",
+    );
+  }
+  return {
+    conflictId: row.conflict_id,
+    commandId: row.command_id,
+    recordId: row.record_id,
+    attempted,
+    local: { payload: local, localRevision: row.local_revision },
+    remote,
+    createdAt: row.created_at,
+    resolution,
+  };
+}
+
+function rowToSyncCheckpoint(row: SyncCheckpointRow): SyncCheckpoint {
+  if (
+    !(row.outcome === "success" ||
+      row.outcome === "conflict" ||
+      row.outcome === "retry_wait" ||
+      row.outcome === "blocked_auth" ||
+      row.outcome === "permanent")
+  ) {
+    throw new CorruptLocalDataError(
+      `sync-checkpoint:${row.sequence}`,
+      `unknown outcome ${row.outcome}`,
+    );
+  }
+  return {
+    sequence: row.sequence,
+    commandId: row.command_id,
+    leaseToken: row.lease_token,
+    outcome: row.outcome,
   };
 }
 
@@ -326,6 +507,11 @@ export class SQLiteFieldNotesRepository
   private async db(): Promise<SQLiteDatabase> {
     await this.ready();
     return this.databasePromise;
+  }
+
+  /** Narrow hand-off used by the Stage 04 SQLite SyncRepository adapter. */
+  public async databaseForSyncAdapter(): Promise<SQLiteDatabase> {
+    return this.db();
   }
 
   private async currentRecord(
@@ -422,6 +608,21 @@ export class SQLiteFieldNotesRepository
         [stableInput.id],
       );
       await this.insertOutbox(txn, result.outbox);
+      const unresolvedConflict = await txn.getFirstAsync<{ conflict_id: string }>(
+        `SELECT conflict_id FROM conflicts
+         WHERE record_id = ? AND resolution_kind IS NULL LIMIT 1`,
+        [stableInput.id],
+      );
+      if (unresolvedConflict !== null) {
+        await txn.runAsync(
+          "UPDATE records SET sync_state = 'conflict' WHERE id = ?",
+          [stableInput.id],
+        );
+        result = {
+          ...result,
+          record: { ...result.record, syncState: "conflict" },
+        };
+      }
     });
     if (result === undefined) throw new Error("save transaction produced no result");
     return { record: result.record, command: result.command };
@@ -460,6 +661,21 @@ export class SQLiteFieldNotesRepository
         [input.id],
       );
       await this.insertOutbox(txn, result.outbox);
+      const unresolvedConflict = await txn.getFirstAsync<{ conflict_id: string }>(
+        `SELECT conflict_id FROM conflicts
+         WHERE record_id = ? AND resolution_kind IS NULL LIMIT 1`,
+        [input.id],
+      );
+      if (unresolvedConflict !== null) {
+        await txn.runAsync(
+          "UPDATE records SET sync_state = 'conflict' WHERE id = ?",
+          [input.id],
+        );
+        result = {
+          ...result,
+          record: { ...result.record, syncState: "conflict" },
+        };
+      }
     });
     if (result === undefined) throw new Error("delete transaction produced no result");
     return { record: result.record, command: result.command };
@@ -472,8 +688,10 @@ export class SQLiteFieldNotesRepository
     await db.runAsync(
       `INSERT INTO outbox (
          command_id, record_id, operation, base_version, local_revision,
-         payload_json, payload_version, state, attempt_count, created_at
-       ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+         payload_json, payload_version, state, attempt_count, created_at, sequence
+       ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?,
+         (SELECT COALESCE(MAX(sequence), 0) + 1 FROM outbox)
+       )`,
       [
         entry.commandId,
         entry.recordId,
@@ -739,10 +957,26 @@ export class SQLiteFieldNotesRepository
 
   public async snapshot(): Promise<LocalDatabaseSnapshot> {
     const db = await this.db();
-    const [records, attachments, outbox, processed, history, operations, version] = await Promise.all([
+    const [
+      records,
+      attachments,
+      outbox,
+      conflictRows,
+      checkpoints,
+      processed,
+      history,
+      operations,
+      version,
+    ] = await Promise.all([
       db.getAllAsync<RecordRow>(`SELECT ${RECORD_COLUMNS} FROM records ORDER BY id`),
       db.getAllAsync<AttachmentRow>("SELECT * FROM attachments ORDER BY id"),
       db.getAllAsync<OutboxRow>("SELECT * FROM outbox ORDER BY created_at, command_id"),
+      db.getAllAsync<ConflictRow>(
+        "SELECT * FROM conflicts ORDER BY created_at, conflict_id",
+      ),
+      db.getAllAsync<SyncCheckpointRow>(
+        "SELECT sequence, command_id, lease_token, outcome FROM sync_checkpoints ORDER BY sequence",
+      ),
       db.getAllAsync<{ intent_key: string }>(
         "SELECT intent_key FROM processed_intents ORDER BY intent_key",
       ),
@@ -754,12 +988,16 @@ export class SQLiteFieldNotesRepository
       ),
       db.getFirstAsync<{ user_version: number }>("PRAGMA user_version"),
     ]);
-    const conflicts: RecordConflict[] = [];
+    const decodedOutbox = outbox.map(rowToOutbox);
+    const outboxById = new Map(decodedOutbox.map((entry) => [entry.commandId, entry]));
+    const conflicts = conflictRows.map((row) =>
+      rowToConflict(row, outboxById.get(row.command_id)),
+    );
     return {
       schemaVersion: version?.user_version ?? CURRENT_SCHEMA_VERSION,
       records: records.map(rowToRecord),
       attachments: attachments.map(rowToAttachment),
-      outbox: outbox.map(rowToOutbox),
+      outbox: decodedOutbox,
       conflicts,
       processedIntentKeys: processed.map((row) => row.intent_key),
       migrationHistory: history.map((row) => ({
@@ -767,6 +1005,7 @@ export class SQLiteFieldNotesRepository
         toVersion: row.to_version,
       })),
       externalMediaOperations: operations.map(rowToExternalMediaOperation),
+      syncCheckpoints: checkpoints.map(rowToSyncCheckpoint),
     };
   }
 }

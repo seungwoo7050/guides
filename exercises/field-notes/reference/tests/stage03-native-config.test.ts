@@ -32,6 +32,13 @@ describe("Stage 03 CNG input", () => {
   });
 
   it("blocks broad media, audio, background location, and location service permissions", () => {
+    expect(appConfig.expo.android.permissions).toEqual(
+      expect.arrayContaining([
+        "android.permission.CAMERA",
+        "android.permission.ACCESS_COARSE_LOCATION",
+        "android.permission.ACCESS_FINE_LOCATION",
+      ]),
+    );
     expect(appConfig.expo.android.blockedPermissions).toEqual(
       expect.arrayContaining([
         "android.permission.RECORD_AUDIO",

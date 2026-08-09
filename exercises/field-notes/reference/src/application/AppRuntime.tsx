@@ -8,6 +8,13 @@ import type {
   StorageReconciliationReport,
 } from "@field-notes/shared";
 import {
+  BoundedSyncWorker,
+  FixedSyncBudget,
+  type ConflictResolutionResult,
+  type RepositorySnapshot,
+  type WorkerRunResult,
+} from "@field-notes/sync-engine";
+import {
   createContext,
   type PropsWithChildren,
   useCallback,
@@ -35,6 +42,11 @@ import { ExpoAttachmentFileStore } from "../storage/ExpoAttachmentFileStore";
 import { productionClock, productionIds } from "../storage/productionIdentity";
 import { SQLiteFieldNotesRepository } from "../storage/SQLiteFieldNotesRepository";
 import { StorageReconciler } from "../storage/StorageReconciler";
+import {
+  configuredSyncEndpoint,
+  FetchSyncTransport,
+} from "../sync/FetchSyncTransport";
+import { SQLiteSyncRepositoryAdapter } from "../sync/SQLiteSyncRepositoryAdapter";
 
 type StorageStatus = "opening" | "ready" | "error";
 
@@ -43,6 +55,9 @@ type RuntimeServices = {
   attachments: AppOwnedAttachmentService;
   reconciler: StorageReconciler;
   features: DeviceFeatureCoordinator;
+  syncRepository: SQLiteSyncRepositoryAdapter;
+  syncWorker: BoundedSyncWorker;
+  syncEndpoint: string;
 };
 
 type RuntimeValue = {
@@ -65,6 +80,13 @@ type RuntimeValue = {
   pickPhoto(recordId: string): Promise<MediaActionOutcome>;
   measureLocation(): Promise<LocationActionOutcome>;
   refreshCapabilities(): Promise<DeviceCapabilitySnapshot>;
+  inspectSync(): Promise<RepositorySnapshot>;
+  runManualSync(): Promise<WorkerRunResult>;
+  resumeBlockedAuth(): Promise<number>;
+  resolveConflict(
+    conflictId: string,
+    choice: "remote" | "local",
+  ): Promise<ConflictResolutionResult>;
   revision: number;
   appState: AppStateStatus;
   storageStatus: StorageStatus;
@@ -72,6 +94,9 @@ type RuntimeValue = {
   reconciliation: StorageReconciliationReport | null;
   capabilities: DeviceCapabilitySnapshot | null;
   lastMediaOutcome: MediaActionOutcome | null;
+  syncRunning: boolean;
+  lastSyncRun: WorkerRunResult | null;
+  syncEndpoint: string;
 };
 
 const RuntimeContext = createContext<RuntimeValue | null>(null);
@@ -82,6 +107,9 @@ function createServices(): RuntimeServices {
   const camera = new ExpoImagePickerCameraAdapter();
   const picker = new ExpoSystemPhotoPickerAdapter();
   const location = new ExpoForegroundLocationAdapter();
+  const syncRepository = new SQLiteSyncRepositoryAdapter(repository);
+  const syncClock = { now: () => Date.now() };
+  const syncEndpoint = configuredSyncEndpoint();
   return {
     repository,
     attachments: new AppOwnedAttachmentService(repository, files),
@@ -96,6 +124,19 @@ function createServices(): RuntimeServices {
       productionClock,
       productionIds,
     ),
+    syncRepository,
+    syncWorker: new BoundedSyncWorker({
+      repository: syncRepository,
+      transport: new FetchSyncTransport({ endpoint: syncEndpoint }),
+      clock: syncClock,
+      budget: new FixedSyncBudget({
+        maxCommands: 10,
+        leaseDurationMs: 30_000,
+        retryDelayMs: 5_000,
+        maxAttempts: 5,
+      }),
+    }),
+    syncEndpoint,
   };
 }
 
@@ -114,6 +155,9 @@ export function AppRuntimeProvider({ children }: PropsWithChildren) {
     useState<DeviceCapabilitySnapshot | null>(null);
   const [lastMediaOutcome, setLastMediaOutcome] =
     useState<MediaActionOutcome | null>(null);
+  const [syncRunning, setSyncRunning] = useState(false);
+  const [lastSyncRun, setLastSyncRun] = useState<WorkerRunResult | null>(null);
+  const activeSyncRun = useRef<Promise<WorkerRunResult> | null>(null);
 
   const reconcileStorage = useCallback(async () => {
     await repository.ready();
@@ -248,6 +292,62 @@ export function AppRuntimeProvider({ children }: PropsWithChildren) {
     await refreshCapabilities();
     return outcome;
   }, [refreshCapabilities, services.features]);
+  const inspectSync = useCallback(
+    () => services.syncRepository.snapshot(),
+    [services.syncRepository],
+  );
+  const runManualSync = useCallback(() => {
+    if (activeSyncRun.current !== null) return activeSyncRun.current;
+    setSyncRunning(true);
+    const run = services.syncWorker.run({
+      trigger: "manual",
+      workerId: `manual-${Date.now().toString(36)}`,
+    });
+    activeSyncRun.current = run;
+    void run
+      .then((value) => {
+        setLastSyncRun(value);
+        setStorageError(
+          value.stopped === "checkpoint-failed"
+            ? `sync checkpoint failed: ${value.checkpointError ?? "unknown"}`
+            : null,
+        );
+        setRevision((current) => current + 1);
+      })
+      .catch((error: unknown) => {
+        setStorageError(`manual sync failed safely: ${String(error)}`);
+      })
+      .finally(() => {
+        activeSyncRun.current = null;
+        setSyncRunning(false);
+      });
+    return run;
+  }, [services.syncWorker]);
+  const resumeBlockedAuth = useCallback(async () => {
+    const resumed = await services.syncRepository.resumeBlockedAuth(Date.now());
+    setRevision((current) => current + 1);
+    return resumed;
+  }, [services.syncRepository]);
+  const resolveConflict = useCallback(
+    async (conflictId: string, choice: "remote" | "local") => {
+      const now = Date.now();
+      const resolution = choice === "remote"
+        ? { kind: "remote" as const, resolvedAt: now }
+        : {
+            kind: "local" as const,
+            commandId: productionIds.commandId(),
+            createdAt: new Date(now).toISOString(),
+            resolvedAt: now,
+          };
+      const result = await services.syncRepository.resolveConflict(
+        conflictId,
+        resolution,
+      );
+      setRevision((current) => current + 1);
+      return result;
+    },
+    [services.syncRepository],
+  );
 
   const value = useMemo<RuntimeValue>(
     () => ({
@@ -266,6 +366,10 @@ export function AppRuntimeProvider({ children }: PropsWithChildren) {
       pickPhoto,
       measureLocation,
       refreshCapabilities,
+      inspectSync,
+      runManualSync,
+      resumeBlockedAuth,
+      resolveConflict,
       revision,
       appState,
       storageStatus,
@@ -273,6 +377,9 @@ export function AppRuntimeProvider({ children }: PropsWithChildren) {
       reconciliation,
       capabilities,
       lastMediaOutcome,
+      syncRunning,
+      lastSyncRun,
+      syncEndpoint: services.syncEndpoint,
     }),
     [
       appState,
@@ -282,10 +389,12 @@ export function AppRuntimeProvider({ children }: PropsWithChildren) {
       deleteRecord,
       getRecord,
       inspectStorage,
+      inspectSync,
       listAttachments,
       listOutbox,
       listRecords,
       lastMediaOutcome,
+      lastSyncRun,
       measureLocation,
       newRecordId,
       reconcileStorage,
@@ -294,9 +403,14 @@ export function AppRuntimeProvider({ children }: PropsWithChildren) {
       revision,
       pickPhoto,
       refreshCapabilities,
+      resolveConflict,
+      resumeBlockedAuth,
+      runManualSync,
       saveRecord,
       storageError,
       storageStatus,
+      services.syncEndpoint,
+      syncRunning,
     ],
   );
   return <RuntimeContext.Provider value={value}>{children}</RuntimeContext.Provider>;

@@ -14,6 +14,7 @@ import type {
   RecordConflict,
   RecordPayload,
   RecordRepository,
+  SyncCheckpoint,
 } from "@field-notes/shared";
 import {
   planRecordDelete,
@@ -36,6 +37,7 @@ type HarnessState = {
   processedIntentKeys: Set<string>;
   migrationHistory: { fromVersion: number; toVersion: number }[];
   externalMediaOperations: Map<string, ExternalMediaOperation>;
+  syncCheckpoints: SyncCheckpoint[];
 };
 
 function clonePayload(payload: RecordPayload): RecordPayload {
@@ -80,6 +82,7 @@ function cloneState(state: HarnessState): HarnessState {
         { ...operation },
       ]),
     ),
+    syncCheckpoints: state.syncCheckpoints.map((checkpoint) => ({ ...checkpoint })),
   };
 }
 
@@ -94,6 +97,7 @@ function emptyState(schemaVersion = 0): HarnessState {
     processedIntentKeys: new Set(),
     migrationHistory: [],
     externalMediaOperations: new Map(),
+    syncCheckpoints: [],
   };
 }
 
@@ -168,7 +172,7 @@ export class DeterministicLocalStore
           });
         }
         draft.legacyRecords = [];
-      } else if (fromVersion !== 2 && fromVersion !== 3) {
+      } else if (fromVersion !== 2 && fromVersion !== 3 && fromVersion !== 4) {
         throw new Error(`no migration from ${fromVersion}`);
       }
       this.consumeFault(`migration-to-${toVersion}`);
@@ -496,6 +500,9 @@ export class DeterministicLocalStore
       externalMediaOperations: [...this.backing.state.externalMediaOperations.values()]
         .sort((left, right) => left.operationId.localeCompare(right.operationId))
         .map((operation) => ({ ...operation })),
+      syncCheckpoints: this.backing.state.syncCheckpoints.map((checkpoint) => ({
+        ...checkpoint,
+      })),
     };
   }
 }

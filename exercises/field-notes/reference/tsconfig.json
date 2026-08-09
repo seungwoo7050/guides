@@ -3,7 +3,8 @@
   "compilerOptions": {
     "strict": true,
     "noUncheckedIndexedAccess": true,
-    "types": ["jest"]
+    "allowImportingTsExtensions": true,
+    "types": ["jest", "node"]
   },
   "include": [
     "app/**/*.ts",

@@ -228,3 +228,29 @@ test("invalid business payload is a permanent result, not an apply", async () =>
   assert.equal(server.getApplyCount(invalid.commandId), 0);
   assert.equal(server.getRecord(invalid.recordId), null);
 });
+
+test("wire validation rejects non-canonical instants and out-of-range coordinates", async () => {
+  const server = new DeterministicFaultServer();
+  const invalidPayloads: RecordPayload[] = [
+    { ...BASE_PAYLOAD, observedAt: "2026-02-30T00:00:00.000Z" },
+    { ...BASE_PAYLOAD, observedAt: "2026-08-09" },
+    {
+      ...BASE_PAYLOAD,
+      location: {
+        latitude: 37,
+        longitude: -999,
+        accuracyMeters: 1,
+        measuredAt: "2026-08-09T03:05:00.000Z",
+      },
+    },
+  ];
+  for (const [index, payload] of invalidPayloads.entries()) {
+    const attempted = command(`cmd-invalid-wire-${index}`, `invalid-wire-${index}`, {
+      payload,
+    });
+    const response = await server.execute(attempted);
+    assert.equal(response.status, 400);
+    assert.equal(server.getApplyCount(attempted.commandId), 0);
+    assert.equal(server.getRecord(attempted.recordId), null);
+  }
+});

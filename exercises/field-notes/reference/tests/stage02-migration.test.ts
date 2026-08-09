@@ -35,6 +35,7 @@ describe("Stage 02 v1 forward migration", () => {
       { fromVersion: 1, toVersion: 2 },
       { fromVersion: 2, toVersion: 3 },
       { fromVersion: 3, toVersion: 4 },
+      { fromVersion: 4, toVersion: 5 },
     ]);
   });
 

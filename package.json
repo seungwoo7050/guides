@@ -18,15 +18,18 @@
     "react-dom": "19.2.3"
   },
   "workspaces": [
+    "exercises/field-notes/fault-server",
     "exercises/field-notes/shared",
     "exercises/field-notes/skeleton",
-    "exercises/field-notes/reference"
+    "exercises/field-notes/reference",
+    "exercises/field-notes/sync-engine"
   ],
   "scripts": {
     "typecheck": "npm run typecheck --workspaces --if-present",
     "test:stage01": "npm run test:stage01 --workspace=@field-notes/reference",
     "test:stage02": "npm run test:stage02 --workspace=@field-notes/reference",
     "test:stage03": "npm run test:stage03 --workspace=@field-notes/reference",
+    "test:stage04": "npm run test:stage04 --workspace=@field-notes/reference && npm test --workspace=@field-notes/fault-server && npm test --workspace=@field-notes/sync-engine",
     "test:stage01:skeleton": "npm run test:stage01 --workspace=@field-notes/skeleton",
     "bundle:android": "npm run bundle:android --workspace=@field-notes/reference",
     "bundle:ios": "npm run bundle:ios --workspace=@field-notes/reference",
@@ -34,6 +37,7 @@
     "bundle:ios:skeleton": "npm run bundle:ios --workspace=@field-notes/skeleton",
     "check:stage01": "npm run typecheck && npm run test:stage01",
     "check:stage02": "npm run typecheck && npm run test:stage01 && npm run test:stage02",
-    "check:stage03": "npm run typecheck && npm run test:stage01 && npm run test:stage02 && npm run test:stage03"
+    "check:stage03": "npm run typecheck && npm run test:stage01 && npm run test:stage02 && npm run test:stage03",
+    "check:stage04": "npm run typecheck && npm run test:stage01 && npm run test:stage02 && npm run test:stage03 && npm run test:stage04"
   }
 }

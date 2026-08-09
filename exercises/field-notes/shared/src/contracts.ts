@@ -76,8 +76,20 @@ export type OutboxEntry = RecordCommand & {
   state: OutboxState;
   attemptCount: number;
   payloadVersion: 1;
+  /** Captured exactly once on first claim and reused for every retry. */
+  attempted?: RecordCommand;
   claimedAt?: string;
   lastError?: string;
+  lease?: {
+    token: string;
+    owner: string;
+    expiresAt: number;
+  };
+  nextAttemptAt?: number;
+  completedAt?: number;
+  completedRemoteVersion?: number | null;
+  conflictId?: string;
+  sequence?: number;
 };
 
 export type StorageReconciliationReport = {
@@ -97,14 +109,41 @@ export type LocalDatabaseSnapshot = {
   processedIntentKeys: string[];
   migrationHistory: { fromVersion: number; toVersion: number }[];
   externalMediaOperations: ExternalMediaOperation[];
+  syncCheckpoints: SyncCheckpoint[];
+};
+
+export type RemoteRecord = {
+  recordId: string;
+  payload: RecordPayload | null;
+  version: number;
+  deleted: boolean;
 };
 
 export type RecordConflict = {
+  conflictId: string;
   commandId: string;
   recordId: string;
-  baseVersion: number | null;
-  local: RecordPayload;
-  remote: RecordPayload & { version: number };
+  attempted: RecordCommand;
+  local: {
+    payload: RecordPayload | null;
+    localRevision: number;
+  };
+  remote: RemoteRecord | null;
+  createdAt: number;
+  resolution?:
+    | { kind: "remote"; resolvedAt: number }
+    | {
+        kind: "local" | "merge";
+        resolvedAt: number;
+        resolutionCommandId: string;
+      };
+};
+
+export type SyncCheckpoint = {
+  sequence: number;
+  commandId: string;
+  leaseToken: string;
+  outcome: "success" | "conflict" | "retry_wait" | "blocked_auth" | "permanent";
 };
 
 export type CapabilityAvailability =

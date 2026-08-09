@@ -48,6 +48,7 @@ export interface SyncClock {
 export interface SyncBudget {
   canStartNext(input: { claimed: number; now: number }): boolean;
   leaseDurationMs(): number;
+  maxAttempts(): number;
   retryDelayMs(input: { attempt: number; reason: string }): number;
 }
 

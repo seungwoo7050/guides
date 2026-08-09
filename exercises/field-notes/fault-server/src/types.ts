@@ -72,7 +72,8 @@ export type ValidationFailureBody = {
 };
 
 export type WireResponse = {
-  status: 200 | 400 | 401 | 409 | 422;
+  /** Production transports may observe any HTTP status; the parser classifies unsupported values. */
+  status: number;
   body: unknown;
 };
 

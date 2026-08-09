@@ -47,6 +47,20 @@ export function validateRecordPayload(payload: RecordPayload): void {
   if (!(["draft", "open", "resolved"] as const).includes(payload.status)) {
     throw new InvalidRecordPayloadError("unsupported record status");
   }
+  if (
+    payload.location !== undefined &&
+    (!Number.isFinite(payload.location.latitude) ||
+      payload.location.latitude < -90 ||
+      payload.location.latitude > 90 ||
+      !Number.isFinite(payload.location.longitude) ||
+      payload.location.longitude < -180 ||
+      payload.location.longitude > 180 ||
+      !Number.isFinite(payload.location.accuracyMeters) ||
+      payload.location.accuracyMeters < 0 ||
+      !Number.isFinite(Date.parse(payload.location.measuredAt)))
+  ) {
+    throw new InvalidRecordPayloadError("location fields are invalid");
+  }
 }
 
 export function snapshotRecordPayload(payload: RecordPayload): RecordPayload {

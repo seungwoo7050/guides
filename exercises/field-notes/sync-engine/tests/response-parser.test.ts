@@ -90,3 +90,35 @@ test("response parser accepts a complete monotonic success", () => {
   assert.equal(result.remote.version, 6);
   assert.deepEqual(result.remote.payload, attempted.payload);
 });
+
+test("response parser rejects normalized dates and out-of-range coordinates", () => {
+  for (const payload of [
+    { ...attempted.payload, observedAt: "2026-02-30T00:00:00.000Z" },
+    { ...attempted.payload, observedAt: "2026-08-09" },
+    {
+      ...attempted.payload,
+      location: {
+        latitude: 999,
+        longitude: 127,
+        accuracyMeters: 1,
+        measuredAt: "2026-08-09T02:00:00.000Z",
+      },
+    },
+  ]) {
+    const body = validBody();
+    body.record = {
+      ...(body.record as Record<string, unknown>),
+      payload,
+    };
+    assert.deepEqual(
+      parseTransportResponse(
+        { status: 200, body },
+        { attempted, knownRemoteVersion: 5 },
+      ),
+      {
+        kind: "invalid_response",
+        reason: "success-record-required-fields-invalid",
+      },
+    );
+  }
+});

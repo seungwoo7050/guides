@@ -56,6 +56,7 @@ function command(
 
 function harness(options: {
   maxCommands?: number;
+  maxAttempts?: number;
   idGenerator?: SequentialCommandIdGenerator;
 } = {}): {
   clock: ManualClock;
@@ -73,6 +74,9 @@ function harness(options: {
     maxCommands: options.maxCommands ?? 1,
     leaseDurationMs: 100,
     retryDelayMs: 10,
+    ...(options.maxAttempts === undefined
+      ? {}
+      : { maxAttempts: options.maxAttempts }),
   });
   return {
     clock,
@@ -531,4 +535,36 @@ test("success preserves newer local edit and rebases only its unattempted comman
   assert.deepEqual((await requireCommand(repository, commandA.commandId)).state.kind, "completed");
   assert.equal(server.getApplyCount(commandA.commandId), 1);
   assert.equal(server.getApplyCount("cmd-newer:rebase:7"), 1);
+});
+
+test("repeated malformed UNKNOWN responses exhaust a finite attempt ceiling", async () => {
+  const { clock, server, repository, worker } = harness({ maxAttempts: 3 });
+  const attempted = command("cmd-attempt-ceiling", "ceiling-record");
+  repository.enqueueLocalCommand(attempted);
+  for (let attempt = 0; attempt < 3; attempt += 1) {
+    server.inject({ kind: "malformed-success" }, { commandId: attempted.commandId });
+  }
+
+  await worker("ceiling-1").run({ trigger: "manual", workerId: "ceiling-1" });
+  assert.equal((await requireCommand(repository, attempted.commandId)).state.kind, "retry_wait");
+  clock.advanceBy(10);
+  await worker("ceiling-2").run({ trigger: "manual", workerId: "ceiling-2" });
+  assert.equal((await requireCommand(repository, attempted.commandId)).state.kind, "retry_wait");
+  clock.advanceBy(10);
+  await worker("ceiling-3").run({ trigger: "manual", workerId: "ceiling-3" });
+
+  const exhausted = await requireCommand(repository, attempted.commandId);
+  assert.equal(exhausted.state.kind, "permanent");
+  if (exhausted.state.kind !== "permanent") throw new Error("attempt ceiling missing");
+  assert.equal(exhausted.state.attempt, 3);
+  assert.match(exhausted.state.reason, /^attempt-exhausted:invalid-response:/);
+  assert.equal(server.getApplyCount(attempted.commandId), 1);
+  assert.equal(
+    await repository.claimNext({
+      workerId: "must-not-reclaim-exhausted",
+      now: 999_999,
+      leaseDurationMs: 100,
+    }),
+    null,
+  );
 });

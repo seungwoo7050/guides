@@ -37,6 +37,7 @@ interface SyncClock {
 interface SyncBudget {
   canStartNext(...): boolean;
   leaseDurationMs(): number;
+  maxAttempts(): number;
   retryDelayMs(...): number;
 }
 ```
@@ -123,7 +124,7 @@ A의 attempted payload/base/ID는 바꾸지 않는다. `pending`만 rebase 대�
 - conflict current snapshot과 expected base
 - 401/permanent/validation status의 kind·reason
 
-malformed success나 version regression은 local success로 checkpoint하지 않는다. `retry_wait` 뒤 같은 ID를 보내 fault-server의 memoized canonical result로 reconciliation한다.
+malformed success나 version regression은 local success로 checkpoint하지 않는다. `retry_wait` 뒤 같은 ID를 보내 fault-server의 memoized canonical result로 reconciliation한다. `FixedSyncBudget`의 `maxAttempts`(기본 5)를 소진한 UNKNOWN/invalid response는 `attempt-exhausted:*` permanent checkpoint가 되어 무한 loop를 만들지 않는다. 401은 이 상한으로 자동 해제하지 않고 외부 credential 복구 뒤 explicit `resumeBlockedAuth`가 필요하다.
 
 ## conflict와 resolution
 

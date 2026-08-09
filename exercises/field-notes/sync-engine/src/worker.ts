@@ -127,6 +127,13 @@ export class BoundedSyncWorker {
         };
       }
 
+      if (outcome.kind === "retry_wait" && claim.attempt >= this.#budget.maxAttempts()) {
+        outcome = {
+          kind: "permanent",
+          reason: `attempt-exhausted:${outcome.reason}`,
+        };
+      }
+
       try {
         const checkpoint = await this.#repository.checkpoint({ claim, outcome });
         result.checkpoints.push(checkpoint);

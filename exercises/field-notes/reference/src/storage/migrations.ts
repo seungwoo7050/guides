@@ -2,7 +2,7 @@ import { FIELD_RECORD_FIXTURES } from "@field-notes/shared";
 import type { SQLiteDatabase } from "expo-sqlite";
 import { CorruptLocalDataError } from "./localMutation";
 
-export const CURRENT_SCHEMA_VERSION = 4;
+export const CURRENT_SCHEMA_VERSION = 5;
 
 export const CREATE_V1_SCHEMA_SQL = `
 CREATE TABLE records (
@@ -102,6 +102,116 @@ CREATE INDEX external_media_record_created_idx
   ON external_media_operations(record_id, created_at, operation_id);
 `;
 
+export const MIGRATE_V4_TO_V5_SQL = `
+ALTER TABLE outbox ADD COLUMN attempted_json TEXT;
+ALTER TABLE outbox ADD COLUMN sequence INTEGER;
+ALTER TABLE outbox ADD COLUMN lease_token TEXT;
+ALTER TABLE outbox ADD COLUMN lease_owner TEXT;
+ALTER TABLE outbox ADD COLUMN lease_expires_at INTEGER;
+ALTER TABLE outbox ADD COLUMN next_attempt_at INTEGER;
+ALTER TABLE outbox ADD COLUMN completed_at INTEGER;
+ALTER TABLE outbox ADD COLUMN completed_remote_version INTEGER;
+ALTER TABLE outbox ADD COLUMN conflict_id TEXT;
+
+UPDATE outbox SET sequence = rowid WHERE sequence IS NULL;
+UPDATE outbox
+SET attempted_json = json_object(
+  'commandId', command_id,
+  'recordId', record_id,
+  'operation', operation,
+  'baseVersion', base_version,
+  'localRevision', local_revision,
+  'payload', CASE
+    WHEN payload_json IS NULL THEN NULL
+    ELSE json(payload_json)
+  END,
+  'createdAt', created_at
+)
+WHERE state != 'pending' AND attempted_json IS NULL;
+CREATE INDEX outbox_sequence_idx ON outbox(sequence, command_id);
+CREATE INDEX outbox_lease_expiry_idx ON outbox(state, lease_expires_at);
+CREATE TRIGGER outbox_attempted_snapshot_immutable
+BEFORE UPDATE OF attempted_json ON outbox
+WHEN OLD.attempted_json IS NOT NULL AND NEW.attempted_json IS NOT OLD.attempted_json
+BEGIN
+  SELECT RAISE(ABORT, 'attempted command snapshot is immutable');
+END;
+
+DROP INDEX IF EXISTS conflicts_record_idx;
+ALTER TABLE conflicts RENAME TO conflicts_v4;
+CREATE TABLE conflicts (
+  conflict_id TEXT PRIMARY KEY NOT NULL,
+  command_id TEXT NOT NULL UNIQUE REFERENCES outbox(command_id),
+  record_id TEXT NOT NULL REFERENCES records(id),
+  attempted_json TEXT,
+  local_payload_json TEXT,
+  local_revision INTEGER NOT NULL,
+  remote_payload_json TEXT,
+  remote_version INTEGER,
+  remote_deleted INTEGER,
+  created_at INTEGER NOT NULL,
+  resolution_kind TEXT CHECK (
+    resolution_kind IS NULL OR resolution_kind IN ('remote', 'local', 'merge')
+  ),
+  resolved_at INTEGER,
+  resolution_command_id TEXT
+);
+INSERT INTO conflicts (
+  conflict_id, command_id, record_id, attempted_json,
+  local_payload_json, local_revision,
+  remote_payload_json, remote_version, remote_deleted,
+  created_at
+)
+SELECT
+  'conflict:' || legacy.command_id,
+  legacy.command_id,
+  legacy.record_id,
+  COALESCE(
+    outbox.attempted_json,
+    json_object(
+      'commandId', outbox.command_id,
+      'recordId', outbox.record_id,
+      'operation', outbox.operation,
+      'baseVersion', outbox.base_version,
+      'localRevision', outbox.local_revision,
+      'payload', CASE
+        WHEN outbox.payload_json IS NULL THEN NULL
+        ELSE json(outbox.payload_json)
+      END,
+      'createdAt', outbox.created_at
+    )
+  ),
+  legacy.local_payload_json,
+  COALESCE(outbox.local_revision, 1),
+  legacy.remote_payload_json,
+  legacy.remote_version,
+  0,
+  COALESCE(CAST(strftime('%s', legacy.created_at) AS INTEGER) * 1000, 0)
+FROM conflicts_v4 AS legacy
+LEFT JOIN outbox ON outbox.command_id = legacy.command_id;
+UPDATE outbox
+SET conflict_id = 'conflict:' || command_id
+WHERE state = 'conflict'
+  AND EXISTS (
+    SELECT 1 FROM conflicts
+    WHERE conflicts.command_id = outbox.command_id
+  );
+DROP TABLE conflicts_v4;
+CREATE INDEX conflicts_record_idx ON conflicts(record_id, created_at, conflict_id);
+
+CREATE TABLE sync_checkpoints (
+  sequence INTEGER PRIMARY KEY AUTOINCREMENT,
+  command_id TEXT NOT NULL REFERENCES outbox(command_id),
+  lease_token TEXT NOT NULL,
+  outcome TEXT NOT NULL CHECK (
+    outcome IN ('success', 'conflict', 'retry_wait', 'blocked_auth', 'permanent')
+  ),
+  created_at INTEGER NOT NULL
+);
+CREATE INDEX sync_checkpoints_command_idx
+  ON sync_checkpoints(command_id, sequence);
+`;
+
 export type LegacyV1FixtureRecord = {
   id: string;
   title: string;
@@ -153,6 +263,10 @@ async function applyStep(txn: MigrationTxn, fromVersion: number): Promise<void> 
   }
   if (fromVersion === 3) {
     await txn.execAsync(MIGRATE_V3_TO_V4_SQL);
+    return;
+  }
+  if (fromVersion === 4) {
+    await txn.execAsync(MIGRATE_V4_TO_V5_SQL);
     return;
   }
   throw new CorruptLocalDataError(

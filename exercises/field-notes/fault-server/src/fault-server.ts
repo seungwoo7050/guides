@@ -52,7 +52,9 @@ function isFiniteNumber(value: unknown): value is number {
 }
 
 function isIsoDate(value: unknown): value is string {
-  return typeof value === "string" && value.length > 0 && Number.isFinite(Date.parse(value));
+  if (typeof value !== "string" || value.length === 0) return false;
+  const timestamp = Date.parse(value);
+  return Number.isFinite(timestamp) && new Date(timestamp).toISOString() === value;
 }
 
 function parsePayload(value: unknown): { ok: true; payload: RecordPayload } | { ok: false; reason: string } {
@@ -77,7 +79,11 @@ function parsePayload(value: unknown): { ok: true; payload: RecordPayload } | { 
     const { latitude, longitude, accuracyMeters, measuredAt } = value.location;
     if (
       !isFiniteNumber(latitude) ||
+      latitude < -90 ||
+      latitude > 90 ||
       !isFiniteNumber(longitude) ||
+      longitude < -180 ||
+      longitude > 180 ||
       !isFiniteNumber(accuracyMeters) ||
       accuracyMeters < 0 ||
       !isIsoDate(measuredAt)

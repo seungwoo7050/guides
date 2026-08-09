@@ -14,11 +14,13 @@
     "test:stage01": "jest --runInBand --runTestsByPath tests/stage01-navigation.test.ts tests/in-memory-repository.test.ts tests/record-components.test.tsx",
     "test:stage02": "jest --runInBand --runTestsByPath tests/stage02-transaction.test.ts tests/stage02-migration.test.ts tests/stage02-files.test.ts",
     "test:stage03": "jest --runInBand --runTestsByPath tests/stage03-adapters.test.ts tests/stage03-media-lifecycle.test.ts tests/stage03-location.test.ts tests/stage03-native-config.test.ts",
+    "test:stage04": "jest --runInBand --runTestsByPath tests/stage04-sqlite-sync.test.ts tests/stage04-fetch-transport.test.ts",
     "bundle:android": "expo export --platform android --output-dir dist/android --clear",
     "bundle:ios": "expo export --platform ios --output-dir dist/ios --clear"
   },
   "dependencies": {
     "@field-notes/shared": "0.1.0",
+    "@field-notes/sync-engine": "0.1.0",
     "expo": "~57.0.11",
     "expo-constants": "~57.0.9",
     "expo-dev-client": "~57.0.7",
@@ -35,8 +37,10 @@
     "react-native-screens": "~4.26.0"
   },
   "devDependencies": {
+    "@field-notes/fault-server": "0.1.0",
     "@testing-library/react-native": "^14.0.1",
     "@types/jest": "29.5.14",
+    "@types/node": "~26.2.0",
     "@types/react": "~19.2.2",
     "jest-expo": "~57.0.3",
     "typescript": "~6.0.3"

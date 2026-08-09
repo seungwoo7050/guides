@@ -15,6 +15,7 @@ export default function SettingsRoute() {
     revision,
     storageError,
     storageStatus,
+    syncEndpoint,
   } = useAppRuntime();
   const [snapshot, setSnapshot] = useState<LocalDatabaseSnapshot | null>(null);
 
@@ -41,6 +42,8 @@ export default function SettingsRoute() {
         <Text style={styles.value}>SQLite schema v{snapshot?.schemaVersion ?? "…"} · {storageStatus}</Text>
         <Text style={styles.label}>durable outbox</Text>
         <Text style={styles.value}>{snapshot?.outbox.length ?? "…"} commands</Text>
+        <Text style={styles.label}>수동 sync endpoint</Text>
+        <Text selectable style={styles.value}>{syncEndpoint}</Text>
         <Text style={styles.label}>관찰한 app lifecycle</Text>
         <Text style={styles.value}>{appState}</Text>
         <Text style={styles.label}>camera access</Text>
@@ -68,7 +71,7 @@ export default function SettingsRoute() {
         title="마지막 파일 정합성 검사"
       />
       <StateNotice
-        message="Camera, system picker와 foreground one-shot location은 사용자 action에서만 실행합니다. app active 복귀는 현재 availability/permission과 pending result만 다시 읽고 민감 action을 자동 재실행하지 않습니다. Remote SyncTransport, retry worker, background location과 notification은 후속 범위입니다."
+        message="Camera, system picker, foreground one-shot location과 remote sync는 사용자 action에서만 실행합니다. app active 복귀는 capability/pending media만 다시 읽고 network·민감 action을 자동 실행하지 않습니다. Fetch transport는 configurable local/test endpoint뿐이며 background sync, background location과 production backend는 후속 범위입니다."
         title="기능 경계"
       />
     </Screen>
