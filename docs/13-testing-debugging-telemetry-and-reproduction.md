@@ -17,6 +17,8 @@
 → target build 재검증
 ```
 
+이 장의 소유 범위는 일반적인 관측 플랫폼이나 사고 대응이 아닙니다. `game-development`의 “게임플레이 기능의 상태 전이·저장·재현·테스트”와 “frame budget·profiling·client/server authoritative 경계의 게임 맥락”을 실행 가능한 증거로 만드는 데 집중합니다.
+
 ## 핵심 상태
 
 ### 테스트 층
@@ -108,6 +110,20 @@ field 의미, unit, optionality, cardinality와 개인정보 분류를 기록합
 
 logging lock, allocation과 profile instrumentation이 timing을 바꿀 수 있습니다. debug와 release capture 차이를 기록하고 low-overhead path를 둡니다.
 
+### 수정 전후에 같은 근거를 사용합니다
+
+재현만 성공하고 수정을 검증하지 않으면 세 번째 종료 능력을 입증하지 못합니다. 같은 build mode, content, command trace, target profile과 측정 구간을 고정한 뒤 다음 묶음을 남깁니다.
+
+```text
+known-bad fixture와 first wrong transition
+→ 수정 가설과 변경
+→ 같은 fixture의 invariant 회복
+→ 같은 profile의 frame/resource 지표 비교
+→ 회귀 fixture와 아직 보장하지 않는 범위
+```
+
+수정 뒤 평균 FPS만 좋아졌거나 다른 scene·device를 측정했다면 같은 문제를 고쳤다는 근거로 사용하지 않습니다.
+
 ## 대표 실패
 
 ### screenshot과 서술만 있는 bug report
@@ -173,11 +189,14 @@ retry로 숨기기 전에 flake를 별도 failure로 관리합니다.
 
 - 언어별 unit test와 debugger는 각 언어 브랜치가 소유합니다.
 - 서비스 관측성과 사고 대응은 `web-infra`·`cybersecurity`가 소유합니다.
-- 현재 문서는 game tick, content, input, replay, target device와 multi-instance를 결합한 재현 계약을 소유합니다.
+- 현재 문서는 game tick, content, input, replay, target device와 multi-instance를 결합해 게임플레이 상태 전이·저장·재현·테스트와 profiling 근거를 검증합니다.
 
 ## 완료 기준
+
+아래 항목은 게임플레이 재현·테스트와 profiling 기반 수정 종료 능력의 근거입니다.
 
 - rule, simulation, scene, network, platform와 playtest 층을 구분합니다.
 - bug report를 build/content/state/input/tick 근거를 가진 fixture로 바꿉니다.
 - record/replay와 state hash로 first divergence를 찾습니다.
 - telemetry schema, privacy, cardinality와 meta-test를 포함한 관측 계약을 설계합니다.
+- 같은 fixture와 profile로 수정 전후 invariant·frame·resource 결과를 비교해 “frame·resource·simulation 실패를 재현하고 profiling 근거로 수정한다”는 종료 능력을 입증합니다.

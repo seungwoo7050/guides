@@ -11,7 +11,7 @@
 → 관측·재현·성능·release
 ```
 
-이 브랜치는 그 공통 계약을 소유합니다. 특정 엔진의 API를 모두 가르치지 않고, 엔진 문서와 기존 프로젝트를 읽을 수 있는 개념 지도와 검증 순서를 제공합니다.
+이 브랜치는 그 공통 계약을 소유하는 **분야 진입(`field-entry`)** 가이드입니다. 특정 엔진의 API를 모두 가르치지 않고, 엔진 문서와 기존 프로젝트를 읽을 수 있는 개념 지도와 검증 순서를 제공합니다.
 
 ## 학습 목표
 
@@ -23,9 +23,15 @@
 - 엔진 내부의 편리한 API를 사용하더라도 ownership·failure·verification 계약은 프로젝트가 직접 책임진다는 점을 이해합니다.
 - game designer, artist, animator, audio, QA, server, build와 platform 담당자가 공유할 데이터 계약을 작성합니다.
 
-## 종료 능력
+## 정본 종료 능력
 
-가이드를 마친 독자는 다음을 수행할 수 있어야 합니다.
+`main`의 완료 계약은 다음 세 가지입니다.
+
+1. 기존 엔진 프로젝트의 update·render·asset·tool 경계를 복원한다.
+2. 입력부터 상태·표현·저장까지 이어지는 작은 게임플레이 기능을 구현한다.
+3. frame·resource·simulation 실패를 재현하고 profiling 근거로 수정한다.
+
+다음은 세 종료 능력을 만들고 검토하기 위한 세부 학습 결과이며, 별도의 카탈로그 종료 능력을 추가하지 않습니다.
 
 1. executable 시작부터 menu, world load, play session, suspend, shutdown까지 runtime state를 그립니다.
 2. render frame, fixed simulation step, real time, game time과 server time을 서로 다른 시간축으로 구분합니다.
@@ -51,98 +57,97 @@
 - 웹·서버·인프라·데이터 경험을 게임회사 직무로 연결하려는 개발자
 - gameplay·engine·tools·server·data·security 중 어느 길을 선택할지 판단하려는 개발자
 
-프로그래밍 자체의 첫 입문 과정은 아닙니다. 문서 실습은 언어 독립적이지만 실제 client·engine 구현 경로는 `cpp` 또는 선택한 엔진의 scripting language 능력을 전제로 합니다.
+브랜치 카탈로그의 직접 필수 관계는 비어 있습니다. 따라서 문서·fixture 기반 Profile A는 다른 가이드 완료 없이 시작할 수 있습니다. 다만 프로그래밍 자체를 처음부터 가르치지는 않으며, 두 번째 종료 능력의 실제 구현 근거를 만들 때는 `cpp` 또는 선택한 엔진의 scripting language 능력이 필요합니다.
 
 ## 선행 가이드와 선택 경로
 
-### 공통 최소 기반
+### 브랜치 자체 관계
 
-| 기반 | 필요한 종료 능력 |
+| 관계 | 정본 값 |
 |---|---|
-| [`git`](https://github.com/seungwoo7050/guides/tree/git) | binary asset과 generated file을 구분하고 작은 변경을 리뷰 가능한 단위로 제출합니다. |
-| 한 구현 언어 | 함수·타입·collection·오류·파일·테스트를 사용해 작은 상태 시스템을 구현합니다. |
-| [`algorithms`](https://github.com/seungwoo7050/guides/tree/algorithms)의 기초 | 상태 전이, graph, queue, spatial query의 비용과 정확성을 비교합니다. |
+| `requires` | 없음 |
+| `recommends` | `algorithms`, `cpp`, `operating-systems`, `computer-networks` |
+| `connects` | `computer-graphics`, `distributed-services`, `machine-learning`, `cybersecurity`, `platform-engineering` |
+| `continues_to` | `computer-graphics`, `distributed-services`, `machine-learning`, `cybersecurity` |
 
-### 직무별 권장 기반
+`requires`는 이 브랜치 자체의 직접 전제이고, 아래 `linear_paths`는 목표 직무까지 처음부터 진행할 때의 권장 순서입니다. 선형 경로에 들어 있다는 사실만으로 `game-development`의 직접 필수가 되지는 않습니다.
 
-#### Gameplay·client
+### 카탈로그의 일곱 트랙과 선형 경로
 
-```text
-cpp
-→ algorithms
-→ game-development
-```
-
-엔진 scripting language를 이미 사용한다면 `cpp` 전체를 필수로 다시 학습하지 않아도 됩니다. 그러나 object lifetime, ownership, data layout과 debugging을 설명할 수 있어야 합니다.
-
-#### Engine·core systems
+#### 게임 클라이언트·게임플레이 (`game-client-gameplay`)
 
 ```text
-c 또는 cpp
-→ computer-architecture
-→ operating-systems
-→ game-development
+beginner: git → c → cpp → algorithms → game-development
+experienced: git → cpp → algorithms → game-development
 ```
 
-#### Rendering
+#### 엔진·코어 시스템 (`game-engine-core`)
 
 ```text
-cpp
-→ algorithms
-→ computer-architecture
-→ game-development
-→ computer-graphics
+git → c → cpp → algorithms → computer-architecture → operating-systems → game-development
 ```
 
-현재 브랜치는 camera·visibility·presentation·frame budget의 접점을 다루고 rasterization·shader·GPU pipeline은 `computer-graphics`에 맡깁니다.
-
-#### Game server
+#### 렌더링·그래픽스 (`game-rendering`)
 
 ```text
-web-app
-→ java 또는 다른 server language
-→ backend-spring-boot
-→ database-systems
-→ computer-networks
-→ game-development
-→ distributed-services
-→ web-infra
+git → c → cpp → algorithms → computer-architecture → game-development → computer-graphics
 ```
 
-이 브랜치의 11장은 match runtime의 authority와 replication을 다룹니다. 계정·inventory·상점·결제·matchmaking·운영 이벤트의 서비스 수렴은 `distributed-services`가 소유합니다.
+현재 브랜치는 renderer가 소비하는 장면·자산·표현·frame budget 접점을 다루며, rasterization·shader·GPU pipeline은 `computer-graphics`가 소유합니다.
 
-#### Tools·build·platform
+#### Java/Spring 게임 서버 (`game-server`)
 
 ```text
-python
-→ unix-systems
-→ game-development
-→ web-infra
-→ platform-engineering
+git → web-app → java → backend-spring-boot → database-systems → game-development → computer-networks → distributed-services → web-infra
 ```
 
-#### Data·ML
+이 트랙에서 `game-development`는 `recommended`이지만 선형 경로에는 게임 상태 문맥을 위해 포함됩니다. 이 브랜치의 11장은 match runtime authority와 replication만 다루고, 서비스 상태 수렴은 `distributed-services`가 소유합니다.
+
+#### 개발 도구·빌드·플랫폼 (`game-tools-platform`)
 
 ```text
-python
-→ database-systems
-→ game-development
-→ data-engineering
-→ machine-learning
+git → python → unix-systems → game-development → web-infra → platform-engineering
 ```
 
-#### Security·anti-cheat
+이 트랙에서도 `game-development`는 `recommended`이며 asset·editor·build 입력의 게임 문맥을 제공합니다.
+
+#### 게임 데이터·머신러닝 (`game-data-ml`)
 
 ```text
-c 또는 cpp
-→ computer-architecture
-→ operating-systems
-→ computer-networks
-→ game-development
-→ cybersecurity
+git → python → algorithms → game-development → database-systems → data-engineering → machine-learning
 ```
 
-이 브랜치에서는 authoritative rule과 trust boundary를 표시하지만 anti-cheat, vulnerability analysis와 incident response 자체는 `cybersecurity`가 소유합니다.
+이 트랙에서도 `game-development`는 `recommended`이며 gameplay event와 runtime identity의 의미 문맥을 제공합니다.
+
+#### 보안·안티치트 (`game-security-anticheat`)
+
+```text
+git → c → cpp → algorithms → game-development → computer-architecture → operating-systems → unix-systems → computer-networks → cybersecurity
+```
+
+이 브랜치는 authoritative rule과 trust boundary의 게임 맥락을 제공하지만 vulnerability analysis와 incident response 자체는 `cybersecurity`가 소유합니다.
+
+같은 내용을 역할별 우선 문서와 함께 보려면 [게임 개발 직무별 진입 지도](../reference/role-entry-map.md)를 사용합니다.
+
+## 소유와 비소유 범위
+
+### `owns`
+
+1. 고정·가변 시간 단계와 game loop
+2. 입력·카메라·장면·엔티티·컴포넌트의 상태 경계
+3. 자산 로딩·직렬화·resource lifetime과 editor workflow
+4. 물리·애니메이션·오디오·렌더링 하위 시스템의 게임 계층 통합
+5. 게임플레이 기능의 상태 전이·저장·재현·테스트
+6. frame budget·profiling·client/server authoritative 경계의 게임 맥락
+
+### `excludes`
+
+1. GPU 렌더링 파이프라인과 shader 내부구조
+2. 운영체제·네트워크 프로토콜·분산 합의의 일반 원리
+3. 특정 상용 엔진 API 전체
+4. 게임 기획·아트·사운드 제작 직무 교육
+
+게임 AI·navigation은 하위 시스템과 gameplay command의 통합 사례이고, 접근성·release는 target platform 검증 근거이며, 팀 변경은 editor workflow와 상태 계약을 안전하게 유지하는 지원 절입니다. 이 주제들은 별도의 `owns`를 추가하지 않습니다.
 
 ## 이 가이드가 반복하지 않는 것
 
@@ -249,13 +254,15 @@ playable rule
 
 엔진이 없어도 완료할 수 있습니다. 이 profile이 문서 중심 가이드의 필수 완료 기준입니다.
 
-### Profile B. Local playable slice — 선택
+### Profile B. Local playable slice — 구현 종료 근거
 
 - menu에서 arena 진입
 - 한 명의 player와 두 종류의 obstacle 또는 agent
 - input remapping
 - pause·restart·save 또는 replay
 - target frame budget과 profile capture
+
+두 번째 종료 능력을 완료하려면 Profile B 또는 기존 엔진 프로젝트에서 입력→상태→표현→저장을 연결한 동등한 작은 기능 변경 근거가 필요합니다. 특정 Capstone 엔진을 강제하지 않는다는 뜻에서 Profile B는 선택 구현이며, 구현 능력 자체는 선택 종료 능력이 아닙니다.
 
 ### Profile C. Networked slice — 선택 심화
 

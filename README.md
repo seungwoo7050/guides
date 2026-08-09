@@ -25,9 +25,19 @@
 
 처음에는 [게임 개발 로드맵](docs/00-roadmap.md)을 읽으세요. 선행 가이드, 직무별 선택 경로, 문서 순서, 실습과 Capstone 완료 기준을 한곳에서 확인할 수 있습니다.
 
-## 이 브랜치의 종료점
+`main` 카탈로그에서 이 가이드는 **분야 진입(`field-entry`)** 브랜치입니다. 한 문장 계약은 다음과 같습니다.
 
-이 가이드가 게임 개발 전문가나 특정 엔진 전문가를 한 번에 완성하지는 않습니다. 과정을 마치면 다음 정도의 프로젝트 진입 능력을 갖추는 것을 목표로 합니다.
+> 게임 루프·시간·입력·장면·엔티티·자산·물리·애니메이션·오디오·네트워크 경계를 연결해 게임 코드베이스에 진입한다.
+
+## 정본 종료 능력
+
+이 가이드가 게임 개발 전문가나 특정 엔진 전문가를 한 번에 완성하지는 않습니다. 완료 판단은 `main`이 선언한 다음 세 능력으로 고정합니다.
+
+1. 기존 엔진 프로젝트의 update·render·asset·tool 경계를 복원한다.
+2. 입력부터 상태·표현·저장까지 이어지는 작은 게임플레이 기능을 구현한다.
+3. frame·resource·simulation 실패를 재현하고 profiling 근거로 수정한다.
+
+아래 항목은 별도의 종료 능력을 추가하는 목록이 아니라, 위 세 능력을 판단할 때 찾을 세부 근거입니다.
 
 - 처음 보는 게임 저장소에서 부팅, 메뉴, 월드 진입, 플레이, 종료까지 runtime 경계를 추적합니다.
 - variable frame과 fixed simulation을 구분하고 긴 frame, pause, slow motion, catch-up 실패를 설명합니다.
@@ -44,37 +54,40 @@
 
 ## 이 브랜치가 소유하는 범위
 
-```text
-game loop와 시간 단계
-+ 입력·명령·카메라·게임 UI
-+ world·scene·entity·component 수명
-+ gameplay rule·progression·data-driven 상태
-+ asset pipeline·loading·memory residence
-+ physics·movement·animation·audio·VFX 통합
-+ save·migration·replay·determinism
-+ 게임 AI·navigation 통합 경계
-+ authoritative multiplayer와 latency UX
-+ editor·tool·build·content validation
-+ 테스트·telemetry·profiling·scalability·release
-```
+`main`의 `owns`를 그대로 구현 범위로 사용합니다.
 
-다음 내용은 기존 또는 후속 브랜치가 정본을 소유합니다.
+1. 고정·가변 시간 단계와 game loop
+2. 입력·카메라·장면·엔티티·컴포넌트의 상태 경계
+3. 자산 로딩·직렬화·resource lifetime과 editor workflow
+4. 물리·애니메이션·오디오·렌더링 하위 시스템의 게임 계층 통합
+5. 게임플레이 기능의 상태 전이·저장·재현·테스트
+6. frame budget·profiling·client/server authoritative 경계의 게임 맥락
 
-| 기반 | 소유 브랜치 | 이 브랜치에서 사용하는 방식 |
-|---|---|---|
-| C++ 객체 수명·RAII·동시성·CMake | [`cpp`](https://github.com/seungwoo7050/guides/tree/cpp) | client·engine 구현의 기본 언어 능력으로 참조합니다. |
-| 알고리즘과 자료구조 | [`algorithms`](https://github.com/seungwoo7050/guides/tree/algorithms) | 공간 질의, scheduling, navigation과 검사 설계의 기반으로 사용합니다. |
-| CPU·cache·SIMD·메모리 비용 | [`computer-architecture`](https://github.com/seungwoo7050/guides/tree/computer-architecture) | frame budget과 data layout을 설명할 때 참조합니다. |
-| process·thread·memory·filesystem·I/O | [`operating-systems`](https://github.com/seungwoo7050/guides/tree/operating-systems) | runtime·job·streaming·platform 실패의 기반으로 사용합니다. |
-| 렌더링 수식·rasterization·shader·GPU synchronization | [`computer-graphics`](https://github.com/seungwoo7050/guides/tree/computer-graphics) | rendering 직무의 심화 경로로 넘깁니다. |
-| TCP·UDP·loss·latency·NAT | [`computer-networks`](https://github.com/seungwoo7050/guides/tree/computer-networks) | multiplayer transport의 실제 제약을 분석할 때 참조합니다. |
-| API·세션·DB·서비스 상태 | [`web-app`](https://github.com/seungwoo7050/guides/tree/web-app), [`database-systems`](https://github.com/seungwoo7050/guides/tree/database-systems) | 계정·상점·메타게임·운영 서비스 경계에 사용합니다. |
-| 부분 실패·멱등성·Outbox·Saga | [`distributed-services`](https://github.com/seungwoo7050/guides/tree/distributed-services) | 게임 백엔드와 운영 상태 수렴에 사용합니다. |
-| 배포·관측·rollback·복구 | [`web-infra`](https://github.com/seungwoo7050/guides/tree/web-infra) | dedicated server와 backend 운영의 후속 경로로 사용합니다. |
-| 위협 모델·취약점·수정·탐지 | [`cybersecurity`](https://github.com/seungwoo7050/guides/tree/cybersecurity) | anti-cheat와 신뢰 경계를 검토할 때 사용합니다. |
-| 데이터 pipeline과 모델 개발 | `data-engineering`, `machine-learning` | telemetry·추천·이상 탐지 직무의 후속 경로로 사용합니다. |
+게임 AI·navigation, 접근성·release, telemetry와 팀 변경 장은 별도의 소유 범위를 추가하지 않습니다. 위 여섯 범위가 agent, target platform, 협업과 실패 상황에서도 유지되는지 확인하는 **통합 사례와 지원 근거**입니다.
 
-이 브랜치는 위 내용을 다시 가르치지 않습니다. **게임이라는 실행 환경에서 해당 기반들이 언제 충돌하고 어떤 계약이 필요한지**에 집중합니다.
+### 브랜치 관계
+
+선형 직무 경로와 브랜치 자체의 직접 필수 조건을 구분합니다. 이 브랜치의 `requires`는 비어 있으므로 다른 가이드 완료를 시작 조건으로 강제하지 않습니다.
+
+| 관계 | 브랜치 |
+|---|---|
+| `requires` | 없음 |
+| `recommends` | [`algorithms`](https://github.com/seungwoo7050/guides/tree/algorithms), [`cpp`](https://github.com/seungwoo7050/guides/tree/cpp), [`operating-systems`](https://github.com/seungwoo7050/guides/tree/operating-systems), [`computer-networks`](https://github.com/seungwoo7050/guides/tree/computer-networks) |
+| `connects` | [`computer-graphics`](https://github.com/seungwoo7050/guides/tree/computer-graphics), [`distributed-services`](https://github.com/seungwoo7050/guides/tree/distributed-services), [`machine-learning`](https://github.com/seungwoo7050/guides/tree/machine-learning), [`cybersecurity`](https://github.com/seungwoo7050/guides/tree/cybersecurity), [`platform-engineering`](https://github.com/seungwoo7050/guides/tree/platform-engineering) |
+| `continues_to` | [`computer-graphics`](https://github.com/seungwoo7050/guides/tree/computer-graphics), [`distributed-services`](https://github.com/seungwoo7050/guides/tree/distributed-services), [`machine-learning`](https://github.com/seungwoo7050/guides/tree/machine-learning), [`cybersecurity`](https://github.com/seungwoo7050/guides/tree/cybersecurity) |
+
+트랙별 선형 경로에는 `computer-architecture`, `web-app`, `database-systems`, `web-infra` 같은 추가 기반이 포함될 수 있습니다. 이는 해당 직무의 권장 순서이지 `game-development`의 직접 필수 관계를 바꾸지 않습니다. 일곱 경로의 정확한 순서는 [직무별 진입 지도](reference/role-entry-map.md)에 있습니다.
+
+### 이 브랜치가 소유하지 않는 범위
+
+`main`의 `excludes`는 다음 네 항목입니다.
+
+1. GPU 렌더링 파이프라인과 shader 내부구조
+2. 운영체제·네트워크 프로토콜·분산 합의의 일반 원리
+3. 특정 상용 엔진 API 전체
+4. 게임 기획·아트·사운드 제작 직무 교육
+
+이 브랜치는 위 원리를 다시 가르치지 않습니다. **게임이라는 실행 환경에서 해당 기반들이 언제 충돌하고 어떤 계약이 필요한지**에 집중합니다.
 
 ## 학습 구조
 
@@ -152,7 +165,7 @@ runtime·state ownership map
 → release decision
 ```
 
-선택 profile에서는 Unity, Unreal Engine, Godot 또는 자체 framework로 실제 vertical slice를 구현할 수 있습니다. 엔진별 API가 아니라 동일한 상태·실패·검증 계약을 만족하는지가 평가 기준입니다.
+Profile A는 설계·검토 근거를 완성합니다. 두 번째 종료 능력까지 입증하려면 Unity, Unreal Engine, Godot, 자체 framework의 Profile B 또는 기존 엔진 프로젝트의 동등한 작은 기능 변경 근거가 추가로 필요합니다. 엔진별 API가 아니라 동일한 상태·실패·검증 계약을 만족하는지가 평가 기준이며, network Profile C는 선택 심화입니다.
 
 ## 준비와 검증
 
@@ -181,12 +194,11 @@ make example
 make fixtures
 ```
 
-## 이 브랜치가 의도적으로 하지 않는 것
+## 학습 방식과 한계
 
-- Unity, Unreal Engine, Godot의 설치·에디터 메뉴·API 전체를 가르치지 않습니다.
-- C++, C#, GDScript 또는 shader 언어를 처음부터 가르치지 않습니다.
-- 완성된 범용 게임 엔진이나 상용 수준 게임을 제공하지 않습니다.
-- 그래픽스, 네트워크, 분산 백엔드, 보안, ML의 심화 내용을 중복하지 않습니다.
-- “60 FPS”, “deterministic”, “server authoritative” 같은 표현을 측정·범위·실패 조건 없이 품질 보증으로 사용하지 않습니다.
+- 문서와 공통 fixture는 엔진 독립적이며, 선택한 엔진·언어의 설치와 API는 해당 공식 자료에서 확인합니다.
+- Capstone은 범용 게임 엔진이나 상용 수준 게임의 완성을 요구하지 않습니다.
+- “60 FPS”, “deterministic”, “server authoritative” 같은 표현은 측정 환경·보장 범위·실패 조건과 함께만 근거로 사용합니다.
+- 자동 검사는 구조와 공개 행동을 확인하지만 설명의 정확성이나 교육적 완성을 대신 판정하지 않습니다.
 
 이 가이드의 종료점은 특정 엔진의 인증서가 아니라, 게임 프로젝트의 한 기능을 **시간·상태·자산·표현·저장·네트워크·성능·릴리스 계약**으로 분해하고 실제 코드베이스에서 작은 변경을 완성할 수 있는 상태입니다.
