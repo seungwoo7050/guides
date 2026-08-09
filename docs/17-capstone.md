@@ -4,6 +4,8 @@
 
 구현할 수 있는 범위를 선택하되, 구현하지 않은 부분도 상태·인터페이스·실패·증거를 문서로 고정합니다.
 
+각 제품·API의 현재 동작은 [공식 자료 색인](../reference/source-index.md)에서 확인합니다. Capstone은 특정 vendor 설치를 정답으로 삼지 않고 그 자료를 자신의 상태·책임·실패·evidence 계약에 적용했는지 평가합니다.
+
 ## 1. 시나리오
 
 가상 조직 `Northstar`는 다음 문제를 가집니다.
@@ -365,6 +367,10 @@ Runbook은 [`docs/runbooks/`](runbooks/)를 참고해 capstone 환경에 맞게 
 
 ```sh
 mkdir -p .workspace
+if [ -e .workspace/internal-developer-platform ]; then
+  printf '%s\n' 'ERROR: existing Capstone workspace를 보존했습니다.' >&2
+  exit 2
+fi
 cp -R projects/internal-developer-platform/template \
   .workspace/internal-developer-platform
 python3 scripts/verify_capstone.py \
@@ -415,4 +421,4 @@ JSON resource와 작은 controller simulation으로 request→condition을 재�
 - Upgrade와 retirement가 생성만큼 자동화돼 있습니까?
 - 실제로 검증하지 못한 보장은 무엇입니까?
 
-[`12-capstone-plan`](../exercises/12-capstone-plan/)의 계약을 먼저 완성한 뒤, 선택한 구현 범위와 evidence를 추가합니다.
+[`12-capstone-plan`](../exercises/12-capstone-plan/)의 계약을 먼저 완성한 뒤, [`13-platform-control-plane`](../exercises/13-platform-control-plane/)과 [Capstone dossier](../projects/internal-developer-platform/)에서 선택한 구현 범위와 evidence를 추가합니다. 최종 판정은 [계약 evidence map](../reference/contract-evidence-map.md)과 [사람 검토 가이드](../reference/manual-review-guide.md)를 사용합니다.

@@ -156,6 +156,7 @@ exercises/NN-name/
 ├── README.md
 ├── contract.json
 ├── skeleton/submission.json
+├── known_bad/submission.json
 └── reference/submission.json
 ```
 
@@ -179,6 +180,8 @@ python3 scripts/verify_submission.py \
 
 실제 Kubernetes, IaC, portal과 GitOps 도구를 실행하는 실습은 [`docs/90-optional-labs/00-index.md`](docs/90-optional-labs/00-index.md)에 분리했습니다. 도구 설치 여부는 핵심 과정의 완료 조건이 아닙니다.
 
+12개 설계 실습 뒤에는 표준 라이브러리만 사용하는 [결정적 platform control-plane 실습](exercises/13-platform-control-plane/)이 있습니다. 요청·reconcile·drift·migration·retirement의 공개 행동을 구현한 뒤 [Internal Developer Platform dossier](projects/internal-developer-platform/)에서 여러 능력을 하나의 evidence chain으로 결합합니다. `owns → 개념 → 실습·실패 → Capstone → exit capability` 전체 연결은 [정본 계약 evidence map](reference/contract-evidence-map.md)에 있습니다.
+
 ## 준비와 검증
 
 필수 실행 환경은 Python 3.10 이상과 POSIX 호환 셸입니다.
@@ -190,16 +193,18 @@ python3 scripts/verify_submission.py \
 
 `prepare.sh`는 시스템 package나 platform 도구를 설치하지 않습니다. 현재 source fingerprint와 Python 환경을 `.guide/platform-engineering/prepared.json`에 기록합니다.
 
-`verify.sh`는 다음을 확인합니다.
+`verify.sh`는 source와 학습자 workspace를 건드리지 않는 저장소 밖 임시 복사본에서 다음 필수 검사를 실행합니다.
 
-1. 최종 파일 구조와 내부 Markdown 링크
-2. JSON 예제와 실습 계약의 문법
-3. 모든 reference 제출물이 계약을 통과하는지
-4. 모든 skeleton이 같은 계약에 실제로 거부되는지
-5. 셸 스크립트 문법과 실행 권한
-6. 준비 이후 추적 대상 source가 바뀌지 않았는지
+1. Manifest, file mode, symlink·경로 이탈, ignore·secret 위생
+2. 내부 Markdown 파일·heading, code fence와 strict JSON·지원 YAML 문법
+3. Platform API example과 JSON schema의 공개 제약
+4. 12개 reference 통과와 모든 starter·known-bad 거부
+5. 결정적 control-plane reference 통과와 starter·단일 결함 mutant 거부
+6. Capstone reference·evidence hash 통과와 template·변조 fixture 거부
+7. 선택 profile의 외부 서비스 없는 정상·실패 fixture
+8. 준비 전후 source fingerprint와 학습자 workspace 불변
 
-빠른 정적 검사는 다음과 같습니다.
+빠른 필수 로컬 검사는 다음과 같습니다.
 
 ```sh
 make check
@@ -221,3 +226,5 @@ make check
 - 개발자가 플랫폼을 사용한 뒤 실제로 더 빠르고 안전하게 결과를 전달했음을 어떻게 측정합니까?
 
 이 질문에 답할 수 있으면 Kubernetes 명령을 아는 수준을 넘어, 실제 플랫폼 저장소와 운영 절차에 기여할 준비가 된 것입니다.
+
+종료 근거를 제출할 때는 [계약 evidence map](reference/contract-evidence-map.md)에서 `OWN-1..5`와 `EXIT-1..3`의 자동 증거를 추적한 뒤, [사람 검토 가이드](reference/manual-review-guide.md)에 `충족`·`보완 필요`·`범위 밖`과 근거를 기록합니다. 자동 통과만으로 실제 조직의 platform 설계가 완성됐다고 판정하지 않습니다.

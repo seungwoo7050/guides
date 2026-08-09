@@ -17,8 +17,11 @@
 
 - 핵심 실습은 `contract.json`으로 완료 조건을 선언합니다.
 - `skeleton`은 의도한 누락 때문에 실패해야 합니다.
+- `known_bad`는 공개 shape를 완성하되 README가 밝힌 대표 불변식 하나를 위반해야 합니다.
 - `reference`는 같은 검사에 통과하고 `TODO`, `TBD`, `미정`을 남기지 않습니다.
 - 검사기는 정답 문구 전체를 비교하지 않고 필수 상태·책임·실패·검증 항목을 확인합니다.
+- 검사기 변경에는 올바른 reference 통과, starter·known-bad·단일 결함 mutant 거부와 계약 오류 exit code를 확인하는 meta-test를 함께 둡니다.
+- Capstone evidence는 `OWN-*`, `EXIT-*`, file·heading·JSON pointer와 실행 artifact hash를 끊김 없이 연결합니다.
 - 실제 cloud 또는 cluster 실습은 핵심 완료 조건이 아니라 `docs/90-optional-labs/`에 둡니다.
 - credential, kubeconfig, state, private key, generated artifact와 실행 로그를 추적하지 않습니다.
 
@@ -30,7 +33,9 @@ make check
 ./verify.sh
 ```
 
-`make check`는 현재 문서와 계약의 정적 무결성을 확인합니다. 최종 판정은 준비 fingerprint, reference·skeleton의 positive/negative 검사까지 포함하는 `./verify.sh`를 사용합니다.
+`make check`는 현재 문서·계약·reference와 모든 negative fixture의 필수 무결성을 확인합니다. `./verify.sh`는 준비 fingerprint를 검증하고 source와 학습자 workspace를 보존한 채 저장소 밖 격리 복사본에서 같은 필수 검사를 다시 실행합니다.
+
+자동 검사는 production readiness나 조직 설계의 타당성을 판정하지 않습니다. 종료 능력은 [`reference/manual-review-guide.md`](reference/manual-review-guide.md)에 근거와 한계를 별도로 기록합니다.
 
 커밋 전에는 다음을 확인합니다.
 

@@ -1,6 +1,6 @@
 # Capstone 사람 검토 루브릭
 
-자동 validator 통과는 리뷰 시작 조건입니다. 리뷰어는 각 항목을 `충족`, `보완 필요`, `범위 밖`으로 판정하고, 남은 조건에는 owner·due·verification·rollback을 기록합니다. 핵심 EXIT 하나라도 근거 없이 `보완 필요`이면 완료로 승인하지 않습니다.
+자동 validator 통과는 리뷰 시작 조건입니다. 리뷰어는 각 세부 질문을 `충족`, `보완 필요`, `범위 밖`으로 판정하고, 남은 조건에는 owner·due·verification·rollback을 기록합니다. `범위 밖`은 실행하지 않은 보장을 표시할 뿐 EXIT 자체를 면제하지 않습니다. 대체 evidence로 같은 상태·책임·실패·복구를 확인하지 못한 `범위 밖`은 EXIT 집계에서 `보완 필요`입니다.
 
 ## Product와 Golden Path
 
@@ -41,15 +41,17 @@
 
 | EXIT | 사람 판정 | 최소 근거 |
 |---|---|---|
-| `EXIT-1` | `충족 / 보완 필요 / 범위 밖` | 같은 ID를 사용하는 product, API/status, 정상·중복·부분 실패·retirement 경로 |
-| `EXIT-2` | `충족 / 보완 필요 / 범위 밖` | policy·artifact·GitOps·telemetry와 drift/break-glass runtime evidence |
-| `EXIT-3` | `충족 / 보완 필요 / 범위 밖` | journey SLO·capacity/fairness·migration wave·abort·support/runbook evidence |
+| `EXIT-1` | `충족 / 보완 필요` | 같은 ID를 사용하는 product, API/status, 정상·중복·부분 실패·retirement 경로 |
+| `EXIT-2` | `충족 / 보완 필요` | policy·artifact·GitOps·telemetry와 drift/break-glass runtime evidence |
+| `EXIT-3` | `충족 / 보완 필요` | journey SLO·capacity/fairness·migration wave·abort·support/runbook evidence |
 
-Model report의 hash와 `PE-001..010` 통과는 합성 공개 행동의 근거입니다. 실제 IAM, network, cluster, cloud, concurrency, crash recovery, 비용과 physical deletion은 별도 owner와 검증 조건 없이는 `범위 밖`입니다.
+Model report의 hash와 `PE-001..010` 통과는 합성 공개 행동의 근거입니다. 실제 IAM, network, cluster, cloud, concurrency, crash recovery, 비용과 physical deletion은 별도 owner와 검증 조건 없이는 세부 질문에서 `범위 밖`이며, 미해결 상태라면 해당 EXIT는 `보완 필요`입니다. 질문별 기록과 집계는 [`reference/manual-review-guide.md`](../../reference/manual-review-guide.md)를 사용합니다.
 
 ## 최종 결정
 
 허용 결정은 `APPROVE`, `APPROVE_WITH_CONDITIONS`, `DEFER`, `REJECT` 중 하나입니다. 모든 condition과 residual risk에는 다음을 남깁니다.
+
+`APPROVE`와 `APPROVE_WITH_CONDITIONS`는 세 EXIT가 모두 `충족`일 때만 가능합니다. 필수 상태·책임·실패·복구 evidence가 빠진 condition, `보완 필요` EXIT 또는 미해결 `범위 밖`이 있으면 `DEFER` 또는 `REJECT`를 사용합니다. `APPROVE_WITH_CONDITIONS`는 종료 능력을 뒤집지 않는 잔여 개선에만 사용합니다.
 
 | 필드 | 요구 사항 |
 |---|---|

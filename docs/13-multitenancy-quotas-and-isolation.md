@@ -4,6 +4,8 @@ Multi-tenancy는 여러 팀의 workload를 한 cluster에 넣는 것만을 뜻�
 
 완전한 격리와 완전한 공유 사이에서 workload의 신뢰 수준, 실패 비용, 규제·비용·운영 복잡성을 비교합니다.
 
+Kubernetes quota·multi-tenancy·Pod security의 공식 구현 경계는 [source index의 Kubernetes runtime](../reference/source-index.md#kubernetes)을 확인합니다. Namespace 하나를 tenant isolation의 충분조건으로 간주하지 않습니다.
+
 ## 1. Tenant 정의
 
 Tenant는 상황에 따라 다릅니다.

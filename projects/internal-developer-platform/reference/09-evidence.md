@@ -50,4 +50,4 @@ traffic, data decision, credential/exception, runtime/provider resource, queue/q
 
 Python audit hook은 OS sandbox가 아니다. report는 실제 IAM, network, Kubernetes scheduler/CNI/storage, IaC provider, concurrent reconcile, crash recovery, GitOps controller, telemetry delivery, 비용 또는 physical deletion을 검증하지 않는다. 따라서 `rubric.md`에 따라 실제 owner, SLO denominator/threshold, capacity headroom, policy enforcement, data commitment와 rollback을 사람이 확인해야 한다.
 
-사람 판정은 `EXIT-1..3`마다 충족/보완 필요/범위 밖과 근거를 기록하고, condition에는 owner·due·verification·rollback을 붙인다. 자동 PASS만으로 production readiness 또는 조직적 adoption을 승인하지 않는다.
+사람은 세부 질문마다 `충족`·`보완 필요`·`범위 밖`과 근거를 기록하되, `EXIT-1..3` 최종값은 `충족` 또는 `보완 필요`만 사용한다. 대체 evidence로 해소하지 못한 `범위 밖`은 해당 EXIT를 `보완 필요`로 집계한다. condition에는 owner·due·verification·rollback을 붙이며, 자동 PASS만으로 production readiness 또는 조직적 adoption을 승인하지 않는다.

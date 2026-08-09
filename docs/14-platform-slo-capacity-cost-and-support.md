@@ -4,6 +4,8 @@
 
 이 장은 사용자 여정별 신뢰성 목표, capacity와 비용, 지원 책임을 하나의 운영 계약으로 연결합니다.
 
+SLI/SLO와 Kubernetes workload·node autoscaling의 공식 기준은 [source index의 SLO와 capacity](../reference/source-index.md#slo-capacity)를 확인합니다. Autoscaler가 provider capacity, queue fairness나 platform journey SLO를 자동 보장한다고 가정하지 않습니다.
+
 ## 1. Platform SLO의 대상
 
 SLO는 component보다 사용자 결과에 둡니다.

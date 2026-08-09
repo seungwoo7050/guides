@@ -1,5 +1,7 @@
 # 플랫폼 계약과 책임 경계
 
+이 장의 계약 구조는 특정 제품 API의 복제가 아닙니다. Kubernetes의 API·controller와 Backstage catalog를 실제 구현 profile로 사용할 때의 공식 정의는 [source index의 control loop](../reference/source-index.md#control-loop)와 [platform product](../reference/source-index.md#platform-product)에서 확인하고, 조직의 single writer·failure owner는 별도로 결정합니다.
+
 ## 1. 플랫폼은 결과를 약속하는 API입니다
 
 플랫폼의 핵심은 UI나 cluster가 아니라 **사용자가 요청할 수 있는 결과와 그 결과의 상태를 설명하는 계약**입니다.

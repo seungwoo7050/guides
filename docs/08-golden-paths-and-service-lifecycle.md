@@ -4,6 +4,8 @@ Golden path는 모든 팀을 하나의 framework와 repository 구조에 가두�
 
 좋은 golden path는 시작 template만 제공하지 않습니다. 생성, build, 배포, 운영, upgrade와 폐기까지 service lifecycle 전체를 책임집니다.
 
+현재 catalog·software template 구현의 공식 기능은 [source index의 platform product](../reference/source-index.md#platform-product)를 확인합니다. 이 장은 제품 기능 목록보다 지원 범위, version, escape hatch와 폐기 책임을 소유합니다.
+
 ## 1. Paved road와 강제 표준
 
 지원되는 경로는 다음 가치를 제공해야 합니다.

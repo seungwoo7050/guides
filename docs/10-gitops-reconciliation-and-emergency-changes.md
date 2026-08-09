@@ -4,6 +4,8 @@ GitOps는 deployment YAML을 Git repository에 저장하는 것만으로 성립�
 
 이 장은 [`03 Control plane과 reconciliation`](03-control-planes-and-reconciliation.md)의 일반 제어 루프를 delivery 환경에 적용합니다.
 
+OpenGitOps 원칙과 Flux·Argo CD의 현재 reconciliation 동작은 [source index의 GitOps](../reference/source-index.md#gitops)를 확인합니다. 제품별 sync 옵션보다 desired-state writer, drift, prune와 emergency change 종료 조건을 먼저 고정합니다.
+
 ## 1. Git이 소유하는 것
 
 Git repository는 다음을 소유할 수 있습니다.

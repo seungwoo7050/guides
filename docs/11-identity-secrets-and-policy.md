@@ -4,6 +4,8 @@
 
 이 장은 사람, workload와 automation의 identity를 분리하고, secret 전달과 policy enforcement를 수명·증거·예외 계약으로 설계합니다. 일반적인 위협 모델과 공격·방어 과정 전체는 `cybersecurity`가 소유하며, 여기서는 플랫폼이 제공해야 하는 guardrail에 집중합니다.
 
+SPIFFE, Kubernetes ServiceAccount·Secret와 admission policy의 현재 공식 경계는 [source index의 workload identity](../reference/source-index.md#identity)를 확인합니다. 제품 선택과 무관하게 audience·TTL·rotation·revocation과 exception expiry를 검토합니다.
+
 ## 1. Identity를 주체별로 분리합니다
 
 ### 사람 identity

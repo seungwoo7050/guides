@@ -4,6 +4,8 @@ Delivery platform은 팀마다 작성한 CI script를 중앙에서 대신 관리
 
 `web-infra`는 한 서비스의 immutable image, release manifest, staged deployment와 rollback을 소유합니다. 이 장은 그 기준을 여러 저장소·팀·환경에서 재사용하도록 확장합니다.
 
+Reusable workflow와 OCI content identity의 공식 기준은 [source index의 delivery](../reference/source-index.md#delivery)를 확인합니다. 특정 CI YAML을 복제하지 않고 typed input, 최소 권한, immutable digest와 evidence를 플랫폼 계약으로 적용합니다.
+
 ## 1. Build once, promote many
 
 같은 source revision을 환경마다 다시 build하면 서로 다른 dependency, base image와 build time input 때문에 artifact가 달라질 수 있습니다.

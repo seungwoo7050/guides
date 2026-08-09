@@ -14,6 +14,14 @@
 
 `범위 밖`은 `EXIT-1..3` 자체를 면제하지 않습니다. 실제 cluster나 cloud가 없으면 결정적 모델과 tabletop evidence로 판단 범위를 좁힐 수 있지만, 핵심 능력에 필요한 상태·책임·실패·복구 설명이 없으면 `보완 필요`입니다.
 
+### 질문별 판정과 EXIT 집계
+
+- 아래 표의 질문 여섯 개를 각각 판정합니다. 질문 묶음 전체에 판정 하나만 적지 않습니다.
+- EXIT 최종 판정은 `충족` 또는 `보완 필요`만 사용합니다. 등재된 종료 능력 자체를 `범위 밖`으로 면제할 수 없습니다.
+- 여섯 질문이 모두 `충족`일 때만 EXIT를 `충족`으로 집계합니다. 하나라도 `보완 필요`이거나 해결되지 않은 `범위 밖`이면 EXIT 최종 판정은 `보완 필요`입니다.
+- 실제 도구를 실행하지 않은 질문은 우선 `범위 밖`으로 기록합니다. 같은 상태·책임·실패·복구를 결정적 모델, tabletop 또는 독립 관찰 evidence가 충분히 대체하면 그 근거를 명시하고 질문을 `충족`으로 바꿀 수 있습니다.
+- 자동 검사 `PASS`는 질문의 입력 근거일 뿐 사람 판정을 대신하지 않습니다. 반대로 선택 profile의 `SKIP`을 `PASS`나 `충족`으로 올리지 않습니다.
+
 ## 검토 전 입력
 
 - 검토 대상 commit 또는 archive hash:
@@ -37,18 +45,16 @@
 - IaC state writer, runtime profile, tenant boundary와 service retirement cleanup
 - `FS-01`, `FS-02`, `FS-03`, `FS-07`, `FS-08`의 주입·관찰·복구 기록
 
-검토 질문:
+| # | 검토 질문 | 판정 | 근거·관찰 | 보완 owner·기한 |
+|---|---|---|---|---|
+| 1 | Portal이 없어도 API/CLI를 통해 같은 결과와 상태를 얻을 수 있습니까? |  |  |  |
+| 2 | 요청 수락, controller 진행, 외부 사용자 성공을 서로 다른 상태로 표현합니까? |  |  |  |
+| 3 | 같은 idempotency key의 retry는 중복 effect를 만들지 않고, 다른 payload는 원자적으로 충돌합니까? |  |  |  |
+| 4 | 일부 외부 자원만 만들어진 실패에서 resource ID, 비용·credential owner와 cleanup 결정이 보입니까? |  |  |  |
+| 5 | 한 tenant의 quota 초과가 다른 tenant의 queue와 production reserve를 막지 않습니까? |  |  |  |
+| 6 | Create만큼 migration과 retirement의 consumer·data·credential·orphan 처리가 구체적입니까? |  |  |  |
 
-1. Portal이 없어도 API/CLI를 통해 같은 결과와 상태를 얻을 수 있습니까?
-2. 요청 수락, controller 진행, 외부 사용자 성공을 서로 다른 상태로 표현합니까?
-3. 같은 idempotency key의 retry는 중복 effect를 만들지 않고, 다른 payload는 원자적으로 충돌합니까?
-4. 일부 외부 자원만 만들어진 실패에서 resource ID, 비용·credential owner와 cleanup 결정이 보입니까?
-5. 한 tenant의 quota 초과가 다른 tenant의 queue와 production reserve를 막지 않습니까?
-6. Create만큼 migration과 retirement의 consumer·data·credential·orphan 처리가 구체적입니까?
-
-판정: `충족` / `보완 필요` / `범위 밖`
-
-근거와 보완 조치:
+EXIT-1 집계: `충족` / `보완 필요`
 
 ## EXIT-2 — 정책·배포·관측 자동화
 
@@ -62,18 +68,16 @@
 - user journey correlation ID, 상태·metric·audit와 actionable feedback
 - `FS-02`, `FS-04`, `FS-05`, `FS-07`의 주입·관찰·복구 기록
 
-검토 질문:
+| # | 검토 질문 | 판정 | 근거·관찰 | 보완 owner·기한 |
+|---|---|---|---|---|
+| 1 | 환경별 재빌드 없이 같은 digest를 승격하고 provenance·policy 결과를 release에 고정합니까? |  |  |  |
+| 2 | Git과 controller가 소유하는 field, prune guardrail과 emergency writer가 명확합니까? |  |  |  |
+| 3 | Break-glass는 승인자·사유·만료·evidence가 있고 종료 뒤 desired state로 수렴합니까? |  |  |  |
+| 4 | 장기 static credential을 fallback으로 사용하지 않으며 발급 실패가 원인 계층과 사용자 행동으로 드러납니까? |  |  |  |
+| 5 | 정책 deny가 단순 실패가 아니라 rule version, owner, remediation과 함께 전달됩니까? |  |  |  |
+| 6 | 자동화의 성공 주장이 external smoke나 사용자 journey evidence까지 이어집니까? |  |  |  |
 
-1. 환경별 재빌드 없이 같은 digest를 승격하고 provenance·policy 결과를 release에 고정합니까?
-2. Git과 controller가 소유하는 field, prune guardrail과 emergency writer가 명확합니까?
-3. Break-glass는 승인자·사유·만료·evidence가 있고 종료 뒤 desired state로 수렴합니까?
-4. 장기 static credential을 fallback으로 사용하지 않으며 발급 실패가 원인 계층과 사용자 행동으로 드러납니까?
-5. 정책 deny가 단순 실패가 아니라 rule version, owner, remediation과 함께 전달됩니까?
-6. 자동화의 성공 주장이 external smoke나 사용자 journey evidence까지 이어집니까?
-
-판정: `충족` / `보완 필요` / `범위 밖`
-
-근거와 보완 조치:
+EXIT-2 집계: `충족` / `보완 필요`
 
 ## EXIT-3 — SLO·용량·업그레이드 운영
 
@@ -87,18 +91,28 @@
 - alert→runbook→완화→복구 판정과 support escalation
 - `FS-03`, `FS-06`, `FS-08`의 주입·관찰·복구 기록
 
-검토 질문:
+| # | 검토 질문 | 판정 | 근거·관찰 | 보완 owner·기한 |
+|---|---|---|---|---|
+| 1 | SLO가 component uptime이 아니라 create·deploy·recover 같은 사용자 journey 결과를 측정합니까? |  |  |  |
+| 2 | 수요, quota와 실제 공급 capacity를 구분하고 overload 때 어떤 요청을 거부할지 정했습니까? |  |  |  |
+| 3 | Retry storm, noisy tenant와 stuck queue를 구분하는 signal과 bounded mitigation이 있습니까? |  |  |  |
+| 4 | Migration wave 실패가 이후 wave를 멈추며 이미 변경된 state의 rollback/roll-forward 경계를 설명합니까? |  |  |  |
+| 5 | Version skew, deprecated API, policy·template·controller 호환성과 이전 version 종료 조건이 있습니까? |  |  |  |
+| 6 | Retirement 뒤 active resource·credential·exception은 없어지고 필요한 audit·data retention만 남습니까? |  |  |  |
 
-1. SLO가 component uptime이 아니라 create·deploy·recover 같은 사용자 journey 결과를 측정합니까?
-2. 수요, quota와 실제 공급 capacity를 구분하고 overload 때 어떤 요청을 거부할지 정했습니까?
-3. Retry storm, noisy tenant와 stuck queue를 구분하는 signal과 bounded mitigation이 있습니까?
-4. Migration wave 실패가 이후 wave를 멈추며 이미 변경된 state의 rollback/roll-forward 경계를 설명합니까?
-5. Version skew, deprecated API, policy·template·controller 호환성과 이전 version 종료 조건이 있습니까?
-6. Retirement 뒤 active resource·credential·exception은 없어지고 필요한 audit·data retention만 남습니까?
+EXIT-3 집계: `충족` / `보완 필요`
 
-판정: `충족` / `보완 필요` / `범위 밖`
+## 자동 evidence와 사람 확인의 경계
 
-근거와 보완 조치:
+결정적 `PE-*` 검사는 작은 in-memory 상태에서 공개 불변식을 확인합니다. 다음 실패 시나리오는 dossier 설명과 자동 pointer가 모두 있어도, 표의 조직·도구 행동은 사람 evidence 없이는 증명되지 않습니다.
+
+| 시나리오 | 자동으로 확인하는 부분 | 사람 또는 선택 profile이 확인할 부분 |
+|---|---|---|
+| `FS-04` live drift·break-glass | `PE-005`의 desired 수렴, `PE-006`의 승인자·사유·만료가 있는 bounded exception | 만료 시 emergency writer를 실제로 닫고 prune guardrail을 지키며 desired state로 수렴하는지 |
+| `FS-05` identity issuer 장애 | `PE-007`의 장기 static credential fallback 거부 | issuer 장애가 `Blocked` condition, 원인 계층, 사용자 행동으로 드러나고 rotation·revocation이 실제로 작동하는지 |
+| `FS-06` migration wave 실패 | `PE-008`의 이후 wave 중단과 abort evidence | 이미 바뀐 workload·data·policy·artifact의 rollback 또는 roll-forward와 호환성 판단 |
+| `FS-07` IaC partial apply | `PE-003`의 partial effect ID·cleanup 필요 상태 공개 | 실제 backend state serial·lock, 비용·credential owner, import/repair/destroy와 재개 승인 |
+| `FS-08` retirement | `PE-009`의 합성 resource·operation·credential·exception cleanup과 tombstone | 실제 traffic 차단, data retention·삭제, catalog·DNS·비용 종료와 orphan 탐색 |
 
 ## 교차 검토
 
@@ -111,7 +125,7 @@
 
 ## 최종 기록
 
-| 종료 능력 | 판정 | 핵심 evidence | 보완 owner·기한 |
+| 종료 능력 | 판정 (`충족`/`보완 필요`) | 핵심 evidence | 보완 owner·기한 |
 |---|---|---|---|
 | `EXIT-1` |  |  |  |
 | `EXIT-2` |  |  |  |

@@ -49,3 +49,9 @@
 - [ ] 실제로 실행하지 않은 검사는 명시했습니다.
 - [ ] Local simulation을 production 보장으로 표현하지 않았습니다.
 - [ ] Tool output이 증명하는 것과 증명하지 못하는 것을 기록했습니다.
+
+## 정본 종료 추적
+
+- [ ] [`OWN-1..5` evidence chain](contract-evidence-map.md)을 실제 제출 파일에서 추적했습니다.
+- [ ] `EXIT-1..3` 각각을 [사람 검토 가이드](manual-review-guide.md)에서 판정했습니다.
+- [ ] 자동 통과, 선택 profile의 `PASS`/`SKIP`/`FAIL`과 사람 판단을 섞지 않았습니다.

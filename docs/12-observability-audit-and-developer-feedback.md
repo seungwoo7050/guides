@@ -4,6 +4,8 @@
 
 이 장은 플랫폼의 **내부 상태**, **사용자 여정**과 **변경 책임**을 같은 근거로 연결합니다.
 
+Telemetry signal과 context propagation의 공식 정의는 [source index의 observability](../reference/source-index.md#observability)를 확인합니다. Signal을 수집했다는 사실과 사용자가 요청한 결과가 성공했다는 판정을 구분합니다.
+
 ## 1. 세 가지 관측 관점
 
 ### 사용자 여정

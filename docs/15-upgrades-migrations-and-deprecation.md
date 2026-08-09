@@ -4,6 +4,8 @@
 
 이 장은 플랫폼 변경을 호환성, migration wave, rollback과 폐기 계약으로 관리합니다.
 
+Kubernetes component version skew와 API deprecation의 현재 정본은 [source index의 upgrade](../reference/source-index.md#upgrade)를 확인합니다. 그 정책을 조직의 platform API·profile·template에 그대로 일반화하지 않고 각각의 compatibility window를 선언합니다.
+
 ## 1. 무엇이 version을 갖는가
 
 플랫폼에는 여러 독립 version이 있습니다.

@@ -48,8 +48,8 @@ owns → 개념의 상태·책임·실패 → 단계 실습과 known-bad → 결
 |---|---|
 | 개념 | [Kubernetes API·controller·workload](../docs/05-kubernetes-api-workloads-and-controllers.md), [network·storage·scheduling](../docs/06-kubernetes-network-storage-and-scheduling.md), [tenant isolation](../docs/13-multitenancy-quotas-and-isolation.md) |
 | 단계 실습 | [`05-workload-contract`](../exercises/05-workload-contract/)의 “process 실행=Ready” 오판, [`09-multitenancy`](../exercises/09-multitenancy/)의 per-tenant queue를 global queue로 바꾼 격리 위반 |
-| 결정적 행동 | `PE-004` tenant quota와 queue 격리, `PE-007` static credential fallback 거부, `PE-009` resource·credential cleanup |
-| Capstone | [Kubernetes Runtime](../projects/internal-developer-platform/reference/04-iac-runtime.md#kubernetes-runtime), [Tenant Isolation과 Cleanup](../projects/internal-developer-platform/reference/04-iac-runtime.md#tenant-isolation과-cleanup), `FS-03`, `FS-05`, `FS-08` |
+| 결정적 행동 | `PE-001` 외부 evidence가 있는 workload Ready, `PE-004` tenant quota와 queue 격리, `PE-009` resource·credential cleanup |
+| Capstone | [Kubernetes Runtime](../projects/internal-developer-platform/reference/04-iac-runtime.md#kubernetes-runtime), [Tenant Isolation과 Cleanup](../projects/internal-developer-platform/reference/04-iac-runtime.md#tenant-isolation과-cleanup), `FS-03`, `FS-08` |
 | 종료 연결 | `EXIT-1`의 runtime profile 설계와 `EXIT-3`의 capacity·isolation 운영 |
 
 이 가이드는 Kubernetes substrate를 플랫폼 고유 계약에 적용하는 부분만 소유합니다. cluster bootstrap, CNI·CSI 내부 구현과 단일 workload 운영 기초는 비소유 범위입니다.

@@ -154,6 +154,8 @@ Part III을 마치면 저장소 생성에서 배포·관측·폐기까지의 gol
 |---|---|---|
 | [17 Internal Developer Platform Capstone](17-capstone.md) | service 생성·변경·실패·복구·폐기 전체를 하나의 contract로 연결할 수 있습니까? | [`12-capstone-plan`](../exercises/12-capstone-plan/) |
 
+`12-capstone-plan`은 누적 구현의 범위와 판단을 먼저 고정합니다. 이어서 [`13-platform-control-plane`](../exercises/13-platform-control-plane/)에서 공개 상태 행동을 구현하고, [`projects/internal-developer-platform`](../projects/internal-developer-platform/)에서 product부터 실행 evidence까지 같은 ID로 연결합니다.
+
 ## 5. 문서와 실습 사용법
 
 1. 장의 첫 부분에서 소유 상태와 실패 조건을 확인합니다.
@@ -221,3 +223,5 @@ cloud resource, Kubernetes object, workload process와 외부 dependency가 실�
 - 실패 drill과 runbook을 포함한 capstone 설계
 
 가이드 이후에는 실제 플랫폼 또는 오픈소스 저장소에서 작은 controller, template, policy, observability 또는 문서 변경으로 기여를 시작합니다.
+
+정본의 다섯 `owns`와 세 종료 능력이 어느 문서·실습·실패·Capstone 근거로 이어지는지는 [계약 evidence map](../reference/contract-evidence-map.md)을 사용합니다. 자동 검사가 끝나면 [사람 검토 가이드](../reference/manual-review-guide.md)로 실제 조직 판단과 실행하지 못한 보장을 별도로 기록합니다.

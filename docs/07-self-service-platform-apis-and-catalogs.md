@@ -4,6 +4,8 @@
 
 이 장은 [`02 플랫폼 계약과 책임 경계`](02-platform-contracts-and-ownership.md)와 [`03 Control plane과 reconciliation`](03-control-planes-and-reconciliation.md)의 계약을 실제 self-service 인터페이스로 확장합니다.
 
+Backstage catalog와 template의 공식 역할은 [source index의 platform product](../reference/source-index.md#platform-product)를 확인합니다. Catalog metadata가 platform API의 실행 상태나 control plane 정본을 자동으로 대신하지 않는다는 경계를 유지합니다.
+
 ## 1. Self-service가 의미하는 것
 
 Self-service는 승인과 책임을 없애는 것이 아닙니다.
