@@ -1,0 +1,18 @@
+{
+  "schema_version": 1,
+  "provenance": "repository-generated-reference",
+  "license": "MIT",
+  "review_policy": "Update only with the first changed pipeline stage and mutation-regression evidence.",
+  "files": {
+    "bilinear-linear.ppm": "300a4453c4940c520895ba975154b0813afceb90decd289ab682a9f433f9a03c",
+    "gpu-edge-policy.json": "5d031952ec518614c1d9be4ea01c7f8f717961e770f5ca0dbb50512b84ae4b0f",
+    "lit-scene-final.ppm": "c85d3b04cb4fe7262877cc71c34ba07225893131b3ed671b31d09a01b3b629d1",
+    "shared-edge-primitive-id.ppm": "16f120bf4accc2a1080ee37257809e7e3a9c0955b301622b1dd2d890c06d447d",
+    "transform-trace.json": "fc52572273ccfa94513bf41e7f99d589da08e767d6c4d7a528675d04c4d12a3d"
+  },
+  "gpu_comparison_policy": {
+    "golden_kind": "CPU-derived expected behavior",
+    "backend_output_tracked": false,
+    "tolerance_may_widen_after_failure": false
+  }
+}

@@ -23,45 +23,52 @@
     },
     "title": {
       "type": "string",
-      "minLength": 1
+      "minLength": 4,
+      "pattern": "^[^\\r\\n]+$"
     },
     "related_docs": {
       "type": "array",
       "minItems": 1,
+      "uniqueItems": true,
       "items": {
-        "type": "string"
+        "type": "string",
+        "pattern": "^docs/[a-z0-9][a-z0-9._/-]*\\.md$"
       }
     },
     "required_artifacts": {
       "type": "array",
-      "minItems": 1,
+      "minItems": 4,
       "uniqueItems": true,
       "items": {
-        "type": "string"
+        "type": "string",
+        "pattern": "^[a-z0-9][a-z0-9._/-]*$"
       }
     },
     "invariants": {
       "type": "array",
-      "minItems": 1,
+      "minItems": 4,
       "uniqueItems": true,
       "items": {
-        "type": "string"
+        "type": "string",
+        "pattern": "^[a-z0-9]+(?:_[a-z0-9]+)+$"
       }
     },
     "known_bad_mutations": {
       "type": "array",
-      "minItems": 1,
+      "minItems": 4,
       "uniqueItems": true,
       "items": {
-        "type": "string"
+        "type": "string",
+        "pattern": "^[a-z0-9]+(?:_[a-z0-9]+)+$"
       }
     },
     "completion_evidence": {
       "type": "array",
-      "minItems": 1,
+      "minItems": 3,
       "uniqueItems": true,
       "items": {
-        "type": "string"
+        "type": "string",
+        "pattern": "^[a-z0-9]+(?:_[a-z0-9]+)+$"
       }
     }
   },

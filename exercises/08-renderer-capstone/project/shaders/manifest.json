@@ -12,7 +12,8 @@
     "fragment": []
   },
   "hlsl_uniform_binding": "register(b0, space1)",
-  "metal_source_hash_fnv1a64": "39792c301b65ff19",
+  "metal_source_hash_fnv1a64": "e2b53c0a7dcd36bf",
+  "hlsl_source_hash_fnv1a64": "6cc6f672a92d99f1",
   "minimum_sdl3": "3.4.10",
   "offline_tool": {
     "repository": "https://github.com/libsdl-org/SDL_shadercross",

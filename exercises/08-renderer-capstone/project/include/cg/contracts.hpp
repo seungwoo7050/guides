@@ -38,6 +38,7 @@ inline constexpr int exit_unsupported = 5;
 std::optional<Stage> parse_stage(std::string_view value);
 std::optional<Backend> parse_backend(std::string_view value);
 std::string_view stage_id(Stage stage);
+std::string_view expected_scene_id(Stage stage);
 std::string_view backend_id(Backend backend);
 RunOptions parse_arguments(int argc, char** argv);
 

@@ -1,0 +1,39 @@
+{
+  "schema_version": 1,
+  "scene": "identity-triangle",
+  "conventions": {
+    "composition": "P * V * M * local",
+    "handedness": "left",
+    "ndc_depth": "0..1",
+    "viewport_origin": "top-left"
+  },
+  "local": [0.25, -0.5, 3.0, 1.0],
+  "world": [0.25, -0.5, 3.0, 1.0],
+  "clip": [0.25, -0.5, 2.25, 3.0],
+  "ndc": [0.08333333333333333, -0.16666666666666666, 0.75, 1.0],
+  "viewport": [34.666666666666664, 37.333333333333336, 0.75, 1.0],
+  "camera": {
+    "eye": [2.0, 1.0, -4.0],
+    "target": [0.0, 0.0, 2.0],
+    "right": [0.948683298051, 0.0, 0.316227766017],
+    "camera_up": [-0.0493864798325, 0.98772959665, 0.148159439497],
+    "forward": [-0.312347523777, -0.156173761889, 0.937042571332],
+    "target_view": [0.0, 0.0, 6.40312423743, 1.0],
+    "parallel_up_rejected": true
+  },
+  "near_clip": {
+    "output_vertex_count": 4,
+    "generated_intersection_count": 2,
+    "planes_applied": [
+      "left:x+w",
+      "right:w-x",
+      "bottom:y+w",
+      "top:w-y",
+      "near:z",
+      "far:w-z"
+    ],
+    "six_plane_probe_output_counts": [4, 4, 4, 4, 4, 4],
+    "interpolated_attributes_finite": true
+  },
+  "absolute_tolerance": 1e-8
+}

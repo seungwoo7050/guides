@@ -43,5 +43,8 @@ PY
 
 printf '[workspace] CREATED %s\n' "$TARGET"
 printf '%s\n' '다음 단계:'
+printf '%s\n' '  # 먼저 starter의 명시적 미구현 경계를 확인합니다.'
+printf '%s\n' '  python3 exercises/check.py --impl workspace --stage 01-transform-trace --expect not-implemented --gpu off'
+printf '%s\n' '  # 해당 stage의 필수 artifact와 실패 계약을 구현한 뒤에만 pass를 요구합니다.'
 printf '%s\n' '  python3 exercises/check.py --impl workspace --stage 01-transform-trace --expect pass --gpu off'
 printf '%s\n' 'workspace는 Git 추적 대상이 아니며 이 스크립트는 자동 삭제하거나 재생성하지 않습니다.'

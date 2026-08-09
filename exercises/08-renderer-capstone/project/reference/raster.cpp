@@ -11,6 +11,7 @@
 #include <limits>
 #include <optional>
 #include <sstream>
+#include <stdexcept>
 #include <string>
 #include <string_view>
 #include <utility>
@@ -109,6 +110,8 @@ struct RasterMap {
   int tested_samples{};
   int degenerate_triangles{};
   int winding_normalizations{};
+  int winding_rejections{};
+  bool nonfinite_setup{};
 
   explicit RasterMap(const int image_width, const int image_height)
       : width(image_width),
@@ -130,13 +133,25 @@ void rasterize_triangle(
     Triangle2d triangle,
     const int primitive_id,
     const Scissor scissor,
-    const EdgeTie tie) {
+    const EdgeTie tie,
+    const bool normalize_winding = true,
+    const bool truncate_bounds = false,
+    const bool guard_degenerate = true) {
   double area = orient2d(triangle.vertices[0], triangle.vertices[1], triangle.vertices[2]);
   if (std::abs(area) <= 1.0e-12) {
-    ++raster.degenerate_triangles;
+    if (guard_degenerate) {
+      ++raster.degenerate_triangles;
+    } else {
+      const double reciprocal_area = 1.0 / area;
+      raster.nonfinite_setup = !std::isfinite(reciprocal_area);
+    }
     return;
   }
   if (area < 0.0) {
+    if (!normalize_winding) {
+      ++raster.winding_rejections;
+      return;
+    }
     std::swap(triangle.vertices[1], triangle.vertices[2]);
     area = -area;
     ++raster.winding_normalizations;
@@ -146,12 +161,20 @@ void rasterize_triangle(
       {triangle.vertices[0].x, triangle.vertices[1].x, triangle.vertices[2].x});
   const auto [minimum_y, maximum_y] = std::minmax(
       {triangle.vertices[0].y, triangle.vertices[1].y, triangle.vertices[2].y});
-  const int first_x = std::max({0, scissor.min_x, static_cast<int>(std::ceil(minimum_x - 0.5))});
+  const auto lower_bound = [truncate_bounds](const double value) {
+    return truncate_bounds ? static_cast<int>(value - 0.5)
+                           : static_cast<int>(std::ceil(value - 0.5));
+  };
+  const auto upper_bound = [truncate_bounds](const double value) {
+    return truncate_bounds ? static_cast<int>(value - 0.5)
+                           : static_cast<int>(std::floor(value - 0.5));
+  };
+  const int first_x = std::max({0, scissor.min_x, lower_bound(minimum_x)});
   const int last_x = std::min(
-      {raster.width - 1, scissor.max_x - 1, static_cast<int>(std::floor(maximum_x - 0.5))});
-  const int first_y = std::max({0, scissor.min_y, static_cast<int>(std::ceil(minimum_y - 0.5))});
+      {raster.width - 1, scissor.max_x - 1, upper_bound(maximum_x)});
+  const int first_y = std::max({0, scissor.min_y, lower_bound(minimum_y)});
   const int last_y = std::min(
-      {raster.height - 1, scissor.max_y - 1, static_cast<int>(std::floor(maximum_y - 0.5))});
+      {raster.height - 1, scissor.max_y - 1, upper_bound(maximum_y)});
 
   const std::array<bool, 3> top_left{
       is_top_left(triangle.vertices[0], triangle.vertices[1]),
@@ -218,6 +241,106 @@ bool owners_equal(const RasterMap& left, const RasterMap& right) {
   return left.width == right.width && left.height == right.height && left.owner == right.owner;
 }
 
+struct CoverageClipVertex {
+  double x{};
+  double y{};
+  double z{};
+  double w{};
+};
+
+double coverage_plane_distance(const CoverageClipVertex vertex, const std::size_t plane) {
+  const std::array<double, 6> distances{
+      vertex.x + vertex.w,
+      vertex.w - vertex.x,
+      vertex.y + vertex.w,
+      vertex.w - vertex.y,
+      vertex.z,
+      vertex.w - vertex.z,
+  };
+  const double distance = distances.at(plane);
+  if (!std::isfinite(distance)) throw std::runtime_error("non-finite coverage clip distance");
+  return distance;
+}
+
+CoverageClipVertex interpolate_clip(
+    const CoverageClipVertex left,
+    const CoverageClipVertex right,
+    const double amount) {
+  if (!std::isfinite(amount) || amount < -1.0e-12 || amount > 1.0 + 1.0e-12) {
+    throw std::runtime_error("invalid coverage clip interpolation parameter");
+  }
+  return {
+      left.x + (right.x - left.x) * amount,
+      left.y + (right.y - left.y) * amount,
+      left.z + (right.z - left.z) * amount,
+      left.w + (right.w - left.w) * amount,
+  };
+}
+
+std::vector<CoverageClipVertex> clip_coverage_polygon(
+    std::vector<CoverageClipVertex> polygon) {
+  for (std::size_t plane = 0; plane < 6; ++plane) {
+    if (polygon.empty()) break;
+    std::vector<CoverageClipVertex> output;
+    CoverageClipVertex previous = polygon.back();
+    double previous_distance = coverage_plane_distance(previous, plane);
+    bool previous_inside = previous_distance >= -1.0e-12;
+    for (const CoverageClipVertex& current : polygon) {
+      const double current_distance = coverage_plane_distance(current, plane);
+      const bool current_inside = current_distance >= -1.0e-12;
+      if (current_inside != previous_inside) {
+        const double denominator = previous_distance - current_distance;
+        if (std::abs(denominator) <= 1.0e-12) {
+          throw std::runtime_error("unstable coverage clip intersection");
+        }
+        output.push_back(interpolate_clip(previous, current, previous_distance / denominator));
+      }
+      if (current_inside) output.push_back(current);
+      previous = current;
+      previous_distance = current_distance;
+      previous_inside = current_inside;
+    }
+    polygon = std::move(output);
+  }
+  return polygon;
+}
+
+bool inside_coverage_clip(const CoverageClipVertex vertex) {
+  return std::isfinite(vertex.x) && std::isfinite(vertex.y) &&
+      std::isfinite(vertex.z) && std::isfinite(vertex.w) && vertex.w > 0.0 &&
+      vertex.x >= -vertex.w - 1.0e-12 && vertex.x <= vertex.w + 1.0e-12 &&
+      vertex.y >= -vertex.w - 1.0e-12 && vertex.y <= vertex.w + 1.0e-12 &&
+      vertex.z >= -1.0e-12 && vertex.z <= vertex.w + 1.0e-12;
+}
+
+Point2d clip_to_screen(const CoverageClipVertex vertex, const int extent) {
+  if (!(std::abs(vertex.w) > 1.0e-12) || !std::isfinite(vertex.w)) {
+    throw std::runtime_error("coverage perspective divide requires finite non-zero w");
+  }
+  return {
+      (vertex.x / vertex.w + 1.0) * 0.5 * static_cast<double>(extent),
+      (1.0 - vertex.y / vertex.w) * 0.5 * static_cast<double>(extent),
+  };
+}
+
+void rasterize_clipped_polygon(
+    RasterMap& raster,
+    const std::vector<CoverageClipVertex>& polygon,
+    const Scissor scissor) {
+  if (polygon.size() < 3) return;
+  for (std::size_t index = 1; index + 1 < polygon.size(); ++index) {
+    rasterize_triangle(
+        raster,
+        Triangle2d{{
+            clip_to_screen(polygon[0], raster.width),
+            clip_to_screen(polygon[index], raster.width),
+            clip_to_screen(polygon[index + 1], raster.width)}},
+        static_cast<int>(20 + index),
+        scissor,
+        EdgeTie::top_left);
+  }
+}
+
 int run_triangle_coverage(const RunOptions& options) {
   ensure_output_directory(options.output);
   const std::string mutation = options.mutation.value_or("");
@@ -235,6 +358,11 @@ int run_triangle_coverage(const RunOptions& options) {
     known_mutation = true;
   }
 
+  const bool truncate_bounds = mutation == "truncate_negative_bounding_box";
+  const bool keep_old_winding = mutation == "keep_old_front_face_after_y_flip";
+  const bool divide_degenerate = mutation == "divide_by_zero_for_degenerate_area";
+  const bool skip_clipping = mutation == "skip_clipping";
+
   const Triangle2d first{{Point2d{1.0, 1.0}, Point2d{7.0, 1.0}, Point2d{7.0, 7.0}}};
   const Triangle2d second{{Point2d{1.0, 1.0}, Point2d{7.0, 7.0}, Point2d{1.0, 7.0}}};
   const Scissor full{0, 0, 8, 8};
@@ -247,7 +375,13 @@ int run_triangle_coverage(const RunOptions& options) {
   rasterize_triangle(forward, first, 1, full, EdgeTie::top_left);
   Triangle2d reversed_triangle = first;
   std::swap(reversed_triangle.vertices[1], reversed_triangle.vertices[2]);
-  rasterize_triangle(reversed, reversed_triangle, 1, full, EdgeTie::top_left);
+  rasterize_triangle(
+      reversed,
+      reversed_triangle,
+      1,
+      full,
+      EdgeTie::top_left,
+      !keep_old_winding);
 
   RasterMap degenerate(8, 8);
   rasterize_triangle(
@@ -255,7 +389,20 @@ int run_triangle_coverage(const RunOptions& options) {
       Triangle2d{{Point2d{1.0, 1.0}, Point2d{3.0, 3.0}, Point2d{5.0, 5.0}}},
       9,
       full,
-      EdgeTie::top_left);
+      EdgeTie::top_left,
+      true,
+      false,
+      !divide_degenerate);
+
+  RasterMap offscreen_boundary(8, 8);
+  rasterize_triangle(
+      offscreen_boundary,
+      Triangle2d{{Point2d{-0.9, 1.0}, Point2d{0.2, 2.0}, Point2d{-0.4, 3.0}}},
+      11,
+      full,
+      EdgeTie::top_left,
+      true,
+      truncate_bounds);
 
   const Scissor inner{2, 2, 6, 6};
   RasterMap clipped_to_scissor(8, 8);
@@ -275,23 +422,38 @@ int run_triangle_coverage(const RunOptions& options) {
     }
   }
 
+  const std::vector<CoverageClipVertex> unclipped_polygon{
+      {-0.6, -0.2, -0.4, 1.0},
+      {0.8, -0.4, 0.6, 1.0},
+      {0.0, 0.8, 0.6, 1.0},
+  };
+  const std::vector<CoverageClipVertex> computed_polygon =
+      clip_coverage_polygon(unclipped_polygon);
+  const std::vector<CoverageClipVertex>& selected_polygon =
+      skip_clipping ? unclipped_polygon : computed_polygon;
+  RasterMap clipped_path(8, 8);
+  rasterize_clipped_polygon(clipped_path, selected_polygon, full);
+  const bool selected_polygon_inside = !selected_polygon.empty() && std::all_of(
+      selected_polygon.begin(), selected_polygon.end(), inside_coverage_clip);
+  const int clipped_covered = static_cast<int>(std::count_if(
+      clipped_path.owner.begin(), clipped_path.owner.end(), [](const int owner) { return owner != 0; }));
+
   const int gaps = count_rectangle_gaps(rectangle);
+  const bool offscreen_bounds_correct =
+      offscreen_boundary.tested_samples == 0 && count_owner(offscreen_boundary, 11) == 0;
+  const bool degenerate_safe = count_owner(degenerate, 9) == 0 &&
+      degenerate.degenerate_triangles == 1 && !degenerate.nonfinite_setup;
+  const bool winding_preserved = owners_equal(forward, reversed) && reversed.winding_rejections == 0;
   Invariants invariants{
       {"shared_edge_has_no_gap", gaps == 0},
       {"shared_edge_has_no_overlap", rectangle.overlap_writes == 0 && count_owner(rectangle, -1) == 0},
-      {"degenerate_triangle_writes_no_samples", count_owner(degenerate, 9) == 0},
-      {"bounding_box_never_writes_outside_framebuffer", scissor_respected},
+      {"degenerate_triangle_writes_no_samples", degenerate_safe},
+      {"bounding_box_never_writes_outside_framebuffer",
+       scissor_respected && offscreen_bounds_correct && selected_polygon_inside && clipped_covered > 0},
       {"scissor_is_respected", scissor_respected},
-      {"winding_normalization_preserves_coverage_set", owners_equal(forward, reversed)},
+      {"winding_normalization_preserves_coverage_set", winding_preserved},
   };
-
-  if (mutation == "truncate_negative_bounding_box" || mutation == "skip_clipping") {
-    set_invariant(invariants, "bounding_box_never_writes_outside_framebuffer", false);
-  } else if (mutation == "keep_old_front_face_after_y_flip") {
-    set_invariant(invariants, "winding_normalization_preserves_coverage_set", false);
-  } else if (mutation == "divide_by_zero_for_degenerate_area") {
-    set_invariant(invariants, "degenerate_triangle_writes_no_samples", false);
-  } else if (!known_mutation) {
+  if (!known_mutation) {
     set_invariant(invariants, "shared_edge_has_no_gap", false);
   }
 
@@ -320,16 +482,57 @@ int run_triangle_coverage(const RunOptions& options) {
          << "  \"gap_samples\": " << gaps << ",\n"
          << "  \"overlap_samples\": " << count_owner(rectangle, -1) << ",\n"
          << "  \"tested_samples\": " << rectangle.tested_samples << ",\n"
-         << "  \"degenerate_writes\": " << count_owner(degenerate, 9) << "\n}\n";
+         << "  \"degenerate_writes\": " << count_owner(degenerate, 9) << ",\n"
+         << "  \"offscreen_boundary\": {\"tested_samples\": "
+         << offscreen_boundary.tested_samples << ", \"written_samples\": "
+         << count_owner(offscreen_boundary, 11) << ", \"expected_tested_samples\": 0},\n"
+         << "  \"reversed_coverage\": {\"forward_samples\": " << count_owner(forward, 1)
+         << ", \"reversed_samples\": " << count_owner(reversed, 1)
+         << ", \"winding_rejections\": " << reversed.winding_rejections << "},\n"
+         << "  \"degenerate_setup\": {\"guarded\": "
+         << (divide_degenerate ? "false" : "true") << ", \"nonfinite_detected\": "
+         << (degenerate.nonfinite_setup ? "true" : "false") << "},\n"
+         << "  \"clipped_primitive\": {\"input_vertex_count\": " << unclipped_polygon.size()
+         << ", \"computed_output_vertex_count\": " << computed_polygon.size()
+         << ", \"selected_output_vertex_count\": " << selected_polygon.size()
+         << ", \"child_triangle_count\": "
+         << (selected_polygon.size() >= 3 ? selected_polygon.size() - 2 : 0)
+         << ", \"covered_samples\": " << clipped_covered
+         << ", \"selected_policy\": \"" << (skip_clipping ? "unclipped" : "six-plane")
+         << "\", \"all_inside\": " << (selected_polygon_inside ? "true" : "false") << "}\n}\n";
   write_text(options.output / "coverage-counts.json", counts.str());
 
-  write_text(
-      options.output / "setup-trace.json",
-      "{\n  \"schema_version\": 1,\n  \"sample\": \"pixel-center\",\n"
-      "  \"quantization\": \"ceil(min-0.5)..floor(max-0.5)\",\n"
-      "  \"front_area_sign\": \"positive-after-normalization\",\n"
-      "  \"edge_0\": {\"a\": 0.0, \"b\": 6.0, \"c\": -6.0, \"top_left\": true},\n"
-      "  \"shared_edge\": {\"owner\": 1, \"rule\": \"top-left\"}\n}\n");
+  std::string first_difference = "none";
+  if (mutation == "truncate_negative_bounding_box") {
+    first_difference = "coverage-counts.offscreen_boundary.tested_samples";
+  } else if (mutation == "keep_old_front_face_after_y_flip") {
+    first_difference = "coverage-counts.reversed_coverage.reversed_samples";
+  } else if (mutation == "divide_by_zero_for_degenerate_area") {
+    first_difference = "coverage-counts.degenerate_setup.nonfinite_detected";
+  } else if (mutation == "skip_clipping") {
+    first_difference = "coverage-counts.clipped_primitive.selected_output_vertex_count";
+  } else if (mutation == "make_every_edge_inclusive" || mutation == "break_top_left_rule") {
+    first_difference = "coverage-counts.overlap_samples";
+  } else if (mutation == "make_every_edge_exclusive") {
+    first_difference = "coverage-counts.gap_samples";
+  } else if (!known_mutation) {
+    first_difference = "mutation-report.recognized";
+  }
+  std::ostringstream setup_trace;
+  setup_trace
+      << "{\n  \"schema_version\": 1,\n  \"sample\": \"pixel-center\",\n"
+      << "  \"quantization\": \""
+      << (truncate_bounds ? "truncate(min-0.5)..truncate(max-0.5)"
+                          : "ceil(min-0.5)..floor(max-0.5)") << "\",\n"
+      << "  \"front_area_sign\": \"positive-after-normalization\",\n"
+      << "  \"edge_0\": {\"a\": 0.0, \"b\": 6.0, \"c\": -6.0, \"top_left\": true},\n"
+      << "  \"shared_edge\": {\"owner\": 1, \"rule\": \"top-left\"},\n"
+      << "  \"clipped_primitive\": {\"selected_policy\": \""
+      << (skip_clipping ? "unclipped" : "six-plane") << "\", \"computed_output_vertex_count\": "
+      << computed_polygon.size() << ", \"selected_output_vertex_count\": "
+      << selected_polygon.size() << "},\n"
+      << "  \"first_difference\": \"" << json_escape(first_difference) << "\"\n}\n";
+  write_text(options.output / "setup-trace.json", setup_trace.str());
 
   std::ostringstream mutation_report;
   mutation_report << "{\n  \"schema_version\": 1,\n  \"mutation\": ";
@@ -339,6 +542,7 @@ int run_triangle_coverage(const RunOptions& options) {
     mutation_report << "null";
   }
   mutation_report << ",\n  \"recognized\": " << (known_mutation ? "true" : "false")
+                  << ",\n  \"first_difference\": \"" << json_escape(first_difference) << "\""
                   << ",\n  \"rejected\": "
                   << (options.mutation && !all_invariants_hold(invariants) ? "true" : "false") << "\n}\n";
   write_text(options.output / "mutation-report.json", mutation_report.str());
@@ -363,6 +567,8 @@ struct AttributeVertex {
   Uv uv;
   double inverse_w{};
   double depth{};
+  LinearRgb color{1.0, 1.0, 1.0};
+  std::array<double, 3> normal{0.0, 0.0, -1.0};
 };
 
 struct InterpolatedSample {
@@ -370,6 +576,8 @@ struct InterpolatedSample {
   double denominator{};
   Uv uv;
   double depth{};
+  LinearRgb color;
+  std::array<double, 3> normal{};
 };
 
 double linear_to_srgb(const double value) {
@@ -402,8 +610,11 @@ bool nearly_equal(const double left, const double right, const double epsilon = 
 InterpolatedSample interpolate_attribute(
     const std::array<AttributeVertex, 3>& vertices,
     const Point2d point,
-    const bool perspective_correct) {
+  const bool perspective_correct) {
   const double area = orient2d(vertices[0].position, vertices[1].position, vertices[2].position);
+  if (!std::isfinite(area) || std::abs(area) <= 1.0e-12) {
+    throw std::runtime_error("attribute interpolation requires finite non-zero triangle area");
+  }
   const std::array<double, 3> lambda{
       orient2d(vertices[1].position, vertices[2].position, point) / area,
       orient2d(vertices[2].position, vertices[0].position, point) / area,
@@ -413,6 +624,9 @@ InterpolatedSample interpolate_attribute(
       ? lambda[0] * vertices[0].inverse_w + lambda[1] * vertices[1].inverse_w +
             lambda[2] * vertices[2].inverse_w
       : 1.0;
+  if (!std::isfinite(denominator) || std::abs(denominator) <= 1.0e-12) {
+    throw std::runtime_error("perspective interpolation requires finite non-zero reciprocal-w sum");
+  }
   const auto interpolate = [&](const double first, const double second, const double third) {
     if (!perspective_correct) return lambda[0] * first + lambda[1] * second + lambda[2] * third;
     return (lambda[0] * first * vertices[0].inverse_w +
@@ -425,7 +639,16 @@ InterpolatedSample interpolate_attribute(
       .denominator = denominator,
       .uv = {interpolate(vertices[0].uv.u, vertices[1].uv.u, vertices[2].uv.u),
              interpolate(vertices[0].uv.v, vertices[1].uv.v, vertices[2].uv.v)},
-      .depth = interpolate(vertices[0].depth, vertices[1].depth, vertices[2].depth),
+      .depth = lambda[0] * vertices[0].depth + lambda[1] * vertices[1].depth +
+          lambda[2] * vertices[2].depth,
+      .color = {
+          interpolate(vertices[0].color.red, vertices[1].color.red, vertices[2].color.red),
+          interpolate(vertices[0].color.green, vertices[1].color.green, vertices[2].color.green),
+          interpolate(vertices[0].color.blue, vertices[1].color.blue, vertices[2].color.blue)},
+      .normal = {
+          interpolate(vertices[0].normal[0], vertices[1].normal[0], vertices[2].normal[0]),
+          interpolate(vertices[0].normal[1], vertices[1].normal[1], vertices[2].normal[1]),
+          interpolate(vertices[0].normal[2], vertices[1].normal[2], vertices[2].normal[2])},
   };
 }
 
@@ -550,7 +773,7 @@ int run_perspective_depth_blend(const RunOptions& options) {
     known_mutation = true;
   }
 
-  const QuadRender perspective = render_perspective_quad(true);
+  QuadRender perspective = render_perspective_quad(true);
   const QuadRender affine = render_perspective_quad(false);
   int changed_pixels = 0;
   for (std::size_t index = 0; index < perspective.color.size(); index += 3) {
@@ -573,14 +796,32 @@ int run_perspective_depth_blend(const RunOptions& options) {
   const auto first_sample = interpolate_attribute(first, diagonal_point, true);
   const auto second_sample = interpolate_attribute(second, diagonal_point, true);
   const auto affine_sample = interpolate_attribute(first, diagonal_point, false);
+  const InterpolatedSample selected_sample = use_affine ? affine_sample : first_sample;
   const bool diagonal_continuous = nearly_equal(first_sample.uv.u, second_sample.uv.u) &&
-      nearly_equal(first_sample.uv.v, second_sample.uv.v) && changed_pixels > 0;
+      nearly_equal(first_sample.uv.v, second_sample.uv.v) && changed_pixels > 0 &&
+      nearly_equal(selected_sample.uv.u, first_sample.uv.u) &&
+      nearly_equal(selected_sample.uv.v, first_sample.uv.v);
 
-  const auto draw_opaque = [](const std::array<double, 2> order) {
+  bool reciprocal_w_zero_rejected = false;
+  try {
+    const std::array<AttributeVertex, 3> zero_denominator{{
+        {{0.0, 0.0}, {0.0, 0.0}, 1.0, 0.2},
+        {{2.0, 0.0}, {1.0, 0.0}, -1.0, 0.4},
+        {{0.0, 2.0}, {0.0, 1.0}, -1.0, 0.6},
+    }};
+    static_cast<void>(interpolate_attribute(zero_denominator, {0.5, 0.5}, true));
+  } catch (const std::runtime_error&) {
+    reciprocal_w_zero_rejected = true;
+  }
+
+  const bool reverse_depth = mutation == "reverse_depth_compare_without_projection_change" ||
+      mutation == "reverse_depth_convention";
+  const auto draw_opaque = [reverse_depth](const std::array<double, 2> order) {
     double stored = 1.0;
     int owner = 0;
     for (const double depth : order) {
-      if (depth < stored) {
+      const bool passes = reverse_depth ? depth > stored : depth < stored;
+      if (passes) {
         stored = depth;
         owner = nearly_equal(depth, 0.25) ? 1 : 2;
       }
@@ -590,9 +831,16 @@ int run_perspective_depth_blend(const RunOptions& options) {
   const auto order_a = draw_opaque({0.75, 0.25});
   const auto order_b = draw_opaque({0.25, 0.75});
   const bool opaque_order_invariant = order_a == order_b && order_a.second == 1;
-  const bool depth_valid = std::all_of(perspective.depth.begin(), perspective.depth.end(), [](const double value) {
+  if (mutation == "store_view_space_z_as_depth") {
+    for (double& value : perspective.depth) {
+      if (value < 1.0) value += 2.0;
+    }
+  }
+  const QuadRender& selected_quad = use_affine ? affine : perspective;
+  const bool depth_valid = std::all_of(selected_quad.depth.begin(), selected_quad.depth.end(), [](const double value) {
     return std::isfinite(value) && value >= 0.0 && value <= 1.0;
-  });
+  }) && std::isfinite(first_sample.depth) && first_sample.depth >= 0.0 &&
+      first_sample.depth <= 1.0 && reciprocal_w_zero_rejected;
   const bool flat_ids = std::all_of(
       perspective.primitive_id.begin(), perspective.primitive_id.end(), [](const unsigned char value) {
         return value == 0 || value == 40 || value == 120 || value == 220;
@@ -608,10 +856,48 @@ int run_perspective_depth_blend(const RunOptions& options) {
       0.0,
       srgb_to_linear((linear_to_srgb(red.blue) + linear_to_srgb(blue.blue)) * 0.5),
   };
-  const bool blends_in_linear = color_distance(straight, wrong_encoded) > 0.1;
-  const bool alpha_states_match = color_distance(straight, premultiplied) <= 1.0e-12;
-  const LinearRgb transparent_a = blend_straight(green, 0.5, blend_straight(red, 0.5, blue));
-  const LinearRgb transparent_b = blend_straight(red, 0.5, blend_straight(green, 0.5, blue));
+  const bool depth_write_transparent = mutation == "enable_depth_write_for_blended_surface";
+  const bool encoded_blend = mutation == "blend_srgb_encoded_values";
+  const bool mismatched_alpha = mutation == "mismatch_alpha_representation_and_factors" ||
+      mutation == "mismatch_alpha_blend";
+  struct TransparentProbe {
+    LinearRgb color;
+    double depth{1.0};
+    int accepted_layers{};
+  };
+  const auto composite = [encoded_blend, mismatched_alpha](
+                             const LinearRgb source,
+                             const double alpha,
+                             const LinearRgb destination) {
+    if (encoded_blend) {
+      return LinearRgb{
+          srgb_to_linear(linear_to_srgb(source.red) * alpha +
+                         linear_to_srgb(destination.red) * (1.0 - alpha)),
+          srgb_to_linear(linear_to_srgb(source.green) * alpha +
+                         linear_to_srgb(destination.green) * (1.0 - alpha)),
+          srgb_to_linear(linear_to_srgb(source.blue) * alpha +
+                         linear_to_srgb(destination.blue) * (1.0 - alpha)),
+      };
+    }
+    if (mismatched_alpha) return blend_premultiplied(source, alpha, destination);
+    return blend_straight(source, alpha, destination);
+  };
+  const auto draw_transparent = [&](const std::array<std::pair<LinearRgb, double>, 2>& layers) {
+    TransparentProbe result{.color = blue};
+    for (const auto& [color, incoming_depth] : layers) {
+      if (incoming_depth >= result.depth) continue;
+      result.color = composite(color, 0.5, result.color);
+      ++result.accepted_layers;
+      if (depth_write_transparent) result.depth = incoming_depth;
+    }
+    return result;
+  };
+  const TransparentProbe transparent_a = draw_transparent({{{red, 0.25}, {green, 0.75}}});
+  const TransparentProbe transparent_b = draw_transparent({{{green, 0.75}, {red, 0.25}}});
+  const bool blends_in_linear = !encoded_blend && color_distance(straight, wrong_encoded) > 0.1;
+  const bool alpha_states_match = !mismatched_alpha && !depth_write_transparent &&
+      color_distance(straight, premultiplied) <= 1.0e-12 &&
+      transparent_a.accepted_layers == 2 && transparent_b.accepted_layers == 2;
 
   Invariants invariants{
       {"perspective_uv_is_continuous_across_quad_diagonal", diagonal_continuous},
@@ -621,31 +907,23 @@ int run_perspective_depth_blend(const RunOptions& options) {
       {"blend_occurs_in_linear_color", blends_in_linear},
       {"alpha_representation_matches_state", alpha_states_match},
   };
-  if (use_affine) {
-    set_invariant(invariants, "perspective_uv_is_continuous_across_quad_diagonal", false);
-  } else if (mutation == "store_view_space_z_as_depth") {
-    set_invariant(invariants, "depth_is_finite_and_in_zero_one", false);
-  } else if (mutation == "reverse_depth_compare_without_projection_change" ||
-             mutation == "reverse_depth_convention") {
-    set_invariant(invariants, "opaque_visibility_is_draw_order_invariant", false);
-  } else if (mutation == "enable_depth_write_for_blended_surface" ||
-             mutation == "mismatch_alpha_representation_and_factors" || mutation == "mismatch_alpha_blend") {
-    set_invariant(invariants, "alpha_representation_matches_state", false);
-  } else if (mutation == "blend_srgb_encoded_values") {
-    set_invariant(invariants, "blend_occurs_in_linear_color", false);
-  } else if (!known_mutation) {
+  if (!known_mutation) {
     set_invariant(invariants, "flat_ids_are_not_interpolated", false);
   }
 
   write_ppm_p3(
-      options.output / "perspective-correct.ppm", 8, 8, use_affine ? affine.color : perspective.color);
+      options.output / "perspective-correct.ppm", 8, 8, selected_quad.color);
   write_ppm_p3(options.output / "affine-mutation.ppm", 8, 8, affine.color);
   write_ppm_p3(options.output / "primitive-id.ppm", 8, 8, perspective.primitive_id);
-  write_ppm_p3(options.output / "transparent-order-a.ppm", 4, 4, solid_image(4, 4, transparent_a));
-  write_ppm_p3(options.output / "transparent-order-b.ppm", 4, 4, solid_image(4, 4, transparent_b));
+  write_ppm_p3(
+      options.output / "transparent-order-a.ppm", 4, 4, solid_image(4, 4, transparent_a.color));
+  write_ppm_p3(
+      options.output / "transparent-order-b.ppm", 4, 4, solid_image(4, 4, transparent_b.color));
+  write_ppm_p3(options.output / "blend-probe.ppm", 1, 1, solid_image(1, 1, transparent_a.color));
 
   std::ostringstream depth;
-  depth << "{\n  \"schema_version\": 1,\n  \"clear\": 1.0,\n  \"compare\": \"less\",\n"
+  depth << "{\n  \"schema_version\": 1,\n  \"clear\": 1.0,\n  \"compare\": \""
+        << (reverse_depth ? "greater" : "less") << "\",\n"
         << "  \"order_a\": {\"depth\": "
         << (mutation == "store_view_space_z_as_depth" ? 2.0 : order_a.first)
         << ", \"owner\": " << order_a.second << "},\n"
@@ -659,12 +937,38 @@ int run_perspective_depth_blend(const RunOptions& options) {
         << "  \"lambda\": [" << first_sample.lambda[0] << ", " << first_sample.lambda[1] << ", "
         << first_sample.lambda[2] << "],\n"
         << "  \"inverse_w_denominator\": " << first_sample.denominator << ",\n"
+        << "  \"vertex_inverse_w\": [" << vertices[0].inverse_w << ", "
+        << vertices[1].inverse_w << ", " << vertices[2].inverse_w << "],\n"
+        << "  \"denominator_finite_nonzero\": "
+        << (std::isfinite(first_sample.denominator) && std::abs(first_sample.denominator) > 1.0e-12
+                ? "true" : "false") << ",\n"
+        << "  \"reciprocal_w_zero_rejected\": "
+        << (reciprocal_w_zero_rejected ? "true" : "false") << ",\n"
+        << "  \"depth_interpolation\": \"screen-affine-ndc\",\n"
+        << "  \"affine_ndc_depth\": " << first_sample.depth << ",\n"
         << "  \"perspective_uv\": [" << first_sample.uv.u << ", " << first_sample.uv.v << "],\n"
         << "  \"affine_uv\": [" << affine_sample.uv.u << ", " << affine_sample.uv.v << "],\n"
+        << "  \"selected_uv\": [" << selected_sample.uv.u << ", " << selected_sample.uv.v << "],\n"
         << "  \"incoming_depth\": " << first_sample.depth << ",\n"
         << "  \"depth_test\": true\n}\n";
   write_text(options.output / "pixel-traces" / "sample-3-3.json", trace.str());
 
+  std::string first_difference = "none";
+  if (use_affine) {
+    first_difference = "pixel-traces/sample-3-3.json.selected_uv";
+  } else if (mutation == "store_view_space_z_as_depth") {
+    first_difference = "depth.json.order_a.depth";
+  } else if (reverse_depth) {
+    first_difference = "depth.json.order_a.owner";
+  } else if (depth_write_transparent) {
+    first_difference = "report.json.transparent_order_a_accepted_layers";
+  } else if (encoded_blend) {
+    first_difference = "report.json.selected_blend_linear";
+  } else if (mismatched_alpha) {
+    first_difference = "report.json.selected_alpha_representation";
+  } else if (!known_mutation) {
+    first_difference = "run.json.invariants.flat_ids_are_not_interpolated";
+  }
   std::ostringstream report;
   report << std::fixed << std::setprecision(6)
          << "{\n  \"schema_version\": 1,\n  \"perspective_vs_affine_changed_pixels\": "
@@ -672,8 +976,15 @@ int run_perspective_depth_blend(const RunOptions& options) {
          << "  \"diagonal_uv_delta\": [" << std::abs(first_sample.uv.u - second_sample.uv.u) << ", "
          << std::abs(first_sample.uv.v - second_sample.uv.v) << "],\n"
          << "  \"opaque_order_invariant\": " << (opaque_order_invariant ? "true" : "false") << ",\n"
+         << "  \"selected_depth_compare\": \"" << (reverse_depth ? "greater" : "less") << "\",\n"
+         << "  \"transparent_depth_write\": " << (depth_write_transparent ? "true" : "false") << ",\n"
+         << "  \"transparent_order_a_accepted_layers\": " << transparent_a.accepted_layers << ",\n"
          << "  \"straight_premultiplied_max_delta\": " << color_distance(straight, premultiplied) << ",\n"
-         << "  \"linear_vs_encoded_blend_delta\": " << color_distance(straight, wrong_encoded) << "\n}\n";
+         << "  \"linear_vs_encoded_blend_delta\": " << color_distance(straight, wrong_encoded) << ",\n"
+         << "  \"selected_blend_linear\": " << (encoded_blend ? "false" : "true") << ",\n"
+         << "  \"selected_alpha_representation\": \""
+         << (mismatched_alpha ? "straight-data-with-premultiplied-factors" : "straight") << "\",\n"
+         << "  \"first_difference\": \"" << json_escape(first_difference) << "\"\n}\n";
   write_text(options.output / "report.json", report.str());
 
   write_run_json(options, invariants);
@@ -1013,13 +1324,20 @@ struct LitRenderArtifacts {
   int covered_samples{};
   Uv traced_uv{};
   LinearRgb traced_base{};
+  LinearRgb traced_vertex_color{};
+  Vector3d traced_local_normal{};
+  Vector3d traced_world_normal{};
+  double traced_ndotl{};
 };
 
 LitRenderArtifacts render_lit_triangle(
     const SceneSnapshot& scene,
     const std::array<LinearRgb, 4>& texture,
-    const Vector3d world_normal,
-    const bool use_wrong_mip) {
+    const Matrix3d& normal_transform,
+    const Vector3d normal_map_sample,
+    const bool use_wrong_mip,
+    const bool object_visible,
+    const int lod_level) {
   constexpr int width = 16;
   constexpr int height = 16;
   LitRenderArtifacts output{
@@ -1033,6 +1351,8 @@ LitRenderArtifacts render_lit_triangle(
       .depth = std::vector<double>(static_cast<std::size_t>(width * height), 1.0),
   };
 
+  if (!object_visible) return output;
+
   std::array<AttributeVertex, 3> vertices;
   for (std::size_t index = 0; index < vertices.size(); ++index) {
     const auto& source = scene.vertices[static_cast<std::size_t>(scene.indices[index])];
@@ -1043,6 +1363,14 @@ LitRenderArtifacts render_lit_triangle(
         .uv = {static_cast<double>(source.uv.x), static_cast<double>(source.uv.y)},
         .inverse_w = 1.0,
         .depth = static_cast<double>(source.position.z),
+        .color = {
+            static_cast<double>(source.color_linear.x),
+            static_cast<double>(source.color_linear.y),
+            static_cast<double>(source.color_linear.z)},
+        .normal = {
+            static_cast<double>(source.normal.x),
+            static_cast<double>(source.normal.y),
+            static_cast<double>(source.normal.z)},
     };
   }
   if (orient2d(vertices[0].position, vertices[1].position, vertices[2].position) < 0.0) {
@@ -1053,11 +1381,11 @@ LitRenderArtifacts render_lit_triangle(
       is_top_left(vertices[1].position, vertices[2].position),
       is_top_left(vertices[2].position, vertices[0].position),
   };
-  const Vector3d light = normalized({0.2, 0.4, 1.0});
-  const double ndotl_value = std::max(dot(normalized(world_normal), light), 0.0);
+  const Vector3d light = normalized({-0.35, 0.25, -1.0});
   const LinearRgb wrong_mip = encoded_mip_average(texture);
   for (int y = 0; y < height; ++y) {
     for (int x = 0; x < width; ++x) {
+      if (lod_level > 0 && (x + y) % 2 != 0) continue;
       const Point2d point{static_cast<double>(x) + 0.5, static_cast<double>(y) + 0.5};
       const std::array<double, 3> edge{
           orient2d(vertices[0].position, vertices[1].position, point),
@@ -1070,7 +1398,19 @@ LitRenderArtifacts render_lit_triangle(
         continue;
       }
       const auto sample = interpolate_attribute(vertices, point, true);
-      const LinearRgb base = use_wrong_mip ? wrong_mip : sample_bilinear_repeat(texture, sample.uv);
+      const LinearRgb sampled_texture =
+          use_wrong_mip ? wrong_mip : sample_bilinear_repeat(texture, sample.uv);
+      const LinearRgb base{
+          sampled_texture.red * sample.color.red,
+          sampled_texture.green * sample.color.green,
+          sampled_texture.blue * sample.color.blue,
+      };
+      const Vector3d snapshot_normal = normalized(
+          {sample.normal[0], sample.normal[1], sample.normal[2]});
+      const Vector3d perturbed_normal = normalized(
+          snapshot_normal + normal_map_sample * 0.25);
+      const Vector3d world_normal = normalized(multiply(normal_transform, perturbed_normal));
+      const double ndotl_value = std::max(dot(world_normal, light), 0.0);
       const LinearRgb lit{
           base.red * (0.1 + 0.9 * ndotl_value),
           base.green * (0.1 + 0.9 * ndotl_value),
@@ -1098,6 +1438,10 @@ LitRenderArtifacts render_lit_triangle(
       if (x == 8 && y == 8) {
         output.traced_uv = sample.uv;
         output.traced_base = base;
+        output.traced_vertex_color = sample.color;
+        output.traced_local_normal = snapshot_normal;
+        output.traced_world_normal = world_normal;
+        output.traced_ndotl = ndotl_value;
       }
     }
   }
@@ -1139,7 +1483,7 @@ int run_textured_lit_scene(const RunOptions& options) {
       {{0.0, 0.0, 0.0}, {0.0, 0.0}},
       {{1.0, 0.0, 0.0}, {1.0, 0.0}},
       {{0.0, 1.0, 0.0}, {0.0, 1.0}},
-      {{0.0, 0.0, 0.0}, {1.0, 1.0}},
+      {{0.0, 0.0, 0.0}, {0.75, 0.25}},
   };
   const std::size_t position_unique = position_only_unique_count(seam_vertices);
   const std::size_t semantic_unique = semantic_unique_count(seam_vertices);
@@ -1149,11 +1493,10 @@ int run_textured_lit_scene(const RunOptions& options) {
   const bool cycle_rejected = !hierarchy_is_acyclic({1, 0});
 
   constexpr double cosine = 0.7071067811865476;
-  constexpr double sine = 0.7071067811865476;
   const Matrix3d nonuniform_rotated{
-      .value = {{{2.0 * cosine, -sine, 0.0},
-                 {2.0 * sine, cosine, 0.0},
-                 {0.0, 0.0, 0.5}}},
+      .value = {{{2.0 * cosine, -0.35, 0.40},
+                 {2.0 * cosine, 0.90, 0.15},
+                 {0.20, 0.30, 0.50}}},
   };
   const Matrix3d singular{
       .value = {{{1.0, 0.0, 0.0},
@@ -1162,6 +1505,7 @@ int run_textured_lit_scene(const RunOptions& options) {
   };
   const auto inverse_model = inverse(nonuniform_rotated);
   const auto singular_inverse = inverse(singular);
+  if (!inverse_model) throw std::runtime_error("reference model transform must be invertible");
   const Vector3d local_normal = normalized({1.0, 1.0, 1.0});
   const Vector3d local_tangent = normalized({1.0, -1.0, 0.0});
   const Vector3d transformed_tangent = normalized(multiply(nonuniform_rotated, local_tangent));
@@ -1229,38 +1573,85 @@ int run_textured_lit_scene(const RunOptions& options) {
   const bool stable_lod = transition_count(lod_with_hysteresis) == 2 &&
       transition_count(lod_without_hysteresis) > transition_count(lod_with_hysteresis);
 
+  const std::size_t selected_unique = mutation == "deduplicate_by_position_only"
+      ? position_unique
+      : semantic_unique;
+  const Uv selected_duplicate_uv = mutation == "deduplicate_by_position_only"
+      ? seam_vertices.front().second
+      : seam_vertices.back().second;
+  const LinearRgb seam_first_color = sample_bilinear_repeat(texture, seam_vertices.front().second);
+  const LinearRgb seam_duplicate_color = sample_bilinear_repeat(texture, selected_duplicate_uv);
+  const double seam_probe_delta = color_distance(seam_first_color, seam_duplicate_color);
+  const bool selected_seam_valid = selected_unique == semantic_unique && seam_probe_delta > 0.1;
+
+  const bool selected_cycle_accepted = mutation == "accept_scene_cycle"
+      ? true
+      : hierarchy_is_acyclic({1, 0});
+  const Matrix3d correct_normal_transform = transpose(*inverse_model);
+  const Matrix3d& selected_normal_transform = mutation == "transform_normal_with_model_matrix"
+      ? nonuniform_rotated
+      : correct_normal_transform;
+  const Vector3d selected_probe_normal = mutation == "transform_normal_with_model_matrix"
+      ? wrong_normal
+      : correct_normal;
+  const double selected_orthogonality = std::abs(dot(selected_probe_normal, transformed_tangent));
+  const Vector3d selected_normal_map = mutation == "mark_normal_map_as_srgb"
+      ? flat_normal_srgb
+      : flat_normal_data;
+  const bool selected_normal_map_is_data =
+      length(selected_normal_map - flat_normal_data) <= 1.0e-12 && normal_map_data;
+  const bool use_wrong_mip = mutation == "average_encoded_color_for_mips" ||
+      mutation == "skip_srgb_decode";
+  const LinearRgb selected_mip_for_render = use_wrong_mip ? mip_encoded : mip_linear;
+  const bool selected_mip_is_linear =
+      color_distance(selected_mip_for_render, mip_linear) <= 1.0e-12 && linear_lighting;
+
+  const Bounds3d selected_bounds = mutation == "transform_only_aabb_min_and_max"
+      ? two_point_bounds
+      : conservative_bounds;
+  bool selected_bounds_contain_all = true;
+  for (const Vector3d corner : bounds_corners(local_bounds)) {
+    selected_bounds_contain_all = selected_bounds_contain_all &&
+        contains(selected_bounds, transform_point(nonuniform_rotated, translation, corner));
+  }
+  const std::vector<int>& selected_lod = mutation == "remove_lod_hysteresis"
+      ? lod_without_hysteresis
+      : lod_with_hysteresis;
+  const bool selected_lod_stable = stable_lod && transition_count(selected_lod) == 2;
+  const int render_lod = selected_lod.at(2);
+  const bool render_visible = visible_count > 0 && visibility.front() != FrustumRelation::outside;
+  const LitRenderArtifacts rendered = render_lit_triangle(
+      scene,
+      texture,
+      selected_normal_transform,
+      selected_normal_map,
+      use_wrong_mip,
+      render_visible,
+      render_lod);
+  const bool selected_lighting_computed = rendered.covered_samples > 0 &&
+      rendered.traced_ndotl > 0.0 && std::isfinite(rendered.traced_ndotl) &&
+      length(rendered.traced_local_normal) > 0.99 &&
+      length(rendered.traced_world_normal) > 0.99;
+
   Invariants invariants{
       {"indices_and_attribute_counts_are_valid",
        valid_mesh && invalid_index_rejected && mismatch_rejected && valid_area > 0.0 && degenerate_rejected &&
-           seam_identity_preserved},
-      {"scene_hierarchy_is_acyclic", valid_hierarchy && cycle_rejected},
-      {"world_bounds_conservatively_contain_geometry", conservative_contains_all && two_point_misses_corner},
-      {"normals_are_valid_after_nonuniform_scale", normal_valid},
-      {"normal_maps_are_data_textures", normal_map_data},
-      {"lighting_uses_linear_rgb", linear_lighting},
-      {"lod_hysteresis_prevents_boundary_oscillation", stable_lod},
+           seam_identity_preserved && selected_seam_valid},
+      {"scene_hierarchy_is_acyclic",
+       valid_hierarchy && cycle_rejected && !selected_cycle_accepted},
+      {"world_bounds_conservatively_contain_geometry",
+       conservative_contains_all && two_point_misses_corner && selected_bounds_contain_all},
+      {"normals_are_valid_after_nonuniform_scale",
+       normal_valid && selected_orthogonality <= 1.0e-9},
+      {"normal_maps_are_data_textures", selected_normal_map_is_data},
+      {"lighting_uses_linear_rgb",
+       selected_mip_is_linear && selected_lighting_computed},
+      {"lod_hysteresis_prevents_boundary_oscillation", selected_lod_stable},
   };
-  if (mutation == "deduplicate_by_position_only") {
-    set_invariant(invariants, "indices_and_attribute_counts_are_valid", false);
-  } else if (mutation == "transform_normal_with_model_matrix") {
-    set_invariant(invariants, "normals_are_valid_after_nonuniform_scale", false);
-  } else if (mutation == "mark_normal_map_as_srgb") {
-    set_invariant(invariants, "normal_maps_are_data_textures", false);
-  } else if (mutation == "average_encoded_color_for_mips" || mutation == "skip_srgb_decode") {
-    set_invariant(invariants, "lighting_uses_linear_rgb", false);
-  } else if (mutation == "transform_only_aabb_min_and_max") {
-    set_invariant(invariants, "world_bounds_conservatively_contain_geometry", false);
-  } else if (mutation == "accept_scene_cycle") {
-    set_invariant(invariants, "scene_hierarchy_is_acyclic", false);
-  } else if (mutation == "remove_lod_hysteresis") {
-    set_invariant(invariants, "lod_hysteresis_prevents_boundary_oscillation", false);
-  } else if (!known_mutation) {
+  if (!known_mutation) {
     set_invariant(invariants, "indices_and_attribute_counts_are_valid", false);
   }
 
-  const Vector3d render_normal = mutation == "transform_normal_with_model_matrix" ? wrong_normal : correct_normal;
-  const bool use_wrong_mip = mutation == "average_encoded_color_for_mips" || mutation == "skip_srgb_decode";
-  const LitRenderArtifacts rendered = render_lit_triangle(scene, texture, render_normal, use_wrong_mip);
   write_ppm_p3(options.output / "final.ppm", 16, 16, rendered.final_color);
   write_ppm_p3(options.output / "base-color.ppm", 16, 16, rendered.base_color);
   write_ppm_p3(options.output / "normal-world.ppm", 16, 16, rendered.normal_world);
@@ -1268,6 +1659,10 @@ int run_textured_lit_scene(const RunOptions& options) {
   write_ppm_p3(options.output / "mip-level.ppm", 16, 16, rendered.mip_level);
   write_ppm_p3(options.output / "object-id.ppm", 16, 16, rendered.object_id);
   write_ppm_p3(options.output / "primitive-id.ppm", 16, 16, rendered.primitive_id);
+  std::vector<unsigned char> seam_probe(6, 0);
+  set_rgb(seam_probe, 2, 0, 0, seam_first_color);
+  set_rgb(seam_probe, 2, 1, 0, seam_duplicate_color);
+  write_ppm_p3(options.output / "seam-probe.ppm", 2, 1, seam_probe);
 
   std::ostringstream asset;
   asset << std::fixed << std::setprecision(6)
@@ -1277,7 +1672,7 @@ int run_textured_lit_scene(const RunOptions& options) {
         << "    \"invalid_index\": {\"accepted\": false, \"reason\": \"index_out_of_range\"},\n"
         << "    \"attribute_count_mismatch\": {\"accepted\": false, \"reason\": \"attribute_count_mismatch\"},\n"
         << "    \"cycle_hierarchy\": {\"accepted\": "
-        << (mutation == "accept_scene_cycle" ? "true" : "false") << ", \"reason\": \"cycle\"},\n"
+        << (selected_cycle_accepted ? "true" : "false") << ", \"reason\": \"cycle\"},\n"
         << "    \"singular_normal_matrix\": {\"accepted\": false, \"reason\": \"singular_inverse\"},\n"
         << "    \"degenerate_triangle\": {\"accepted\": false, \"reason\": \"zero_area\"},\n"
         << "    \"uv_negative_repeat\": {\"input\": [-0.25, -0.25], \"wrapped\": [0.75, 0.75], \"sample\": "
@@ -1285,19 +1680,30 @@ int run_textured_lit_scene(const RunOptions& options) {
         << "    \"uv_out_of_range_repeat\": {\"input\": [1.25, 1.25], \"wrapped\": [0.25, 0.25], \"sample\": "
         << color_json(out_of_range_uv_sample) << "}\n  },\n"
         << "  \"seam_vertices\": {\"semantic_unique\": " << semantic_unique
-        << ", \"position_only_unique\": " << position_unique << "},\n"
+        << ", \"position_only_unique\": " << position_unique
+        << ", \"selected_unique\": " << selected_unique
+        << ", \"selected_policy\": \""
+        << (mutation == "deduplicate_by_position_only" ? "position-only" : "position+uv")
+        << "\", \"selected_duplicate_uv\": [" << selected_duplicate_uv.u << ", "
+        << selected_duplicate_uv.v << "], \"probe_color_delta\": " << seam_probe_delta << "},\n"
         << "  \"normal\": {\"correct\": " << vector_json(correct_normal)
         << ", \"model_matrix_mutation\": " << vector_json(wrong_normal)
+        << ", \"snapshot_input\": [0.000000, 0.000000, -1.000000]"
+        << ", \"selected_transform\": \""
+        << (mutation == "transform_normal_with_model_matrix" ? "model-3x3" : "inverse-transpose")
+        << "\", \"selected_world\": " << vector_json(rendered.traced_world_normal)
         << ", \"correct_tangent_dot\": " << correct_orthogonality
         << ", \"mutation_tangent_dot\": " << wrong_orthogonality << "},\n"
         << "  \"normal_map\": {\"encoding\": \"data-linear\", \"flat_decoded\": "
-        << vector_json(mutation == "mark_normal_map_as_srgb" ? flat_normal_srgb : flat_normal_data) << "}\n}\n";
+        << vector_json(selected_normal_map) << "}\n}\n";
   write_text(options.output / "asset-validation.json", asset.str());
 
-  const Bounds3d selected_bounds = mutation == "transform_only_aabb_min_and_max" ? two_point_bounds : conservative_bounds;
-  const std::vector<int>& selected_lod = mutation == "remove_lod_hysteresis"
-      ? lod_without_hysteresis
-      : lod_with_hysteresis;
+  int selected_vertex_work = 0;
+  int selected_sample_budget = 0;
+  for (const int level : selected_lod) {
+    selected_vertex_work += level == 0 ? 3 : 2;
+    selected_sample_budget += level == 0 ? 256 : 128;
+  }
   std::ostringstream culling;
   culling << std::fixed << std::setprecision(6)
           << "{\n  \"schema_version\": 1,\n  \"frustum\": {\"input\": 3, \"visible\": "
@@ -1305,13 +1711,23 @@ int run_textured_lit_scene(const RunOptions& options) {
           << "  \"world_bounds\": {\"minimum\": " << vector_json(selected_bounds.minimum)
           << ", \"maximum\": " << vector_json(selected_bounds.maximum) << "},\n"
           << "  \"bounds_all_corners_contained\": "
-          << (mutation == "transform_only_aabb_min_and_max" ? "false" : "true") << ",\n"
+          << (selected_bounds_contain_all ? "true" : "false") << ",\n"
+          << "  \"render_decisions\": ["
+          << "{\"object\": 0, \"relation\": \"inside\", \"drawn\": true}, "
+          << "{\"object\": 1, \"relation\": \"outside\", \"drawn\": false}, "
+          << "{\"object\": 2, \"relation\": \"intersecting\", \"drawn\": true}],\n"
           << "  \"lod\": {\"threshold\": 0.5, \"hysteresis\": "
           << (mutation == "remove_lod_hysteresis" ? 0.0 : 0.05) << ", \"levels\": [";
   for (std::size_t index = 0; index < selected_lod.size(); ++index) {
     culling << selected_lod[index] << (index + 1 == selected_lod.size() ? "" : ", ");
   }
-  culling << "], \"transitions\": " << transition_count(selected_lod) << "}\n}\n";
+  culling << "], \"transitions\": " << transition_count(selected_lod)
+          << ", \"selected_render_level\": " << render_lod
+          << ", \"vertex_work\": " << selected_vertex_work
+          << ", \"sample_budget\": " << selected_sample_budget << "},\n"
+          << "  \"render_probe\": {\"visible\": " << (render_visible ? "true" : "false")
+          << ", \"output_primitives\": " << (render_visible ? 1 : 0)
+          << ", \"covered_samples\": " << rendered.covered_samples << "}\n}\n";
   write_text(options.output / "culling-lod.json", culling.str());
 
   double minimum_depth = 1.0;
@@ -1329,18 +1745,24 @@ int run_textured_lit_scene(const RunOptions& options) {
         << "  \"minimum\": " << minimum_depth << ",\n  \"maximum\": " << maximum_depth << "\n}\n";
   write_text(options.output / "depth.json", depth.str());
 
-  const LinearRgb selected_mip = use_wrong_mip ? mip_encoded : mip_linear;
-  const Vector3d selected_normal_map = mutation == "mark_normal_map_as_srgb" ? flat_normal_srgb : flat_normal_data;
   std::ostringstream trace;
   trace << std::fixed << std::setprecision(6)
         << "{\n  \"schema_version\": 1,\n  \"pixel\": [8, 8],\n  \"uv\": ["
         << rendered.traced_uv.u << ", " << rendered.traced_uv.v << "],\n"
         << "  \"base_color_linear\": " << color_json(rendered.traced_base) << ",\n"
-        << "  \"mip_1x1_linear\": " << color_json(selected_mip) << ",\n"
-        << "  \"normal_world\": " << vector_json(render_normal) << ",\n"
+        << "  \"interpolated_vertex_color\": "
+        << color_json(rendered.traced_vertex_color) << ",\n"
+        << "  \"mip_1x1_linear\": " << color_json(selected_mip_for_render) << ",\n"
+        << "  \"snapshot_normal_interpolated\": "
+        << vector_json(rendered.traced_local_normal) << ",\n"
+        << "  \"normal_transform\": \""
+        << (mutation == "transform_normal_with_model_matrix" ? "model-3x3" : "inverse-transpose")
+        << "\",\n"
+        << "  \"normal_world\": " << vector_json(rendered.traced_world_normal) << ",\n"
         << "  \"normal_map_decoded\": " << vector_json(selected_normal_map) << ",\n"
-        << "  \"light_direction\": " << vector_json(normalized({0.2, 0.4, 1.0})) << ",\n"
-        << "  \"ndotl\": " << std::max(dot(normalized(render_normal), normalized({0.2, 0.4, 1.0})), 0.0)
+        << "  \"light_direction_to_light\": "
+        << vector_json(normalized({-0.35, 0.25, -1.0})) << ",\n"
+        << "  \"ndotl\": " << rendered.traced_ndotl
         << "\n}\n";
   write_text(options.output / "trace.json", trace.str());
 
@@ -1349,17 +1771,40 @@ int run_textured_lit_scene(const RunOptions& options) {
              << ",\n  \"input_triangles\": 1,\n  \"covered_samples\": " << rendered.covered_samples
              << ",\n  \"depth_passed_samples\": " << rendered.covered_samples
              << ",\n  \"invalid_fixture_count\": 5,\n  \"visible_objects\": " << visible_count
+             << ",\n  \"culled_objects\": " << (3 - visible_count)
+             << ",\n  \"selected_render_lod\": " << render_lod
+             << ",\n  \"selected_vertex_work\": " << selected_vertex_work
+             << ",\n  \"selected_sample_budget\": " << selected_sample_budget
              << ",\n  \"lod_transitions\": " << transition_count(selected_lod) << "\n}\n";
   write_text(options.output / "statistics.json", statistics.str());
 
   std::ostringstream frame;
   frame << "{\n  \"schema_version\": 1,\n  \"scene\": \"" << SceneSnapshot::id
         << "\",\n  \"extent\": [16, 16],\n  \"sample\": \"pixel-center\",\n"
-        << "  \"input_primitives\": 1,\n  \"output_primitives\": 1,\n"
+        << "  \"input_primitives\": 1,\n  \"output_primitives\": "
+        << (render_visible ? 1 : 0) << ",\n  \"selected_lod\": " << render_lod << ",\n"
         << "  \"covered_samples\": " << rendered.covered_samples
         << ",\n  \"invalid_non_finite_values\": 0,\n  \"color_encoding\": \"sRGB-output\"\n}\n";
   write_text(options.output / "frame.json", frame.str());
 
+  std::string first_difference = "none";
+  if (mutation == "deduplicate_by_position_only") {
+    first_difference = "asset-validation.json.seam_vertices.selected_unique";
+  } else if (mutation == "transform_normal_with_model_matrix") {
+    first_difference = "trace.json.normal_world";
+  } else if (mutation == "mark_normal_map_as_srgb") {
+    first_difference = "trace.json.normal_map_decoded";
+  } else if (mutation == "average_encoded_color_for_mips" || mutation == "skip_srgb_decode") {
+    first_difference = "trace.json.mip_1x1_linear";
+  } else if (mutation == "transform_only_aabb_min_and_max") {
+    first_difference = "culling-lod.json.bounds_all_corners_contained";
+  } else if (mutation == "accept_scene_cycle") {
+    first_difference = "asset-validation.json.cases.cycle_hierarchy.accepted";
+  } else if (mutation == "remove_lod_hysteresis") {
+    first_difference = "culling-lod.json.lod.levels[2]";
+  } else if (!known_mutation) {
+    first_difference = "mutation-report.json.recognized";
+  }
   std::ostringstream mutation_report;
   mutation_report << "{\n  \"schema_version\": 1,\n  \"mutation\": ";
   if (options.mutation) {
@@ -1368,6 +1813,7 @@ int run_textured_lit_scene(const RunOptions& options) {
     mutation_report << "null";
   }
   mutation_report << ",\n  \"recognized\": " << (known_mutation ? "true" : "false")
+                  << ",\n  \"first_difference\": \"" << json_escape(first_difference) << "\""
                   << ",\n  \"rejected\": "
                   << (options.mutation && !all_invariants_hold(invariants) ? "true" : "false") << "\n}\n";
   write_text(options.output / "mutation-report.json", mutation_report.str());

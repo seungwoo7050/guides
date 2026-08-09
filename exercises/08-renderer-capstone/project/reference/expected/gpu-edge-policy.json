@@ -1,0 +1,19 @@
+{
+  "schema_version": 1,
+  "policy_id": "triangle-edge-mask-v1",
+  "scene_snapshot_id": "shared-textured-triangle-v1",
+  "extent": [64, 64],
+  "declared_before_gpu_readback": true,
+  "construction": "pixel-center distance to fixed SceneSnapshot triangle segments",
+  "radius_pixels": 0.75,
+  "population": 228,
+  "total_pixels": 4096,
+  "maximum_fraction": 0.08,
+  "mask_hash_fnv1a64": "b3b9ac5d50cb8f09",
+  "post_failure_widening_permitted": false,
+  "linear_rgba8_abs_tolerance": 1,
+  "depth_u16_abs_tolerance": 2,
+  "srgb_interior_abs_tolerance": 2,
+  "srgb_edge_abs_tolerance": 13,
+  "rationale": "The edge-only sRGB bound is the analytic encoding effect of one linear RGBA8 quantization step near black; interior comparisons stay at two bytes and an out-of-mask corruption must fail."
+}

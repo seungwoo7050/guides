@@ -17,6 +17,7 @@
   "invariants": [
     "identity_preserves_position",
     "direction_ignores_translation",
+    "left_handed_camera_basis_is_finite_orthonormal",
     "normal_preserves_tangent_orthogonality",
     "hierarchy_uses_parent_world_times_child_local",
     "clipped_vertices_satisfy_all_clip_planes",

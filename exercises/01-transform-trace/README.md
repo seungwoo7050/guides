@@ -64,6 +64,7 @@ normal trace에는 model normal matrix, 변환 전후 길이와 tangent dot를 �
 
 - identity 결과가 입력과 같습니다.
 - direction에는 translation이 적용되지 않습니다.
+- `left_handed_camera_basis_is_finite_orthonormal`: `case-identity.json`의 nontrivial camera pose가 `right`·`camera_up`·`forward`의 finite 정규 직교 기저를 만들고 target을 view-space `+Z`에 둡니다. parallel up fixture는 `rejected.json`에서 실제 view-basis 생성 실패로 거부됩니다.
 - normal과 transformed tangent가 수치 오차 안에서 수직입니다.
 - hierarchy 합성이 `parent_world * child_local`입니다.
 - clipping 뒤 vertex가 모든 clip plane을 만족합니다.
@@ -107,7 +108,7 @@ python3 exercises/check.py --impl workspace --stage 01-transform-trace --expect 
 python3 exercises/check.py --impl reference --stage 01-transform-trace --expect pass --gpu off
 ```
 
-자동 증거는 artifact 존재뿐 아니라 identity, direction translation 제외, normal/tangent 직교, hierarchy 순서, clipping 뒤 plane 범위와 finite viewport 값을 검사합니다. starter와 최소 두 known-bad mutation은 성공으로 판정되면 안 됩니다.
+자동 증거는 artifact 존재뿐 아니라 identity, direction translation 제외, `left_handed_camera_basis_is_finite_orthonormal`의 camera pose·기저·target view 좌표와 parallel-up 거부, normal/tangent 직교, hierarchy 순서, clipping 뒤 여섯 plane 범위·보간 attribute finite 여부와 finite viewport 값을 검사합니다. starter와 최소 두 known-bad mutation은 성공으로 판정되면 안 됩니다.
 
 사람 검토에서는 다음에 답합니다.
 

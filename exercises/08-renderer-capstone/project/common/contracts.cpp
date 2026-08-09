@@ -43,6 +43,20 @@ std::string_view stage_id(const Stage stage) {
   throw std::logic_error("unknown stage");
 }
 
+std::string_view expected_scene_id(const Stage stage) {
+  switch (stage) {
+    case Stage::transform_trace: return "identity-triangle";
+    case Stage::sampling_color: return "corner-marker";
+    case Stage::triangle_coverage: return "shared-edge-rectangle";
+    case Stage::perspective_depth_blend: return "perspective-checker";
+    case Stage::textured_lit_scene: return "textured-lit-scene";
+    case Stage::gpu_first_frame: return "shared-textured-triangle-v1";
+    case Stage::frame_debugging: return "lifecycle-and-workloads";
+    case Stage::renderer_capstone: return "shared-textured-triangle-v1";
+  }
+  throw std::logic_error("unknown stage");
+}
+
 std::string_view backend_id(const Backend backend) {
   switch (backend) {
     case Backend::software: return "software";
@@ -94,6 +108,11 @@ RunOptions parse_arguments(const int argc, char** argv) {
   }
   if (!have_stage || !have_scene || !have_output) {
     throw std::invalid_argument("--stage, --scene, and --out are required");
+  }
+  if (options.scene != expected_scene_id(options.stage)) {
+    throw std::invalid_argument(
+        "--scene must be " + std::string(expected_scene_id(options.stage)) +
+        " for " + std::string(stage_id(options.stage)));
   }
   if (options.output == options.output.root_path()) {
     throw std::invalid_argument("--out may not be a filesystem root");

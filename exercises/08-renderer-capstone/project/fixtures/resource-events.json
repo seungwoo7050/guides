@@ -15,5 +15,10 @@
     {"id": "overwrite-frame-slot", "violation": "write-before-slot-completion"},
     {"id": "stale-resize-attachment", "violation": "generation-1-used-after-generation-2"},
     {"id": "readback-before-completion", "violation": "map-before-submission-completion"}
-  ]
+  ],
+  "provenance": {
+    "kind": "repository-generated-fixture",
+    "external_asset": false,
+    "license": "MIT"
+  }
 }

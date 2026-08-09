@@ -28,6 +28,11 @@ struct DVec3 {
   double z{};
 };
 
+struct DVec2 {
+  double x{};
+  double y{};
+};
+
 struct DVec4 {
   double x{};
   double y{};
@@ -73,12 +78,35 @@ using Invariants = std::vector<std::pair<std::string, bool>>;
          std::isfinite(value.z) && std::isfinite(value.w);
 }
 
+[[nodiscard]] bool finite(const DVec3 value) {
+  return std::isfinite(value.x) && std::isfinite(value.y) && std::isfinite(value.z);
+}
+
+[[nodiscard]] bool finite(const DVec2 value) {
+  return std::isfinite(value.x) && std::isfinite(value.y);
+}
+
+[[nodiscard]] DVec3 operator+(const DVec3 left, const DVec3 right) {
+  return {left.x + right.x, left.y + right.y, left.z + right.z};
+}
+
+[[nodiscard]] DVec3 operator-(const DVec3 left, const DVec3 right) {
+  return {left.x - right.x, left.y - right.y, left.z - right.z};
+}
+
 [[nodiscard]] DVec3 operator*(const DVec3 value, const double scale) {
   return {value.x * scale, value.y * scale, value.z * scale};
 }
 
 [[nodiscard]] double dot(const DVec3 left, const DVec3 right) {
   return left.x * right.x + left.y * right.y + left.z * right.z;
+}
+
+[[nodiscard]] DVec3 cross(const DVec3 left, const DVec3 right) {
+  return {
+      left.y * right.z - left.z * right.y,
+      left.z * right.x - left.x * right.z,
+      left.x * right.y - left.y * right.x};
 }
 
 [[nodiscard]] double length(const DVec3 value) {
@@ -147,6 +175,23 @@ using Invariants = std::vector<std::pair<std::string, bool>>;
   result.value[0][1] = -sine;
   result.value[1][0] = sine;
   result.value[1][1] = cosine;
+  return result;
+}
+
+[[nodiscard]] DMat4 look_at_lh(
+    const DVec3 eye,
+    const DVec3 target,
+    const DVec3 up) {
+  const DVec3 forward = normalize(target - eye);
+  const DVec3 right = normalize(cross(up, forward));
+  const DVec3 camera_up = cross(forward, right);
+  if (!finite(forward) || !finite(right) || !finite(camera_up)) {
+    throw std::runtime_error("camera basis is non-finite");
+  }
+  DMat4 result = identity4();
+  result.value[0] = {right.x, right.y, right.z, -dot(right, eye)};
+  result.value[1] = {camera_up.x, camera_up.y, camera_up.z, -dot(camera_up, eye)};
+  result.value[2] = {forward.x, forward.y, forward.z, -dot(forward, eye)};
   return result;
 }
 
@@ -229,26 +274,107 @@ using Invariants = std::vector<std::pair<std::string, bool>>;
       left.w + (right.w - left.w) * amount};
 }
 
-[[nodiscard]] std::vector<DVec4> clip_near_plane(const std::vector<DVec4>& input) {
-  std::vector<DVec4> output;
+[[nodiscard]] DVec3 lerp(const DVec3 left, const DVec3 right, const double amount) {
+  return left + (right - left) * amount;
+}
+
+[[nodiscard]] DVec2 lerp(const DVec2 left, const DVec2 right, const double amount) {
+  return {left.x + (right.x - left.x) * amount,
+          left.y + (right.y - left.y) * amount};
+}
+
+enum class ClipPlane { left, right, bottom, top, near, far };
+
+constexpr std::array<ClipPlane, 6> kClipPlanes{
+    ClipPlane::left,
+    ClipPlane::right,
+    ClipPlane::bottom,
+    ClipPlane::top,
+    ClipPlane::near,
+    ClipPlane::far};
+
+struct ClipVertex {
+  DVec4 position;
+  DVec2 uv;
+  DVec3 color;
+};
+
+struct ClipResult {
+  std::vector<ClipVertex> vertices;
+  std::array<std::size_t, 6> plane_vertex_counts{};
+};
+
+[[nodiscard]] std::string_view plane_id(const ClipPlane plane) {
+  switch (plane) {
+    case ClipPlane::left: return "left:x+w";
+    case ClipPlane::right: return "right:w-x";
+    case ClipPlane::bottom: return "bottom:y+w";
+    case ClipPlane::top: return "top:w-y";
+    case ClipPlane::near: return "near:z";
+    case ClipPlane::far: return "far:w-z";
+  }
+  throw std::logic_error("unknown clip plane");
+}
+
+[[nodiscard]] double plane_distance(const ClipVertex& vertex, const ClipPlane plane) {
+  const DVec4 value = vertex.position;
+  double distance = 0.0;
+  switch (plane) {
+    case ClipPlane::left: distance = value.x + value.w; break;
+    case ClipPlane::right: distance = value.w - value.x; break;
+    case ClipPlane::bottom: distance = value.y + value.w; break;
+    case ClipPlane::top: distance = value.w - value.y; break;
+    case ClipPlane::near: distance = value.z; break;
+    case ClipPlane::far: distance = value.w - value.z; break;
+  }
+  if (!std::isfinite(distance)) throw std::runtime_error("non-finite clip-plane distance");
+  return distance;
+}
+
+[[nodiscard]] ClipVertex lerp(const ClipVertex& left, const ClipVertex& right, const double amount) {
+  if (!std::isfinite(amount) || amount < -kEpsilon || amount > 1.0 + kEpsilon) {
+    throw std::runtime_error("invalid homogeneous clip interpolation parameter");
+  }
+  return {
+      lerp(left.position, right.position, amount),
+      lerp(left.uv, right.uv, amount),
+      lerp(left.color, right.color, amount)};
+}
+
+[[nodiscard]] std::vector<ClipVertex> clip_plane(
+    const std::vector<ClipVertex>& input,
+    const ClipPlane plane) {
+  std::vector<ClipVertex> output;
   if (input.empty()) return output;
-  DVec4 previous = input.back();
-  bool previous_inside = previous.z >= 0.0;
-  for (const DVec4 current : input) {
-    const bool current_inside = current.z >= 0.0;
+  ClipVertex previous = input.back();
+  double previous_distance = plane_distance(previous, plane);
+  bool previous_inside = previous_distance >= -kEpsilon;
+  for (const ClipVertex& current : input) {
+    const double current_distance = plane_distance(current, plane);
+    const bool current_inside = current_distance >= -kEpsilon;
     if (previous_inside != current_inside) {
-      const double denominator = previous.z - current.z;
+      const double denominator = previous_distance - current_distance;
       if (std::abs(denominator) <= kEpsilon) {
-        throw std::runtime_error("unstable near-plane intersection");
+        throw std::runtime_error("unstable homogeneous clip intersection");
       }
-      const double amount = previous.z / denominator;
+      const double amount = previous_distance / denominator;
       output.push_back(lerp(previous, current, amount));
     }
     if (current_inside) output.push_back(current);
     previous = current;
+    previous_distance = current_distance;
     previous_inside = current_inside;
   }
   return output;
+}
+
+[[nodiscard]] ClipResult clip_homogeneous(const std::vector<ClipVertex>& input) {
+  ClipResult result{.vertices = input};
+  for (std::size_t index = 0; index < kClipPlanes.size(); ++index) {
+    result.vertices = clip_plane(result.vertices, kClipPlanes[index]);
+    result.plane_vertex_counts[index] = result.vertices.size();
+  }
+  return result;
 }
 
 [[nodiscard]] bool inside_clip_volume(const DVec4 value) {
@@ -285,6 +411,10 @@ using Invariants = std::vector<std::pair<std::string, bool>>;
 
 [[nodiscard]] std::string json(const DVec3 value) {
   return "[" + number(value.x) + ", " + number(value.y) + ", " + number(value.z) + "]";
+}
+
+[[nodiscard]] std::string json(const DVec2 value) {
+  return "[" + number(value.x) + ", " + number(value.y) + "]";
 }
 
 [[nodiscard]] std::string json(const DVec4 value) {
@@ -353,15 +483,72 @@ void write_run_json(const RunOptions& options, const Invariants& invariants) {
   return all_invariants_hold(invariants) ? exit_ok : exit_contract_failure;
 }
 
-[[nodiscard]] std::string clip_vertices_json(const std::vector<DVec4>& vertices) {
+[[nodiscard]] std::string clip_vertices_json(const std::vector<ClipVertex>& vertices) {
   std::ostringstream output;
   output << "[";
   for (std::size_t index = 0; index < vertices.size(); ++index) {
     if (index != 0) output << ", ";
-    output << json(vertices[index]);
+    output << json(vertices[index].position);
   }
   output << "]";
   return output.str();
+}
+
+[[nodiscard]] std::string clip_attributes_json(const std::vector<ClipVertex>& vertices) {
+  std::ostringstream output;
+  output << "[";
+  for (std::size_t index = 0; index < vertices.size(); ++index) {
+    if (index != 0) output << ", ";
+    output << "{\"uv\": " << json(vertices[index].uv)
+           << ", \"color\": " << json(vertices[index].color) << "}";
+  }
+  output << "]";
+  return output.str();
+}
+
+[[nodiscard]] std::string plane_counts_json(const std::array<std::size_t, 6>& counts) {
+  std::ostringstream output;
+  output << "{";
+  for (std::size_t index = 0; index < kClipPlanes.size(); ++index) {
+    if (index != 0) output << ", ";
+    output << '"' << plane_id(kClipPlanes[index]) << "\": " << counts[index];
+  }
+  output << "}";
+  return output.str();
+}
+
+[[nodiscard]] bool clip_attributes_finite(const std::vector<ClipVertex>& vertices) {
+  return std::all_of(vertices.begin(), vertices.end(), [](const ClipVertex& vertex) {
+    return finite(vertex.position) && finite(vertex.uv) && finite(vertex.color);
+  });
+}
+
+[[nodiscard]] std::array<std::size_t, 6> six_plane_probe_counts() {
+  const std::array<DVec4, 6> outside{{
+      {-1.5, 0.0, 0.5, 1.0},
+      {1.5, 0.0, 0.5, 1.0},
+      {0.0, -1.5, 0.5, 1.0},
+      {0.0, 1.5, 0.5, 1.0},
+      {0.0, 0.0, -0.5, 1.0},
+      {0.0, 0.0, 1.5, 1.0},
+  }};
+  std::array<std::size_t, 6> counts{};
+  for (std::size_t index = 0; index < outside.size(); ++index) {
+    const std::vector<ClipVertex> triangle{{
+        {outside[index], {0.0, 0.0}, {1.0, 0.0, 0.0}},
+        {{-0.25, -0.25, 0.5, 1.0}, {1.0, 0.0}, {0.0, 1.0, 0.0}},
+        {{0.25, 0.25, 0.5, 1.0}, {0.0, 1.0}, {0.0, 0.0, 1.0}},
+    }};
+    const ClipResult clipped = clip_homogeneous(triangle);
+    if (!clip_attributes_finite(clipped.vertices) ||
+        !std::all_of(clipped.vertices.begin(), clipped.vertices.end(), [](const ClipVertex& vertex) {
+          return inside_clip_volume(vertex.position);
+        })) {
+      throw std::runtime_error("six-plane clipping probe produced invalid output");
+    }
+    counts[index] = clipped.vertices.size();
+  }
+  return counts;
 }
 
 int run_transform_trace(const RunOptions& options) {
@@ -382,6 +569,15 @@ int run_transform_trace(const RunOptions& options) {
 
   const DMat4 identity = identity4();
   const DMat4 projection = perspective_lh_zo(std::numbers::pi / 2.0, 1.0, 1.0, 9.0);
+  const DVec3 camera_eye{2.0, 1.0, -4.0};
+  const DVec3 camera_target{0.0, 0.0, 2.0};
+  const DVec3 camera_up_input{0.0, 1.0, 0.0};
+  const DVec3 camera_forward = normalize(camera_target - camera_eye);
+  const DVec3 camera_right = normalize(cross(camera_up_input, camera_forward));
+  const DVec3 camera_up = cross(camera_forward, camera_right);
+  const DMat4 camera_view = look_at_lh(camera_eye, camera_target, camera_up_input);
+  const DVec4 camera_target_view = multiply(
+      camera_view, DVec4{camera_target.x, camera_target.y, camera_target.z, 1.0});
   const DVec4 local{0.25, -0.5, 3.0, 1.0};
   const DVec4 world = multiply(identity, local);
   const DVec4 view = multiply(identity, world);
@@ -416,6 +612,14 @@ int run_transform_trace(const RunOptions& options) {
                     << "  \"ndc\": " << json(ndc) << ",\n"
                     << "  \"viewport\": " << json(viewport_value) << ",\n"
                     << "  \"translated_direction\": " << json(translated_direction) << ",\n"
+                    << "  \"camera\": {\n"
+                    << "    \"eye\": " << json(camera_eye) << ",\n"
+                    << "    \"target\": " << json(camera_target) << ",\n"
+                    << "    \"up_input\": " << json(camera_up_input) << ",\n"
+                    << "    \"right\": " << json(camera_right) << ",\n"
+                    << "    \"camera_up\": " << json(camera_up) << ",\n"
+                    << "    \"forward\": " << json(camera_forward) << ",\n"
+                    << "    \"target_view\": " << json(camera_target_view) << "\n  },\n"
                     << "  \"composition_probe\": {\n    \"expected_clip\": "
                     << json(expected_order_clip) << ",\n    \"actual_clip\": "
                     << json(selected_order_clip) << "\n  },\n"
@@ -462,31 +666,50 @@ int run_transform_trace(const RunOptions& options) {
                      << "  \"reversed_order_counterexample\": " << json(reversed_hierarchy_world) << "\n}\n";
   write_text(options.output / "case-hierarchy.json", hierarchy_artifact.str());
 
-  const std::vector<DVec4> view_triangle{
-      {-0.4, -0.2, 0.5, 1.0},
-      {0.6, -0.2, 2.0, 1.0},
-      {0.0, 0.7, 2.0, 1.0}};
-  std::vector<DVec4> clip_triangle;
+  const std::vector<ClipVertex> view_triangle{
+      {{-0.4, -0.2, 0.5, 1.0}, {0.0, 0.0}, {1.0, 0.0, 0.0}},
+      {{0.6, -0.2, 2.0, 1.0}, {1.0, 0.0}, {0.0, 1.0, 0.0}},
+      {{0.0, 0.7, 2.0, 1.0}, {0.5, 1.0}, {0.0, 0.0, 1.0}}};
+  std::vector<ClipVertex> clip_triangle;
   clip_triangle.reserve(view_triangle.size());
-  for (const DVec4 vertex : view_triangle) clip_triangle.push_back(multiply(projection, vertex));
-  std::vector<DVec4> clipped = discard_triangle ? std::vector<DVec4>{} : clip_near_plane(clip_triangle);
+  for (const ClipVertex& vertex : view_triangle) {
+    clip_triangle.push_back({multiply(projection, vertex.position), vertex.uv, vertex.color});
+  }
+  const ClipResult computed_clip = clip_homogeneous(clip_triangle);
+  const std::vector<ClipVertex> clipped =
+      discard_triangle ? std::vector<ClipVertex>{} : computed_clip.vertices;
   const bool clipped_vertices_valid = !clipped.empty() &&
-      std::all_of(clipped.begin(), clipped.end(), inside_clip_volume);
+      std::all_of(clipped.begin(), clipped.end(), [](const ClipVertex& vertex) {
+        return inside_clip_volume(vertex.position);
+      });
+  const bool clipped_attributes_valid = !clipped.empty() && clip_attributes_finite(clipped);
+  const std::array<std::size_t, 6> plane_probe_counts = six_plane_probe_counts();
+  const bool all_six_planes_exercised = std::all_of(
+      plane_probe_counts.begin(), plane_probe_counts.end(), [](const std::size_t count) {
+        return count == 4;
+      });
 
   std::ostringstream clip_artifact;
   clip_artifact << "{\n  \"schema_version\": 1,\n  \"case\": \"near-plane-crossing\",\n"
                 << "  \"input_clip_vertices\": " << clip_vertices_json(clip_triangle) << ",\n"
                 << "  \"output_clip_vertices\": " << clip_vertices_json(clipped) << ",\n"
+                << "  \"output_attributes\": " << clip_attributes_json(clipped) << ",\n"
                 << "  \"output_vertex_count\": " << clipped.size() << ",\n"
                 << "  \"generated_intersection_count\": " << (clipped.size() >= 3 ? clipped.size() - 2 : 0) << ",\n"
+                << "  \"planes_applied\": [\"left:x+w\", \"right:w-x\", \"bottom:y+w\", "
+                   "\"top:w-y\", \"near:z\", \"far:w-z\"],\n"
+                << "  \"plane_vertex_counts\": " << plane_counts_json(computed_clip.plane_vertex_counts) << ",\n"
+                << "  \"six_plane_probe_output_counts\": " << plane_counts_json(plane_probe_counts) << ",\n"
+                << "  \"all_attributes_finite\": "
+                << (clipped_attributes_valid ? "true" : "false") << ",\n"
                 << "  \"all_output_vertices_inside\": "
                 << (clipped_vertices_valid ? "true" : "false") << "\n}\n";
   write_text(options.output / "case-near-clip.json", clip_artifact.str());
 
   bool invalid_camera_rejected = false;
-  const DVec3 forward{0.0, 0.0, 1.0};
-  const DVec3 parallel_up{0.0, 0.0, 1.0};
-  if (std::abs(dot(normalize(forward), normalize(parallel_up))) > 1.0 - kEpsilon) {
+  try {
+    static_cast<void>(look_at_lh({0.0, 0.0, 0.0}, {0.0, 0.0, 1.0}, {0.0, 0.0, 1.0}));
+  } catch (const std::runtime_error&) {
     invalid_camera_rejected = true;
   }
   bool singular_normal_rejected = false;
@@ -517,13 +740,23 @@ int run_transform_trace(const RunOptions& options) {
   const DVec4 expected_viewport = viewport(perspective_divide(clip, false), 64, 64, false);
   const bool viewport_correct = near(viewport_value.x, expected_viewport.x) &&
       near(viewport_value.y, expected_viewport.y) && near(viewport_value.z, expected_viewport.z);
+  const bool camera_basis_valid = near(length(camera_right), 1.0) &&
+      near(length(camera_up), 1.0) && near(length(camera_forward), 1.0) &&
+      near(dot(camera_right, camera_up), 0.0) &&
+      near(dot(camera_right, camera_forward), 0.0) &&
+      near(dot(camera_up, camera_forward), 0.0) &&
+      near(camera_target_view.x, 0.0) && near(camera_target_view.y, 0.0) &&
+      camera_target_view.z > 0.0 && near(camera_target_view.w, 1.0) &&
+      invalid_camera_rejected;
 
   const Invariants invariants{
       {"identity_preserves_position", identity_preserved},
       {"direction_ignores_translation", direction_ignores_translation},
+      {"left_handed_camera_basis_is_finite_orthonormal", camera_basis_valid},
       {"normal_preserves_tangent_orthogonality", std::abs(tangent_normal_dot) <= 1.0e-8},
       {"hierarchy_uses_parent_world_times_child_local", hierarchy_correct && composition_correct},
-      {"clipped_vertices_satisfy_all_clip_planes", clipped_vertices_valid},
+      {"clipped_vertices_satisfy_all_clip_planes",
+       clipped_vertices_valid && clipped_attributes_valid && all_six_planes_exercised},
       {"valid_viewport_values_are_finite",
        finite(viewport_value) && divide_correct && viewport_correct}};
   return finish_stage(options, invariants);

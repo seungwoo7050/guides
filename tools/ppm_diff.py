@@ -191,6 +191,25 @@ def self_test() -> None:
         image = read_ppm(p3)
         if image.pixels != bytes([255, 0, 0, 0, 255, 0]):
             raise AssertionError("P3 parser produced wrong pixels")
+
+        other_extent = compare(image, read_ppm(p_ref))
+        if other_extent.get("reason") != "extent_mismatch":
+            raise AssertionError("extent mismatch was not reported")
+
+        invalid_cases = {
+            "bad-magic.ppm": b"P9\n1 1\n255\n\x00\x00\x00",
+            "truncated.ppm": b"P6\n1 1\n255\n\x00\x00",
+            "extra-p3.ppm": b"P3\n1 1\n255\n0 0 0 1\n",
+        }
+        for name, payload in invalid_cases.items():
+            invalid = directory / name
+            invalid.write_bytes(payload)
+            try:
+                read_ppm(invalid)
+            except ValueError:
+                pass
+            else:
+                raise AssertionError(f"invalid input was accepted: {name}")
     print("PPM_DIFF_SELF_TEST_OK")
 
 

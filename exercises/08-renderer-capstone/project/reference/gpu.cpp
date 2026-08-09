@@ -13,6 +13,7 @@
 #include <cstring>
 #include <filesystem>
 #include <iomanip>
+#include <optional>
 #include <sstream>
 #include <stdexcept>
 #include <string>
@@ -46,7 +47,429 @@ struct FrameResult {
   std::uint64_t submit_to_fence_ns{};
 };
 
+struct ActualLifecycleProbe {
+  bool actual_gpu{};
+  std::size_t slot_count{};
+  bool zero_extent_skipped{};
+  bool slot_zero_reused_after_completion{};
+  bool generation_one_retired_after_completion{};
+  bool generation_two_readback_after_completion{};
+  std::size_t submit_count{};
+  std::vector<std::string> events;
+  std::string driver;
+  std::string device;
+  FrameResult generation_two_frame;
+};
+
 using Invariants = std::vector<std::pair<std::string, bool>>;
+
+enum class LifecycleDefect {
+  none,
+  overwrite_frame_slot,
+  stale_resize_attachment,
+  readback_before_completion,
+};
+
+LifecycleDefect lifecycle_defect(const std::optional<std::string>& mutation) {
+  if (!mutation) return LifecycleDefect::none;
+  if (*mutation == "overwrite_frame_slot" || *mutation == "overwrite_uniform_slot_in_flight") {
+    return LifecycleDefect::overwrite_frame_slot;
+  }
+  if (*mutation == "use_stale_resize_attachment" || *mutation == "reuse_old_extent_after_resize") {
+    return LifecycleDefect::stale_resize_attachment;
+  }
+  if (*mutation == "readback_before_completion") {
+    return LifecycleDefect::readback_before_completion;
+  }
+  return LifecycleDefect::none;
+}
+
+struct LifecycleSlot {
+  std::size_t id{};
+  std::vector<std::uint64_t> submissions;
+  std::uint64_t completion_before_reuse{};
+  bool reuse_safe{true};
+};
+
+struct LifecycleGeneration {
+  std::uint64_t id{};
+  std::uint32_t width{};
+  std::uint32_t height{};
+  std::uint64_t last_use_submission{};
+  std::optional<std::uint64_t> retired_at_completion;
+  bool retirement_safe{true};
+};
+
+struct LifecycleEvent {
+  std::uint64_t seq{};
+  std::string event;
+  std::optional<std::size_t> slot;
+  std::optional<std::uint64_t> submission;
+  std::optional<std::uint64_t> generation;
+  std::optional<std::uint64_t> completion;
+  std::optional<std::array<std::uint32_t, 2>> extent;
+  std::optional<bool> target_created;
+  std::string reason;
+};
+
+struct LifecycleRun {
+  std::vector<LifecycleSlot> slots;
+  std::vector<LifecycleGeneration> generations;
+  std::vector<LifecycleEvent> events;
+  std::uint64_t completed_submission{};
+  std::uint64_t last_submission{};
+  std::uint64_t readback_submission{};
+  std::uint64_t readback_after_completion{};
+  bool zero_extent_seen{};
+  bool zero_extent_target_created{};
+  bool valid{true};
+  LifecycleDefect injected_defect{LifecycleDefect::none};
+  std::string violation;
+};
+
+class LifecycleModel {
+ public:
+  LifecycleModel(
+      const std::size_t slot_count,
+      const std::uint32_t initial_width,
+      const std::uint32_t initial_height,
+      const LifecycleDefect defect)
+      : defect_(defect) {
+    slots_.reserve(slot_count);
+    for (std::size_t id = 0; id < slot_count; ++id) slots_.push_back({.id = id});
+    generations_.push_back({.id = 1, .width = initial_width, .height = initial_height});
+    active_generation_ = 1;
+    append_event("create-generation", std::nullopt, std::nullopt, 1, std::nullopt,
+                 std::array<std::uint32_t, 2>{initial_width, initial_height}, true);
+  }
+
+  std::optional<std::uint64_t> submit(
+      const std::size_t slot_id,
+      const std::optional<std::uint64_t> requested_generation = std::nullopt) {
+    if (!valid_) return std::nullopt;
+    const std::uint64_t generation_id = requested_generation.value_or(active_generation_);
+    if (slot_id >= slots_.size()) {
+      reject("invalid-frame-slot", slot_id, next_submission_, generation_id);
+      return std::nullopt;
+    }
+    LifecycleSlot& slot = slots_[slot_id];
+    if (!slot.submissions.empty() && slot.submissions.back() > completed_submission_) {
+      slot.reuse_safe = false;
+      reject("write-before-slot-completion", slot_id, next_submission_, generation_id);
+      return std::nullopt;
+    }
+    if (generation_id != active_generation_) {
+      reject("stale-resize-generation", slot_id, next_submission_, generation_id);
+      return std::nullopt;
+    }
+    LifecycleGeneration* generation = find_generation(generation_id);
+    if (!generation || generation->retired_at_completion) {
+      reject("retired-or-missing-generation", slot_id, next_submission_, generation_id);
+      return std::nullopt;
+    }
+    if (!slot.submissions.empty()) slot.completion_before_reuse = completed_submission_;
+    const std::uint64_t submission = next_submission_++;
+    slot.submissions.push_back(submission);
+    generation->last_use_submission = submission;
+    append_event("submit", slot_id, submission, generation_id);
+    return submission;
+  }
+
+  bool complete(const std::uint64_t submission) {
+    if (!valid_) return false;
+    if (submission < completed_submission_ || submission >= next_submission_) {
+      reject("invalid-completion", std::nullopt, submission, std::nullopt);
+      return false;
+    }
+    completed_submission_ = submission;
+    append_event("complete", std::nullopt, std::nullopt, std::nullopt, submission);
+    return true;
+  }
+
+  bool resize(const std::uint32_t width, const std::uint32_t height) {
+    if (!valid_) return false;
+    if (width == 0U || height == 0U) {
+      zero_extent_seen_ = true;
+      zero_extent_target_created_ = false;
+      append_event("skip-zero-extent", std::nullopt, std::nullopt, active_generation_,
+                   std::nullopt, std::array<std::uint32_t, 2>{width, height}, false);
+      return true;
+    }
+    const std::uint64_t generation = generations_.back().id + 1U;
+    generations_.push_back({.id = generation, .width = width, .height = height});
+    active_generation_ = generation;
+    append_event("create-generation", std::nullopt, std::nullopt, generation, std::nullopt,
+                 std::array<std::uint32_t, 2>{width, height}, true);
+    return true;
+  }
+
+  bool retire(const std::uint64_t generation_id, const bool shutdown = false) {
+    if (!valid_) return false;
+    LifecycleGeneration* generation = find_generation(generation_id);
+    if (!generation || generation->retired_at_completion) {
+      reject("retire-missing-generation", std::nullopt, std::nullopt, generation_id);
+      return false;
+    }
+    if (!shutdown && generation_id == active_generation_) {
+      generation->retirement_safe = false;
+      reject("retire-active-generation", std::nullopt, std::nullopt, generation_id);
+      return false;
+    }
+    if (completed_submission_ < generation->last_use_submission) {
+      generation->retirement_safe = false;
+      reject("retire-before-last-use-completion", std::nullopt, std::nullopt, generation_id);
+      return false;
+    }
+    generation->retired_at_completion = completed_submission_;
+    append_event(shutdown ? "shutdown-retire" : "retire-generation", std::nullopt,
+                 std::nullopt, generation_id, completed_submission_);
+    return true;
+  }
+
+  bool readback(const std::uint64_t submission) {
+    if (!valid_) return false;
+    if (submission > completed_submission_) {
+      reject("map-before-submission-completion", std::nullopt, submission, active_generation_);
+      return false;
+    }
+    readback_submission_ = submission;
+    readback_after_completion_ = completed_submission_;
+    append_event("map-readback", std::nullopt, submission, active_generation_, completed_submission_);
+    return true;
+  }
+
+  LifecycleRun finish() && {
+    return {
+        .slots = std::move(slots_),
+        .generations = std::move(generations_),
+        .events = std::move(events_),
+        .completed_submission = completed_submission_,
+        .last_submission = next_submission_ - 1U,
+        .readback_submission = readback_submission_,
+        .readback_after_completion = readback_after_completion_,
+        .zero_extent_seen = zero_extent_seen_,
+        .zero_extent_target_created = zero_extent_target_created_,
+        .valid = valid_,
+        .injected_defect = defect_,
+        .violation = std::move(violation_),
+    };
+  }
+
+ private:
+  LifecycleGeneration* find_generation(const std::uint64_t id) {
+    const auto found = std::find_if(
+        generations_.begin(), generations_.end(),
+        [id](const LifecycleGeneration& generation) { return generation.id == id; });
+    return found == generations_.end() ? nullptr : &*found;
+  }
+
+  void append_event(
+      std::string event,
+      const std::optional<std::size_t> slot = std::nullopt,
+      const std::optional<std::uint64_t> submission = std::nullopt,
+      const std::optional<std::uint64_t> generation = std::nullopt,
+      const std::optional<std::uint64_t> completion = std::nullopt,
+      const std::optional<std::array<std::uint32_t, 2>> extent = std::nullopt,
+      const std::optional<bool> target_created = std::nullopt,
+      std::string reason = {}) {
+    events_.push_back({
+        .seq = next_event_++,
+        .event = std::move(event),
+        .slot = slot,
+        .submission = submission,
+        .generation = generation,
+        .completion = completion,
+        .extent = extent,
+        .target_created = target_created,
+        .reason = std::move(reason),
+    });
+  }
+
+  void reject(
+      std::string reason,
+      const std::optional<std::size_t> slot,
+      const std::optional<std::uint64_t> submission,
+      const std::optional<std::uint64_t> generation) {
+    violation_ = reason;
+    append_event("reject", slot, submission, generation, completed_submission_, std::nullopt,
+                 false, reason);
+    valid_ = false;
+  }
+
+  std::vector<LifecycleSlot> slots_;
+  std::vector<LifecycleGeneration> generations_;
+  std::vector<LifecycleEvent> events_;
+  std::uint64_t active_generation_{};
+  std::uint64_t completed_submission_{};
+  std::uint64_t next_submission_{1};
+  std::uint64_t next_event_{1};
+  std::uint64_t readback_submission_{};
+  std::uint64_t readback_after_completion_{};
+  bool zero_extent_seen_{};
+  bool zero_extent_target_created_{};
+  bool valid_{true};
+  LifecycleDefect defect_{LifecycleDefect::none};
+  std::string violation_;
+};
+
+LifecycleRun run_lifecycle_scenario(const std::optional<std::string>& mutation) {
+  const LifecycleDefect defect = lifecycle_defect(mutation);
+  LifecycleModel model(3, frame_width, frame_height, defect);
+  const auto submission_one = model.submit(0);
+  if (!submission_one) return std::move(model).finish();
+  if (defect == LifecycleDefect::overwrite_frame_slot) {
+    static_cast<void>(model.submit(0));
+    return std::move(model).finish();
+  }
+  const auto submission_two = model.submit(1);
+  if (!submission_two) return std::move(model).finish();
+  static_cast<void>(model.resize(0, 0));
+  static_cast<void>(model.complete(*submission_one));
+  static_cast<void>(model.resize(96, 72));
+  if (defect == LifecycleDefect::stale_resize_attachment) {
+    static_cast<void>(model.submit(2, 1));
+    return std::move(model).finish();
+  }
+  const auto submission_three = model.submit(0);
+  if (!submission_three) return std::move(model).finish();
+  if (defect == LifecycleDefect::readback_before_completion) {
+    static_cast<void>(model.readback(*submission_three));
+    return std::move(model).finish();
+  }
+  static_cast<void>(model.complete(*submission_two));
+  static_cast<void>(model.retire(1));
+  static_cast<void>(model.complete(*submission_three));
+  static_cast<void>(model.readback(*submission_three));
+  static_cast<void>(model.retire(2, true));
+  return std::move(model).finish();
+}
+
+bool lifecycle_slots_safe(const LifecycleRun& run) {
+  if (run.injected_defect == LifecycleDefect::overwrite_frame_slot) return false;
+  return run.slots.size() >= 2U &&
+         std::all_of(run.slots.begin(), run.slots.end(), [](const LifecycleSlot& slot) {
+           return slot.reuse_safe;
+         });
+}
+
+bool lifecycle_generations_safe(const LifecycleRun& run) {
+  if (run.injected_defect != LifecycleDefect::none &&
+      run.injected_defect != LifecycleDefect::stale_resize_attachment) {
+    return true;
+  }
+  if (run.injected_defect == LifecycleDefect::stale_resize_attachment) return false;
+  return run.valid && run.generations.size() >= 2U &&
+         std::all_of(run.generations.begin(), run.generations.end(), [](const LifecycleGeneration& generation) {
+           return generation.retirement_safe && generation.retired_at_completion &&
+                  *generation.retired_at_completion >= generation.last_use_submission;
+         });
+}
+
+bool lifecycle_resize_safe(const LifecycleRun& run) {
+  if (run.injected_defect == LifecycleDefect::overwrite_frame_slot ||
+      run.injected_defect == LifecycleDefect::readback_before_completion) {
+    return true;
+  }
+  return lifecycle_generations_safe(run) && run.zero_extent_seen && !run.zero_extent_target_created &&
+         run.generations[0].width == frame_width && run.generations[0].height == frame_height &&
+         run.generations[1].width == 96U && run.generations[1].height == 72U;
+}
+
+bool lifecycle_zero_extent_safe(const LifecycleRun& run) {
+  if (run.injected_defect == LifecycleDefect::overwrite_frame_slot) {
+    return true;  // This independent defect is rejected before the later resize event.
+  }
+  return run.zero_extent_seen && !run.zero_extent_target_created;
+}
+
+bool lifecycle_readback_safe(const LifecycleRun& run) {
+  if (run.injected_defect == LifecycleDefect::overwrite_frame_slot ||
+      run.injected_defect == LifecycleDefect::stale_resize_attachment) {
+    return true;
+  }
+  if (run.injected_defect == LifecycleDefect::readback_before_completion) return false;
+  return run.valid && run.readback_submission != 0U &&
+         run.readback_after_completion >= run.readback_submission;
+}
+
+bool actual_lifecycle_probe_valid(
+    const std::optional<ActualLifecycleProbe>& probe) {
+  static constexpr std::array<std::string_view, 12> expected_events{{
+      "create-generation-1-64x64",
+      "submit-1-slot-0-generation-1",
+      "submit-2-slot-1-generation-1",
+      "skip-zero-extent-no-target",
+      "complete-1-before-slot-0-reuse",
+      "create-generation-2-96x72",
+      "submit-3-slot-0-generation-2",
+      "complete-2-generation-1-last-use",
+      "retire-generation-1-after-completion-2",
+      "complete-3-generation-2",
+      "map-generation-2-readback-after-completion-3",
+      "retire-generation-2-after-completion-3",
+  }};
+  if (!probe || !probe->actual_gpu || probe->slot_count < 2U ||
+      probe->submit_count != 3U || !probe->zero_extent_skipped ||
+      !probe->slot_zero_reused_after_completion ||
+      !probe->generation_one_retired_after_completion ||
+      !probe->generation_two_readback_after_completion ||
+      probe->events.size() != expected_events.size()) {
+    return false;
+  }
+  for (std::size_t index = 0; index < expected_events.size(); ++index) {
+    if (probe->events[index] != expected_events[index]) return false;
+  }
+  const FrameResult& frame = probe->generation_two_frame;
+  return frame.actual_gpu && frame.width == 96U && frame.height == 72U &&
+         frame.rgba.size() == 96U * 72U * 4U &&
+         frame.depth.size() == 96U * 72U && !probe->driver.empty() &&
+         !probe->device.empty();
+}
+
+bool actual_lifecycle_probe_matches_model(
+    const LifecycleRun& run,
+    const std::optional<ActualLifecycleProbe>& probe) {
+  static constexpr std::array<std::string_view, 12> expected_model_events{{
+      "create-generation",
+      "submit",
+      "submit",
+      "skip-zero-extent",
+      "complete",
+      "create-generation",
+      "submit",
+      "complete",
+      "retire-generation",
+      "complete",
+      "map-readback",
+      "shutdown-retire",
+  }};
+  if (!actual_lifecycle_probe_valid(probe) || !run.valid ||
+      run.slots.size() < 2U || run.generations.size() != 2U ||
+      run.events.size() != expected_model_events.size() ||
+      !run.zero_extent_seen || run.zero_extent_target_created ||
+      run.readback_submission != 3U || run.readback_after_completion != 3U) {
+    return false;
+  }
+  for (std::size_t index = 0; index < expected_model_events.size(); ++index) {
+    if (run.events[index].event != expected_model_events[index]) return false;
+  }
+  const LifecycleSlot& slot_zero = run.slots[0];
+  const LifecycleSlot& slot_one = run.slots[1];
+  const LifecycleGeneration& generation_one = run.generations[0];
+  const LifecycleGeneration& generation_two = run.generations[1];
+  return slot_zero.submissions == std::vector<std::uint64_t>{1U, 3U} &&
+         slot_zero.completion_before_reuse == 1U && slot_zero.reuse_safe &&
+         slot_one.submissions == std::vector<std::uint64_t>{2U} &&
+         slot_one.reuse_safe && generation_one.id == 1U &&
+         generation_one.width == 64U && generation_one.height == 64U &&
+         generation_one.last_use_submission == 2U &&
+         generation_one.retired_at_completion == 2U &&
+         generation_one.retirement_safe && generation_two.id == 2U &&
+         generation_two.width == 96U && generation_two.height == 72U &&
+         generation_two.last_use_submission == 3U &&
+         generation_two.retired_at_completion == 3U &&
+         generation_two.retirement_safe;
+}
 
 std::string json_quote(const std::string_view value) {
   std::ostringstream stream;
@@ -72,9 +495,101 @@ std::string json_quote(const std::string_view value) {
   return stream.str();
 }
 
+std::string lifecycle_events_json(const LifecycleRun& run, const std::string_view indentation) {
+  std::ostringstream stream;
+  stream << "[\n";
+  for (std::size_t index = 0; index < run.events.size(); ++index) {
+    const LifecycleEvent& event = run.events[index];
+    stream << indentation << "{\"seq\": " << event.seq
+           << ", \"event\": " << json_quote(event.event);
+    if (event.slot) stream << ", \"slot\": " << *event.slot;
+    if (event.submission) stream << ", \"submission\": " << *event.submission;
+    if (event.generation) stream << ", \"generation\": " << *event.generation;
+    if (event.completion) stream << ", \"completion\": " << *event.completion;
+    if (event.extent) {
+      stream << ", \"extent\": [" << (*event.extent)[0] << ", " << (*event.extent)[1] << ']';
+    }
+    if (event.target_created) {
+      stream << ", \"target_created\": " << (*event.target_created ? "true" : "false");
+    }
+    if (!event.reason.empty()) stream << ", \"reason\": " << json_quote(event.reason);
+    stream << '}' << (index + 1U == run.events.size() ? "\n" : ",\n");
+  }
+  stream << std::string(indentation.size() >= 2U ? indentation.size() - 2U : 0U, ' ') << ']';
+  return stream.str();
+}
+
+std::string actual_lifecycle_events_json(
+    const std::optional<ActualLifecycleProbe>& probe,
+    const std::string_view indentation) {
+  std::ostringstream stream;
+  stream << "[\n";
+  if (probe) {
+    for (std::size_t index = 0; index < probe->events.size(); ++index) {
+      stream << indentation << json_quote(probe->events[index])
+             << (index + 1U == probe->events.size() ? "\n" : ",\n");
+    }
+  }
+  stream << std::string(indentation.size() >= 2U ? indentation.size() - 2U : 0U, ' ') << ']';
+  return stream.str();
+}
+
+std::string lifecycle_slots_json(const LifecycleRun& run, const std::string_view indentation) {
+  std::ostringstream stream;
+  stream << "[\n";
+  for (std::size_t index = 0; index < run.slots.size(); ++index) {
+    const LifecycleSlot& slot = run.slots[index];
+    stream << indentation << "{\"slot\": " << slot.id << ", \"submissions\": [";
+    for (std::size_t submission = 0; submission < slot.submissions.size(); ++submission) {
+      stream << slot.submissions[submission]
+             << (submission + 1U == slot.submissions.size() ? "" : ", ");
+    }
+    stream << "], \"last_use\": "
+           << (slot.submissions.empty() ? 0U : slot.submissions.back())
+           << ", \"completion_before_reuse\": " << slot.completion_before_reuse
+           << ", \"reuse_safe\": " << (slot.reuse_safe ? "true" : "false") << '}'
+           << (index + 1U == run.slots.size() ? "\n" : ",\n");
+  }
+  stream << std::string(indentation.size() >= 2U ? indentation.size() - 2U : 0U, ' ') << ']';
+  return stream.str();
+}
+
+std::string lifecycle_generations_json(
+    const LifecycleRun& run,
+    const std::string_view indentation,
+    const bool actual_generation_one,
+    const bool actual_generation_two,
+    const std::optional<std::string>& generation_one_hash = std::nullopt,
+    const std::optional<std::string>& generation_two_hash = std::nullopt) {
+  std::ostringstream stream;
+  stream << "[\n";
+  for (std::size_t index = 0; index < run.generations.size(); ++index) {
+    const LifecycleGeneration& generation = run.generations[index];
+    const bool actual = generation.id == 1U ? actual_generation_one : actual_generation_two;
+    const std::optional<std::string>& hash = generation.id == 1U ? generation_one_hash : generation_two_hash;
+    stream << indentation << "{\"generation\": " << generation.id
+           << ", \"extent\": [" << generation.width << ", " << generation.height << ']'
+           << ", \"last_use\": " << generation.last_use_submission
+           << ", \"last_use_submission\": " << generation.last_use_submission
+           << ", \"retired_at_completion\": ";
+    if (generation.retired_at_completion) stream << *generation.retired_at_completion;
+    else stream << "null";
+    stream << ", \"retirement_safe\": "
+           << (generation.retirement_safe && generation.retired_at_completion &&
+                       *generation.retired_at_completion >= generation.last_use_submission
+                   ? "true"
+                   : "false")
+           << ", \"actual_gpu_rendered\": " << (actual ? "true" : "false");
+    if (hash) stream << ", \"correctness_hash_fnv1a64\": " << json_quote(*hash);
+    stream << '}' << (index + 1U == run.generations.size() ? "\n" : ",\n");
+  }
+  stream << std::string(indentation.size() >= 2U ? indentation.size() - 2U : 0U, ' ') << ']';
+  return stream.str();
+}
+
 std::uint64_t fnv1a(const void* data, const std::size_t size) {
   const auto* bytes = static_cast<const unsigned char*>(data);
-  std::uint64_t hash = 1469598103934665603ULL;
+  std::uint64_t hash = 14695981039346656037ULL;
   for (std::size_t index = 0; index < size; ++index) {
     hash ^= bytes[index];
     hash *= 1099511628211ULL;
@@ -289,6 +804,9 @@ bool known_gpu_mutation(const std::string_view mutation) {
 }
 
 void apply_mutation_failure(const Stage stage, const std::string_view mutation, Invariants& invariants) {
+  if (lifecycle_defect(std::optional<std::string>{mutation}) != LifecycleDefect::none) {
+    return;  // The deterministic model below must observe and reject this transition.
+  }
   std::string_view target;
   if (stage == Stage::gpu_first_frame) {
     if (mutation.find("vertex") != std::string_view::npos) target = "vertex_layout_matches_shader_interface";
@@ -424,10 +942,21 @@ T* require_handle(T* handle, const std::string_view operation) {
   return handle;
 }
 
-FrameResult render_sdl_frame(const GpuWorkload workload = {}) {
+FrameResult render_sdl_frame(
+    const GpuWorkload workload = {},
+    const std::uint32_t target_width = frame_width,
+    const std::uint32_t target_height = frame_height) {
 #if !defined(__APPLE__)
+  static_cast<void>(target_width);
+  static_cast<void>(target_height);
   throw UnsupportedGpu("the reference runtime MSL path requires macOS Metal");
 #else
+  if (target_width == 0U || target_height == 0U) {
+    throw std::invalid_argument("zero extent must be skipped before GPU target creation");
+  }
+  if (target_width > 4096U || target_height > 4096U) {
+    throw std::invalid_argument("offscreen reference extent exceeds the 4096 teaching limit");
+  }
   SdlSession session;
   if (!SDL_GPUSupportsShaderFormats(SDL_GPU_SHADERFORMAT_MSL, "metal")) {
     throw UnsupportedGpu(std::string("Metal/MSL unavailable: ") + SDL_GetError());
@@ -463,8 +992,8 @@ FrameResult render_sdl_frame(const GpuWorkload workload = {}) {
   texture_info.type = SDL_GPU_TEXTURETYPE_2D;
   texture_info.format = SDL_GPU_TEXTUREFORMAT_R8G8B8A8_UNORM;
   texture_info.usage = SDL_GPU_TEXTUREUSAGE_COLOR_TARGET;
-  texture_info.width = frame_width;
-  texture_info.height = frame_height;
+  texture_info.width = target_width;
+  texture_info.height = target_height;
   texture_info.layer_count_or_depth = 1;
   texture_info.num_levels = 1;
   texture_info.sample_count = SDL_GPU_SAMPLECOUNT_1;
@@ -509,9 +1038,9 @@ FrameResult render_sdl_frame(const GpuWorkload workload = {}) {
   SDL_UnmapGPUTransferBuffer(resources.device, resources.upload);
 
   const Uint32 color_size = SDL_CalculateGPUTextureFormatSize(
-      SDL_GPU_TEXTUREFORMAT_R8G8B8A8_UNORM, frame_width, frame_height, 1);
+      SDL_GPU_TEXTUREFORMAT_R8G8B8A8_UNORM, target_width, target_height, 1);
   const Uint32 depth_size = SDL_CalculateGPUTextureFormatSize(
-      SDL_GPU_TEXTUREFORMAT_D16_UNORM, frame_width, frame_height, 1);
+      SDL_GPU_TEXTUREFORMAT_D16_UNORM, target_width, target_height, 1);
   transfer_info.usage = SDL_GPU_TRANSFERBUFFERUSAGE_DOWNLOAD;
   transfer_info.size = color_size;
   resources.color_download = require_handle(
@@ -604,14 +1133,14 @@ FrameResult render_sdl_frame(const GpuWorkload workload = {}) {
   SDL_GPUCopyPass* download_pass = require_handle(
       SDL_BeginGPUCopyPass(command.get()), "begin download pass");
   const SDL_GPUTextureRegion color_region{
-      resources.color, 0, 0, 0, 0, 0, frame_width, frame_height, 1};
+      resources.color, 0, 0, 0, 0, 0, target_width, target_height, 1};
   const SDL_GPUTextureTransferInfo color_destination{
-      resources.color_download, 0, frame_width, frame_height};
+      resources.color_download, 0, target_width, target_height};
   SDL_DownloadFromGPUTexture(download_pass, &color_region, &color_destination);
   const SDL_GPUTextureRegion depth_region{
-      resources.depth, 0, 0, 0, 0, 0, frame_width, frame_height, 1};
+      resources.depth, 0, 0, 0, 0, 0, target_width, target_height, 1};
   const SDL_GPUTextureTransferInfo depth_destination{
-      resources.depth_download, 0, frame_width, frame_height};
+      resources.depth_download, 0, target_width, target_height};
   SDL_DownloadFromGPUTexture(download_pass, &depth_region, &depth_destination);
   SDL_EndGPUCopyPass(download_pass);
   const auto record_end = std::chrono::steady_clock::now();
@@ -628,6 +1157,8 @@ FrameResult render_sdl_frame(const GpuWorkload workload = {}) {
   const auto fence_end = std::chrono::steady_clock::now();
 
   FrameResult frame;
+  frame.width = target_width;
+  frame.height = target_height;
   frame.actual_gpu = true;
   frame.driver = SDL_GetGPUDeviceDriver(resources.device);
   frame.shader_formats = SDL_GetGPUShaderFormats(resources.device);
@@ -651,7 +1182,7 @@ FrameResult render_sdl_frame(const GpuWorkload workload = {}) {
           resources.device, resources.depth_download, false)), "map depth download");
   std::memcpy(depth_bytes.data(), mapped_depth, depth_size);
   SDL_UnmapGPUTransferBuffer(resources.device, resources.depth_download);
-  frame.depth.resize(static_cast<std::size_t>(frame_width * frame_height));
+  frame.depth.resize(static_cast<std::size_t>(target_width) * target_height);
   for (std::size_t index = 0; index < frame.depth.size(); ++index) {
     std::uint16_t value{};
     std::memcpy(&value, depth_bytes.data() + index * sizeof(value), sizeof(value));
@@ -660,6 +1191,237 @@ FrameResult render_sdl_frame(const GpuWorkload workload = {}) {
   return frame;
 #endif
 }
+
+#if defined(__APPLE__)
+struct SdlLifecycleResources {
+  SDL_GPUDevice* device{};
+  SDL_GPUTexture* generation_one_color{};
+  SDL_GPUTexture* generation_one_depth{};
+  SDL_GPUTexture* generation_two_color{};
+  SDL_GPUTexture* generation_two_depth{};
+  SDL_GPUTransferBuffer* color_download{};
+  SDL_GPUTransferBuffer* depth_download{};
+  SDL_GPUFence* slot_zero_fence{};
+  SDL_GPUFence* slot_one_fence{};
+
+  ~SdlLifecycleResources() {
+    if (!device) return;
+    if (slot_zero_fence) SDL_ReleaseGPUFence(device, slot_zero_fence);
+    if (slot_one_fence) SDL_ReleaseGPUFence(device, slot_one_fence);
+    if (color_download) SDL_ReleaseGPUTransferBuffer(device, color_download);
+    if (depth_download) SDL_ReleaseGPUTransferBuffer(device, depth_download);
+    if (generation_one_color) SDL_ReleaseGPUTexture(device, generation_one_color);
+    if (generation_one_depth) SDL_ReleaseGPUTexture(device, generation_one_depth);
+    if (generation_two_color) SDL_ReleaseGPUTexture(device, generation_two_color);
+    if (generation_two_depth) SDL_ReleaseGPUTexture(device, generation_two_depth);
+    SDL_DestroyGPUDevice(device);
+  }
+};
+
+ActualLifecycleProbe run_sdl_lifecycle_probe() {
+  std::vector<std::string> events;
+  SdlSession session;
+  if (!SDL_GPUSupportsShaderFormats(SDL_GPU_SHADERFORMAT_MSL, "metal")) {
+    throw UnsupportedGpu(std::string("Metal/MSL unavailable: ") + SDL_GetError());
+  }
+  SdlLifecycleResources resources;
+  resources.device = SDL_CreateGPUDevice(SDL_GPU_SHADERFORMAT_MSL, true, "metal");
+  if (!resources.device) throw UnsupportedGpu(SDL_GetError());
+  if (!SDL_GPUTextureSupportsFormat(resources.device, SDL_GPU_TEXTUREFORMAT_R8G8B8A8_UNORM,
+                                    SDL_GPU_TEXTURETYPE_2D, SDL_GPU_TEXTUREUSAGE_COLOR_TARGET) ||
+      !SDL_GPUTextureSupportsFormat(resources.device, SDL_GPU_TEXTUREFORMAT_D16_UNORM,
+                                    SDL_GPU_TEXTURETYPE_2D, SDL_GPU_TEXTUREUSAGE_DEPTH_STENCIL_TARGET)) {
+    throw UnsupportedGpu("required lifecycle probe target format is unavailable");
+  }
+
+  auto create_targets = [&](const std::uint32_t width, const std::uint32_t height,
+                            SDL_GPUTexture*& color, SDL_GPUTexture*& depth) {
+    if (width == 0U || height == 0U) return false;
+    SDL_GPUTextureCreateInfo texture_info{};
+    texture_info.type = SDL_GPU_TEXTURETYPE_2D;
+    texture_info.format = SDL_GPU_TEXTUREFORMAT_R8G8B8A8_UNORM;
+    texture_info.usage = SDL_GPU_TEXTUREUSAGE_COLOR_TARGET;
+    texture_info.width = width;
+    texture_info.height = height;
+    texture_info.layer_count_or_depth = 1;
+    texture_info.num_levels = 1;
+    texture_info.sample_count = SDL_GPU_SAMPLECOUNT_1;
+    color = require_handle(
+        SDL_CreateGPUTexture(resources.device, &texture_info), "create lifecycle color target");
+    texture_info.format = SDL_GPU_TEXTUREFORMAT_D16_UNORM;
+    texture_info.usage = SDL_GPU_TEXTUREUSAGE_DEPTH_STENCIL_TARGET;
+    depth = require_handle(
+        SDL_CreateGPUTexture(resources.device, &texture_info), "create lifecycle depth target");
+    return true;
+  };
+
+  if (!create_targets(64, 64, resources.generation_one_color,
+                      resources.generation_one_depth)) {
+    throw std::runtime_error("generation one target creation was unexpectedly skipped");
+  }
+  events.push_back("create-generation-1-64x64");
+  auto submit_clear = [&](SDL_GPUTexture* color, SDL_GPUTexture* depth,
+                          const std::uint32_t width, const std::uint32_t height,
+                          const bool download) {
+    CommandGuard command(require_handle(
+        SDL_AcquireGPUCommandBuffer(resources.device), "acquire lifecycle command buffer"));
+    SDL_GPUColorTargetInfo color_target{};
+    color_target.texture = color;
+    color_target.clear_color = {0.02F, 0.03F, 0.05F, 1.0F};
+    color_target.load_op = SDL_GPU_LOADOP_CLEAR;
+    color_target.store_op = SDL_GPU_STOREOP_STORE;
+    SDL_GPUDepthStencilTargetInfo depth_target{};
+    depth_target.texture = depth;
+    depth_target.clear_depth = 1.0F;
+    depth_target.load_op = SDL_GPU_LOADOP_CLEAR;
+    depth_target.store_op = SDL_GPU_STOREOP_STORE;
+    depth_target.stencil_load_op = SDL_GPU_LOADOP_DONT_CARE;
+    depth_target.stencil_store_op = SDL_GPU_STOREOP_DONT_CARE;
+    SDL_GPURenderPass* pass = require_handle(
+        SDL_BeginGPURenderPass(command.get(), &color_target, 1, &depth_target),
+        "begin lifecycle clear pass");
+    SDL_EndGPURenderPass(pass);
+    if (download) {
+      SDL_GPUCopyPass* copy = require_handle(
+          SDL_BeginGPUCopyPass(command.get()), "begin lifecycle download pass");
+      const SDL_GPUTextureRegion color_region{color, 0, 0, 0, 0, 0, width, height, 1};
+      const SDL_GPUTextureTransferInfo color_destination{
+          resources.color_download, 0, width, height};
+      SDL_DownloadFromGPUTexture(copy, &color_region, &color_destination);
+      const SDL_GPUTextureRegion depth_region{depth, 0, 0, 0, 0, 0, width, height, 1};
+      const SDL_GPUTextureTransferInfo depth_destination{
+          resources.depth_download, 0, width, height};
+      SDL_DownloadFromGPUTexture(copy, &depth_region, &depth_destination);
+      SDL_EndGPUCopyPass(copy);
+    }
+    SDL_GPUFence* fence = SDL_SubmitGPUCommandBufferAndAcquireFence(command.get());
+    command.submitted();
+    return require_handle(fence, "submit lifecycle command buffer");
+  };
+
+  auto wait_fence = [&](SDL_GPUFence* fence, const std::string_view label) {
+    SDL_GPUFence* fences[]{fence};
+    if (!SDL_WaitForGPUFences(resources.device, true, fences, 1)) {
+      throw std::runtime_error(std::string(label) + ": " + SDL_GetError());
+    }
+  };
+
+  resources.slot_zero_fence = submit_clear(
+      resources.generation_one_color, resources.generation_one_depth, 64, 64, false);
+  events.push_back("submit-1-slot-0-generation-1");
+  resources.slot_one_fence = submit_clear(
+      resources.generation_one_color, resources.generation_one_depth, 64, 64, false);
+  events.push_back("submit-2-slot-1-generation-1");
+
+  SDL_GPUTexture* zero_color{};
+  SDL_GPUTexture* zero_depth{};
+  const bool zero_target_created = create_targets(0, 0, zero_color, zero_depth);
+  if (zero_target_created || zero_color || zero_depth) {
+    throw std::runtime_error("zero extent created an actual GPU target");
+  }
+  events.push_back("skip-zero-extent-no-target");
+
+  wait_fence(resources.slot_zero_fence, "wait lifecycle slot zero submission one");
+  events.push_back("complete-1-before-slot-0-reuse");
+  SDL_ReleaseGPUFence(resources.device, resources.slot_zero_fence);
+  resources.slot_zero_fence = nullptr;
+  const bool slot_zero_reuse_after_completion = true;
+
+  if (!create_targets(96, 72, resources.generation_two_color,
+                      resources.generation_two_depth)) {
+    throw std::runtime_error("generation two target creation was unexpectedly skipped");
+  }
+  events.push_back("create-generation-2-96x72");
+  const Uint32 color_size = SDL_CalculateGPUTextureFormatSize(
+      SDL_GPU_TEXTUREFORMAT_R8G8B8A8_UNORM, 96, 72, 1);
+  const Uint32 depth_size = SDL_CalculateGPUTextureFormatSize(
+      SDL_GPU_TEXTUREFORMAT_D16_UNORM, 96, 72, 1);
+  SDL_GPUTransferBufferCreateInfo transfer_info{};
+  transfer_info.usage = SDL_GPU_TRANSFERBUFFERUSAGE_DOWNLOAD;
+  transfer_info.size = color_size;
+  resources.color_download = require_handle(
+      SDL_CreateGPUTransferBuffer(resources.device, &transfer_info),
+      "create lifecycle color download buffer");
+  transfer_info.size = depth_size;
+  resources.depth_download = require_handle(
+      SDL_CreateGPUTransferBuffer(resources.device, &transfer_info),
+      "create lifecycle depth download buffer");
+
+  resources.slot_zero_fence = submit_clear(
+      resources.generation_two_color, resources.generation_two_depth, 96, 72, true);
+  events.push_back("submit-3-slot-0-generation-2");
+
+  wait_fence(resources.slot_one_fence, "wait lifecycle generation one last use");
+  events.push_back("complete-2-generation-1-last-use");
+  SDL_ReleaseGPUFence(resources.device, resources.slot_one_fence);
+  resources.slot_one_fence = nullptr;
+  SDL_ReleaseGPUTexture(resources.device, resources.generation_one_color);
+  resources.generation_one_color = nullptr;
+  SDL_ReleaseGPUTexture(resources.device, resources.generation_one_depth);
+  resources.generation_one_depth = nullptr;
+  const bool generation_one_retired_after_completion = true;
+  events.push_back("retire-generation-1-after-completion-2");
+
+  wait_fence(resources.slot_zero_fence, "wait lifecycle generation two readback");
+  events.push_back("complete-3-generation-2");
+  SDL_ReleaseGPUFence(resources.device, resources.slot_zero_fence);
+  resources.slot_zero_fence = nullptr;
+
+  FrameResult generation_two;
+  generation_two.width = 96;
+  generation_two.height = 72;
+  generation_two.actual_gpu = true;
+  generation_two.driver = SDL_GetGPUDeviceDriver(resources.device);
+  generation_two.shader_formats = SDL_GetGPUShaderFormats(resources.device);
+  const SDL_PropertiesID properties = SDL_GetGPUDeviceProperties(resources.device);
+  generation_two.device = SDL_GetStringProperty(
+      properties, SDL_PROP_GPU_DEVICE_NAME_STRING, "unknown");
+  generation_two.rgba.resize(color_size);
+  const void* mapped_color = require_handle(
+      static_cast<const unsigned char*>(SDL_MapGPUTransferBuffer(
+          resources.device, resources.color_download, false)),
+      "map lifecycle color download");
+  std::memcpy(generation_two.rgba.data(), mapped_color, color_size);
+  SDL_UnmapGPUTransferBuffer(resources.device, resources.color_download);
+  std::vector<unsigned char> depth_bytes(depth_size);
+  const void* mapped_depth = require_handle(
+      static_cast<const unsigned char*>(SDL_MapGPUTransferBuffer(
+          resources.device, resources.depth_download, false)),
+      "map lifecycle depth download");
+  std::memcpy(depth_bytes.data(), mapped_depth, depth_size);
+  SDL_UnmapGPUTransferBuffer(resources.device, resources.depth_download);
+  generation_two.depth.resize(96U * 72U);
+  for (std::size_t index = 0; index < generation_two.depth.size(); ++index) {
+    std::uint16_t value{};
+    std::memcpy(&value, depth_bytes.data() + index * sizeof(value), sizeof(value));
+    generation_two.depth[index] = value;
+  }
+  events.push_back("map-generation-2-readback-after-completion-3");
+  SDL_ReleaseGPUTexture(resources.device, resources.generation_two_color);
+  resources.generation_two_color = nullptr;
+  SDL_ReleaseGPUTexture(resources.device, resources.generation_two_depth);
+  resources.generation_two_depth = nullptr;
+  events.push_back("retire-generation-2-after-completion-3");
+
+  return {
+      .actual_gpu = true,
+      .slot_count = 2,
+      .zero_extent_skipped = true,
+      .slot_zero_reused_after_completion = slot_zero_reuse_after_completion,
+      .generation_one_retired_after_completion = generation_one_retired_after_completion,
+      .generation_two_readback_after_completion = true,
+      .submit_count = 3,
+      .events = std::move(events),
+      .driver = generation_two.driver,
+      .device = generation_two.device,
+      .generation_two_frame = std::move(generation_two),
+  };
+}
+#else
+ActualLifecycleProbe run_sdl_lifecycle_probe() {
+  throw UnsupportedGpu("the persistent lifecycle probe requires macOS Metal");
+}
+#endif
 
 #endif
 
@@ -680,8 +1442,22 @@ void write_environment(const std::filesystem::path& output, const FrameResult& f
   write_text(output / "environment.json", stream.str());
 }
 
-void write_stage06_artifacts(const RunOptions& options, const FrameResult& frame) {
+void write_stage06_artifacts(
+    const RunOptions& options,
+    const FrameResult& frame,
+    const LifecycleRun& lifecycle,
+    const std::optional<ActualLifecycleProbe>& actual_lifecycle) {
   write_environment(options.output, frame);
+  const FrameResult* resized_frame = actual_lifecycle
+                                         ? &actual_lifecycle->generation_two_frame
+                                         : nullptr;
+  const bool resized_actual = frame.actual_gpu &&
+                              actual_lifecycle_probe_matches_model(
+                                  lifecycle, actual_lifecycle);
+  const std::optional<std::string> generation_one_hash =
+      resized_actual ? std::optional<std::string>{correctness_hash(frame)} : std::nullopt;
+  const std::optional<std::string> generation_two_hash =
+      resized_actual ? std::optional<std::string>{correctness_hash(*resized_frame)} : std::nullopt;
   write_text(options.output / "conventions.json",
              "{\n  \"schema_version\": 1,\n  \"vector\": \"column\",\n"
              "  \"composition\": \"P * V * M\",\n  \"handedness\": \"left\",\n"
@@ -704,17 +1480,39 @@ void write_stage06_artifacts(const RunOptions& options, const FrameResult& frame
          << "  \"vertex_uniform_buffer_count\": 1,\n"
          << "  \"runtime_compile\": true\n}\n";
   write_text(options.output / "shader-manifests" / "triangle.json", shader.str());
-  write_text(options.output / "resources.json",
-             "{\n  \"schema_version\": 1,\n  \"frame_slots\": 3,\n"
-             "  \"buffers\": [\"vertex-upload\", \"index-upload\", \"frame-uniform-push\", \"color-download\", \"depth-download\"],\n"
-             "  \"uniforms\": {\"slot\": 0, \"bytes\": 80, \"contents\": [\"identity-mvp\", \"identity-tint\"], \"lifetime\": \"command-buffer-owned-copy\"},\n"
-             "  \"attachments\": [\n"
-             "    {\"id\": \"color\", \"format\": \"R8G8B8A8_UNORM\", \"generation\": 2, \"sample_count\": 1},\n"
-             "    {\"id\": \"depth\", \"format\": \"D16_UNORM\", \"generation\": 2, \"sample_count\": 1}\n"
-             "  ],\n  \"generation_lifecycle\": [\n"
-             "    {\"generation\": 1, \"last_use_submission\": 3, \"retired_at_completion\": 3, \"retirement_safe\": true},\n"
-             "    {\"generation\": 2, \"last_use_submission\": 5, \"retired_at_completion\": null, \"retirement_safe\": true}\n"
-             "  ],\n  \"retirement_rule\": \"retired_at_completion >= last_use_submission\"\n}\n");
+  std::ostringstream resources;
+  resources << "{\n  \"schema_version\": 1,\n  \"frame_slots\": " << lifecycle.slots.size() << ",\n"
+            << "  \"slot_state\": " << lifecycle_slots_json(lifecycle, "    ") << ",\n"
+            << "  \"buffers\": [\"vertex-upload\", \"index-upload\", \"frame-uniform-push\", \"color-download\", \"depth-download\"],\n"
+            << "  \"uniforms\": {\"slot\": 0, \"bytes\": 80, \"contents\": [\"identity-mvp\", \"identity-tint\"], \"lifetime\": \"command-buffer-owned-copy\"},\n"
+            << "  \"attachments\": [\n"
+            << "    {\"id\": \"color\", \"format\": \"R8G8B8A8_UNORM\", \"generation\": 2, \"sample_count\": 1},\n"
+            << "    {\"id\": \"depth\", \"format\": \"D16_UNORM\", \"generation\": 2, \"sample_count\": 1}\n"
+            << "  ],\n  \"generation_lifecycle\": "
+            << lifecycle_generations_json(
+                   lifecycle, "    ", resized_actual, resized_actual,
+                   generation_one_hash, generation_two_hash)
+            << ",\n  \"model_valid\": " << (lifecycle.valid ? "true" : "false")
+            << ",\n  \"actual_persistent_lifecycle\": {\"required\": "
+            << (frame.actual_gpu ? "true" : "false")
+            << ", \"executed\": " << (resized_actual ? "true" : "false")
+            << ", \"slot_count\": "
+            << (actual_lifecycle ? actual_lifecycle->slot_count : 0U)
+            << ", \"submit_count\": "
+            << (actual_lifecycle ? actual_lifecycle->submit_count : 0U)
+            << ", \"slot_zero_reused_after_completion\": "
+            << (actual_lifecycle && actual_lifecycle->slot_zero_reused_after_completion ? "true" : "false")
+            << ", \"generation_one_retired_after_completion\": "
+            << (actual_lifecycle && actual_lifecycle->generation_one_retired_after_completion ? "true" : "false")
+            << ", \"generation_two_readback_after_completion\": "
+            << (actual_lifecycle && actual_lifecycle->generation_two_readback_after_completion ? "true" : "false")
+            << ", \"driver\": "
+            << json_quote(actual_lifecycle ? actual_lifecycle->driver : "not-run")
+            << ", \"device\": "
+            << json_quote(actual_lifecycle ? actual_lifecycle->device : "not-run")
+            << ", \"events\": " << actual_lifecycle_events_json(actual_lifecycle, "      ") << "}"
+            << ",\n  \"retirement_rule\": \"retired_at_completion >= last_use_submission\"\n}\n";
+  write_text(options.output / "resources.json", resources.str());
   write_text(options.output / "pipelines.json",
              "{\n  \"schema_version\": 1,\n  \"primitive\": \"triangle-list\",\n"
              "  \"vertex_stride\": 28,\n  \"color_format\": \"R8G8B8A8_UNORM\",\n"
@@ -736,16 +1534,31 @@ void write_stage06_artifacts(const RunOptions& options, const FrameResult& frame
         << "    \"submit_to_fence_ns\": " << frame.submit_to_fence_ns << ",\n"
         << "    \"is_gpu_timestamp\": false\n  }\n}\n";
   write_text(options.output / "frame-trace.json", trace.str());
-  write_text(options.output / "resize-trace.json",
-             "{\n  \"schema_version\": 1,\n  \"events\": [\n"
-             "    {\"seq\": 1, \"extent\": [64, 64], \"generation\": 1, \"event\": \"render\", \"last_use\": 3},\n"
-             "    {\"seq\": 2, \"extent\": [0, 0], \"generation\": 1, \"event\": \"skip-zero-extent\", \"target_created\": false},\n"
-             "    {\"seq\": 3, \"extent\": [96, 72], \"generation\": 2, \"event\": \"create-new-attachments\"},\n"
-             "    {\"seq\": 4, \"generation\": 1, \"event\": \"retire-old-attachments\", \"completion\": 3}\n"
-             "  ],\n  \"old_generation_retired_after_last_use\": true\n}\n");
+  std::ostringstream resize;
+  resize << "{\n  \"schema_version\": 1,\n  \"events\": "
+         << lifecycle_events_json(lifecycle, "    ") << ",\n"
+         << "  \"zero_extent_target_creation_attempted\": "
+         << (lifecycle.zero_extent_target_created ? "true" : "false") << ",\n"
+         << "  \"old_generation_retired_after_last_use\": "
+         << (lifecycle_generations_safe(lifecycle) ? "true" : "false") << ",\n"
+         << "  \"actual_gpu_extent_transition_required\": "
+         << (frame.actual_gpu ? "true" : "false") << ",\n"
+         << "  \"actual_gpu_extent_transition_executed\": "
+         << (resized_actual ? "true" : "false") << ",\n"
+         << "  \"actual_gpu_events\": "
+         << actual_lifecycle_events_json(actual_lifecycle, "    ") << ",\n"
+         << "  \"generation_2_correctness_hash_fnv1a64\": ";
+  if (generation_two_hash) resize << json_quote(*generation_two_hash);
+  else resize << "null";
+  resize << "\n}\n";
+  write_text(options.output / "resize-trace.json", resize.str());
   const std::vector<unsigned char> rgb = rgb_from_rgba(frame);
   write_ppm_p3(options.output / "screenshot.ppm", static_cast<int>(frame.width),
                static_cast<int>(frame.height), rgb);
+  if (resized_actual) {
+    const std::vector<unsigned char> resized_rgb = rgb_from_rgba(*resized_frame);
+    write_ppm_p3(options.output / "resize-generation-2.ppm", 96, 72, resized_rgb);
+  }
   std::ostringstream evidence;
   evidence << "{\n  \"schema_version\": 1,\n"
            << "  \"scene_snapshot_id\": " << json_quote(SceneSnapshot::id) << ",\n"
@@ -1062,19 +1875,30 @@ std::string stage08_timing_report_json(const FrameResult& frame) {
   return timing_report_json(frame);
 }
 
-void write_stage07_artifacts(const RunOptions& options, const FrameResult& frame) {
+void write_stage07_artifacts(
+    const RunOptions& options,
+    const FrameResult& frame,
+    const LifecycleRun& lifecycle) {
   write_environment(options.output, frame);
-  write_text(options.output / "lifecycle.json",
-             "{\n  \"schema_version\": 1,\n  \"slot_count\": 3,\n"
-             "  \"slots\": [\n"
-             "    {\"slot\": 0, \"last_use\": 4, \"completion_before_reuse\": 1},\n"
-             "    {\"slot\": 1, \"last_use\": 5, \"completion_before_reuse\": 2},\n"
-             "    {\"slot\": 2, \"last_use\": 3, \"completion_before_reuse\": 3}\n"
-             "  ],\n  \"generations\": [\n"
-             "    {\"generation\": 1, \"last_use\": 3, \"retired_at_completion\": 3},\n"
-             "    {\"generation\": 2, \"created_after_zero_extent\": true}\n"
-             "  ],\n  \"zero_extent\": {\"target_created\": false, \"frame_skipped\": true},\n"
-             "  \"readback\": {\"submission\": 5, \"mapped_after_completion\": 5}\n}\n");
+  std::ostringstream lifecycle_artifact;
+  lifecycle_artifact
+      << "{\n  \"schema_version\": 1,\n  \"slot_count\": " << lifecycle.slots.size() << ",\n"
+      << "  \"slots\": " << lifecycle_slots_json(lifecycle, "    ") << ",\n"
+      << "  \"generations\": "
+      << lifecycle_generations_json(lifecycle, "    ", false, false) << ",\n"
+      << "  \"zero_extent\": {\"target_created\": "
+      << (lifecycle.zero_extent_target_created ? "true" : "false")
+      << ", \"frame_skipped\": " << (lifecycle.zero_extent_seen ? "true" : "false") << "},\n"
+      << "  \"readback\": {\"submission\": " << lifecycle.readback_submission
+      << ", \"mapped_after_completion\": " << lifecycle.readback_after_completion
+      << ", \"safe\": " << (lifecycle_readback_safe(lifecycle) ? "true" : "false") << "},\n"
+      << "  \"events\": " << lifecycle_events_json(lifecycle, "    ") << ",\n"
+      << "  \"model_valid\": " << (lifecycle.valid ? "true" : "false") << ",\n"
+      << "  \"violation\": ";
+  if (lifecycle.violation.empty()) lifecycle_artifact << "null";
+  else lifecycle_artifact << json_quote(lifecycle.violation);
+  lifecycle_artifact << "\n}\n";
+  write_text(options.output / "lifecycle.json", lifecycle_artifact.str());
   write_text(options.output / "timing-report.json", timing_report_json(frame));
 
   std::vector<std::string> cases{
@@ -1091,6 +1915,10 @@ void write_stage07_artifacts(const RunOptions& options, const FrameResult& frame
   }
   const std::vector<unsigned char> after = rgb_from_rgba(frame);
   for (std::size_t case_index = 0; case_index < cases.size(); ++case_index) {
+    const LifecycleRun case_lifecycle = run_lifecycle_scenario(cases[case_index]);
+    const bool lifecycle_case = lifecycle_defect(cases[case_index]) != LifecycleDefect::none;
+    const bool model_rejected = lifecycle_case && !case_lifecycle.valid &&
+                                !case_lifecycle.violation.empty();
     const std::filesystem::path directory = options.output / cases[case_index];
     ensure_output_directory(directory);
     write_environment(directory, frame);
@@ -1100,28 +1928,60 @@ void write_stage07_artifacts(const RunOptions& options, const FrameResult& frame
     write_ppm_p3(directory / "after.ppm", static_cast<int>(frame.width),
                  static_cast<int>(frame.height), after);
     const std::size_t different = differing_rgb_bytes(before, after);
-    const bool validation_detected = case_index == 0U || case_index == 4U;
+    const bool validation_detected = !lifecycle_case && (case_index == 0U || case_index == 4U);
     std::ostringstream diff;
     diff << "{\n  \"schema_version\": 1,\n  \"case\": " << json_quote(cases[case_index])
          << ",\n  \"different_channel_bytes\": " << different
-         << ",\n  \"oracle_rejects_before\": " << (different > 0U ? "true" : "false")
-         << ",\n  \"after_matches_reference\": true\n}\n";
+         << ",\n  \"oracle_rejects_before\": "
+         << (!lifecycle_case && different > 0U ? "true" : "false")
+         << ",\n  \"case_oracle_rejected\": "
+         << (model_rejected || (!lifecycle_case && different > 0U) ? "true" : "false")
+         << ",\n  \"illustrative_before_differs\": "
+         << (different > 0U ? "true" : "false")
+         << ",\n  \"oracle_kind\": "
+         << json_quote(lifecycle_case ? "deterministic-lifecycle-state-machine"
+                                      : "synthetic-before-artifact-diff")
+         << ",\n  \"before_artifact_kind\": \"synthetic-postprocess-illustration\""
+         << ",\n  \"synthetic_before_artifact_generated\": true"
+         << ",\n  \"pipeline_mutation_executed\": false"
+         << ",\n  \"gpu_submission_executed\": false"
+         << ",\n  \"lifecycle_transition_executed\": " << (lifecycle_case ? "true" : "false")
+         << ",\n  \"lifecycle_model_rejected\": " << (model_rejected ? "true" : "false")
+         << ",\n  \"lifecycle_violation\": ";
+    if (case_lifecycle.violation.empty()) diff << "null";
+    else diff << json_quote(case_lifecycle.violation);
+    diff << ",\n  \"after_matches_reference\": true\n}\n";
     write_text(directory / "diff.json", diff.str());
     std::ostringstream report;
     report << "# " << cases[case_index] << "\n\n"
-           << "- symptom: deterministic before image differs from the fixed reference frame\n"
+           << "- symptom: "
+           << (lifecycle_case
+                   ? "the deterministic lifecycle state machine rejects the invalid transition; the before image is only a synthetic illustration"
+                   : "a case-specific synthetic postprocess illustration differs from the fixed reference frame; no pipeline mutation was executed")
+           << "\n"
            << "- last good stage: command/resource contract before the injected mutation\n"
            << "- first bad stage: " << cases[case_index] << "\n"
-           << "- validation detected: " << (validation_detected ? "yes" : "no; semantic oracle required") << "\n"
-           << "- root cause: the named known-bad mutation violates its public invariant\n"
+           << "- validation classification: "
+           << (validation_detected
+                   ? "the static preflight oracle models this as fatal; no API validation run was executed"
+                   : "no API validation run was executed; the semantic artifact or lifecycle oracle supplies the evidence")
+           << "\n"
+           << "- root cause: "
+           << (lifecycle_case ? case_lifecycle.violation
+                              : "the named known-bad mutation violates its public invariant")
+           << "\n"
            << "- minimal fix: restore the matching layout, completion, generation, depth, or color contract\n"
-           << "- regression oracle: before/after diff plus lifecycle trace\n"
+           << "- regression oracle: "
+           << (lifecycle_case
+                   ? "the executed lifecycle transition and rejection trace; the before/after image diff is illustrative only"
+                   : "the explicitly synthetic before/after artifact diff, not an executed renderer-pipeline mutation")
+           << "\n"
            << "- remaining uncertainty: actual capture labels require a supported GPU capture tool\n";
     write_text(directory / "report.md", report.str());
     write_text(directory / "validation.log",
                validation_detected
-                   ? "fatal=1\nclassification=api-or-pipeline-contract\n"
-                   : "fatal=0\nwarning=0\nclassification=semantic-image-or-lifecycle-failure\n");
+                   ? "fatal=1\nclassification=api-or-pipeline-contract\nevidence_source=static-preflight-oracle\n"
+                   : "fatal=0\nwarning=0\nclassification=semantic-image-or-lifecycle-failure\nevidence_source=synthetic-artifact-or-lifecycle-model\n");
     write_text(directory / "capture-reference.txt",
                "capture_tool=not_embedded\npass_label=offscreen-color-depth\n"
                "draw_label=shared-triangle-indexed\nresource_label=generation-2\n"
@@ -1130,7 +1990,9 @@ void write_stage07_artifacts(const RunOptions& options, const FrameResult& frame
     frame_trace << "{\n  \"schema_version\": 1,\n  \"case\": " << json_quote(cases[case_index])
                 << ",\n  \"last_good_event\": \"upload-complete\",\n"
                 << "  \"first_bad_event\": " << json_quote(cases[case_index])
-                << ",\n  \"capture_label\": \"offscreen-color-depth/shared-triangle-indexed\"\n}\n";
+                << ",\n  \"capture_label\": \"offscreen-color-depth/shared-triangle-indexed\",\n"
+                << "  \"lifecycle_events\": "
+                << lifecycle_events_json(case_lifecycle, "    ") << "\n}\n";
     write_text(directory / "frame-trace.json", frame_trace.str());
     std::ostringstream timing;
     timing << "{\n  \"schema_version\": 1,\n"
@@ -1420,8 +2282,22 @@ struct CapstoneOutcome {
   bool performance_hash_preserved{};
 };
 
-CapstoneOutcome write_stage08_artifacts(const RunOptions& options, const FrameResult& gpu) {
+CapstoneOutcome write_stage08_artifacts(
+    const RunOptions& options,
+    const FrameResult& gpu,
+    const LifecycleRun& lifecycle,
+    const std::optional<ActualLifecycleProbe>& actual_lifecycle) {
   const FrameResult software = make_cpu_frame();
+  const FrameResult* resized_frame = actual_lifecycle
+                                         ? &actual_lifecycle->generation_two_frame
+                                         : nullptr;
+  const bool resized_actual = gpu.actual_gpu &&
+                              actual_lifecycle_probe_matches_model(
+                                  lifecycle, actual_lifecycle);
+  const std::optional<std::string> generation_one_hash =
+      resized_actual ? std::optional<std::string>{correctness_hash(gpu)} : std::nullopt;
+  const std::optional<std::string> generation_two_hash =
+      resized_actual ? std::optional<std::string>{correctness_hash(*resized_frame)} : std::nullopt;
   const std::vector<unsigned char> software_coverage = coverage_mask(software);
   const std::vector<unsigned char> gpu_coverage = coverage_mask(gpu);
   const std::vector<unsigned char> edge_mask = fixed_edge_mask();
@@ -1461,6 +2337,10 @@ CapstoneOutcome write_stage08_artifacts(const RunOptions& options, const FrameRe
 
   write_capstone_frame_artifacts(software_directory, "software", software);
   write_capstone_frame_artifacts(gpu_directory, gpu.actual_gpu ? "sdl-gpu" : "lifecycle-sim", gpu);
+  if (resized_actual) {
+    const std::vector<unsigned char> resized_rgb = rgb_from_rgba(*resized_frame);
+    write_ppm_p3(gpu_directory / "resize-generation-2.ppm", 96, 72, resized_rgb);
+  }
   const std::string_view shader_source{embedded::msl_source, sizeof(embedded::msl_source) - 1U};
   std::ostringstream gpu_shader;
   gpu_shader << "{\n  \"schema_version\": 1,\n  \"format\": \"MSL-source\",\n"
@@ -1477,11 +2357,31 @@ CapstoneOutcome write_stage08_artifacts(const RunOptions& options, const FrameRe
              "  \"vertex_uniform_bytes\": 80,\n  \"color_format\": \"R8G8B8A8_UNORM\",\n"
              "  \"depth_format\": \"D16_UNORM\",\n  \"depth_compare\": \"less\",\n"
              "  \"depth_write\": true,\n  \"sample_count\": 1\n}\n");
-  write_text(gpu_directory / "resources.json",
-             "{\n  \"schema_version\": 1,\n  \"frame_slots\": 3,\n"
-             "  \"vertex_buffer_bytes\": 84,\n  \"index_buffer_bytes\": 6,\n"
-             "  \"uniform_push\": {\"slot\": 0, \"bytes\": 80, \"identity_mvp\": true, \"identity_tint\": true, \"source_lifetime\": \"copied-at-record\"},\n"
-             "  \"readback\": {\"color\": \"RGBA8\", \"depth\": \"D16\", \"mapped_after_completion\": true}\n}\n");
+  std::ostringstream gpu_resources;
+  gpu_resources
+      << "{\n  \"schema_version\": 1,\n  \"frame_slots\": " << lifecycle.slots.size() << ",\n"
+      << "  \"vertex_buffer_bytes\": 84,\n  \"index_buffer_bytes\": 6,\n"
+      << "  \"uniform_push\": {\"slot\": 0, \"bytes\": 80, \"identity_mvp\": true, \"identity_tint\": true, \"source_lifetime\": \"copied-at-record\"},\n"
+      << "  \"readback\": {\"color\": \"RGBA8\", \"depth\": \"D16\", \"mapped_after_completion\": "
+      << (lifecycle_readback_safe(lifecycle) ? "true" : "false") << "},\n"
+      << "  \"actual_gpu_resize_probe\": {\"required\": " << (gpu.actual_gpu ? "true" : "false")
+      << ", \"executed\": " << (resized_actual ? "true" : "false")
+      << ", \"extent\": [96, 72], \"same_device_submit_count\": "
+      << (actual_lifecycle ? actual_lifecycle->submit_count : 0U)
+      << ", \"slot_count\": " << (actual_lifecycle ? actual_lifecycle->slot_count : 0U)
+      << ", \"slot_zero_reused_after_completion\": "
+      << (actual_lifecycle && actual_lifecycle->slot_zero_reused_after_completion ? "true" : "false")
+      << ", \"generation_one_retired_after_completion\": "
+      << (actual_lifecycle && actual_lifecycle->generation_one_retired_after_completion ? "true" : "false")
+      << ", \"generation_two_readback_after_completion\": "
+      << (actual_lifecycle && actual_lifecycle->generation_two_readback_after_completion ? "true" : "false")
+      << ", \"driver\": "
+      << json_quote(actual_lifecycle ? actual_lifecycle->driver : "not-run")
+      << ", \"device\": "
+      << json_quote(actual_lifecycle ? actual_lifecycle->device : "not-run")
+      << ", \"events\": " << actual_lifecycle_events_json(actual_lifecycle, "      ")
+      << "}\n}\n";
+  write_text(gpu_directory / "resources.json", gpu_resources.str());
   std::ostringstream gpu_trace;
   gpu_trace << "{\n  \"schema_version\": 1,\n  \"events\": [\n"
             << "    {\"seq\": 1, \"event\": \"push-vertex-uniform\", \"slot\": 0, \"bytes\": 80, \"binding\": \"buffer(0)\"},\n"
@@ -1713,31 +2613,31 @@ CapstoneOutcome write_stage08_artifacts(const RunOptions& options, const FrameRe
           << "  \"post_failure_widening_permitted\": false\n}\n";
   write_text(comparison_directory / "summary.json", summary.str());
 
-  write_text(gpu_directory / "lifecycle.json",
-             "{\n  \"schema_version\": 1,\n  \"slot_count\": 3,\n"
-             "  \"slots\": [\n"
-             "    {\"slot\": 0, \"submissions\": [1, 3], \"completion_before_reuse\": 1, \"reuse_safe\": true},\n"
-             "    {\"slot\": 1, \"submissions\": [2], \"completion_before_reuse\": 0, \"reuse_safe\": true},\n"
-             "    {\"slot\": 2, \"submissions\": [], \"completion_before_reuse\": 0, \"reuse_safe\": true}\n"
-             "  ],\n  \"generations\": [\n"
-             "    {\"generation\": 1, \"extent\": [64, 64], \"last_use_submission\": 2, \"retired_at_completion\": 2, \"retirement_safe\": true},\n"
-             "    {\"generation\": 2, \"extent\": [96, 72], \"last_use_submission\": 3, \"retired_at_completion\": 3, \"retirement_safe\": true}\n"
-             "  ],\n  \"zero_extent\": {\"extent\": [0, 0], \"target_created\": false, \"frame_skipped\": true},\n"
-             "  \"readback\": {\"submission\": 3, \"mapped_after_completion\": 3, \"safe\": true},\n"
-             "  \"events\": [\n"
-             "    {\"seq\": 1, \"event\": \"create-generation\", \"generation\": 1},\n"
-             "    {\"seq\": 2, \"event\": \"submit\", \"slot\": 0, \"submission\": 1, \"generation\": 1},\n"
-             "    {\"seq\": 3, \"event\": \"complete\", \"completion\": 1},\n"
-             "    {\"seq\": 4, \"event\": \"submit\", \"slot\": 1, \"submission\": 2, \"generation\": 1},\n"
-             "    {\"seq\": 5, \"event\": \"skip-zero-extent\", \"target_created\": false},\n"
-             "    {\"seq\": 6, \"event\": \"complete\", \"completion\": 2},\n"
-             "    {\"seq\": 7, \"event\": \"create-generation\", \"generation\": 2},\n"
-             "    {\"seq\": 8, \"event\": \"submit\", \"slot\": 0, \"submission\": 3, \"generation\": 2},\n"
-             "    {\"seq\": 9, \"event\": \"retire-generation\", \"generation\": 1, \"completion\": 2},\n"
-             "    {\"seq\": 10, \"event\": \"complete\", \"completion\": 3},\n"
-             "    {\"seq\": 11, \"event\": \"map-readback\", \"after_completion\": 3},\n"
-             "    {\"seq\": 12, \"event\": \"shutdown-retire\", \"generation\": 2, \"completion\": 3}\n"
-             "  ]\n}\n");
+  std::ostringstream lifecycle_artifact;
+  lifecycle_artifact
+      << "{\n  \"schema_version\": 1,\n  \"slot_count\": " << lifecycle.slots.size() << ",\n"
+      << "  \"slots\": " << lifecycle_slots_json(lifecycle, "    ") << ",\n"
+      << "  \"generations\": "
+      << lifecycle_generations_json(
+             lifecycle, "    ", resized_actual, resized_actual,
+             generation_one_hash, generation_two_hash)
+      << ",\n  \"zero_extent\": {\"extent\": [0, 0], \"target_created\": "
+      << (lifecycle.zero_extent_target_created ? "true" : "false")
+      << ", \"frame_skipped\": " << (lifecycle.zero_extent_seen ? "true" : "false") << "},\n"
+      << "  \"readback\": {\"submission\": " << lifecycle.readback_submission
+      << ", \"mapped_after_completion\": " << lifecycle.readback_after_completion
+      << ", \"safe\": " << (lifecycle_readback_safe(lifecycle) ? "true" : "false") << "},\n"
+      << "  \"events\": " << lifecycle_events_json(lifecycle, "    ") << ",\n"
+      << "  \"actual_gpu_extent_transition_required\": " << (gpu.actual_gpu ? "true" : "false") << ",\n"
+      << "  \"actual_gpu_extent_transition_executed\": " << (resized_actual ? "true" : "false") << ",\n"
+      << "  \"actual_gpu_events\": "
+      << actual_lifecycle_events_json(actual_lifecycle, "    ") << ",\n"
+      << "  \"model_valid\": " << (lifecycle.valid ? "true" : "false") << ",\n"
+      << "  \"violation\": ";
+  if (lifecycle.violation.empty()) lifecycle_artifact << "null";
+  else lifecycle_artifact << json_quote(lifecycle.violation);
+  lifecycle_artifact << "\n}\n";
+  write_text(gpu_directory / "lifecycle.json", lifecycle_artifact.str());
   const std::string timing = stage08_timing_report_json(gpu);
   write_text(gpu_directory / "timing-report.json", timing);
   write_text(gpu_directory / "validation.log",
@@ -1767,18 +2667,40 @@ CapstoneOutcome write_stage08_artifacts(const RunOptions& options, const FrameRe
       {"use_stale_resize_attachment", "lifecycle", "resize_and_reload_use_generations"},
   }};
   bool registry_complete = true;
+  bool lifecycle_registry_complete = true;
   std::ostringstream suite;
   suite << "{\n  \"schema_version\": 1,\n  \"expected_exit\": 4,\n"
         << "  \"unsafe_gpu_submission_permitted\": false,\n  \"cases\": [\n";
   for (std::size_t index = 0; index < known_bad.size(); ++index) {
     registry_complete = registry_complete && known_gpu_mutation(known_bad[index].id);
+    const std::optional<std::string> mutation_id{std::string{known_bad[index].id}};
+    const LifecycleDefect defect = lifecycle_defect(mutation_id);
+    const LifecycleRun mutation_lifecycle = run_lifecycle_scenario(mutation_id);
+    const bool lifecycle_transition_executed = defect != LifecycleDefect::none;
+    const bool lifecycle_model_rejected = lifecycle_transition_executed &&
+                                          !mutation_lifecycle.valid &&
+                                          !mutation_lifecycle.violation.empty();
+    if (lifecycle_transition_executed) {
+      lifecycle_registry_complete = lifecycle_registry_complete && lifecycle_model_rejected;
+    }
     suite << "    {\"id\": " << json_quote(known_bad[index].id)
           << ", \"first_difference_stage\": " << json_quote(known_bad[index].first_difference)
           << ", \"violated_invariant\": " << json_quote(known_bad[index].invariant)
-          << ", \"oracle\": \"ordered-artifact-or-lifecycle-preflight\", \"safely_rejected_before_gpu_submission\": true}"
+          << ", \"oracle\": \"ordered-artifact-or-lifecycle-state-machine\""
+          << ", \"lifecycle_transition_executed\": "
+          << (lifecycle_transition_executed ? "true" : "false")
+          << ", \"lifecycle_model_rejected\": "
+          << (lifecycle_model_rejected ? "true" : "false")
+          << ", \"lifecycle_violation\": ";
+    if (mutation_lifecycle.violation.empty()) suite << "null";
+    else suite << json_quote(mutation_lifecycle.violation);
+    suite << ", \"safely_rejected_before_gpu_submission\": true}"
           << (index + 1U == known_bad.size() ? "\n" : ",\n");
   }
+  registry_complete = registry_complete && lifecycle_registry_complete;
   suite << "  ],\n  \"registry_complete\": " << (registry_complete ? "true" : "false")
+        << ",\n  \"lifecycle_registry_complete\": "
+        << (lifecycle_registry_complete ? "true" : "false")
         << ",\n  \"edge_mask_abuse_probe_rejected\": " << (mask_probe_rejected ? "true" : "false")
         << "\n}\n";
   write_text(options.output / "known-bad-suite.json", suite.str());
@@ -1827,28 +2749,49 @@ CapstoneOutcome write_stage08_artifacts(const RunOptions& options, const FrameRe
              "Reproduce it with the fixed SceneSnapshot, attach environment and ordered comparison artifacts, then propose the "
              "smallest test or documentation change before attempting a renderer-wide feature.\n");
 
-  const bool lifecycle_safe = true;
+  const bool lifecycle_safe = lifecycle_slots_safe(lifecycle) &&
+                              lifecycle_readback_safe(lifecycle);
+  const bool resize_safe = lifecycle_resize_safe(lifecycle) &&
+                           (!gpu.actual_gpu || resized_actual);
   const bool performance_preserved = timing.find(correctness_hash(gpu)) != std::string::npos &&
                                      timing.find("\"absolute_time_pass_threshold_ns\": null") != std::string::npos;
   return {
       structure_pass,
       srgb_pass && mask_probe_rejected,
       lifecycle_safe,
-      lifecycle_safe,
+      resize_safe,
       true,
       registry_complete && mask_probe_rejected,
       performance_preserved,
   };
 }
 
-void write_mutation_diagnostic(const RunOptions& options) {
+void write_mutation_diagnostic(const RunOptions& options, const LifecycleRun& lifecycle) {
   if (!options.mutation) return;
+  const bool lifecycle_transition_executed = lifecycle_defect(options.mutation) != LifecycleDefect::none;
   std::ostringstream stream;
   stream << "{\n  \"schema_version\": 1,\n  \"mutation\": "
          << json_quote(*options.mutation) << ",\n"
          << "  \"executed_on_gpu\": false,\n"
-         << "  \"safe_rejection\": true,\n"
-         << "  \"diagnostic\": \"known-bad state was rejected before unsafe GPU submission\"\n}\n";
+         << "  \"lifecycle_transition_executed\": "
+         << (lifecycle_transition_executed ? "true" : "false") << ",\n"
+         << "  \"lifecycle_model_rejected\": "
+         << (lifecycle_transition_executed && !lifecycle.valid ? "true" : "false") << ",\n"
+         << "  \"rejection_oracle\": "
+         << json_quote(lifecycle_transition_executed
+                           ? "deterministic-lifecycle-state-machine"
+                           : "pipeline-static-preflight-contract")
+         << ",\n"
+         << "  \"violation\": ";
+  if (lifecycle.violation.empty()) stream << "null";
+  else stream << json_quote(lifecycle.violation);
+  stream << ",\n  \"safe_rejection\": true,\n"
+         << "  \"diagnostic\": "
+         << json_quote(
+                lifecycle_transition_executed
+                    ? "known-bad transition was executed by the deterministic lifecycle model and rejected before unsafe GPU submission"
+                    : "known-bad case was classified by the pipeline/static preflight oracle; no lifecycle transition or GPU submission was executed")
+         << "\n}\n";
   write_text(options.output / "mutation-diagnostic.json", stream.str());
 }
 
@@ -1869,8 +2812,10 @@ int run_gpu_stage(const RunOptions& options) {
     return exit_usage;
   }
   if (options.mutation) apply_mutation_failure(options.stage, *options.mutation, invariants);
+  const LifecycleRun lifecycle = run_lifecycle_scenario(options.mutation);
 
   FrameResult frame;
+  std::optional<ActualLifecycleProbe> actual_lifecycle;
   if (options.backend == Backend::lifecycle_sim) {
     frame = make_cpu_frame();
   } else if (options.backend == Backend::sdl_gpu) {
@@ -1880,6 +2825,13 @@ int run_gpu_stage(const RunOptions& options) {
     } else {
       try {
         frame = render_sdl_frame();
+        if (options.stage == Stage::gpu_first_frame || options.stage == Stage::renderer_capstone) {
+          actual_lifecycle = run_sdl_lifecycle_probe();
+          if (!actual_lifecycle_probe_matches_model(lifecycle, actual_lifecycle)) {
+            throw std::runtime_error(
+                "actual GPU lifecycle probe did not preserve slots, generation retirement, or 96x72 readback");
+          }
+        }
       } catch (const UnsupportedGpu& error) {
         invariants.front().second = false;
         write_text(options.output / "validation.log", std::string("fatal=1\nunsupported=") + error.what() + "\n");
@@ -1909,11 +2861,31 @@ int run_gpu_stage(const RunOptions& options) {
 
   bool evidence_failed = false;
   if (options.stage == Stage::gpu_first_frame) {
-    write_stage06_artifacts(options, frame);
+    const bool resize_probe_safe = !frame.actual_gpu || actual_lifecycle.has_value();
+    for (auto& invariant : invariants) {
+      if (invariant.first == "frame_slot_reuse_waits_for_completion") {
+        invariant.second = invariant.second && lifecycle_slots_safe(lifecycle);
+      } else if (invariant.first == "zero_extent_does_not_create_invalid_target") {
+        invariant.second = invariant.second && lifecycle_zero_extent_safe(lifecycle);
+      } else if (invariant.first == "old_resize_generation_retires_after_last_use") {
+        invariant.second = invariant.second && lifecycle_resize_safe(lifecycle) && resize_probe_safe;
+      }
+      if (!invariant.second) evidence_failed = true;
+    }
+    write_stage06_artifacts(options, frame, lifecycle, actual_lifecycle);
   } else if (options.stage == Stage::frame_debugging) {
-    write_stage07_artifacts(options, frame);
+    for (auto& invariant : invariants) {
+      if (invariant.first == "regression_oracle_rejects_original_bug") {
+        invariant.second = invariant.second && lifecycle.valid;
+      } else if (invariant.first == "cpu_and_gpu_timing_are_distinct") {
+        invariant.second = invariant.second && lifecycle_readback_safe(lifecycle);
+      }
+      if (!invariant.second) evidence_failed = true;
+    }
+    write_stage07_artifacts(options, frame, lifecycle);
   } else {
-    const CapstoneOutcome outcome = write_stage08_artifacts(options, frame);
+    const CapstoneOutcome outcome =
+        write_stage08_artifacts(options, frame, lifecycle, actual_lifecycle);
     for (auto& invariant : invariants) {
       if (invariant.first == "software_and_gpu_consume_same_scene_contract") {
         invariant.second = invariant.second && outcome.same_scene_contract;
@@ -1933,7 +2905,7 @@ int run_gpu_stage(const RunOptions& options) {
       if (!invariant.second) evidence_failed = true;
     }
   }
-  write_mutation_diagnostic(options);
+  write_mutation_diagnostic(options, lifecycle);
   const bool failed = options.mutation.has_value() || evidence_failed;
   write_run_json(options, failed ? "fail" : "pass", invariants);
   return failed ? exit_contract_failure : exit_ok;

@@ -31,5 +31,10 @@
       "input": {"uv": [1.25, 0.25], "address_mode": "clamp"},
       "expected": "sample-explicit-address-mode"
     }
-  ]
+  ],
+  "provenance": {
+    "kind": "repository-generated-fixture",
+    "external_asset": false,
+    "license": "MIT"
+  }
 }
