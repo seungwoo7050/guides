@@ -1,0 +1,123 @@
+export type RecordStatus = "draft" | "open" | "resolved";
+
+export type RecordSyncState =
+  | "local-only"
+  | "pending"
+  | "syncing"
+  | "synced"
+  | "retry-wait"
+  | "blocked-auth"
+  | "conflict"
+  | "failed";
+
+export type RecordPayload = {
+  title: string;
+  notes: string;
+  status: RecordStatus;
+  observedAt: string;
+  location?: {
+    latitude: number;
+    longitude: number;
+    accuracyMeters: number;
+    measuredAt: string;
+  };
+};
+
+export type FieldRecord = RecordPayload & {
+  id: string;
+  localRevision: number;
+  remoteVersion: number | null;
+  syncState: RecordSyncState;
+  deletedAtLocal?: string;
+};
+
+export type AttachmentState =
+  | "staging"
+  | "local-ready"
+  | "upload-pending"
+  | "uploading"
+  | "uploaded"
+  | "missing-local-file"
+  | "failed";
+
+export type Attachment = {
+  id: string;
+  recordId: string;
+  localUri: string;
+  checksum: string;
+  byteSize: number;
+  mimeType: string;
+  state: AttachmentState;
+  remoteId?: string;
+};
+
+export type RecordCommand = {
+  commandId: string;
+  recordId: string;
+  operation: "upsert" | "delete";
+  baseVersion: number | null;
+  localRevision: number;
+  payload: RecordPayload | null;
+  createdAt: string;
+};
+
+export type RecordConflict = {
+  commandId: string;
+  recordId: string;
+  baseVersion: number | null;
+  local: RecordPayload;
+  remote: RecordPayload & { version: number };
+};
+
+export type CapabilityAvailability =
+  | { kind: "available" }
+  | { kind: "limited"; description: string }
+  | { kind: "unavailable"; reason: string };
+
+export type PermissionState =
+  | { kind: "not-determined" }
+  | { kind: "granted" }
+  | { kind: "limited"; description: string }
+  | { kind: "denied"; canAskAgain: boolean }
+  | { kind: "restricted"; reason: string };
+
+export type NavigationIntentSource =
+  | "internal"
+  | "link"
+  | "notification"
+  | "restoration";
+
+export type NavigationIntent =
+  | { kind: "records"; source: NavigationIntentSource }
+  | {
+      kind: "open-record";
+      recordId: string;
+      destination: "detail" | "edit";
+      source: NavigationIntentSource;
+    }
+  | { kind: "open-sync"; source: NavigationIntentSource }
+  | { kind: "open-settings"; source: NavigationIntentSource }
+  | { kind: "invalid"; reason: string; source: NavigationIntentSource };
+
+export type RecordIdResult =
+  | { kind: "valid"; recordId: string }
+  | { kind: "invalid"; reason: "empty" | "too-long" | "unsupported-characters" };
+
+export type NavigationDecision =
+  | { kind: "navigate"; href: string }
+  | { kind: "invalid"; reason: string; fallbackHref: "/records" }
+  | { kind: "missing-record"; recordId: string; fallbackHref: "/records" }
+  | { kind: "duplicate" };
+
+export type DraftBackDecision = "leave" | "confirm-discard";
+
+export interface Stage01NavigationImplementation {
+  normalizeRecordId(input: string): RecordIdResult;
+  parseNavigationIntent(
+    input: string,
+    source?: NavigationIntentSource,
+  ): NavigationIntent;
+  intentKey(intent: NavigationIntent): string;
+  decideDraftBack(dirty: boolean): DraftBackDecision;
+}
+

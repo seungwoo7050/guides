@@ -1,0 +1,35 @@
+{
+  "name": "mobile-app-guide",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Runnable exercises and verification for the mobile-app guide",
+  "engines": {
+    "node": ">=24.19.0 <24.20.0",
+    "npm": ">=11.17.0 <11.18.0"
+  },
+  "packageManager": "npm@11.17.0",
+  "devDependencies": {
+    "react": "19.2.3",
+    "react-dom": "19.2.3",
+    "react-native": "0.86.2"
+  },
+  "overrides": {
+    "react": "19.2.3",
+    "react-dom": "19.2.3"
+  },
+  "workspaces": [
+    "exercises/field-notes/shared",
+    "exercises/field-notes/skeleton",
+    "exercises/field-notes/reference"
+  ],
+  "scripts": {
+    "typecheck": "npm run typecheck --workspaces --if-present",
+    "test:stage01": "npm run test:stage01 --workspace=@field-notes/reference",
+    "test:stage01:skeleton": "npm run test:stage01 --workspace=@field-notes/skeleton",
+    "bundle:android": "npm run bundle:android --workspace=@field-notes/reference",
+    "bundle:ios": "npm run bundle:ios --workspace=@field-notes/reference",
+    "bundle:android:skeleton": "npm run bundle:android --workspace=@field-notes/skeleton",
+    "bundle:ios:skeleton": "npm run bundle:ios --workspace=@field-notes/skeleton",
+    "check:stage01": "npm run typecheck && npm run test:stage01"
+  }
+}
