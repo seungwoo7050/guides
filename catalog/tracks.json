@@ -1,0 +1,468 @@
+{
+  "schema_version": 1,
+  "tracks": [
+    {
+      "id": "software-foundations",
+      "title": "공통 개발 역량",
+      "summary": "업무 분야를 정하기 전 변경 관리, 한 개의 구현 언어, 문제 검증과 시스템 관찰의 최소 기반을 만든다.",
+      "common": [
+        "git"
+      ],
+      "required": [],
+      "required_any": [
+        [
+          "c",
+          "cpp",
+          "java",
+          "python",
+          "web-app"
+        ]
+      ],
+      "recommended": [
+        "algorithms",
+        "unix-systems",
+        "computer-networks"
+      ],
+      "advanced": [
+        "operating-systems",
+        "computer-architecture"
+      ],
+      "exit_capabilities": [
+        "작은 프로젝트를 시작하고 변경을 검토한다",
+        "오류를 재현하고 증거를 남긴다",
+        "원하는 전문 트랙의 선행 부족을 스스로 보완한다"
+      ]
+    },
+    {
+      "id": "web-backend",
+      "title": "웹 백엔드 개발",
+      "summary": "HTTP·Java·Spring·관계형 데이터와 운영 경계를 연결해 기존 백엔드 서비스에 합류한다.",
+      "common": [
+        "git"
+      ],
+      "required": [
+        "web-app",
+        "java",
+        "backend-spring-boot",
+        "database-systems"
+      ],
+      "required_any": [],
+      "recommended": [
+        "computer-networks",
+        "unix-systems",
+        "cybersecurity",
+        "web-infra"
+      ],
+      "advanced": [
+        "distributed-services",
+        "distributed-systems",
+        "data-engineering",
+        "platform-engineering"
+      ],
+      "exit_capabilities": [
+        "수직 기능을 API·DB·권한·테스트까지 구현한다",
+        "트랜잭션과 실패 뒤 상태를 설명한다",
+        "로그·metric·DB 증거로 장애 계층을 좁힌다"
+      ]
+    },
+    {
+      "id": "web-frontend",
+      "title": "웹 프런트엔드 개발",
+      "summary": "브라우저·React·Next.js 상태와 접근성·성능·운영 빌드를 연결한다.",
+      "common": [
+        "git"
+      ],
+      "required": [
+        "web-app",
+        "web-front-react-nextjs"
+      ],
+      "required_any": [],
+      "recommended": [
+        "computer-networks",
+        "cybersecurity",
+        "web-infra"
+      ],
+      "advanced": [
+        "mobile-app",
+        "agentic-systems"
+      ],
+      "exit_capabilities": [
+        "기존 프런트엔드 저장소의 상태·라우트·빌드 경계를 복원한다",
+        "동시성과 접근성을 포함한 기능을 완성한다",
+        "실제 브라우저와 운영 빌드로 결과를 검증한다"
+      ]
+    },
+    {
+      "id": "full-stack-web",
+      "title": "풀스택 웹 개발",
+      "summary": "브라우저부터 API·데이터베이스·배포까지 작은 제품의 전체 흐름을 독립적으로 소유한다.",
+      "common": [
+        "git"
+      ],
+      "required": [
+        "web-app",
+        "web-front-react-nextjs",
+        "java",
+        "backend-spring-boot",
+        "database-systems",
+        "web-infra"
+      ],
+      "required_any": [],
+      "recommended": [
+        "cybersecurity",
+        "distributed-services"
+      ],
+      "advanced": [
+        "data-engineering",
+        "platform-engineering",
+        "agentic-systems"
+      ],
+      "exit_capabilities": [
+        "작은 웹 제품을 종단 간 구현한다",
+        "상태 소유권과 배포 경계를 설명한다",
+        "기능 실패와 운영 실패를 분리해 복구한다"
+      ]
+    },
+    {
+      "id": "infrastructure-platform",
+      "title": "인프라·플랫폼 엔지니어링",
+      "summary": "단일 서비스 공개 운영에서 여러 팀의 self-service 플랫폼까지 확장한다.",
+      "common": [
+        "git"
+      ],
+      "required": [
+        "unix-systems",
+        "computer-networks",
+        "web-infra",
+        "platform-engineering"
+      ],
+      "required_any": [],
+      "recommended": [
+        "operating-systems",
+        "cybersecurity",
+        "distributed-services",
+        "data-engineering"
+      ],
+      "advanced": [
+        "distributed-systems"
+      ],
+      "exit_capabilities": [
+        "서비스와 플랫폼의 책임을 분리한다",
+        "배포·정책·관측·복구를 자동화한다",
+        "여러 팀이 사용하는 운영 경로를 제품처럼 관리한다"
+      ]
+    },
+    {
+      "id": "cybersecurity",
+      "title": "사이버보안",
+      "summary": "시스템과 웹의 공격 표면을 이해하고, 허가된 환경에서 공격·수정·탐지·복구를 한 흐름으로 수행한다.",
+      "common": [
+        "git"
+      ],
+      "required": [
+        "unix-systems",
+        "computer-networks",
+        "web-app",
+        "cybersecurity"
+      ],
+      "required_any": [],
+      "recommended": [
+        "operating-systems",
+        "web-infra",
+        "python",
+        "c",
+        "computer-architecture"
+      ],
+      "advanced": [
+        "platform-engineering",
+        "distributed-systems",
+        "embedded-systems"
+      ],
+      "exit_capabilities": [
+        "공격 전제와 경로를 증거로 남긴다",
+        "취약점을 패치하고 회귀 검사를 만든다",
+        "침해 시도와 복구 타임라인을 재구성한다"
+      ]
+    },
+    {
+      "id": "mobile",
+      "title": "모바일 애플리케이션 개발",
+      "summary": "웹·React 기반을 모바일 수명 주기, 오프라인 상태, 기기 기능과 Android·iOS 배포로 확장한다.",
+      "common": [
+        "git"
+      ],
+      "required": [
+        "web-app",
+        "mobile-app"
+      ],
+      "required_any": [],
+      "recommended": [
+        "web-front-react-nextjs",
+        "computer-networks",
+        "cybersecurity",
+        "web-infra"
+      ],
+      "advanced": [],
+      "exit_capabilities": [
+        "Android·iOS 공통 기능을 구현한다",
+        "오프라인·권한·background 실패를 처리한다",
+        "실제 기기와 배포 artifact로 완료를 증명한다"
+      ]
+    },
+    {
+      "id": "machine-learning",
+      "title": "머신러닝 모델 개발",
+      "summary": "데이터·학습·평가·오류 분석·모델 전달의 재현 가능한 흐름을 만든다.",
+      "common": [
+        "git"
+      ],
+      "required": [
+        "python",
+        "machine-learning"
+      ],
+      "required_any": [],
+      "recommended": [
+        "algorithms",
+        "data-engineering",
+        "computer-architecture"
+      ],
+      "advanced": [
+        "platform-engineering",
+        "distributed-systems"
+      ],
+      "exit_capabilities": [
+        "baseline과 평가 기준을 정의한다",
+        "모델을 학습·개선하고 실패 사례를 분석한다",
+        "모델 artifact와 추론 경계를 재현 가능하게 전달한다"
+      ]
+    },
+    {
+      "id": "agentic-systems",
+      "title": "에이전틱 시스템 개발",
+      "summary": "모델을 도구·상태·검색·평가·권한과 연결해 실제 작업을 수행하는 시스템을 만든다.",
+      "common": [
+        "git"
+      ],
+      "required": [
+        "python",
+        "web-app",
+        "agentic-systems"
+      ],
+      "required_any": [],
+      "recommended": [
+        "distributed-services",
+        "cybersecurity",
+        "machine-learning",
+        "web-infra"
+      ],
+      "advanced": [
+        "data-engineering",
+        "platform-engineering"
+      ],
+      "exit_capabilities": [
+        "도구 호출 agent를 구현한다",
+        "외부 verifier로 결과를 판정한다",
+        "권한·비용·실행·네트워크 한계를 강제한다"
+      ]
+    },
+    {
+      "id": "data-engineering",
+      "title": "데이터 엔지니어링",
+      "summary": "운영 데이터와 이벤트를 batch·stream·CDC·품질·lineage·backfill로 신뢰 가능한 데이터 제품으로 만든다.",
+      "common": [
+        "git"
+      ],
+      "required": [
+        "python",
+        "database-systems",
+        "data-engineering"
+      ],
+      "required_any": [],
+      "recommended": [
+        "distributed-services",
+        "distributed-systems",
+        "platform-engineering"
+      ],
+      "advanced": [
+        "machine-learning"
+      ],
+      "exit_capabilities": [
+        "재실행 가능한 pipeline을 설계한다",
+        "late data와 backfill을 처리한다",
+        "품질·freshness·lineage를 운영한다"
+      ]
+    },
+    {
+      "id": "distributed-systems",
+      "title": "분산 시스템 개발",
+      "summary": "부분 실패를 넘어 복제·합의·일관성·sharding을 구현하고 장애 history로 검증한다.",
+      "common": [
+        "git"
+      ],
+      "required": [
+        "operating-systems",
+        "computer-networks",
+        "database-systems",
+        "distributed-systems"
+      ],
+      "required_any": [
+        [
+          "c",
+          "cpp",
+          "java",
+          "python"
+        ]
+      ],
+      "recommended": [
+        "algorithms",
+        "distributed-services",
+        "platform-engineering"
+      ],
+      "advanced": [],
+      "exit_capabilities": [
+        "safety와 liveness를 구분한다",
+        "leader 교체와 partition을 재현한다",
+        "복제 저장 시스템의 history를 검증한다"
+      ]
+    },
+    {
+      "id": "database-engineering",
+      "title": "데이터베이스 엔지니어링",
+      "summary": "애플리케이션 스키마와 질의부터 저장 엔진·동시성·복구·분산 저장까지 데이터 시스템을 깊게 다룬다.",
+      "common": [
+        "git"
+      ],
+      "required": [
+        "database-systems"
+      ],
+      "required_any": [
+        [
+          "c",
+          "cpp",
+          "java",
+          "python"
+        ]
+      ],
+      "recommended": [
+        "operating-systems",
+        "computer-architecture",
+        "algorithms"
+      ],
+      "advanced": [
+        "distributed-systems",
+        "data-engineering"
+      ],
+      "exit_capabilities": [
+        "질의와 저장 엔진 동작을 연결한다",
+        "동시성·복구 실패를 설명한다",
+        "데이터 계층의 변경과 마이그레이션을 안전하게 설계한다"
+      ]
+    },
+    {
+      "id": "systems-programming",
+      "title": "시스템 프로그래밍",
+      "summary": "자원 수명·프로세스·메모리·동시성·하드웨어 계약을 연결해 저수준 프로젝트에 진입한다.",
+      "common": [
+        "git"
+      ],
+      "required": [
+        "unix-systems",
+        "computer-architecture",
+        "operating-systems"
+      ],
+      "required_any": [
+        [
+          "c",
+          "cpp"
+        ]
+      ],
+      "recommended": [
+        "algorithms",
+        "computer-networks",
+        "cybersecurity"
+      ],
+      "advanced": [
+        "embedded-systems",
+        "language-implementation",
+        "database-systems"
+      ],
+      "exit_capabilities": [
+        "자원과 상태의 소유자를 명확히 한다",
+        "프로세스·메모리·동시성 실패를 재현한다",
+        "시스템 코드 변경을 sanitizer와 상태 근거로 검증한다"
+      ]
+    },
+    {
+      "id": "language-tooling",
+      "title": "컴파일러·언어 도구 개발",
+      "summary": "언어 문법과 의미 분석에서 실행기·IR·정적 분석·IDE 도구까지 구현한다.",
+      "common": [
+        "git"
+      ],
+      "required": [
+        "cpp",
+        "algorithms",
+        "computer-architecture",
+        "language-implementation"
+      ],
+      "required_any": [],
+      "recommended": [
+        "operating-systems"
+      ],
+      "advanced": [],
+      "exit_capabilities": [
+        "parser와 타입 검사기를 만든다",
+        "작은 interpreter·VM·IR을 구현한다",
+        "진단·분석·변환 도구에 기여한다"
+      ]
+    },
+    {
+      "id": "embedded",
+      "title": "임베디드·펌웨어 개발",
+      "summary": "제한된 메모리와 시간, 주변장치와 interrupt, RTOS와 안전한 update를 다룬다.",
+      "common": [
+        "git"
+      ],
+      "required": [
+        "c",
+        "computer-architecture",
+        "operating-systems",
+        "embedded-systems"
+      ],
+      "required_any": [],
+      "recommended": [
+        "cybersecurity"
+      ],
+      "advanced": [],
+      "exit_capabilities": [
+        "MMIO·interrupt·task 경계를 구현한다",
+        "실시간 실패와 watchdog 복구를 검증한다",
+        "firmware update 상태를 안전하게 관리한다"
+      ]
+    },
+    {
+      "id": "graphics",
+      "title": "컴퓨터 그래픽스 개발",
+      "summary": "수학·C++·하드웨어 성능 기반 위에서 rasterizer와 GPU renderer를 만든다.",
+      "common": [
+        "git"
+      ],
+      "required": [
+        "cpp",
+        "algorithms",
+        "computer-architecture",
+        "computer-graphics"
+      ],
+      "required_any": [],
+      "recommended": [
+        "operating-systems"
+      ],
+      "advanced": [],
+      "exit_capabilities": [
+        "software rasterizer를 구현한다",
+        "shader와 GPU resource를 관리한다",
+        "frame budget과 동기화 병목을 측정한다"
+      ]
+    }
+  ]
+}
