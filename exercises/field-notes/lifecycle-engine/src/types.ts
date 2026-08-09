@@ -1,4 +1,8 @@
-export type LifecycleSyncTrigger = "manual" | "app-active" | "background";
+export type LifecycleSyncTrigger =
+  | "manual"
+  | "app-active"
+  | "background"
+  | "notification";
 
 /**
  * Structural subset of sync-engine's WorkerRunResult. A production adapter can
@@ -115,6 +119,10 @@ export type NotificationPermissionState =
   | { kind: "denied"; canAskAgain: boolean }
   | { kind: "restricted"; reason: string };
 
+export type PushTokenResult =
+  | { kind: "token"; token: string }
+  | { kind: "failed"; reason: string };
+
 export type AndroidNotificationRegistrationResult =
   | { kind: "channel-failed"; reason: string }
   | { kind: "permission-required" }
@@ -125,4 +133,67 @@ export type AndroidNotificationRegistrationResult =
       kind: "token-ready";
       permission: "granted" | "not-required";
       token: string;
+    };
+
+export type NotificationInstallationBinding = {
+  installationId: string;
+  accountId: string;
+  token: string;
+  updatedAt: number;
+};
+
+export type InstallationRegistryUpsertResult =
+  | {
+      kind: "stored";
+      previous: NotificationInstallationBinding | null;
+    }
+  | { kind: "failed"; reason: string };
+
+export type InstallationRegistryRemoveResult =
+  | { kind: "removed"; previous: NotificationInstallationBinding }
+  | { kind: "absent" }
+  | { kind: "account-mismatch"; boundAccountId: string }
+  | { kind: "failed"; reason: string };
+
+export type NotificationInstallationRegistrationResult =
+  | {
+      kind: "registered";
+      installationId: string;
+      accountId: string;
+      updatedAt: number;
+      change:
+        | { kind: "created" }
+        | { kind: "unchanged" }
+        | { kind: "rotated" }
+        | { kind: "account-switched"; previousAccountId: string };
+    }
+  | {
+      kind: "token-unavailable";
+      installationId: string;
+      accountId: string;
+      reason: string;
+    }
+  | {
+      kind: "registry-failed";
+      operation: "upsert";
+      installationId: string;
+      accountId: string;
+      reason: string;
+    };
+
+export type NotificationInstallationLogoutResult =
+  | { kind: "logged-out"; installationId: string; accountId: string }
+  | { kind: "already-logged-out"; installationId: string; accountId: string }
+  | {
+      kind: "account-mismatch";
+      installationId: string;
+      accountId: string;
+      boundAccountId: string;
+    }
+  | {
+      kind: "registry-failed";
+      operation: "remove";
+      installationId: string;
+      accountId: string;
+      reason: string;
     };

@@ -1,10 +1,24 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import type { BoundedSyncWorker } from "../../sync-engine/src/index.ts";
+import type {
+  BoundedSyncWorker,
+  SyncTrigger,
+} from "../../sync-engine/src/index.ts";
 import type { BoundedWorkerPort } from "../src/ports.ts";
+import type { LifecycleSyncTrigger } from "../src/types.ts";
 
-const asLifecycleWorker = (worker: BoundedSyncWorker): BoundedWorkerPort => worker;
+type AssertTrue<Value extends true> = Value;
+type CoversEveryLifecycleTrigger = AssertTrue<
+  Exclude<LifecycleSyncTrigger, SyncTrigger> extends never ? true : false
+>;
+type DirectCompatibility = AssertTrue<
+  BoundedSyncWorker extends BoundedWorkerPort ? true : false
+>;
 
-test("lifecycle worker port remains structurally compatible with sync-engine", () => {
-  assert.equal(typeof asLifecycleWorker, "function");
+const coversEveryLifecycleTrigger: CoversEveryLifecycleTrigger = true;
+const directlyCompatible: DirectCompatibility = true;
+
+test("Stage 04 worker covers every lifecycle trigger without a cast", () => {
+  assert.equal(coversEveryLifecycleTrigger, true);
+  assert.equal(directlyCompatible, true);
 });

@@ -4,6 +4,7 @@ import type {
   DeadlineScheduler,
   LifecycleClock,
   NotificationOwnerIdGenerator,
+  NotificationInstallationRegistryPort,
   NotificationPermissionPort,
   NotificationStateRepository,
   ProcessedIntentClaimPort,
@@ -15,8 +16,11 @@ import type {
   AccountReadinessState,
   BoundedWorkerObservation,
   ConflictReadinessState,
+  InstallationRegistryRemoveResult,
+  InstallationRegistryUpsertResult,
   LifecycleSyncTrigger,
   NotificationPermissionState,
+  NotificationInstallationBinding,
   ProcessedIntentClaim,
   RecordReadinessState,
 } from "./types.ts";
@@ -518,5 +522,121 @@ export class ScriptedPushToken implements PushTokenPort {
   async getToken(): Promise<Awaited<ReturnType<PushTokenPort["getToken"]>>> {
     this.calls.push("token");
     return this.result;
+  }
+}
+
+export type DeterministicInstallationRegistryCall =
+  | {
+      operation: "upsert";
+      installationId: string;
+      accountId: string;
+      tokenLabel: string;
+      updatedAt: number;
+    }
+  | {
+      operation: "remove";
+      installationId: string;
+      accountId: string;
+    };
+
+type RegistryFailure = {
+  operation: DeterministicInstallationRegistryCall["operation"];
+  reason: string;
+};
+
+/**
+ * Backend-free test double. Call logs use deterministic token labels rather
+ * than token contents, so traces remain safe even if a caller supplies a
+ * credential-shaped value by mistake.
+ */
+export class DeterministicNotificationInstallationRegistry
+  implements NotificationInstallationRegistryPort
+{
+  readonly calls: DeterministicInstallationRegistryCall[] = [];
+  readonly #bindings = new Map<string, NotificationInstallationBinding>();
+  readonly #tokenLabels = new Map<string, string>();
+  readonly #failures: RegistryFailure[] = [];
+
+  failNext(
+    operation: DeterministicInstallationRegistryCall["operation"],
+    reason: string,
+  ): void {
+    this.#failures.push({ operation, reason });
+  }
+
+  async upsert(input: {
+    installationId: string;
+    accountId: string;
+    token: string;
+    updatedAt: number;
+  }): Promise<InstallationRegistryUpsertResult> {
+    this.calls.push({
+      operation: "upsert",
+      installationId: input.installationId,
+      accountId: input.accountId,
+      tokenLabel: this.#tokenLabel(input.token),
+      updatedAt: input.updatedAt,
+    });
+    const failure = this.#takeFailure("upsert");
+    if (failure !== undefined) {
+      return { kind: "failed", reason: failure };
+    }
+    const previous = this.#bindings.get(input.installationId) ?? null;
+    this.#bindings.set(input.installationId, structuredClone(input));
+    return {
+      kind: "stored",
+      previous: previous === null ? null : structuredClone(previous),
+    };
+  }
+
+  async remove(input: {
+    installationId: string;
+    accountId: string;
+  }): Promise<InstallationRegistryRemoveResult> {
+    this.calls.push({
+      operation: "remove",
+      installationId: input.installationId,
+      accountId: input.accountId,
+    });
+    const failure = this.#takeFailure("remove");
+    if (failure !== undefined) {
+      return { kind: "failed", reason: failure };
+    }
+    const previous = this.#bindings.get(input.installationId);
+    if (previous === undefined) {
+      return { kind: "absent" };
+    }
+    if (previous.accountId !== input.accountId) {
+      return {
+        kind: "account-mismatch",
+        boundAccountId: previous.accountId,
+      };
+    }
+    this.#bindings.delete(input.installationId);
+    return { kind: "removed", previous: structuredClone(previous) };
+  }
+
+  snapshot(): NotificationInstallationBinding[] {
+    return [...this.#bindings.values()]
+      .sort((left, right) => left.installationId.localeCompare(right.installationId))
+      .map((binding) => structuredClone(binding));
+  }
+
+  #tokenLabel(token: string): string {
+    const current = this.#tokenLabels.get(token);
+    if (current !== undefined) return current;
+    const label = `token#${this.#tokenLabels.size + 1}`;
+    this.#tokenLabels.set(token, label);
+    return label;
+  }
+
+  #takeFailure(
+    operation: DeterministicInstallationRegistryCall["operation"],
+  ): string | undefined {
+    const index = this.#failures.findIndex(
+      (failure) => failure.operation === operation,
+    );
+    if (index < 0) return undefined;
+    return this.#failures.splice(index, 1)[0]?.reason;
   }
 }

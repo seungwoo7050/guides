@@ -131,7 +131,12 @@ export type RepositorySnapshot = {
   }>;
 };
 
-export type SyncTrigger = "manual" | "app-active" | "foreground" | "background";
+export type SyncTrigger =
+  | "manual"
+  | "app-active"
+  | "foreground"
+  | "background"
+  | "notification";
 
 export type WorkerRunResult = {
   trigger: SyncTrigger;

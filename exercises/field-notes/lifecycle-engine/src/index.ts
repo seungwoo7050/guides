@@ -1,4 +1,5 @@
 export { AndroidNotificationRegistrationCoordinator } from "./android-registration.ts";
+export { NotificationInstallationCoordinator } from "./installation-coordinator.ts";
 export { NotificationIntentCoordinator } from "./notification-coordinator.ts";
 export { parseNotificationEnvelope } from "./notification-parser.ts";
 export { LifecycleSyncCoordinator } from "./sync-coordinator.ts";
@@ -8,6 +9,7 @@ export type {
   DeadlineScheduler,
   LifecycleClock,
   NotificationOwnerIdGenerator,
+  NotificationInstallationRegistryPort,
   NotificationPermissionPort,
   NotificationStateRepository,
   ProcessedIntentClaimPort,
@@ -20,14 +22,20 @@ export type {
   AndroidNotificationRegistrationResult,
   BoundedWorkerObservation,
   ConflictReadinessState,
+  InstallationRegistryRemoveResult,
+  InstallationRegistryUpsertResult,
   LifecycleSyncTrigger,
   NotificationEnvelope,
   NotificationEnvelopeIntent,
+  NotificationInstallationBinding,
+  NotificationInstallationLogoutResult,
+  NotificationInstallationRegistrationResult,
   NotificationNavigationIntent,
   NotificationParseResult,
   NotificationPermissionState,
   NotificationPrepareResult,
   ProcessedIntentClaim,
+  PushTokenResult,
   RecordReadinessState,
   SyncExecution,
   SyncOpportunityResult,

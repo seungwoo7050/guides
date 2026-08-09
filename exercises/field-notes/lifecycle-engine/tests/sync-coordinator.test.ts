@@ -22,11 +22,12 @@ function coordinator(input: {
   });
 }
 
-test("manual, app-active and background call the same bounded worker contract", async () => {
+test("manual, app-active, background and notification use the same worker contract", async () => {
   for (const trigger of [
     "manual",
     "app-active",
     "background",
+    "notification",
   ] as const satisfies readonly LifecycleSyncTrigger[]) {
     const clock = new DeterministicClock(1_000);
     const repository = new DeterministicCommandRepository(["command-1"]);

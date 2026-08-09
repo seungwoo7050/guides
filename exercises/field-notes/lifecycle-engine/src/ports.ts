@@ -2,9 +2,12 @@ import type {
   AccountReadinessState,
   BoundedWorkerObservation,
   ConflictReadinessState,
+  InstallationRegistryRemoveResult,
+  InstallationRegistryUpsertResult,
   LifecycleSyncTrigger,
   NotificationPermissionState,
   ProcessedIntentClaim,
+  PushTokenResult,
   RecordReadinessState,
 } from "./types.ts";
 
@@ -74,8 +77,23 @@ export interface NotificationPermissionPort {
 }
 
 export interface PushTokenPort {
-  getToken(): Promise<
-    | { kind: "token"; token: string }
-    | { kind: "failed"; reason: string }
-  >;
+  getToken(): Promise<PushTokenResult>;
+}
+
+/**
+ * A production adapter may call a backend, but every operation must be atomic:
+ * a failed upsert leaves the previous binding unchanged, and remove must only
+ * delete a binding still owned by the supplied account.
+ */
+export interface NotificationInstallationRegistryPort {
+  upsert(input: {
+    installationId: string;
+    accountId: string;
+    token: string;
+    updatedAt: number;
+  }): Promise<InstallationRegistryUpsertResult>;
+  remove(input: {
+    installationId: string;
+    accountId: string;
+  }): Promise<InstallationRegistryRemoveResult>;
 }
