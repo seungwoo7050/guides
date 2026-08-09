@@ -1,0 +1,35 @@
+{
+  "schema_version": 1,
+  "run_id": "learner-normal-001",
+  "scenario_id": "normal-write-read",
+  "events": [
+    {
+      "schema_version": 1,
+      "run_id": "learner-normal-001",
+      "step": 1,
+      "virtual_time": 1,
+      "event_id": "e1",
+      "kind": "reference_shape_only",
+      "actor": "simulator",
+      "target": null,
+      "message_id": null,
+      "delivery_id": null,
+      "state_before_hash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "state_after_hash": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+      "invariant_results": [],
+      "details": {
+        "leaders_by_term": {"1": ["A"]},
+        "commit_index": {"A": 1},
+        "last_applied": {"A": 1},
+        "applied": [{"node": "A", "index": 1, "request_hash": "put-x-1"}],
+        "history": {
+          "pending_policy": "drop",
+          "initial": {},
+          "operations": [
+            {"id": "write-1", "client": "c1", "kind": "put", "key": "x", "value": 1, "status": "OK", "invoke": 1, "complete": 2}
+          ]
+        }
+      }
+    }
+  ]
+}

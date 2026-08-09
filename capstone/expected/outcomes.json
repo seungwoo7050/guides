@@ -1,0 +1,46 @@
+{
+  "schema_version": 1,
+  "required_scenarios": [
+    "normal-write-read",
+    "split-vote",
+    "leader-crash",
+    "one-way-partition",
+    "response-loss-retry",
+    "slow-follower-snapshot",
+    "repeated-crash-restart"
+  ],
+  "reference_trace_digests": {
+    "normal-write-read": "9ccb582e3143ac2faab7c3572693251e19c2cd0bf9cf74292bfc19e3b75e6695",
+    "split-vote": "b826c0d94b1acb789a0384e5b0adb6f4ee44b927a541c328cf3e4ab2eed6188c",
+    "leader-crash": "aeaa339929fb63d095d2a041006c614ef7f1d2bb45d5e1096809fab45c1ef5d3",
+    "one-way-partition": "1e1f0312936015979b4e107753f9df1b2b355509361c8fe98e41f9fa522e5628",
+    "response-loss-retry": "e4e0308d2f76a92ab4292fa35b9fc95d1ff71b430d3f27027a225b94e69899ff",
+    "slow-follower-snapshot": "5ae8f4ae5b6c3dec1bf0aca6803f4a4a1529921657535fe09691914d20f8d3b2",
+    "repeated-crash-restart": "e0b5e070e27691df619845abb98ca0859a8f1768885189e20291466c138213ed"
+  },
+  "required_scenario_evidence": {
+    "normal-write-read": ["leaders_by_term", "commit_index", "last_applied", "applied", "history"],
+    "split-vote": ["leaders_by_term", "durable_votes", "progress_evidence"],
+    "leader-crash": ["leaders_by_term", "logs", "commit_index", "recovery_evidence"],
+    "one-way-partition": ["leaders_by_term", "commit_index", "fault_evidence"],
+    "response-loss-retry": ["client_effects", "history", "fault_evidence"],
+    "slow-follower-snapshot": ["snapshot", "commit_index", "recovery_evidence"],
+    "repeated-crash-restart": ["durable_votes", "commit_index", "recovery_evidence"]
+  },
+  "required_known_wrong": {
+    "vote-response-before-save": "DURABLE_ONE_VOTE",
+    "stale-candidate-granted": "STALE_CANDIDATE_REJECTED",
+    "old-term-direct-commit": "CURRENT_TERM_COMMIT",
+    "prefix-mismatch-mutation": "PREFIX_MISMATCH_NO_MUTATION",
+    "response-before-commit": "RESPONSE_AFTER_APPLY",
+    "retry-double-effect": "AT_MOST_ONCE_EFFECT",
+    "stale-snapshot-rollback": "STALE_SNAPSHOT_REJECTED",
+    "dual-shard-authority": "ONE_SHARD_AUTHORITY",
+    "completed-write-stale-read": "LINEARIZABLE_HISTORY"
+  },
+  "manual_dossiers": [
+    "membership quorum overlap, learner catch-up, and removed-node fencing",
+    "shard authority, routing epoch, cutover recovery, and cleanup",
+    "simulator-to-filesystem, concurrency, and real-transport model gaps"
+  ]
+}

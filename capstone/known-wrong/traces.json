@@ -1,0 +1,38 @@
+{
+  "schema_version": 1,
+  "cases": [
+    {
+      "id": "vote-response-before-save",
+      "diagnostic_id": "DURABLE_ONE_VOTE",
+      "details": {"durable_votes": [
+        {"node": "A", "term": 1, "candidate": "B", "durable": false, "response_sent": true},
+        {"node": "A", "term": 1, "candidate": "C", "durable": true, "response_sent": true}
+      ]}
+    },
+    {"id": "stale-candidate-granted", "diagnostic_id": "STALE_CANDIDATE_REJECTED", "details": {"stale_candidate_granted": true}},
+    {"id": "old-term-direct-commit", "diagnostic_id": "CURRENT_TERM_COMMIT", "details": {"old_term_direct_commit": true}},
+    {"id": "prefix-mismatch-mutation", "diagnostic_id": "PREFIX_MISMATCH_NO_MUTATION", "details": {"prefix_mutated_on_mismatch": true}},
+    {"id": "response-before-commit", "diagnostic_id": "RESPONSE_AFTER_APPLY", "details": {"response_before_commit": true}},
+    {
+      "id": "retry-double-effect",
+      "diagnostic_id": "AT_MOST_ONCE_EFFECT",
+      "details": {"client_effects": [
+        {"client_id": "c", "sequence": 1, "count": 1},
+        {"client_id": "c", "sequence": 1, "count": 1}
+      ]}
+    },
+    {"id": "stale-snapshot-rollback", "diagnostic_id": "STALE_SNAPSHOT_REJECTED", "details": {"stale_snapshot_rollback": true}},
+    {"id": "dual-shard-authority", "diagnostic_id": "ONE_SHARD_AUTHORITY", "details": {"shard_authority": {"9": ["G1", "G2"]}}},
+    {
+      "id": "completed-write-stale-read",
+      "diagnostic_id": "LINEARIZABLE_HISTORY",
+      "details": {"history": {
+        "initial": {"x": 0},
+        "operations": [
+          {"id": "w1", "client": "c1", "kind": "put", "key": "x", "value": 1, "status": "OK", "invoke": 1, "complete": 2},
+          {"id": "r1", "client": "c2", "kind": "get", "key": "x", "status": "OK", "result": 0, "invoke": 3, "complete": 4}
+        ]
+      }}
+    }
+  ]
+}

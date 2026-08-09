@@ -1,0 +1,25 @@
+{
+  "schema_version": 1,
+  "run_bundle_id": "learner-run-bundle-001",
+  "source": {
+    "commit": null,
+    "tree_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "dirty": true
+  },
+  "runtime": {
+    "implementation": "python",
+    "version": "3.12.11",
+    "platform": "darwin-arm64"
+  },
+  "configuration_sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+  "initial_state_sha256": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+  "schedule_bundle_sha256": "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+  "seed": 41,
+  "supported_failure_model": [
+    "crash-recovery",
+    "message-delay",
+    "message-drop",
+    "message-duplicate",
+    "one-way-partition"
+  ]
+}

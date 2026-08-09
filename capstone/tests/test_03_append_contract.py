@@ -3,7 +3,16 @@ from __future__ import annotations
 import unittest
 
 from _load import CAPSTONE_ROOT  # noqa: F401
-from dskv import Command, LogEntry, MemoryStorage, Message, MessageKind, Node, PersistentState
+from dskv import (
+    ClientRequest, Command, LogEntry, MemoryStorage, Message, MessageKind,
+    Node, PersistentState, canonical_fingerprint,
+)
+
+
+def entry(index: int, term: int, key: str, value: object) -> LogEntry:
+    command = Command("put", key, value)
+    request = ClientRequest("fixture", index, canonical_fingerprint(command), command)
+    return LogEntry(index, term, request)
 
 
 class AppendContractTest(unittest.TestCase):
@@ -11,10 +20,10 @@ class AppendContractTest(unittest.TestCase):
         storage = MemoryStorage(PersistentState(
             current_term=5,
             log=[
-                LogEntry(1, 1, Command("put", "a", 1)),
-                LogEntry(2, 2, Command("put", "b", 1)),
-                LogEntry(3, 4, Command("put", "c", 9)),
-                LogEntry(4, 4, Command("put", "d", 9)),
+                entry(1, 1, "a", 1),
+                entry(2, 2, "b", 1),
+                entry(3, 4, "c", 9),
+                entry(4, 4, "d", 9),
             ],
         ))
         node = Node("F", ["L", "X"], storage, election_timeout=5)
@@ -27,8 +36,8 @@ class AppendContractTest(unittest.TestCase):
                 "prev_log_index": 2,
                 "prev_log_term": 2,
                 "entries": [
-                    LogEntry(3, 3, Command("put", "c", 1)),
-                    LogEntry(4, 6, Command("put", "e", 1)),
+                    entry(3, 3, "c", 1),
+                    entry(4, 6, "e", 1),
                 ],
                 "leader_commit": 2,
             },

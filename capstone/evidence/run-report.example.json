@@ -1,0 +1,84 @@
+{
+  "schema_version": 1,
+  "manifest": "evidence/manifest.json",
+  "runs": [
+    {
+      "scenario_id": "normal-write-read",
+      "run_id": "learner-normal-001",
+      "identity": {"run_bundle_id": "learner-run-bundle-001", "source_tree_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", "configuration_sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb", "initial_state_sha256": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc", "seed": 41, "schedule_sha256": "1111111111111111111111111111111111111111111111111111111111111111"},
+      "trace": "evidence/traces/normal-write-read.json",
+      "trace_digest": "1010101010101010101010101010101010101010101010101010101010101010",
+      "replay": {"command": ["python3", "run_scenario.py", "normal-write-read"], "exit_code": 0, "observed_trace_digest": "1010101010101010101010101010101010101010101010101010101010101010"},
+      "invariant_evidence": {"result": "PASS", "checked_steps": [1, 42], "invariant_ids": ["ELECTION_SAFETY", "COMMIT_MONOTONICITY", "APPLY_BOUND", "STATE_MACHINE_SAFETY", "LINEARIZABLE_HISTORY"]},
+      "history_evidence": {"result": "PASS", "witness": ["write-1", "read-1"], "pending_policy": "drop"}
+    },
+    {
+      "scenario_id": "split-vote",
+      "run_id": "learner-split-001",
+      "identity": {"run_bundle_id": "learner-run-bundle-001", "source_tree_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", "configuration_sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb", "initial_state_sha256": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc", "seed": 41, "schedule_sha256": "2222222222222222222222222222222222222222222222222222222222222222"},
+      "trace": "evidence/traces/split-vote.json",
+      "trace_digest": "2020202020202020202020202020202020202020202020202020202020202020",
+      "replay": {"command": ["python3", "run_scenario.py", "split-vote"], "exit_code": 0, "observed_trace_digest": "2020202020202020202020202020202020202020202020202020202020202020"},
+      "invariant_evidence": {"result": "PASS", "checked_steps": [1, 31], "invariant_ids": ["ELECTION_SAFETY", "DURABLE_ONE_VOTE"]},
+      "history_evidence": {"result": "UNVERIFIED", "reason": "this election-only run has no client operations"}
+    },
+    {
+      "scenario_id": "leader-crash",
+      "run_id": "learner-leader-crash-001",
+      "identity": {"run_bundle_id": "learner-run-bundle-001", "source_tree_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", "configuration_sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb", "initial_state_sha256": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc", "seed": 41, "schedule_sha256": "3333333333333333333333333333333333333333333333333333333333333333"},
+      "trace": "evidence/traces/leader-crash.json",
+      "trace_digest": "3030303030303030303030303030303030303030303030303030303030303030",
+      "replay": {"command": ["python3", "run_scenario.py", "leader-crash"], "exit_code": 0, "observed_trace_digest": "3030303030303030303030303030303030303030303030303030303030303030"},
+      "invariant_evidence": {"result": "PASS", "checked_steps": [1, 55], "invariant_ids": ["ELECTION_SAFETY", "LOG_MATCHING", "COMMIT_MONOTONICITY"]},
+      "history_evidence": {"result": "UNVERIFIED", "reason": "client history is reviewed in the response-loss run"}
+    },
+    {
+      "scenario_id": "one-way-partition",
+      "run_id": "learner-partition-001",
+      "identity": {"run_bundle_id": "learner-run-bundle-001", "source_tree_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", "configuration_sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb", "initial_state_sha256": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc", "seed": 41, "schedule_sha256": "4444444444444444444444444444444444444444444444444444444444444444"},
+      "trace": "evidence/traces/one-way-partition.json",
+      "trace_digest": "4040404040404040404040404040404040404040404040404040404040404040",
+      "replay": {"command": ["python3", "run_scenario.py", "one-way-partition"], "exit_code": 0, "observed_trace_digest": "4040404040404040404040404040404040404040404040404040404040404040"},
+      "invariant_evidence": {"result": "PASS", "checked_steps": [1, 60], "invariant_ids": ["ELECTION_SAFETY", "COMMIT_MONOTONICITY"]},
+      "history_evidence": {"result": "UNVERIFIED", "reason": "this authority run records no completed client history"}
+    },
+    {
+      "scenario_id": "response-loss-retry",
+      "run_id": "learner-retry-001",
+      "identity": {"run_bundle_id": "learner-run-bundle-001", "source_tree_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", "configuration_sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb", "initial_state_sha256": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc", "seed": 41, "schedule_sha256": "5555555555555555555555555555555555555555555555555555555555555555"},
+      "trace": "evidence/traces/response-loss-retry.json",
+      "trace_digest": "5050505050505050505050505050505050505050505050505050505050505050",
+      "replay": {"command": ["python3", "run_scenario.py", "response-loss-retry"], "exit_code": 0, "observed_trace_digest": "5050505050505050505050505050505050505050505050505050505050505050"},
+      "invariant_evidence": {"result": "PASS", "checked_steps": [1, 73], "invariant_ids": ["AT_MOST_ONCE_EFFECT", "LINEARIZABLE_HISTORY"]},
+      "history_evidence": {"result": "PASS", "witness": ["retry-write"], "pending_policy": "drop"}
+    },
+    {
+      "scenario_id": "slow-follower-snapshot",
+      "run_id": "learner-snapshot-001",
+      "identity": {"run_bundle_id": "learner-run-bundle-001", "source_tree_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", "configuration_sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb", "initial_state_sha256": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc", "seed": 41, "schedule_sha256": "6666666666666666666666666666666666666666666666666666666666666666"},
+      "trace": "evidence/traces/slow-follower-snapshot.json",
+      "trace_digest": "6060606060606060606060606060606060606060606060606060606060606060",
+      "replay": {"command": ["python3", "run_scenario.py", "slow-follower-snapshot"], "exit_code": 0, "observed_trace_digest": "6060606060606060606060606060606060606060606060606060606060606060"},
+      "invariant_evidence": {"result": "PASS", "checked_steps": [1, 81], "invariant_ids": ["SNAPSHOT_EQUIVALENCE", "COMMIT_MONOTONICITY"]},
+      "history_evidence": {"result": "UNVERIFIED", "reason": "snapshot state is checked separately from client linearization"}
+    },
+    {
+      "scenario_id": "repeated-crash-restart",
+      "run_id": "learner-restart-001",
+      "identity": {"run_bundle_id": "learner-run-bundle-001", "source_tree_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", "configuration_sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb", "initial_state_sha256": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc", "seed": 41, "schedule_sha256": "7777777777777777777777777777777777777777777777777777777777777777"},
+      "trace": "evidence/traces/repeated-crash-restart.json",
+      "trace_digest": "7070707070707070707070707070707070707070707070707070707070707070",
+      "replay": {"command": ["python3", "run_scenario.py", "repeated-crash-restart"], "exit_code": 0, "observed_trace_digest": "7070707070707070707070707070707070707070707070707070707070707070"},
+      "invariant_evidence": {"result": "PASS", "checked_steps": [1, 64], "invariant_ids": ["DURABLE_ONE_VOTE", "COMMIT_MONOTONICITY"]},
+      "history_evidence": {"result": "UNVERIFIED", "reason": "the run isolates durable election and log recovery"}
+    }
+  ],
+  "counterexample": {
+    "trace": "evidence/traces/counterexamples/minimal-double-vote.json",
+    "trace_digest": "8080808080808080808080808080808080808080808080808080808080808080",
+    "diagnostic_id": "DURABLE_ONE_VOTE",
+    "original_steps": 5,
+    "minimized_steps": 1,
+    "replay_command": ["python3", "replay_counterexample.py", "minimal-double-vote"]
+  }
+}

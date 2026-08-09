@@ -3,7 +3,7 @@ from __future__ import annotations
 import unittest
 
 from _load import CAPSTONE_ROOT  # noqa: F401
-from dskv import MemoryStorage, Message, MessageKind, Node
+from dskv import MemoryStorage, Message, MessageKind, Node, SimulatedCrash
 
 
 class VoteContractTest(unittest.TestCase):
@@ -32,6 +32,17 @@ class VoteContractTest(unittest.TestCase):
         responses = self.node.receive(self.request_vote("C", 1), now=2)
         self.assertEqual("B", self.storage.load().voted_for)
         self.assertFalse(responses[0].payload["vote_granted"])
+
+    def test_crash_hooks_expose_the_persist_before_response_barrier(self) -> None:
+        self.storage.fail_next_save("before")
+        with self.assertRaises(SimulatedCrash):
+            self.node.receive(self.request_vote("B", 1), now=1)
+        self.assertIsNone(self.storage.load().voted_for)
+
+        self.storage.fail_next_save("after")
+        with self.assertRaises(SimulatedCrash):
+            self.node.receive(self.request_vote("B", 1), now=2)
+        self.assertEqual("B", self.storage.load().voted_for)
 
 
 if __name__ == "__main__":
