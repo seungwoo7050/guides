@@ -58,13 +58,21 @@ def check_required_structure() -> None:
     if len(runbooks) < 8:
         fail(f'runbook이 부족합니다: {len(runbooks)}개')
 
-    exercise_dirs = sorted(p for p in (ROOT / 'exercises').iterdir() if p.is_dir())
+    exercise_dirs = sorted(
+        p for p in (ROOT / 'exercises').iterdir()
+        if p.is_dir() and p.name[:2].isdigit() and int(p.name[:2]) <= 12
+    )
     if len(exercise_dirs) != 12:
-        fail(f'핵심 실습은 12개여야 합니다: 현재 {len(exercise_dirs)}개')
+        fail(f'단계 설계 실습은 12개여야 합니다: 현재 {len(exercise_dirs)}개')
     for exercise in exercise_dirs:
         for rel in ('README.md', 'contract.json', 'skeleton/submission.json', 'reference/submission.json'):
             if not (exercise / rel).is_file():
                 fail(f'{exercise.name}: 파일 누락 {rel}')
+
+    model_lab = ROOT / 'exercises/13-platform-control-plane'
+    for rel in ('README.md', 'contract.json', 'skeleton/platform_model.py', 'reference/platform_model.py'):
+        if not (model_lab / rel).is_file():
+            fail(f'13-platform-control-plane: 파일 누락 {rel}')
 
 
 def check_manifest() -> None:
@@ -140,7 +148,10 @@ def check_exercises() -> tuple[int, int]:
     accepted = 0
     rejected = 0
     verifier = ROOT / 'scripts/verify_submission.py'
-    for exercise in sorted(p for p in (ROOT / 'exercises').iterdir() if p.is_dir()):
+    for exercise in sorted(
+        p for p in (ROOT / 'exercises').iterdir()
+        if p.is_dir() and p.name[:2].isdigit() and int(p.name[:2]) <= 12
+    ):
         contract = exercise / 'contract.json'
         reference = exercise / 'reference/submission.json'
         skeleton = exercise / 'skeleton/submission.json'

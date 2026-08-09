@@ -1,0 +1,42 @@
+{
+  "schema_version": 1,
+  "validator": "scripts/verify_platform_model.py",
+  "implementation_api": [
+    "request_environment",
+    "reconcile",
+    "observe_drift",
+    "request_migration",
+    "retire_service",
+    "snapshot"
+  ],
+  "check_ids": [
+    "PE-001",
+    "PE-002",
+    "PE-003",
+    "PE-004",
+    "PE-005",
+    "PE-006",
+    "PE-007",
+    "PE-008",
+    "PE-009",
+    "PE-010"
+  ],
+  "expected_starter_failures": [
+    "PE-001",
+    "PE-002",
+    "PE-003",
+    "PE-004",
+    "PE-005",
+    "PE-006",
+    "PE-007",
+    "PE-008",
+    "PE-009",
+    "PE-010"
+  ],
+  "execution": {
+    "timeout_seconds": 5,
+    "network_required": false,
+    "external_resources_created": false,
+    "os_sandboxed": false
+  }
+}
