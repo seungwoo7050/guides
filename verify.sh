@@ -24,15 +24,19 @@ fi
 
 if [ -n "${VERIFY_LOG:-}" ]; then
   LOG=$VERIFY_LOG
+  CREATE_LOG=1
 else
-  LOG=$(mktemp /tmp/guide-data-engineering-verify-XXXXXX.log)
+  LOG=$(mktemp "${TMPDIR:-/tmp}/guide-data-engineering-verify.XXXXXX")
+  CREATE_LOG=0
 fi
 
-python3 - "$ROOT" "$LOG" <<'PY'
+python3 - "$ROOT" "$LOG" "$CREATE_LOG" <<'PY'
+import os
 import sys
 from pathlib import Path
 root = Path(sys.argv[1]).resolve()
 log = Path(sys.argv[2])
+create_log = sys.argv[3] == '1'
 if not log.is_absolute():
     raise SystemExit('VERIFY_LOG는 절대 경로여야 합니다.')
 resolved = log.resolve(strict=False)
@@ -42,7 +46,15 @@ except ValueError:
     pass
 else:
     raise SystemExit('VERIFY_LOG는 저장소 밖 경로여야 합니다.')
-resolved.parent.mkdir(parents=True, exist_ok=True)
+if not resolved.parent.is_dir():
+    raise SystemExit('VERIFY_LOG 상위 디렉터리가 존재해야 합니다.')
+if create_log:
+    try:
+        descriptor = os.open(resolved, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)
+    except FileExistsError:
+        raise SystemExit('VERIFY_LOG 기존 파일을 덮어쓰지 않습니다.')
+    else:
+        os.close(descriptor)
 PY
 
 TMP=$(mktemp -d /tmp/guide-data-engineering-work-XXXXXX)
