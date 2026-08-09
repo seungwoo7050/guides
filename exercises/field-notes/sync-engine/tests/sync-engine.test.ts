@@ -149,6 +149,57 @@ test("response loss retries the immutable attempted command and applies once", a
   assert.equal(server.getApplyCount(attempted.commandId), 1);
 });
 
+test("future retry wait preserves same-record order while another record progresses", async () => {
+  const { clock, server, repository, worker } = harness({ maxCommands: 1 });
+  const first = command("cmd-order-a", "ordered-record");
+  repository.enqueueLocalCommand(first);
+  server.inject({ kind: "response-loss" }, { commandId: first.commandId });
+  await worker("order-first").run({ trigger: "manual", workerId: "order-first" });
+  assert.equal((await requireCommand(repository, first.commandId)).state.kind, "retry_wait");
+
+  const laterSameRecord = command("cmd-order-b", "ordered-record", {
+    localRevision: 2,
+    payload: structuredClone(PAYLOAD_B),
+  });
+  const otherRecord = command("cmd-order-other", "fair-record");
+  repository.enqueueLocalCommand(laterSameRecord);
+  repository.enqueueLocalCommand(otherRecord);
+
+  const fairRun = await worker("order-fair").run({
+    trigger: "manual",
+    workerId: "order-fair",
+  });
+  assert.equal(fairRun.claimed, 1);
+  assert.equal((await requireCommand(repository, otherRecord.commandId)).state.kind, "completed");
+  assert.equal((await requireCommand(repository, laterSameRecord.commandId)).state.kind, "pending");
+  assert.equal(server.getApplyCount(laterSameRecord.commandId), 0);
+
+  const stillWaiting = await worker("order-not-due").run({
+    trigger: "manual",
+    workerId: "order-not-due",
+  });
+  assert.deepEqual(stillWaiting, {
+    trigger: "manual",
+    workerId: "order-not-due",
+    claimed: 0,
+    checkpoints: [],
+    stopped: "idle",
+  });
+
+  clock.advanceBy(10);
+  await worker("order-retry-a").run({ trigger: "manual", workerId: "order-retry-a" });
+  const rebased = (await repository.snapshot()).commands.find(
+    (entry) => entry.command.recordId === first.recordId && entry.state.kind === "pending",
+  );
+  assert.notEqual(rebased, undefined);
+  assert.equal(rebased?.command.baseVersion, 1);
+  assert.deepEqual(rebased?.command.payload, PAYLOAD_B);
+  await worker("order-send-b").run({ trigger: "manual", workerId: "order-send-b" });
+  assert.equal((await requireCommand(repository, rebased!.command.commandId)).state.kind, "completed");
+  assert.equal(server.getRecord(first.recordId)?.version, 2);
+  assert.equal((await repository.snapshot()).conflicts.length, 0);
+});
+
 test("lost local checkpoint causes duplicate delivery but not duplicate apply", async () => {
   const { clock, server, repository, worker } = harness();
   const attempted = command("cmd-checkpoint-loss", "ridge-marker");
@@ -239,10 +290,12 @@ test("foreground/background overlap cannot claim one live command twice", async 
   assert.equal(server.getApplyCount(attempted.commandId), 1);
 });
 
-test("401 blocks durably and explicit auth resume retries the same snapshot", async () => {
-  const { clock, server, repository, worker } = harness();
+test("401 globally blocks later records until explicit auth resume", async () => {
+  const { clock, server, repository, worker } = harness({ maxCommands: 2 });
   const attempted = command("cmd-auth", "auth-record");
+  const later = command("cmd-auth-later", "other-auth-record");
   repository.enqueueLocalCommand(attempted);
+  repository.enqueueLocalCommand(later);
   server.inject({ kind: "unauthorized" }, { commandId: attempted.commandId });
 
   await worker("foreground-auth").run({
@@ -258,6 +311,15 @@ test("401 blocks durably and explicit auth resume retries the same snapshot", as
   assert.equal((await requireRecord(repository, attempted.recordId)).syncState, "blocked_auth");
   assert.equal(server.getApplyCount(attempted.commandId), 0);
 
+  const stillBlocked = await worker("auth-must-not-progress").run({
+    trigger: "app-active",
+    workerId: "auth-must-not-progress",
+  });
+  assert.equal(stillBlocked.claimed, 0);
+  assert.equal(stillBlocked.stopped, "idle");
+  assert.equal((await requireCommand(repository, later.commandId)).state.kind, "pending");
+  assert.equal(server.getApplyCount(later.commandId), 0);
+
   assert.equal(await repository.resumeBlockedAuth(clock.now()), 1);
   await worker("foreground-auth-resumed").run({
     trigger: "app-active",
@@ -270,6 +332,8 @@ test("401 blocks durably and explicit auth resume retries the same snapshot", as
   }
   assert.deepEqual(completed.state.attempted, attempted);
   assert.equal(server.getApplyCount(attempted.commandId), 1);
+  assert.equal((await requireCommand(repository, later.commandId)).state.kind, "completed");
+  assert.equal(server.getApplyCount(later.commandId), 1);
 });
 
 test("malformed success never checkpoints success and same-ID retry reconciles", async () => {
@@ -426,6 +490,33 @@ test("conflict preserves both sides and local resolution creates a new command",
   assert.deepEqual(preservedEvidence?.local.payload, PAYLOAD_A);
   assert.deepEqual(preservedEvidence?.remote?.payload, REMOTE_PAYLOAD);
   assert.equal(preservedEvidence?.resolution?.kind, "local");
+});
+
+test("an unresolved conflict gates a later command for the same record", async () => {
+  const { server, repository, worker } = harness({ maxCommands: 2 });
+  server.seedRecord("conflict-gated-record", REMOTE_PAYLOAD, 1);
+  const attempted = command("cmd-conflict-gate-a", "conflict-gated-record");
+  repository.enqueueLocalCommand(attempted);
+  await worker("conflict-gate-a").run({
+    trigger: "manual",
+    workerId: "conflict-gate-a",
+  });
+  assert.equal((await requireCommand(repository, attempted.commandId)).state.kind, "conflict");
+
+  const later = command("cmd-conflict-gate-b", attempted.recordId, {
+    baseVersion: 1,
+    localRevision: 2,
+    payload: structuredClone(PAYLOAD_B),
+  });
+  repository.enqueueLocalCommand(later);
+  const gated = await worker("conflict-gate-b").run({
+    trigger: "manual",
+    workerId: "conflict-gate-b",
+  });
+  assert.equal(gated.claimed, 0);
+  assert.equal(gated.stopped, "idle");
+  assert.equal((await requireCommand(repository, later.commandId)).state.kind, "pending");
+  assert.equal(server.getApplyCount(later.commandId), 0);
 });
 
 test("expired lease survives snapshot restore and keeps the attempted command", async () => {

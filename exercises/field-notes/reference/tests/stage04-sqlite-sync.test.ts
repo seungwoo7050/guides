@@ -161,6 +161,46 @@ describe("Stage 04 production SQLite SyncRepository", () => {
     harness.database.close();
   });
 
+  it("does not overtake a future retry on the same record and still claims another record", async () => {
+    const harness = await createHarness({ maxCommands: 1 });
+    const first = await updateRecord(harness, "forest-edge", "ordered A");
+    harness.server.inject({ kind: "response-loss" }, {
+      commandId: first.command.commandId,
+    });
+    await harness.worker("order-first");
+    expect((await harness.syncRepository.getCommand(first.command.commandId))?.state.kind)
+      .toBe("retry_wait");
+
+    const laterSameRecord = await updateRecord(harness, "forest-edge", "ordered B");
+    const otherRecord = await updateRecord(harness, "harbor-light", "fair other record");
+    const fairRun = await harness.worker("order-fair");
+    expect(fairRun).toMatchObject({ claimed: 1 });
+    expect((await harness.syncRepository.getCommand(otherRecord.command.commandId))?.state.kind)
+      .toBe("completed");
+    expect((await harness.syncRepository.getCommand(laterSameRecord.command.commandId))?.state.kind)
+      .toBe("pending");
+    expect(harness.server.getApplyCount(laterSameRecord.command.commandId)).toBe(0);
+    await expect(harness.syncRepository.claimNext({
+      workerId: "order-not-due",
+      now: harness.manualClock.now(),
+      leaseDurationMs: 100,
+    })).resolves.toBeNull();
+
+    harness.manualClock.advanceBy(10);
+    await harness.worker("order-retry-a");
+    const rebasedId = `${laterSameRecord.command.commandId}:rebase:1`;
+    expect(await harness.syncRepository.getCommand(rebasedId)).toMatchObject({
+      command: { baseVersion: 1, payload: { title: "ordered B" } },
+      state: { kind: "pending" },
+    });
+    await harness.worker("order-send-b");
+    expect((await harness.syncRepository.getCommand(rebasedId))?.state.kind)
+      .toBe("completed");
+    expect(harness.server.getRecord(first.command.recordId)?.version).toBe(2);
+    expect((await harness.syncRepository.snapshot()).conflicts).toEqual([]);
+    harness.database.close();
+  });
+
   it("allows different records to finish out of order without double-claiming one live lease", async () => {
     const harness = await createHarness();
     const first = await updateRecord(harness, "forest-edge", "delayed A");

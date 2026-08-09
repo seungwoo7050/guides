@@ -455,6 +455,11 @@ export class SQLiteSyncRepositoryAdapter implements SyncRepository {
            WHERE unresolved.record_id = candidate.record_id
              AND unresolved.resolution_kind IS NULL
          ) AND NOT EXISTS (
+           SELECT 1 FROM outbox AS predecessor
+           WHERE predecessor.record_id = candidate.record_id
+             AND predecessor.sequence < candidate.sequence
+             AND predecessor.state NOT IN ('applied', 'permanent-failure')
+         ) AND NOT EXISTS (
            SELECT 1 FROM outbox AS auth_block
            WHERE auth_block.state = 'blocked-auth'
          )

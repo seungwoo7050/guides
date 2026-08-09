@@ -146,6 +146,27 @@ export class InMemorySyncRepository implements SyncRepository {
       throw new RangeError("lease duration must be positive");
     }
 
+    // This reference has one local session. Any unresolved auth checkpoint is
+    // therefore a global gate until the explicit resume action records that
+    // credentials were repaired.
+    if ([...this.#commands.values()].some((entry) => entry.state.kind === "blocked_auth")) {
+      return null;
+    }
+
+    const unresolvedConflictRecords = new Set(
+      [...this.#conflicts.values()]
+        .filter((conflict) => conflict.resolution === undefined)
+        .map((conflict) => conflict.recordId),
+    );
+    const earliestNonterminalSequence = new Map<string, number>();
+    for (const entry of this.#commands.values()) {
+      if (entry.state.kind === "completed" || entry.state.kind === "permanent") continue;
+      const current = earliestNonterminalSequence.get(entry.command.recordId);
+      if (current === undefined || entry.sequence < current) {
+        earliestNonterminalSequence.set(entry.command.recordId, entry.sequence);
+      }
+    }
+
     const liveRecordLeases = new Set<string>();
     for (const entry of this.#commands.values()) {
       if (entry.state.kind === "in_flight" && entry.state.lease.expiresAt > input.now) {
@@ -157,6 +178,13 @@ export class InMemorySyncRepository implements SyncRepository {
       .sort((left, right) => left.sequence - right.sequence)
       .find((entry) => {
         const { state } = entry;
+        if (unresolvedConflictRecords.has(entry.command.recordId)) {
+          return false;
+        }
+        const predecessorSequence = earliestNonterminalSequence.get(entry.command.recordId);
+        if (predecessorSequence !== undefined && predecessorSequence < entry.sequence) {
+          return false;
+        }
         if (state.kind === "in_flight") {
           return state.lease.expiresAt <= input.now;
         }
