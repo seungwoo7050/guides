@@ -1,0 +1,18 @@
+{
+  "version": 1,
+  "constants": [{"type": "Int", "value": 0}],
+  "entry": 0,
+  "functions": [
+    {
+      "name": "main",
+      "parameters": [],
+      "return_type": "Int",
+      "locals": [],
+      "instructions": [
+        {"op": "JUMP", "target": 99},
+        {"op": "CONST", "index": 0},
+        {"op": "RETURN"}
+      ]
+    }
+  ]
+}

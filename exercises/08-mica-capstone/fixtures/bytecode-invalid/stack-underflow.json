@@ -1,0 +1,17 @@
+{
+  "version": 1,
+  "constants": [],
+  "entry": 0,
+  "functions": [
+    {
+      "name": "main",
+      "parameters": [],
+      "return_type": "Int",
+      "locals": [],
+      "instructions": [
+        {"op": "ADD_I64"},
+        {"op": "RETURN"}
+      ]
+    }
+  ]
+}

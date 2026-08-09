@@ -1,0 +1,9 @@
+fn main() -> Int {
+    let value: Int = 1;
+    {
+        let value: Int = 2;
+        print_int(value);
+    }
+    print_int(value);
+    return value;
+}

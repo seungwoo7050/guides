@@ -1,0 +1,4 @@
+fn main() -> Int {
+    print_string("한글과 🙂");
+    return 0;
+}

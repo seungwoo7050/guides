@@ -1,0 +1,45 @@
+{
+  "schema_version": 1,
+  "valid": [
+    {"file": "valid/literal-main.mica", "stage": "run", "exit": 0, "codes": [], "stdout": "", "return": {"type": "Int", "value": 42}},
+    {"file": "valid/arithmetic.mica", "stage": "run", "exit": 0, "codes": [], "stdout": "14\n", "return": {"type": "Int", "value": 14}},
+    {"file": "valid/control-flow.mica", "stage": "run", "exit": 0, "codes": [], "stdout": "15\n", "return": {"type": "Int", "value": 15}},
+    {"file": "valid/functions.mica", "stage": "run", "exit": 0, "codes": [], "stdout": "120\n", "return": {"type": "Int", "value": 120}},
+    {"file": "valid/shadowing.mica", "stage": "run", "exit": 0, "codes": [], "stdout": "2\n1\n", "return": {"type": "Int", "value": 1}},
+    {"file": "valid/short-circuit.mica", "stage": "run", "exit": 0, "codes": [], "stdout": "ok\n", "return": {"type": "Int", "value": 0}},
+    {"file": "valid/unicode-string.mica", "stage": "run", "exit": 0, "codes": [], "stdout": "한글과 🙂\n", "return": {"type": "Int", "value": 0}}
+  ],
+  "invalid": [
+    {"file": "invalid/invalid-character.mica", "stage": "lex", "exit": 1, "codes": ["MICA1001"]},
+    {"file": "invalid/unterminated-string.mica", "stage": "lex", "exit": 1, "codes": ["MICA1002"]},
+    {"file": "invalid/invalid-escape.mica", "stage": "lex", "exit": 1, "codes": ["MICA1003"]},
+    {"file": "invalid/integer-out-of-range.mica", "stage": "check", "exit": 1, "codes": ["MICA1004"]},
+    {"file": "invalid/missing-semicolon.mica", "stage": "parse", "exit": 1, "codes": ["MICA2001"]},
+    {"file": "invalid/unexpected-token.mica", "stage": "parse", "exit": 1, "codes": ["MICA2002"]},
+    {"file": "invalid/duplicate-function.mica", "stage": "check", "exit": 1, "codes": ["MICA3001"]},
+    {"file": "invalid/duplicate-local.mica", "stage": "check", "exit": 1, "codes": ["MICA3002"]},
+    {"file": "invalid/unknown-name.mica", "stage": "check", "exit": 1, "codes": ["MICA3003"]},
+    {"file": "invalid/assign-immutable.mica", "stage": "check", "exit": 1, "codes": ["MICA3004"]},
+    {"file": "invalid/type-mismatch.mica", "stage": "check", "exit": 1, "codes": ["MICA3101"]},
+    {"file": "invalid/operator-type.mica", "stage": "check", "exit": 1, "codes": ["MICA3102"]},
+    {"file": "invalid/argument-count.mica", "stage": "check", "exit": 1, "codes": ["MICA3103"]},
+    {"file": "invalid/non-bool-condition.mica", "stage": "check", "exit": 1, "codes": ["MICA3105"]},
+    {"file": "invalid/return-mismatch.mica", "stage": "check", "exit": 1, "codes": ["MICA3106"]},
+    {"file": "invalid/missing-return.mica", "stage": "check", "exit": 1, "codes": ["MICA3201"]},
+    {"file": "invalid/bad-main.mica", "stage": "check", "exit": 1, "codes": ["MICA3202"]}
+  ],
+  "runtime": [
+    {"file": "runtime/division-by-zero.mica", "stage": "run", "exit": 1, "codes": ["MICA4001"], "stdout": "", "return": null},
+    {"file": "runtime/overflow.mica", "stage": "run", "exit": 1, "codes": ["MICA4002"], "stdout": "", "return": null},
+    {"file": "runtime/recursion-limit.mica", "stage": "run", "exit": 1, "codes": ["MICA4003"], "stdout": "", "return": null},
+    {"file": "runtime/execution-limit.mica", "stage": "run", "exit": 1, "codes": ["MICA4004"], "return": null}
+  ],
+  "format": [
+    {"file": "format/messy.mica", "expected": "format/messy.expected.mica"}
+  ],
+  "bytecode_invalid": [
+    {"file": "bytecode-invalid/bad-jump.json", "codes": ["MICA5002"]},
+    {"file": "bytecode-invalid/stack-underflow.json", "codes": ["MICA5003"]},
+    {"file": "bytecode-invalid/merge-mismatch.json", "codes": ["MICA5004"]}
+  ]
+}

@@ -1,0 +1,4 @@
+fn main() -> Int {
+    print_string("missing end);
+    return 0;
+}

@@ -1,0 +1,4 @@
+fn main() -> Int {
+    print_string("bad\q");
+    return 0;
+}

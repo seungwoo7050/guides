@@ -1,0 +1,5 @@
+fn main() -> Int {
+    let value: Int = 2 + 3 * 4;
+    print_int(value);
+    return value;
+}

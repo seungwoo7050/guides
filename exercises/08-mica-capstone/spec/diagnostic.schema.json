@@ -1,0 +1,41 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.invalid/mica/diagnostic.schema.json",
+  "title": "Mica Diagnostic",
+  "type": "object",
+  "required": ["code", "severity", "phase", "message", "primary"],
+  "properties": {
+    "code": {"type": "string", "pattern": "^MICA[0-9]{4}$"},
+    "severity": {"enum": ["error", "warning", "information", "hint"]},
+    "phase": {"enum": ["lex", "parse", "resolution", "type", "flow", "runtime", "bytecode", "internal"]},
+    "message": {"type": "string", "minLength": 1},
+    "primary": {"$ref": "#/$defs/span"},
+    "secondary": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["span", "label"],
+        "properties": {
+          "span": {"$ref": "#/$defs/span"},
+          "label": {"type": "string"}
+        },
+        "additionalProperties": true
+      }
+    },
+    "notes": {"type": "array", "items": {"type": "string"}},
+    "fixes": {"type": "array", "items": {"type": "object"}}
+  },
+  "additionalProperties": true,
+  "$defs": {
+    "span": {
+      "type": "object",
+      "required": ["source_id", "start", "end"],
+      "properties": {
+        "source_id": {"type": "string"},
+        "start": {"type": "integer", "minimum": 0},
+        "end": {"type": "integer", "minimum": 0}
+      },
+      "additionalProperties": false
+    }
+  }
+}

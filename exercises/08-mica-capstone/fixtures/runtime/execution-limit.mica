@@ -1,0 +1,6 @@
+fn main() -> Int {
+    while true {
+        print_string("tick");
+    }
+    return 0;
+}

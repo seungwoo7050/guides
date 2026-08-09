@@ -1,0 +1,24 @@
+{
+  "version": 1,
+  "constants": [
+    {"type": "Bool", "value": true},
+    {"type": "Int", "value": 1}
+  ],
+  "entry": 0,
+  "functions": [
+    {
+      "name": "main",
+      "parameters": [],
+      "return_type": "Int",
+      "locals": [],
+      "instructions": [
+        {"op": "CONST", "index": 0},
+        {"op": "JUMP_IF_FALSE", "target": 4},
+        {"op": "CONST", "index": 1},
+        {"op": "JUMP", "target": 5},
+        {"op": "UNIT"},
+        {"op": "RETURN"}
+      ]
+    }
+  ]
+}

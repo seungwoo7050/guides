@@ -1,0 +1,6 @@
+fn recurse(value: Int) -> Int {
+    return recurse(value + 1);
+}
+fn main() -> Int {
+    return recurse(0);
+}

@@ -1,0 +1,8 @@
+[project]
+name = "mica-language-capstone"
+version = "0.0.0"
+requires-python = ">=3.12"
+description = "Intentionally incomplete Mica language implementation skeleton"
+
+[tool.mica]
+profile = "python312"

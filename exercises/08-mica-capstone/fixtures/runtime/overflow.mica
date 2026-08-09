@@ -1,0 +1,4 @@
+fn main() -> Int {
+    let max: Int = 9223372036854775807;
+    return max + 1;
+}

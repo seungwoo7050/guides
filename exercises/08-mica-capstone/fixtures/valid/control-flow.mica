@@ -1,0 +1,14 @@
+fn main() -> Int {
+    var i: Int = 1;
+    var total: Int = 0;
+    while i <= 5 {
+        total = total + i;
+        i = i + 1;
+    }
+    if total == 15 {
+        print_int(total);
+    } else {
+        print_int(0);
+    }
+    return total;
+}

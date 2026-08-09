@@ -1,0 +1,14 @@
+fn side() -> Bool {
+    print_string("side");
+    return true;
+}
+
+fn main() -> Int {
+    let left: Bool = false && side();
+    let right: Bool = true || side();
+    if !left && right {
+        print_string("ok");
+        return 0;
+    }
+    return 1;
+}

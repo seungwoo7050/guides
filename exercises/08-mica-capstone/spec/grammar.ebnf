@@ -1,0 +1,47 @@
+(* Mica core concrete grammar. Lexical longest-match rules are in language.md. *)
+
+program         = { function_decl }, EOF ;
+
+function_decl   = "fn", IDENT, "(", [ parameter_list ], ")",
+                  "->", type_name, block ;
+parameter_list  = parameter, { ",", parameter } ;
+parameter       = IDENT, ":", type_name ;
+type_name       = "Int" | "Bool" | "String" | "Unit" ;
+
+block           = "{", { statement }, "}" ;
+statement       = local_decl
+                | assignment_stmt
+                | if_stmt
+                | while_stmt
+                | return_stmt
+                | expression_stmt
+                | block ;
+
+local_decl      = ( "let" | "var" ), IDENT, ":", type_name,
+                  "=", expression, ";" ;
+assignment_stmt = IDENT, "=", expression, ";" ;
+if_stmt         = "if", expression, block,
+                  [ "else", ( if_stmt | block ) ] ;
+while_stmt      = "while", expression, block ;
+return_stmt     = "return", [ expression ], ";" ;
+expression_stmt = expression, ";" ;
+
+expression      = logical_or ;
+logical_or      = logical_and, { "||", logical_and } ;
+logical_and     = equality, { "&&", equality } ;
+equality        = comparison, { ( "==" | "!=" ), comparison } ;
+comparison      = term, { ( "<" | "<=" | ">" | ">=" ), term } ;
+term            = factor, { ( "+" | "-" ), factor } ;
+factor          = unary, { ( "*" | "/" | "%" ), unary } ;
+unary           = ( "!" | "-" ), unary | call ;
+call            = primary, { "(", [ argument_list ], ")" } ;
+argument_list   = expression, { ",", expression } ;
+primary         = INTEGER
+                | STRING
+                | "true"
+                | "false"
+                | IDENT
+                | "(", expression, ")" ;
+
+(* A syntactic call may have any primary callee after recovery/normalization.
+   Static semantics requires a top-level function or builtin name. *)
