@@ -29,6 +29,19 @@
 
 `cloud-computing`은 위 내용을 반복하지 않습니다. 기존 시스템을 클라우드 서비스 모델로 옮겼을 때 **관리 경계, identity, failure domain, 과금 단위와 종료 절차가 어떻게 달라지는지**에 집중합니다.
 
+## main 계약과 관계
+
+이 가이드는 최신 `main`에서 `specialization`으로 정의됩니다. 관계 필드는 학습 순서를 강제하는 한 목록이 아니라 직접 필수, 권장 기반, 인접 협업과 일반적인 후속 경로를 구분합니다.
+
+| 관계 | 브랜치 |
+|---|---|
+| `requires` | [`web-infra`](https://github.com/seungwoo7050/guides/tree/web-infra) |
+| `recommends` | [`web-app`](https://github.com/seungwoo7050/guides/tree/web-app), [`database-systems`](https://github.com/seungwoo7050/guides/tree/database-systems), [`distributed-services`](https://github.com/seungwoo7050/guides/tree/distributed-services), [`cybersecurity`](https://github.com/seungwoo7050/guides/tree/cybersecurity) |
+| `connects` | [`platform-engineering`](https://github.com/seungwoo7050/guides/blob/887f4b8a679195c5b6c13457a91e0b0af357ccff/catalog/branches.json#L959), [`data-engineering`](https://github.com/seungwoo7050/guides/blob/887f4b8a679195c5b6c13457a91e0b0af357ccff/catalog/branches.json#L918), [`machine-learning`](https://github.com/seungwoo7050/guides/blob/887f4b8a679195c5b6c13457a91e0b0af357ccff/catalog/branches.json#L793), [`agentic-systems`](https://github.com/seungwoo7050/guides/blob/887f4b8a679195c5b6c13457a91e0b0af357ccff/catalog/branches.json#L835), [`distributed-systems`](https://github.com/seungwoo7050/guides/blob/887f4b8a679195c5b6c13457a91e0b0af357ccff/catalog/branches.json#L878) |
+| `continues_to` | [`platform-engineering`](https://github.com/seungwoo7050/guides/blob/887f4b8a679195c5b6c13457a91e0b0af357ccff/catalog/branches.json#L959) |
+
+`connects`와 `continues_to` 중 아직 원격 구현이 없는 항목은 `main` SHA `887f4b8`에서 승인된 목표 계약으로 연결합니다. 존재하지 않는 완료 브랜치처럼 설명하지 않습니다.
+
 ## 과정이 만드는 능력
 
 과정을 마치면 다음 작업을 수행할 수 있어야 합니다.
@@ -48,14 +61,14 @@
 
 ## 이 브랜치가 소유하는 범위
 
-`main` 카탈로그의 최종 설계에 맞춰 다음 범위를 소유합니다.
+`main` 카탈로그의 최종 설계에 맞춰 다음 범위를 소유합니다. 각 항목의 개념·실습·Capstone·판정 근거는 [`contract evidence map`](reference/contract-evidence-map.md)에서 추적할 수 있습니다.
 
-- 클라우드의 on-demand·resource pooling·elasticity·measured service와 공유 책임
+- on-demand·resource pooling·elasticity·measured service와 공급자·소비자 공유 책임
 - region·availability zone·failure domain과 compute·network·storage·identity의 관리 경계
 - IaaS·PaaS·SaaS 서비스 모델과 VM·container·CaaS·serverless/FaaS 실행 모델의 구분
-- FaaS event delivery·concurrency·cold start·timeout·retry·idempotency·dead-letter 처리
-- SaaS tenant 수명·control/data plane·격리·metering·quota·export·deletion
-- 비용 예산·탄력성·가용성·portability·vendor lock-in의 근거 기반 비교
+- FaaS event source·delivery·concurrency·cold start·timeout 제약에 기존 전달 계약을 적용하는 방법
+- 고객 조직을 위한 SaaS tenant 수명·control/data plane·격리·metering·quota·export·deletion
+- 예산·탄력성·가용성·portability·vendor lock-in의 근거 기반 비교
 
 다음 영역은 다른 브랜치가 주로 소유합니다.
 
@@ -66,8 +79,8 @@
 | 스키마·트랜잭션·DBMS 내부구조 | [`database-systems`](https://github.com/seungwoo7050/guides/tree/database-systems) | managed database 선택과 tenant isolation의 데이터 계약에 적용합니다. |
 | retry·멱등성·Outbox·부분 실패 | [`distributed-services`](https://github.com/seungwoo7050/guides/tree/distributed-services) | FaaS event source와 cloud provisioning 작업에 적용합니다. |
 | 일반 위협 모델·보안 검증·사고 대응 | [`cybersecurity`](https://github.com/seungwoo7050/guides/tree/cybersecurity) | cloud identity, metadata, tenant isolation과 control plane 변경을 검토합니다. |
-| 여러 팀의 Kubernetes·IaC module·golden path | `platform-engineering` | 이 브랜치는 한 workload와 작은 SaaS의 cloud 책임을 다루고, 조직용 self-service 플랫폼은 후속 경로로 넘깁니다. |
-| 합의·복제 상태 기계 | `distributed-systems` | provider 서비스가 제공한다고 주장하는 일관성·가용성의 외부 계약만 사용합니다. |
+| 여러 팀의 Kubernetes·IaC module·golden path | [`platform-engineering` 목표 계약](https://github.com/seungwoo7050/guides/blob/887f4b8a679195c5b6c13457a91e0b0af357ccff/catalog/branches.json#L959) | 이 브랜치는 한 workload와 작은 SaaS의 cloud 책임을 다루고, 조직용 self-service 플랫폼은 후속 경로로 넘깁니다. |
+| 합의·복제 상태 기계 | [`distributed-systems` 목표 계약](https://github.com/seungwoo7050/guides/blob/887f4b8a679195c5b6c13457a91e0b0af357ccff/catalog/branches.json#L878) | provider 서비스가 제공한다고 주장하는 일관성·가용성의 외부 계약만 사용합니다. |
 
 ## 학습 구조
 

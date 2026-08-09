@@ -52,11 +52,18 @@ IaaS·managed platform·FaaS·SaaS의 책임과 상태 전이
 
 권장 브랜치를 모두 완료해야 시작할 수 있다는 뜻은 아닙니다. 관련 문서에서 해당 지식을 필요로 할 때 소유 브랜치로 이동합니다.
 
-## 브랜치와 트랙을 구분하기
+## 브랜치 계약과 트랙을 구분하기
 
-### 브랜치 완료
+이 브랜치는 최신 `main` SHA `887f4b8`에서 `specialization`으로 정의됩니다. 관계 필드는 다음처럼 서로 다른 의미를 가집니다.
 
-이 브랜치의 문서와 실습을 통해 다음을 연결한 상태입니다.
+| 관계 | 브랜치 |
+|---|---|
+| 직접 필수 `requires` | [`web-infra`](https://github.com/seungwoo7050/guides/tree/web-infra) |
+| 문제별 권장 `recommends` | [`web-app`](https://github.com/seungwoo7050/guides/tree/web-app), [`database-systems`](https://github.com/seungwoo7050/guides/tree/database-systems), [`distributed-services`](https://github.com/seungwoo7050/guides/tree/distributed-services), [`cybersecurity`](https://github.com/seungwoo7050/guides/tree/cybersecurity) |
+| 인접 협업 `connects` | [`platform-engineering`](https://github.com/seungwoo7050/guides/blob/887f4b8a679195c5b6c13457a91e0b0af357ccff/catalog/branches.json#L959), [`data-engineering`](https://github.com/seungwoo7050/guides/blob/887f4b8a679195c5b6c13457a91e0b0af357ccff/catalog/branches.json#L918), [`machine-learning`](https://github.com/seungwoo7050/guides/blob/887f4b8a679195c5b6c13457a91e0b0af357ccff/catalog/branches.json#L793), [`agentic-systems`](https://github.com/seungwoo7050/guides/blob/887f4b8a679195c5b6c13457a91e0b0af357ccff/catalog/branches.json#L835), [`distributed-systems`](https://github.com/seungwoo7050/guides/blob/887f4b8a679195c5b6c13457a91e0b0af357ccff/catalog/branches.json#L878) |
+| 일반적인 후속 `continues_to` | [`platform-engineering`](https://github.com/seungwoo7050/guides/blob/887f4b8a679195c5b6c13457a91e0b0af357ccff/catalog/branches.json#L959) |
+
+카탈로그에만 있고 아직 원격 구현이 없는 연결 항목은 완료 브랜치가 아니라 위 고정 SHA의 목표 계약으로 표시합니다. 이 브랜치의 완료는 다음 상태·근거를 하나의 흐름으로 연결했다는 뜻입니다.
 
 - cloud service의 책임 경계
 - IaaS resource와 failure domain
@@ -65,35 +72,33 @@ IaaS·managed platform·FaaS·SaaS의 책임과 상태 전이
 - SaaS tenant와 commercial state
 - 비용·관측·복구·exit evidence
 
-### 클라우드 엔지니어링 트랙 완료
+### `main`에 등재된 다섯 트랙의 위치
 
-`main`의 클라우드 엔지니어링 트랙은 보통 다음 선형 경로를 사용합니다.
+| 트랙 | 위치 | 대상이 포함된 `linear_paths` |
+|---|---|---|
+| `web-backend` | `advanced` | 없음. 백엔드 학습 뒤 선택하는 심화 브랜치입니다. |
+| `full-stack-web` | `advanced` | 없음. 풀스택 학습 뒤 선택하는 심화 브랜치입니다. |
+| `saas-product-engineering` | `required` | `small-product`, `spring-product` |
+| `cloud-engineering` | `required` | `default` |
+| `infrastructure-platform` | `recommended` | `cloud-platform` |
 
-```text
-git
-→ unix-systems
-→ computer-networks
-→ web-infra
-→ cloud-computing
-```
-
-이는 처음 보는 cloud workload의 시스템 상태를 조사하고, 공개 서비스 운영 기반과 cloud 책임을 연결할 준비를 뜻합니다.
-
-### SaaS 제품 경로
-
-작은 SaaS를 직접 만들 때는 다음 기반이 추가됩니다.
+대상이 포함된 선형 경로는 다음 네 개이며, 순서는 카탈로그와 같습니다.
 
 ```text
-git
-→ web-app
-→ database-systems
-→ web-infra
-→ cloud-computing
+saas-product-engineering / small-product
+git → web-app → database-systems → web-infra → cloud-computing
+
+saas-product-engineering / spring-product
+git → web-app → java → backend-spring-boot → database-systems → web-infra → cloud-computing
+
+cloud-engineering / default
+git → unix-systems → computer-networks → web-infra → cloud-computing
+
+infrastructure-platform / cloud-platform
+git → unix-systems → computer-networks → web-infra → cloud-computing → cybersecurity → platform-engineering
 ```
 
-Spring 기반 제품에서는 `java`와 `backend-spring-boot`가 사이에 들어갈 수 있습니다.
-
-브랜치나 트랙 완료는 실제 고객 데이터, 청구, 대규모 장애와 공급자 지원을 다룬 경험을 대신하지 않습니다.
+트랙은 브랜치를 어느 맥락에서 선택할지 보여 주지만, 브랜치 계약을 늘리거나 줄이지 않습니다. 브랜치나 트랙 완료는 실제 고객 데이터, 청구, 대규모 장애와 공급자 지원을 다룬 경험을 대신하지 않습니다.
 
 ## 품질 프로필
 
