@@ -1,0 +1,12 @@
+{
+  "name": "schedulable-rta",
+  "kind": "rta",
+  "unit": "us",
+  "interrupts": [{"name": "data-ready-isr", "wcet": 200, "min_gap": 5000}],
+  "tasks": [
+    {"name": "sensor", "priority": 1, "period": 10000, "deadline": 4000, "wcet": 800, "blocking": 500},
+    {"name": "communication", "priority": 2, "period": 20000, "deadline": 15000, "wcet": 1800, "blocking": 700},
+    {"name": "storage", "priority": 3, "period": 100000, "deadline": 80000, "wcet": 5000, "blocking": 0}
+  ],
+  "expected": {"all_schedulable": true, "responses": {"sensor": 1500, "communication": 3500, "storage": 8000}}
+}

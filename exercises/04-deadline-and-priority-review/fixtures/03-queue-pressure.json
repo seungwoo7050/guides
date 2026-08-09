@@ -1,0 +1,17 @@
+{
+  "name": "queue-pressure",
+  "kind": "queue",
+  "capacity": 3,
+  "service_per_tick": 1,
+  "drop_policy": "drop_newest",
+  "arrivals": [
+    {"id": "a0", "time": 0, "relative_deadline": 1},
+    {"id": "a1", "time": 0, "relative_deadline": 1},
+    {"id": "a2", "time": 0, "relative_deadline": 1},
+    {"id": "a3", "time": 0, "relative_deadline": 1},
+    {"id": "b0", "time": 1, "relative_deadline": 1},
+    {"id": "b1", "time": 1, "relative_deadline": 1},
+    {"id": "c0", "time": 3, "relative_deadline": 2}
+  ],
+  "expected": {"accepted": 5, "dropped": ["a3", "b1"], "max_depth": 3, "deadline_misses": ["a2", "b0"]}
+}

@@ -1,0 +1,7 @@
+{
+  "name": "cancel-stale-generation",
+  "scenario": "cancel_stale",
+  "bus": {"transport": "spi", "reset_delay": 1},
+  "driver": {"use_dma": false},
+  "request": {"first_sample": 43690, "second_sample": 48059}
+}

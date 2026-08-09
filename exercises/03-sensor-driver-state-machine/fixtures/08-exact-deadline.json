@@ -1,0 +1,7 @@
+{
+  "name": "exact-deadline",
+  "scenario": "exact_deadline",
+  "bus": {"transport": "i2c", "reset_delay": 1},
+  "driver": {"use_dma": false},
+  "request": {"start": 2, "deadline": 5, "sample": 51966}
+}

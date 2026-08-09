@@ -1,0 +1,6 @@
+{
+  "name": "suspend-resume",
+  "scenario": "suspend_resume",
+  "bus": {"transport": "i2c", "reset_delay": 1},
+  "driver": {"use_dma": false}
+}

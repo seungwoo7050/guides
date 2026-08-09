@@ -1,0 +1,7 @@
+{
+  "name": "normal-i2c",
+  "scenario": "normal",
+  "bus": {"transport": "i2c", "reset_delay": 2},
+  "driver": {"use_dma": false},
+  "request": {"start": 3, "deadline": 10, "ready": 7, "sample": 4660}
+}

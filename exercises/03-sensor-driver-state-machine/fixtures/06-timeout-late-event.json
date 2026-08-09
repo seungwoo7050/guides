@@ -1,0 +1,7 @@
+{
+  "name": "timeout-late-event",
+  "scenario": "timeout_late",
+  "bus": {"transport": "i2c", "reset_delay": 1},
+  "driver": {"use_dma": false},
+  "request": {"start": 2, "deadline": 5, "poll": 6, "ready": 7, "sample": 4369}
+}

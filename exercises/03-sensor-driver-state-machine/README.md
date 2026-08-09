@@ -113,6 +113,23 @@ RAISE_DATA_READY
 
 fake는 register access semantic과 device state를 가진 편이 좋습니다. 단순 mock 호출 순서만 검사하면 잘못된 recovery도 통과할 수 있습니다.
 
+이 디렉터리는 바로 실행할 수 있는 `starter/`, 비교 가능한 `reference/`,
+stateful I2C/SPI·MMIO·DMA 모델인 `lab_support.py`와 결정론적 `fixtures/`를
+제공합니다. reference를 먼저 검증한 뒤 starter를 별도 작업 디렉터리에
+복사해 완성합니다.
+
+```sh
+python3 exercises/03-sensor-driver-state-machine/check.py \
+  --submission exercises/03-sensor-driver-state-machine/reference
+python3 exercises/03-sensor-driver-state-machine/check.py \
+  --submission exercises/03-sensor-driver-state-machine/starter --json
+```
+
+checker는 성공 시 `0`, 계약 위반 시 `1`, submission 경로나 checker 입력을
+읽을 수 없으면 `2`를 반환합니다. `generated-config/devicetree.json`과
+`kconfig.json`은 최종 hardware topology와 software 선택의 증거이며 driver
+source에 board address나 pin을 다시 하드코딩하는 근거가 아닙니다.
+
 ## 필수 fixture
 
 - normal init + sample
@@ -159,6 +176,12 @@ workspace/
 - retry budget과 recovery escalation이 bounded입니다.
 - sample에는 unit, scale, timestamp와 validity가 있습니다.
 - optional target test는 bus trace와 build/configuration을 함께 보존합니다.
+
+자동 checker는 상태 전이, W1C acknowledge, generation, timeout/cancel,
+DMA/cache ownership과 생성 설정의 공개 계약만 확인합니다. 실제 bus timing,
+cache controller instruction, electrical signal, interrupt latency와 특정 RTOS
+API의 ISR-safety는 증명하지 않습니다. 실제 target 결과에는 board revision,
+toolchain, raw trace와 이 미검증 범위를 별도로 기록합니다.
 
 ## 잘못된 완료
 

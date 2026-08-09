@@ -93,6 +93,23 @@ R_i = C_i + B_i + higher-priority interference during R_i
 
 iteration과 가정, 단위를 표에 남깁니다. sporadic task는 minimum inter-arrival를 사용합니다.
 
+이 디렉터리에는 실행 가능한 `starter/`, 비교 기준인 `reference/`와 세
+종류의 결정론적 fixture가 있습니다. response-time fixture는 blocking과 ISR
+interference를 포함하고, queue fixture는 유한 capacity의 drop과 deadline
+miss를 남기며, priority-inversion fixture는 inheritance 유무의 per-tick
+reference trace를 비교합니다.
+
+```sh
+python3 exercises/04-deadline-and-priority-review/check.py \
+  --submission exercises/04-deadline-and-priority-review/reference
+python3 exercises/04-deadline-and-priority-review/check.py \
+  --submission exercises/04-deadline-and-priority-review/starter --json
+```
+
+checker는 통과 시 `0`, 공개 계산·trace 계약 위반 시 `1`, submission 경로나
+checker 입력을 읽을 수 없으면 `2`를 반환합니다. `starter/analysis.py`를
+학습자 workspace로 복사해 함수의 공개 반환 모양을 유지하며 완성합니다.
+
 ## failure scenario
 
 - communication burst
@@ -140,6 +157,12 @@ workspace/
 - priority assignment의 근거와 반례가 있습니다.
 - 분석이 사용하는 가정과 미측정 구간을 표시합니다.
 - measured max를 WCET 보장으로 확대하지 않습니다.
+
+자동 checker는 주어진 정수 시간 모델에서의 보수적 반복, queue 사건 순서와
+단순 priority-inheritance trace만 판정합니다. 실제 RTOS의 scheduling point,
+context-switch 비용, multicore, cache·flash stall, interrupt controller와 WCET를
+증명하지 않습니다. target 측정은 별도 raw trace와 clock·optimization·power
+조건을 보존하고, fixture 결과보다 강한 보장으로 확대하지 않습니다.
 
 ## 잘못된 완료
 

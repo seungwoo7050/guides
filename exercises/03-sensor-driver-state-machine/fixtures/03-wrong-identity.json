@@ -1,0 +1,6 @@
+{
+  "name": "wrong-identity",
+  "scenario": "wrong_identity",
+  "bus": {"transport": "i2c", "identity": 65, "reset_delay": 1},
+  "driver": {"use_dma": false}
+}

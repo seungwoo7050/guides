@@ -1,0 +1,6 @@
+{
+  "name": "partial-configuration",
+  "scenario": "configuration_fault",
+  "bus": {"transport": "i2c", "reset_delay": 1, "faults": {"write:5": ["NACK"]}},
+  "driver": {"use_dma": false}
+}

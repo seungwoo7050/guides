@@ -1,0 +1,6 @@
+{
+  "name": "reset-timeout",
+  "scenario": "reset_timeout",
+  "bus": {"transport": "spi", "reset_delay": 20},
+  "driver": {"use_dma": false}
+}

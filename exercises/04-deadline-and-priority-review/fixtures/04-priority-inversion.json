@@ -1,0 +1,12 @@
+{
+  "name": "priority-inversion",
+  "kind": "priority_inversion",
+  "horizon": 30,
+  "low": {"release": 0, "priority": 3, "lock_work": 5},
+  "high": {"release": 1, "priority": 1, "work": 1, "deadline": 6},
+  "medium": {"release": 2, "priority": 2, "work": 6},
+  "expected": {
+    "none": {"high_completion": 12, "high_response": 11, "deadline_miss": true},
+    "inheritance": {"high_completion": 6, "high_response": 5, "deadline_miss": false}
+  }
+}

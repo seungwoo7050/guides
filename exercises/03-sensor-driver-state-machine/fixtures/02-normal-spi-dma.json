@@ -1,0 +1,7 @@
+{
+  "name": "normal-spi-dma",
+  "scenario": "dma",
+  "bus": {"transport": "spi", "reset_delay": 1},
+  "driver": {"use_dma": true},
+  "request": {"start": 2, "deadline": 12, "ready": 6, "complete": 7, "sample": 48879}
+}

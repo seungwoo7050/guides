@@ -1,0 +1,12 @@
+{
+  "schema_version": 1,
+  "nodes": {
+    "sensor0": {
+      "status": "okay",
+      "bus": "i2c1",
+      "address": 72,
+      "interrupt": {"controller": "gpio0", "pin": 11, "flags": "active-low"},
+      "power": {"controller": "gpio0", "pin": 5, "flags": "active-high"}
+    }
+  }
+}

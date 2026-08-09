@@ -1,0 +1,10 @@
+{
+  "name": "deadline-miss-rta",
+  "kind": "rta",
+  "unit": "us",
+  "interrupts": [{"name": "storm", "wcet": 300, "min_gap": 5000}],
+  "tasks": [
+    {"name": "sensor", "priority": 1, "period": 10000, "deadline": 4000, "wcet": 1000, "blocking": 3500}
+  ],
+  "expected": {"all_schedulable": false, "responses": {"sensor": 4800}}
+}
