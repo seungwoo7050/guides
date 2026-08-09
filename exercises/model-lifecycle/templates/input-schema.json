@@ -1,0 +1,15 @@
+{
+  "schema_version": "churn-input-v1",
+  "observation_unit": "customer-month",
+  "fields": [
+    {
+      "name": "tenure_months",
+      "type": "integer",
+      "required": true,
+      "minimum": 0,
+      "available_at": "snapshot_time"
+    }
+  ],
+  "unknown_field_policy": "reject",
+  "compatibility": []
+}

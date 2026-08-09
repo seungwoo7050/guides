@@ -1,0 +1,129 @@
+{
+  "columns": [
+    {
+      "allowed_for_prediction": false,
+      "available_at": "snapshot_time",
+      "description": "customer-month snapshot identity",
+      "name": "row_id",
+      "role": "identifier",
+      "type": "string"
+    },
+    {
+      "allowed_for_prediction": false,
+      "available_at": "snapshot_time",
+      "description": "customer identity used only for split and audit",
+      "name": "entity_id",
+      "role": "group",
+      "type": "string"
+    },
+    {
+      "allowed_for_prediction": false,
+      "available_at": "snapshot_time",
+      "description": "observation cutoff month",
+      "name": "snapshot_month",
+      "role": "time",
+      "type": "year-month"
+    },
+    {
+      "allowed_for_prediction": true,
+      "available_at": "snapshot_time",
+      "minimum": 0,
+      "name": "tenure_months",
+      "role": "feature",
+      "type": "integer"
+    },
+    {
+      "allowed_for_prediction": true,
+      "available_at": "snapshot_time",
+      "minimum": 0,
+      "name": "monthly_usage_hours",
+      "role": "feature",
+      "type": "number",
+      "unit": "hours"
+    },
+    {
+      "allowed_for_prediction": true,
+      "available_at": "snapshot_time",
+      "name": "usage_change_90d",
+      "role": "feature",
+      "type": "number",
+      "unit": "hours"
+    },
+    {
+      "allowed_for_prediction": true,
+      "available_at": "snapshot_time",
+      "minimum": 0,
+      "name": "support_tickets_90d",
+      "role": "feature",
+      "type": "integer"
+    },
+    {
+      "allowed_for_prediction": true,
+      "available_at": "snapshot_time",
+      "minimum": 0,
+      "name": "late_payments_180d",
+      "role": "feature",
+      "type": "integer"
+    },
+    {
+      "allowed_for_prediction": true,
+      "allowed_values": [
+        "basic",
+        "standard",
+        "premium"
+      ],
+      "available_at": "snapshot_time",
+      "name": "plan_tier",
+      "role": "feature",
+      "type": "category"
+    },
+    {
+      "allowed_for_prediction": true,
+      "allowed_values": [
+        "north",
+        "south",
+        "east",
+        "west"
+      ],
+      "available_at": "snapshot_time",
+      "name": "region",
+      "role": "feature",
+      "type": "category"
+    },
+    {
+      "allowed_for_prediction": true,
+      "available_at": "snapshot_time",
+      "minimum": 0,
+      "name": "marketing_contacts_30d",
+      "role": "feature",
+      "type": "integer"
+    },
+    {
+      "allowed_for_prediction": false,
+      "allowed_values": [
+        0,
+        1
+      ],
+      "available_at": "after_label_window",
+      "leakage_reason": "refund outcome may occur after prediction cutoff and is correlated with churn",
+      "name": "future_refund_30d",
+      "role": "forbidden-feature",
+      "type": "integer"
+    },
+    {
+      "allowed_for_prediction": false,
+      "allowed_values": [
+        0,
+        1
+      ],
+      "available_at": "30_days_after_snapshot",
+      "name": "churn_30d",
+      "role": "label",
+      "type": "integer"
+    }
+  ],
+  "label": "voluntary churn within the following 30 days",
+  "observation_time": "end of snapshot_month",
+  "observation_unit": "customer-month",
+  "schema_version": "synthetic-churn-v1"
+}

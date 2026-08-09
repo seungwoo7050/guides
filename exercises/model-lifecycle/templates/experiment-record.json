@@ -1,0 +1,13 @@
+{
+  "run_id": "replace-me",
+  "hypothesis": "replace-me",
+  "dataset_version": "synthetic-churn-v1",
+  "split_policy_version": "entity-hash-v1",
+  "feature_schema_version": "replace-me",
+  "model": {},
+  "preprocessing": {},
+  "seed": 7050,
+  "validation": {},
+  "artifact_status": "not-exported",
+  "interpretation": "replace-me"
+}

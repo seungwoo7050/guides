@@ -1,0 +1,28 @@
+{
+  "buckets": {
+    "test": [
+      8,
+      9
+    ],
+    "train": [
+      0,
+      1,
+      2,
+      3,
+      4,
+      5
+    ],
+    "validation": [
+      6,
+      7
+    ]
+  },
+  "group_key": "entity_id",
+  "hash": "sha256 first 32 bits modulo 10",
+  "limitations": [
+    "does not model future calendar-time shift",
+    "synthetic entities and labels do not establish real-world representativeness"
+  ],
+  "policy_version": "entity-hash-v1",
+  "purpose": "evaluate generalization to entities not seen during training"
+}

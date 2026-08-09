@@ -1,0 +1,110 @@
+{
+  "contract_version": 1,
+  "stages": [
+    {
+      "stage": 1,
+      "title": "problem contract",
+      "files": [
+        {
+          "path": "reports/problem-contract.md",
+          "type": "markdown",
+          "headings": [
+            "Prediction subject and observation unit",
+            "Observation time and available information",
+            "Label and label window",
+            "Primary user and decision",
+            "Intended use",
+            "Prohibited and out-of-scope use",
+            "False positive, false negative and abstention costs",
+            "Non-ML and incumbent baselines",
+            "Success, stop and rollback conditions",
+            "Assumptions and unresolved questions"
+          ]
+        }
+      ]
+    },
+    {
+      "stage": 2,
+      "title": "dataset and split audit",
+      "files": [
+        {
+          "path": "reports/dataset-card.md",
+          "type": "markdown",
+          "headings": ["Sources and provenance", "Label creation and maturity", "Split policy and leakage audit", "Known limitations"]
+        },
+        {
+          "path": "reports/split-audit.json",
+          "type": "json",
+          "required_keys": ["dataset_version", "split_policy_version", "rows", "entities", "positives", "entity_overlap", "duplicate_row_ids", "forbidden_features", "valid", "limitations"]
+        }
+      ]
+    },
+    {
+      "stage": 3,
+      "title": "baseline and metrics",
+      "files": [
+        {
+          "path": "reports/baseline.json",
+          "type": "json",
+          "required_keys": ["dataset_version", "selection_split", "selection_metric", "decision_context", "baselines", "chosen_baseline", "choice_reason", "known_limitations"]
+        }
+      ]
+    },
+    {
+      "stage": 4,
+      "title": "classical experiments",
+      "files": [
+        {
+          "path": "reports/classical-experiments.jsonl",
+          "type": "jsonl",
+          "minimum_records": 2,
+          "required_keys": ["run_id", "hypothesis", "dataset_version", "split_policy_version", "feature_schema_version", "model", "preprocessing", "seed", "validation", "artifact_status", "interpretation"]
+        }
+      ]
+    },
+    {
+      "stage": 5,
+      "title": "final evaluation",
+      "files": [
+        {
+          "path": "reports/evaluation.json",
+          "type": "json",
+          "required_keys": ["selected_run_id", "selection_reason", "threshold", "threshold_selection_split", "test", "calibration", "slices", "error_analysis", "supported_claim", "limitations"]
+        }
+      ]
+    },
+    {
+      "stage": 6,
+      "title": "small neural model",
+      "files": [
+        {
+          "path": "reports/neural-experiment.json",
+          "type": "json",
+          "required_keys": ["run_id", "shapes", "parameter_count", "loss", "optimizer", "small_batch_overfit", "training_trace", "checkpoint_rule", "seed_variation", "failure_diagnoses", "comparison", "limitations"]
+        }
+      ]
+    },
+    {
+      "stage": 7,
+      "title": "model bundle and inference contract",
+      "files": [
+        {"path": "artifacts/model-bundle/manifest.json", "type": "json", "required_keys": ["bundle_format_version", "bundle_id", "model_artifact_status", "model_family", "dataset_version", "split_policy_version", "feature_schema_version", "input_schema_file", "preprocessing_file", "decision_policy_file", "evaluation_file", "model_card_file", "runtime", "known_limitations"]},
+        {"path": "artifacts/model-bundle/input-schema.json", "type": "json", "required_keys": ["schema_version", "observation_unit", "fields", "unknown_field_policy", "compatibility"]},
+        {"path": "artifacts/model-bundle/preprocessing.json", "type": "json", "required_keys": ["preprocessing_version", "fit_split", "feature_order", "steps", "unknown_and_missing_policy"]},
+        {"path": "artifacts/model-bundle/decision-policy.json", "type": "json", "required_keys": ["policy_version", "model_output", "threshold", "actions", "abstention"]},
+        {"path": "artifacts/model-bundle/evaluation.json", "type": "json", "required_keys": ["selected_run_id", "dataset_version", "split_policy_version", "test", "slices", "limitations"]},
+        {"path": "artifacts/model-bundle/model-card.md", "type": "markdown", "headings": ["Intended use, users and subjects", "Known limitations and failure modes", "Monitoring, incident and rollback"]},
+        {"path": "reports/inference-contract.md", "type": "markdown", "headings": ["Input schema and validation", "Preprocessing and fitted state", "Output schema and semantics", "Compatibility and versioning", "Rollout, fallback and rollback"]}
+      ]
+    },
+    {
+      "stage": 8,
+      "title": "model card, monitoring and release decision",
+      "files": [
+        {"path": "reports/model-card.md", "type": "markdown", "headings": ["Intended use, users and subjects", "Prohibited and out-of-scope use", "Baselines, evaluation and threshold", "Known limitations and failure modes", "Operational controls and human review", "Monitoring, incident and rollback"]},
+        {"path": "reports/monitoring-plan.md", "type": "markdown", "headings": ["Service health signals", "Data quality and feature drift", "Delayed outcome quality and label maturity", "Alerts, owners, evidence and actions", "Retraining triggers and release approval", "Incident containment and rollback"]},
+        {"path": "reports/release-decision.md", "type": "markdown", "headings": ["Decision", "Reviewed versions", "Supported claim", "Blocking findings", "Required controls and owners", "Revalidation triggers"]}
+      ]
+    }
+  ]
+}

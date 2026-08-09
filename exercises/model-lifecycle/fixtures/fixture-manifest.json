@@ -1,0 +1,14 @@
+{
+  "entity_count": 240,
+  "files": {
+    "dataset-card.md": "dc32e9ec2d0ad102ff69ff5290877ecaa061a5852d89af20f30afbf7d62c0ea3",
+    "dataset.csv": "addc0efbb01f3e013f4f524a3b7b7d9caeb164d97f40feb733f7b09368a8b3c3",
+    "schema.json": "1c26fefee6d09846c198042fe88dfb75f143f90662be2d32be03628a774f3a79",
+    "split-policy.json": "f02c4c0ff65722ff7e09d41cac6e7dcc178551b18fd80aff969416a83cdbfddf",
+    "split_manifest.csv": "e27f5c9b723fe86572982525cd7f3efa8a150d2623d53c7bb049fadc1d37fdcd"
+  },
+  "generator_version": 1,
+  "row_count": 720,
+  "seed": 7050,
+  "snapshots_per_entity": 3
+}

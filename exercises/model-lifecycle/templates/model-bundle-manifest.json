@@ -1,0 +1,21 @@
+{
+  "bundle_format_version": "1",
+  "bundle_id": "replace-with-immutable-id",
+  "model_artifact_status": "not-included",
+  "model_file": null,
+  "model_sha256": null,
+  "model_family": "replace-me",
+  "dataset_version": "synthetic-churn-v1",
+  "split_policy_version": "entity-hash-v1",
+  "feature_schema_version": "replace-me",
+  "input_schema_file": "input-schema.json",
+  "preprocessing_file": "preprocessing.json",
+  "decision_policy_file": "decision-policy.json",
+  "evaluation_file": "evaluation.json",
+  "model_card_file": "model-card.md",
+  "runtime": {
+    "python": "replace-me",
+    "dependencies": {}
+  },
+  "known_limitations": []
+}

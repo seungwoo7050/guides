@@ -1,0 +1,6 @@
+# 선택 구현 프로필이다. 저장소의 prepare/verify는 이 파일을 설치하지 않는다.
+# 같은 major 범위에서도 환경과 release에 따라 수치 결과가 달라질 수 있다.
+numpy>=2.0,<3
+scikit-learn>=1.6,<2
+matplotlib>=3.9,<4
+torch>=2.6,<3
