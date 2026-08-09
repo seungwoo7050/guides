@@ -1,0 +1,25 @@
+{
+  "schema_version": 1,
+  "profile": "vulnerable",
+  "implementation_sha256": "b83804d8e38a9aafdb059f366b4402a7b2b5cbbf41841ebe4ac2c34caf51d30e",
+  "state_before_sha256": "9f76e92470c70951c82eb0fdae4abe175f782d4e3814232595b4c847d3c655be",
+  "state_after_sha256": "9f76e92470c70951c82eb0fdae4abe175f782d4e3814232595b4c847d3c655be",
+  "checks": [
+    {
+      "id": "LAB-VULN-CROSS-OWNER",
+      "passed": true,
+      "observed": "allow"
+    },
+    {
+      "id": "LAB-VULN-CROSS-JOB",
+      "passed": true,
+      "observed": "allow"
+    }
+  ],
+  "events": [],
+  "limitations": [
+    "합성 in-memory policy model만 검사합니다.",
+    "checker는 learner Python module을 현재 process에 import하며 OS sandbox를 제공하지 않습니다.",
+    "실제 cloud IAM, OS isolation, network path와 production telemetry를 보장하지 않습니다."
+  ]
+}

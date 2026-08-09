@@ -1,0 +1,103 @@
+--- skeleton/ledgerlab_policy.py
++++ work/behavior-lab/ledgerlab_policy.py
+@@ -1 +1 @@
+-"""Intentionally incomplete starting point for the isolated security lab."""
++"""One reference implementation of the public security behavior contract."""
+@@ -4,0 +5 @@
++from datetime import datetime, timezone
+@@ -6 +7,9 @@
+-POLICY_VERSION = "skeleton-v1"
++
++POLICY_VERSION = "reference-v1"
++
++
++def _parse_time(value: str) -> datetime:
++    parsed = datetime.fromisoformat(value.replace("Z", "+00:00"))
++    if parsed.tzinfo is None:
++        parsed = parsed.replace(tzinfo=timezone.utc)
++    return parsed
+@@ -11 +20 @@
+-        "event_id": request.get("event_id", "event-missing"),
++        "event_id": request.get("event_id"),
+@@ -31,0 +41,6 @@
++    if not state.get("policy_available", False):
++        return _result(request, "deny", "policy context unavailable")
++    if request.get("action") != "report.read":
++        return _result(request, "deny", "action context missing or invalid")
++    if not request.get("actor_id") or request.get("effective_actor_id") != request.get("actor_id"):
++        return _result(request, "deny", "actor context missing or delegated")
+@@ -34,4 +49,10 @@
+-    if actor is None or report is None or report.get("status") != "completed":
+-        return _result(request, "deny", "missing actor, report, or completed state")
+-    # Intentionally incomplete: owner and tenant are not compared.
+-    return _result(request, "allow", "authenticated actor and completed report")
++    if actor is None or report is None:
++        return _result(request, "deny", "actor or report not found")
++    request_tenant = request.get("tenant_id")
++    if not request_tenant or actor.get("tenant_id") != request_tenant:
++        return _result(request, "deny", "actor tenant mismatch")
++    if report.get("tenant_id") != request_tenant or report.get("owner_id") != request.get("actor_id"):
++        return _result(request, "deny", "report scope mismatch")
++    if report.get("status") != "completed":
++        return _result(request, "deny", "report is not completed")
++    return _result(request, "allow", "owner and tenant policy satisfied")
+@@ -40,0 +62,4 @@
++    if not state.get("policy_available", False):
++        return _result(request, "deny", "policy context unavailable")
++    if request.get("action") != "object.read":
++        return _result(request, "deny", "action context missing or invalid")
+@@ -44,4 +69,19 @@
+-    # Intentionally incomplete: job, exact prefix, expiry, and revocation are not enforced.
+-    if not str(request.get("resource_id", "")).startswith("synthetic/tenant-42/"):
+-        return _result(request, "deny", "outside synthetic tenant")
+-    return _result(request, "allow", "broad worker credential")
++    required = ("tenant_id", "job_id", "object_prefix", "expires_at")
++    if any(not credential.get(field) for field in required):
++        return _result(request, "deny", "credential scope incomplete")
++    if credential.get("revoked"):
++        return _result(request, "deny", "credential revoked")
++    if not request.get("actor_id") or request.get("effective_actor_id") != request.get("actor_id"):
++        return _result(request, "deny", "actor context missing or delegated")
++    if request.get("actor_id") != credential.get("service_id"):
++        return _result(request, "deny", "credential service identity mismatch")
++    if _parse_time(credential["expires_at"]) <= _parse_time(state["now"]):
++        return _result(request, "deny", "credential expired")
++    if request.get("tenant_id") != credential.get("tenant_id"):
++        return _result(request, "deny", "tenant scope mismatch")
++    if request.get("job_id") != credential.get("job_id"):
++        return _result(request, "deny", "job scope mismatch")
++    resource = str(request.get("resource_id", ""))
++    if not resource.startswith(credential["object_prefix"]):
++        return _result(request, "deny", "object prefix mismatch")
++    return _result(request, "allow", "credential scope satisfied")
+@@ -51,2 +91,28 @@
+-    # Intentionally incomplete: no cross-scope analytic exists.
+-    return []
++    unique: dict[str, dict] = {}
++    for event in events:
++        event_id = event.get("event_id")
++        if event_id and event_id not in unique:
++            unique[event_id] = event
++    groups: dict[str, list[dict]] = {}
++    for event in unique.values():
++        suspicious = (
++            event.get("event_type") == "authorization.decision"
++            and event.get("decision") == "deny"
++            and any(term in str(event.get("reason", "")) for term in ("scope mismatch", "policy context unavailable"))
++        )
++        correlation_id = event.get("correlation_id")
++        if suspicious and isinstance(correlation_id, str) and correlation_id:
++            groups.setdefault(correlation_id, []).append(event)
++
++    alerts: list[dict] = []
++    for correlation_id, suspicious in sorted(groups.items()):
++        suspicious.sort(key=lambda event: str(event.get("event_id")))
++        alerts.append({
++            "alert_id": f"DET-CROSS-SCOPE:{correlation_id}",
++            "correlation_id": correlation_id,
++            "actor_ids": sorted({str(event.get("actor_id")) for event in suspicious if event.get("actor_id")}),
++            "effective_actor_ids": sorted({str(event.get("effective_actor_id")) for event in suspicious if event.get("effective_actor_id")}),
++            "credential_ids": sorted({str(event.get("credential_id")) for event in suspicious if event.get("credential_id")}),
++            "evidence_event_ids": [event["event_id"] for event in suspicious],
++        })
++    return alerts

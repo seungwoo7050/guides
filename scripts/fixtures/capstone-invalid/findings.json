@@ -1,0 +1,35 @@
+{
+  "schema_version": 1,
+  "findings": [
+    {
+      "id": "FND-001",
+      "candidate_id": "CAND-META-001",
+      "title": "독립 evidence가 없는 confirmed finding을 검사기가 허용할 수 있음",
+      "status": "confirmed",
+      "asset": "완료 판정의 무결성",
+      "preconditions": [
+        "confirmed status를 선택하고 evidence source를 한 종류만 제공함"
+      ],
+      "evidence": [
+        {
+          "id": "META-EV-001",
+          "source": "valid-meta-test",
+          "observation": "두 종류 source가 있는 fixture에서 verifier가 종료 코드 0을 반환함",
+          "supports": "정상 fixture acceptance"
+        }
+      ],
+      "impact": "미완성 보고서를 완료 상태로 오판하는 것을 방지합니다.",
+      "limitations": [
+        "실제 finding의 기술적 타당성은 검증하지 않습니다."
+      ],
+      "root_cause": "구조 검사기의 독립 source 개수 validation 누락 가능성입니다.",
+      "remediation": "confirmed status에 evidence 두 개와 서로 다른 source 두 종류를 요구합니다.",
+      "retest": "valid, invalid와 미완성 template를 동일한 subprocess 검사로 실행합니다.",
+      "severity": {
+        "rating": "medium",
+        "rationale": "학습 완료 판정의 신뢰를 훼손하지만 실제 시스템을 직접 침해하지 않습니다."
+      },
+      "confidence": "high"
+    }
+  ]
+}

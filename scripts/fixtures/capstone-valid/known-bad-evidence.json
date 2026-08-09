@@ -1,0 +1,18 @@
+{
+  "schema_version": 1,
+  "profile": "known-bad-mutants",
+  "checker_sha256": "f8119bf8c1ecd85d67b89f549607af9621079a0410cb4016461669a492ddeed0",
+  "reference_sha256": "44be342170b46e8c6894670afa55d024d26041fb273a140d5e19e19b0dc3ef09",
+  "cases": [
+    "deny-all",
+    "cross-owner-allowed",
+    "prefix-bypass",
+    "detection-missing"
+  ],
+  "result": "pass",
+  "output": "LAB QUALITY OK reference=pass skeleton=reject mutants=4\n",
+  "limitations": [
+    "canonical contract mutant 네 개만 검사하며 가능한 모든 우회 구현을 열거하지 않습니다.",
+    "learner patch의 최소성과 production 공격 표면은 사람이 별도로 검토합니다."
+  ]
+}

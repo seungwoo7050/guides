@@ -1,0 +1,475 @@
+{
+  "schema_version": 1,
+  "profile": "secure",
+  "implementation_sha256": "44be342170b46e8c6894670afa55d024d26041fb273a140d5e19e19b0dc3ef09",
+  "state_before_sha256": "9f76e92470c70951c82eb0fdae4abe175f782d4e3814232595b4c847d3c655be",
+  "state_after_sha256": "9f76e92470c70951c82eb0fdae4abe175f782d4e3814232595b4c847d3c655be",
+  "checks": [
+    {
+      "id": "LAB-NORMAL-OWNER",
+      "passed": true,
+      "errors": [],
+      "observed": "allow"
+    },
+    {
+      "id": "LAB-DENY-CROSS-OWNER",
+      "passed": true,
+      "errors": [],
+      "observed": "deny"
+    },
+    {
+      "id": "LAB-DENY-PENDING",
+      "passed": true,
+      "errors": [],
+      "observed": "deny"
+    },
+    {
+      "id": "LAB-DENY-UNKNOWN-REPORT",
+      "passed": true,
+      "errors": [],
+      "observed": "deny"
+    },
+    {
+      "id": "LAB-DENY-FOREIGN-TENANT",
+      "passed": true,
+      "errors": [],
+      "observed": "deny"
+    },
+    {
+      "id": "LAB-DENY-REPORT-STATE-TENANT",
+      "passed": true,
+      "errors": [],
+      "observed": "deny"
+    },
+    {
+      "id": "LAB-DENY-DELEGATED-REPORT-ACTOR",
+      "passed": true,
+      "errors": [],
+      "observed": "deny"
+    },
+    {
+      "id": "LAB-DENY-POLICY-UNAVAILABLE",
+      "passed": true,
+      "errors": [],
+      "observed": "deny"
+    },
+    {
+      "id": "LAB-DENY-MISSING-REPORT-CONTEXT",
+      "passed": true,
+      "errors": [],
+      "observed": "deny"
+    },
+    {
+      "id": "LAB-DENY-REPORT-ACTION",
+      "passed": true,
+      "errors": [],
+      "observed": "deny"
+    },
+    {
+      "id": "LAB-NORMAL-JOB",
+      "passed": true,
+      "errors": [],
+      "observed": "allow"
+    },
+    {
+      "id": "LAB-DENY-OBJECT-POLICY-UNAVAILABLE",
+      "passed": true,
+      "errors": [],
+      "observed": "deny"
+    },
+    {
+      "id": "LAB-DENY-CREDENTIAL-STATE-TENANT",
+      "passed": true,
+      "errors": [],
+      "observed": "deny"
+    },
+    {
+      "id": "LAB-DENY-DELEGATED-OBJECT-ACTOR",
+      "passed": true,
+      "errors": [],
+      "observed": "deny"
+    },
+    {
+      "id": "LAB-DENY-CROSS-JOB",
+      "passed": true,
+      "errors": [],
+      "observed": "deny"
+    },
+    {
+      "id": "LAB-DENY-PREFIX-CONFUSION",
+      "passed": true,
+      "errors": [],
+      "observed": "deny"
+    },
+    {
+      "id": "LAB-DENY-EXPIRED",
+      "passed": true,
+      "errors": [],
+      "observed": "deny"
+    },
+    {
+      "id": "LAB-DENY-REVOKED",
+      "passed": true,
+      "errors": [],
+      "observed": "deny"
+    },
+    {
+      "id": "LAB-DENY-AT-EXPIRY",
+      "passed": true,
+      "errors": [],
+      "observed": "deny"
+    },
+    {
+      "id": "LAB-DENY-CREDENTIAL-ACTOR",
+      "passed": true,
+      "errors": [],
+      "observed": "deny"
+    },
+    {
+      "id": "LAB-DENY-MISSING-JOB-CONTEXT",
+      "passed": true,
+      "errors": [],
+      "observed": "deny"
+    },
+    {
+      "id": "LAB-DETECT-BENIGN",
+      "passed": true,
+      "errors": [],
+      "observed": 0
+    },
+    {
+      "id": "LAB-DETECT-POSITIVE",
+      "passed": true,
+      "errors": [],
+      "observed": 1
+    },
+    {
+      "id": "LAB-DETECT-CORRELATION",
+      "passed": true,
+      "errors": [],
+      "observed": 2
+    }
+  ],
+  "events": [
+    {
+      "event_id": "EV-LAB-001",
+      "event_type": "authorization.decision",
+      "actor_id": "user-a",
+      "effective_actor_id": "user-a",
+      "credential_id": null,
+      "tenant_id": "tenant-42",
+      "job_id": null,
+      "action": "report.read",
+      "resource_id": "report-a",
+      "decision": "allow",
+      "reason": "owner and tenant policy satisfied",
+      "correlation_id": "CORR-LAB-1",
+      "policy_version": "reference-v1"
+    },
+    {
+      "event_id": "EV-LAB-002",
+      "event_type": "authorization.decision",
+      "actor_id": "user-b",
+      "effective_actor_id": "user-b",
+      "credential_id": null,
+      "tenant_id": "tenant-42",
+      "job_id": null,
+      "action": "report.read",
+      "resource_id": "report-a",
+      "decision": "deny",
+      "reason": "report scope mismatch",
+      "correlation_id": "CORR-LAB-1",
+      "policy_version": "reference-v1"
+    },
+    {
+      "event_id": "EV-LAB-003",
+      "event_type": "authorization.decision",
+      "actor_id": "user-a",
+      "effective_actor_id": "user-a",
+      "credential_id": null,
+      "tenant_id": "tenant-42",
+      "job_id": null,
+      "action": "report.read",
+      "resource_id": "report-pending",
+      "decision": "deny",
+      "reason": "report is not completed",
+      "correlation_id": "CORR-LAB-1",
+      "policy_version": "reference-v1"
+    },
+    {
+      "event_id": "EV-LAB-016",
+      "event_type": "authorization.decision",
+      "actor_id": "user-a",
+      "effective_actor_id": "user-a",
+      "credential_id": null,
+      "tenant_id": "tenant-42",
+      "job_id": null,
+      "action": "report.read",
+      "resource_id": "report-missing",
+      "decision": "deny",
+      "reason": "actor or report not found",
+      "correlation_id": "CORR-LAB-1",
+      "policy_version": "reference-v1"
+    },
+    {
+      "event_id": "EV-LAB-017",
+      "event_type": "authorization.decision",
+      "actor_id": "user-c",
+      "effective_actor_id": "user-c",
+      "credential_id": null,
+      "tenant_id": "tenant-42",
+      "job_id": null,
+      "action": "report.read",
+      "resource_id": "report-a",
+      "decision": "deny",
+      "reason": "actor tenant mismatch",
+      "correlation_id": "CORR-LAB-1",
+      "policy_version": "reference-v1"
+    },
+    {
+      "event_id": "EV-LAB-018",
+      "event_type": "authorization.decision",
+      "actor_id": "user-a",
+      "effective_actor_id": "user-a",
+      "credential_id": null,
+      "tenant_id": "tenant-42",
+      "job_id": null,
+      "action": "report.read",
+      "resource_id": "report-a",
+      "decision": "deny",
+      "reason": "report scope mismatch",
+      "correlation_id": "CORR-LAB-1",
+      "policy_version": "reference-v1"
+    },
+    {
+      "event_id": "EV-LAB-019",
+      "event_type": "authorization.decision",
+      "actor_id": "user-a",
+      "effective_actor_id": "user-b",
+      "credential_id": null,
+      "tenant_id": "tenant-42",
+      "job_id": null,
+      "action": "report.read",
+      "resource_id": "report-a",
+      "decision": "deny",
+      "reason": "actor context missing or delegated",
+      "correlation_id": "CORR-LAB-1",
+      "policy_version": "reference-v1"
+    },
+    {
+      "event_id": "EV-LAB-004",
+      "event_type": "authorization.decision",
+      "actor_id": "user-a",
+      "effective_actor_id": "user-a",
+      "credential_id": null,
+      "tenant_id": "tenant-42",
+      "job_id": null,
+      "action": "report.read",
+      "resource_id": "report-a",
+      "decision": "deny",
+      "reason": "policy context unavailable",
+      "correlation_id": "CORR-LAB-1",
+      "policy_version": "reference-v1"
+    },
+    {
+      "event_id": "EV-LAB-010",
+      "event_type": "authorization.decision",
+      "actor_id": "user-a",
+      "effective_actor_id": "user-a",
+      "credential_id": null,
+      "tenant_id": null,
+      "job_id": null,
+      "action": "report.read",
+      "resource_id": "report-a",
+      "decision": "deny",
+      "reason": "actor tenant mismatch",
+      "correlation_id": "CORR-LAB-1",
+      "policy_version": "reference-v1"
+    },
+    {
+      "event_id": "EV-LAB-011",
+      "event_type": "authorization.decision",
+      "actor_id": "user-a",
+      "effective_actor_id": "user-a",
+      "credential_id": null,
+      "tenant_id": "tenant-42",
+      "job_id": null,
+      "action": null,
+      "resource_id": "report-a",
+      "decision": "deny",
+      "reason": "action context missing or invalid",
+      "correlation_id": "CORR-LAB-1",
+      "policy_version": "reference-v1"
+    },
+    {
+      "event_id": "EV-LAB-005",
+      "event_type": "authorization.decision",
+      "actor_id": "id-report-worker",
+      "effective_actor_id": "id-report-worker",
+      "credential_id": "cred-job-81",
+      "tenant_id": "tenant-42",
+      "job_id": "job-81",
+      "action": "object.read",
+      "resource_id": "synthetic/tenant-42/job-81/input.json",
+      "decision": "allow",
+      "reason": "credential scope satisfied",
+      "correlation_id": "CORR-LAB-1",
+      "policy_version": "reference-v1"
+    },
+    {
+      "event_id": "EV-LAB-020",
+      "event_type": "authorization.decision",
+      "actor_id": "id-report-worker",
+      "effective_actor_id": "id-report-worker",
+      "credential_id": "cred-job-81",
+      "tenant_id": "tenant-42",
+      "job_id": "job-81",
+      "action": "object.read",
+      "resource_id": "synthetic/tenant-42/job-81/input.json",
+      "decision": "deny",
+      "reason": "policy context unavailable",
+      "correlation_id": "CORR-LAB-1",
+      "policy_version": "reference-v1"
+    },
+    {
+      "event_id": "EV-LAB-021",
+      "event_type": "authorization.decision",
+      "actor_id": "id-report-worker",
+      "effective_actor_id": "id-report-worker",
+      "credential_id": "cred-job-81",
+      "tenant_id": "tenant-42",
+      "job_id": "job-81",
+      "action": "object.read",
+      "resource_id": "synthetic/tenant-42/job-81/input.json",
+      "decision": "deny",
+      "reason": "tenant scope mismatch",
+      "correlation_id": "CORR-LAB-1",
+      "policy_version": "reference-v1"
+    },
+    {
+      "event_id": "EV-LAB-022",
+      "event_type": "authorization.decision",
+      "actor_id": "id-report-worker",
+      "effective_actor_id": "id-other-worker",
+      "credential_id": "cred-job-81",
+      "tenant_id": "tenant-42",
+      "job_id": "job-81",
+      "action": "object.read",
+      "resource_id": "synthetic/tenant-42/job-81/input.json",
+      "decision": "deny",
+      "reason": "actor context missing or delegated",
+      "correlation_id": "CORR-LAB-1",
+      "policy_version": "reference-v1"
+    },
+    {
+      "event_id": "EV-LAB-006",
+      "event_type": "authorization.decision",
+      "actor_id": "id-report-worker",
+      "effective_actor_id": "id-report-worker",
+      "credential_id": "cred-job-81",
+      "tenant_id": "tenant-42",
+      "job_id": "job-9",
+      "action": "object.read",
+      "resource_id": "synthetic/tenant-42/job-9/input.json",
+      "decision": "deny",
+      "reason": "job scope mismatch",
+      "correlation_id": "CORR-LAB-1",
+      "policy_version": "reference-v1"
+    },
+    {
+      "event_id": "EV-LAB-007",
+      "event_type": "authorization.decision",
+      "actor_id": "id-report-worker",
+      "effective_actor_id": "id-report-worker",
+      "credential_id": "cred-job-81",
+      "tenant_id": "tenant-42",
+      "job_id": "job-81",
+      "action": "object.read",
+      "resource_id": "synthetic/tenant-42/job-81x/input.json",
+      "decision": "deny",
+      "reason": "object prefix mismatch",
+      "correlation_id": "CORR-LAB-1",
+      "policy_version": "reference-v1"
+    },
+    {
+      "event_id": "EV-LAB-008",
+      "event_type": "authorization.decision",
+      "actor_id": "id-report-worker",
+      "effective_actor_id": "id-report-worker",
+      "credential_id": "cred-expired",
+      "tenant_id": "tenant-42",
+      "job_id": "job-81",
+      "action": "object.read",
+      "resource_id": "synthetic/tenant-42/job-81/input.json",
+      "decision": "deny",
+      "reason": "credential expired",
+      "correlation_id": "CORR-LAB-1",
+      "policy_version": "reference-v1"
+    },
+    {
+      "event_id": "EV-LAB-009",
+      "event_type": "authorization.decision",
+      "actor_id": "id-report-worker",
+      "effective_actor_id": "id-report-worker",
+      "credential_id": "cred-revoked",
+      "tenant_id": "tenant-42",
+      "job_id": "job-81",
+      "action": "object.read",
+      "resource_id": "synthetic/tenant-42/job-81/input.json",
+      "decision": "deny",
+      "reason": "credential revoked",
+      "correlation_id": "CORR-LAB-1",
+      "policy_version": "reference-v1"
+    },
+    {
+      "event_id": "EV-LAB-012",
+      "event_type": "authorization.decision",
+      "actor_id": "id-report-worker",
+      "effective_actor_id": "id-report-worker",
+      "credential_id": "cred-at-expiry",
+      "tenant_id": "tenant-42",
+      "job_id": "job-81",
+      "action": "object.read",
+      "resource_id": "synthetic/tenant-42/job-81/input.json",
+      "decision": "deny",
+      "reason": "credential expired",
+      "correlation_id": "CORR-LAB-1",
+      "policy_version": "reference-v1"
+    },
+    {
+      "event_id": "EV-LAB-013",
+      "event_type": "authorization.decision",
+      "actor_id": "id-other-worker",
+      "effective_actor_id": "id-other-worker",
+      "credential_id": "cred-job-81",
+      "tenant_id": "tenant-42",
+      "job_id": "job-81",
+      "action": "object.read",
+      "resource_id": "synthetic/tenant-42/job-81/input.json",
+      "decision": "deny",
+      "reason": "credential service identity mismatch",
+      "correlation_id": "CORR-LAB-1",
+      "policy_version": "reference-v1"
+    },
+    {
+      "event_id": "EV-LAB-014",
+      "event_type": "authorization.decision",
+      "actor_id": "id-report-worker",
+      "effective_actor_id": "id-report-worker",
+      "credential_id": "cred-job-81",
+      "tenant_id": "tenant-42",
+      "job_id": null,
+      "action": "object.read",
+      "resource_id": "synthetic/tenant-42/job-81/input.json",
+      "decision": "deny",
+      "reason": "job scope mismatch",
+      "correlation_id": "CORR-LAB-1",
+      "policy_version": "reference-v1"
+    }
+  ],
+  "limitations": [
+    "합성 in-memory policy model만 검사합니다.",
+    "checker는 learner Python module을 현재 process에 import하며 OS sandbox를 제공하지 않습니다.",
+    "실제 cloud IAM, OS isolation, network path와 production telemetry를 보장하지 않습니다."
+  ]
+}

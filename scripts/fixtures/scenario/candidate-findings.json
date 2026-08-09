@@ -1,0 +1,12 @@
+{
+  "schema_version": 1,
+  "candidates": [
+    {"id": "CAND-META-001"},
+    {"id": "CAND-META-002"},
+    {"id": "CAND-META-003"},
+    {"id": "CAND-META-004"},
+    {"id": "CAND-META-005"},
+    {"id": "CAND-META-006"},
+    {"id": "CAND-META-007"}
+  ]
+}

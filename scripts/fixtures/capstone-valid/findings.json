@@ -1,0 +1,172 @@
+{
+  "schema_version": 2,
+  "findings": [
+    {
+      "id": "FND-001",
+      "candidate_id": "CAND-META-001",
+      "title": "격리 행동 evidence를 재실행하지 않으면 false acceptance가 발생할 수 있음",
+      "validation_status": "confirmed",
+      "treatment": "remediate",
+      "lifecycle_status": "ready-for-retest",
+      "duplicate_of": null,
+      "asset": "완료 판정의 무결성",
+      "preconditions": [
+        "제출된 behavior JSON과 patch를 현재 implementation에 대해 다시 계산하지 않음"
+      ],
+      "evidence": [
+        {
+          "id": "META-EV-001",
+          "source": "valid-meta-run",
+          "observation": "reference implementation을 재실행한 evidence와 제출 evidence가 byte-equivalent JSON object로 일치함",
+          "supports": "정상 fixture acceptance와 재실행 oracle"
+        },
+        {
+          "id": "META-EV-002",
+          "source": "tamper-meta-run",
+          "observation": "통과 결과를 변조한 behavior evidence를 verifier가 E_BEHAVIOR_EVIDENCE로 거부함",
+          "supports": "변조 evidence의 known-bad rejection"
+        }
+      ],
+      "impact": "미완성 또는 다른 구현의 근거를 현재 구현의 완료 증거로 오판하는 것을 방지합니다.",
+      "limitations": [
+        "실제 finding의 기술적 타당성과 patch 최소성은 구조 검사만으로 판정하지 않습니다."
+      ],
+      "causal_mechanism": "evidence를 신뢰만 하고 현재 구현 fingerprint와 재실행 결과에 묶지 않으면 stale 또는 변조된 성공이 유지됩니다.",
+      "proof_oracle": "현재 implementation 재실행 JSON, SHA-256, state 불변성과 canonical skeleton 대비 exact diff가 제출 파일과 일치해야 합니다.",
+      "remediation": "learner implementation과 canonical skeleton을 매번 재실행하고 behavior evidence와 exact diff를 비교합니다.",
+      "retest": "valid 통과와 tampered evidence, bad trace, missing candidate 거부를 subprocess에서 반복합니다.",
+      "trace": {
+        "threat_ids": ["THR-001"],
+        "requirement_ids": ["REQ-001"],
+        "test_ids": ["TEST-001"],
+        "patch_ids": ["PATCH-001"],
+        "detection_ids": ["DET-001"]
+      },
+      "severity": {
+        "rating": "medium",
+        "rationale": "학습 완료 판정의 신뢰를 훼손하지만 실제 시스템을 직접 침해하지 않습니다."
+      },
+      "confidence": "high"
+    },
+    {
+      "id": "FND-002",
+      "candidate_id": "CAND-META-002",
+      "title": "두 번째 meta candidate의 기술적 상태는 fixture 범위에서 미확인",
+      "validation_status": "unknown",
+      "treatment": null,
+      "lifecycle_status": "open",
+      "duplicate_of": null,
+      "asset": "candidate completeness 계약",
+      "preconditions": ["합성 candidate ID coverage만 검사함"],
+      "evidence": [{"id": "META-EV-102", "source": "candidate-fixture", "observation": "CAND-META-002가 candidate 목록과 finding 목록에 각각 한 번 존재함", "supports": "구조 coverage만 지지함"}],
+      "impact": "기술 판정이 아니라 누락 candidate 검사를 대표합니다.",
+      "limitations": ["LedgerLab 실제 후보의 판정으로 사용할 수 없습니다."],
+      "unknowns": ["실제 causal mechanism과 영향"],
+      "next_safe_evidence": "별도 승인된 도메인 fixture와 독립 oracle을 수집합니다.",
+      "reopen_trigger": "실제 candidate 판단에 이 meta fixture가 사용되려 할 때 재검토합니다.",
+      "trace": {"threat_ids": ["THR-002"], "requirement_ids": ["REQ-002"], "test_ids": ["TEST-002"], "patch_ids": ["PATCH-001"], "detection_ids": ["DET-002"]},
+      "severity": {"rating": "unrated", "rationale": "기술 영향 evidence가 없어 등급을 부여하지 않습니다."},
+      "confidence": "low"
+    },
+    {
+      "id": "FND-003",
+      "candidate_id": "CAND-META-003",
+      "title": "세 번째 meta candidate의 기술적 상태는 fixture 범위에서 미확인",
+      "validation_status": "unknown",
+      "treatment": null,
+      "lifecycle_status": "open",
+      "duplicate_of": null,
+      "asset": "candidate completeness 계약",
+      "preconditions": ["합성 candidate ID coverage만 검사함"],
+      "evidence": [{"id": "META-EV-103", "source": "candidate-fixture", "observation": "CAND-META-003가 candidate 목록과 finding 목록에 각각 한 번 존재함", "supports": "구조 coverage만 지지함"}],
+      "impact": "기술 판정이 아니라 누락 candidate 검사를 대표합니다.",
+      "limitations": ["LedgerLab 실제 후보의 판정으로 사용할 수 없습니다."],
+      "unknowns": ["실제 causal mechanism과 영향"],
+      "next_safe_evidence": "별도 승인된 도메인 fixture와 독립 oracle을 수집합니다.",
+      "reopen_trigger": "실제 candidate 판단에 이 meta fixture가 사용되려 할 때 재검토합니다.",
+      "trace": {"threat_ids": ["THR-003"], "requirement_ids": ["REQ-003"], "test_ids": ["TEST-003"], "patch_ids": ["PATCH-001"], "detection_ids": ["DET-002"]},
+      "severity": {"rating": "unrated", "rationale": "기술 영향 evidence가 없어 등급을 부여하지 않습니다."},
+      "confidence": "low"
+    },
+    {
+      "id": "FND-004",
+      "candidate_id": "CAND-META-004",
+      "title": "네 번째 meta candidate의 기술적 상태는 fixture 범위에서 미확인",
+      "validation_status": "unknown",
+      "treatment": null,
+      "lifecycle_status": "open",
+      "duplicate_of": null,
+      "asset": "candidate completeness 계약",
+      "preconditions": ["합성 candidate ID coverage만 검사함"],
+      "evidence": [{"id": "META-EV-104", "source": "candidate-fixture", "observation": "CAND-META-004가 candidate 목록과 finding 목록에 각각 한 번 존재함", "supports": "구조 coverage만 지지함"}],
+      "impact": "기술 판정이 아니라 누락 candidate 검사를 대표합니다.",
+      "limitations": ["LedgerLab 실제 후보의 판정으로 사용할 수 없습니다."],
+      "unknowns": ["실제 causal mechanism과 영향"],
+      "next_safe_evidence": "별도 승인된 도메인 fixture와 독립 oracle을 수집합니다.",
+      "reopen_trigger": "실제 candidate 판단에 이 meta fixture가 사용되려 할 때 재검토합니다.",
+      "trace": {"threat_ids": ["THR-003"], "requirement_ids": ["REQ-003"], "test_ids": ["TEST-003"], "patch_ids": ["PATCH-001"], "detection_ids": ["DET-002"]},
+      "severity": {"rating": "unrated", "rationale": "기술 영향 evidence가 없어 등급을 부여하지 않습니다."},
+      "confidence": "low"
+    },
+    {
+      "id": "FND-005",
+      "candidate_id": "CAND-META-005",
+      "title": "다섯 번째 meta candidate의 기술적 상태는 fixture 범위에서 미확인",
+      "validation_status": "unknown",
+      "treatment": null,
+      "lifecycle_status": "open",
+      "duplicate_of": null,
+      "asset": "candidate completeness 계약",
+      "preconditions": ["합성 candidate ID coverage만 검사함"],
+      "evidence": [{"id": "META-EV-105", "source": "candidate-fixture", "observation": "CAND-META-005가 candidate 목록과 finding 목록에 각각 한 번 존재함", "supports": "구조 coverage만 지지함"}],
+      "impact": "기술 판정이 아니라 누락 candidate 검사를 대표합니다.",
+      "limitations": ["LedgerLab 실제 후보의 판정으로 사용할 수 없습니다."],
+      "unknowns": ["실제 causal mechanism과 영향"],
+      "next_safe_evidence": "별도 승인된 도메인 fixture와 독립 oracle을 수집합니다.",
+      "reopen_trigger": "실제 candidate 판단에 이 meta fixture가 사용되려 할 때 재검토합니다.",
+      "trace": {"threat_ids": ["THR-003"], "requirement_ids": ["REQ-003"], "test_ids": ["TEST-003"], "patch_ids": ["PATCH-001"], "detection_ids": ["DET-002"]},
+      "severity": {"rating": "unrated", "rationale": "기술 영향 evidence가 없어 등급을 부여하지 않습니다."},
+      "confidence": "low"
+    },
+    {
+      "id": "FND-006",
+      "candidate_id": "CAND-META-006",
+      "title": "여섯 번째 meta candidate의 기술적 상태는 fixture 범위에서 미확인",
+      "validation_status": "unknown",
+      "treatment": null,
+      "lifecycle_status": "open",
+      "duplicate_of": null,
+      "asset": "candidate completeness 계약",
+      "preconditions": ["합성 candidate ID coverage만 검사함"],
+      "evidence": [{"id": "META-EV-106", "source": "candidate-fixture", "observation": "CAND-META-006가 candidate 목록과 finding 목록에 각각 한 번 존재함", "supports": "구조 coverage만 지지함"}],
+      "impact": "기술 판정이 아니라 누락 candidate 검사를 대표합니다.",
+      "limitations": ["LedgerLab 실제 후보의 판정으로 사용할 수 없습니다."],
+      "unknowns": ["실제 causal mechanism과 영향"],
+      "next_safe_evidence": "별도 승인된 도메인 fixture와 독립 oracle을 수집합니다.",
+      "reopen_trigger": "실제 candidate 판단에 이 meta fixture가 사용되려 할 때 재검토합니다.",
+      "trace": {"threat_ids": ["THR-003"], "requirement_ids": ["REQ-003"], "test_ids": ["TEST-003"], "patch_ids": ["PATCH-001"], "detection_ids": ["DET-002"]},
+      "severity": {"rating": "unrated", "rationale": "기술 영향 evidence가 없어 등급을 부여하지 않습니다."},
+      "confidence": "low"
+    },
+    {
+      "id": "FND-007",
+      "candidate_id": "CAND-META-007",
+      "title": "일곱 번째 meta candidate의 기술적 상태는 fixture 범위에서 미확인",
+      "validation_status": "unknown",
+      "treatment": null,
+      "lifecycle_status": "open",
+      "duplicate_of": null,
+      "asset": "candidate completeness 계약",
+      "preconditions": ["합성 candidate ID coverage만 검사함"],
+      "evidence": [{"id": "META-EV-107", "source": "candidate-fixture", "observation": "CAND-META-007가 candidate 목록과 finding 목록에 각각 한 번 존재함", "supports": "구조 coverage만 지지함"}],
+      "impact": "기술 판정이 아니라 누락 candidate 검사를 대표합니다.",
+      "limitations": ["LedgerLab 실제 후보의 판정으로 사용할 수 없습니다."],
+      "unknowns": ["실제 causal mechanism과 영향"],
+      "next_safe_evidence": "별도 승인된 도메인 fixture와 독립 oracle을 수집합니다.",
+      "reopen_trigger": "실제 candidate 판단에 이 meta fixture가 사용되려 할 때 재검토합니다.",
+      "trace": {"threat_ids": ["THR-003"], "requirement_ids": ["REQ-003"], "test_ids": ["TEST-003"], "patch_ids": ["PATCH-001"], "detection_ids": ["DET-002"]},
+      "severity": {"rating": "unrated", "rationale": "기술 영향 evidence가 없어 등급을 부여하지 않습니다."},
+      "confidence": "low"
+    }
+  ]
+}
