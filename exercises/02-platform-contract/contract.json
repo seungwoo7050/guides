@@ -1,0 +1,75 @@
+{
+  "contractVersion": 1,
+  "title": "Platform capability contract",
+  "requiredPaths": [
+    "/status",
+    "/capability",
+    "/request",
+    "/conditions",
+    "/ownership",
+    "/externalEffects",
+    "/deletion",
+    "/escapeHatch",
+    "/support"
+  ],
+  "nonEmptyPaths": [
+    "/capability/name",
+    "/capability/version",
+    "/capability/owner",
+    "/request/resourceIdentity",
+    "/request/idempotency",
+    "/deletion/finalCondition",
+    "/support/escalation"
+  ],
+  "minimumItems": {
+    "/conditions": 4,
+    "/ownership": 4,
+    "/externalEffects": 3
+  },
+  "arrayItemRequiredFields": {
+    "/conditions": [
+      "type",
+      "meaning",
+      "userAction",
+      "failureOwner"
+    ],
+    "/ownership": [
+      "boundary",
+      "writer",
+      "reader",
+      "failureOwner"
+    ],
+    "/externalEffects": [
+      "effect",
+      "writer",
+      "externalIdentity",
+      "retryRule",
+      "cleanup"
+    ]
+  },
+  "arrayUniqueBy": {
+    "/conditions": "type",
+    "/ownership": "boundary"
+  },
+  "containsValues": {
+    "/conditionTypes": [
+      "Ready",
+      "Progressing",
+      "Blocked",
+      "Degraded"
+    ]
+  },
+  "allowedValues": {
+    "/status": [
+      "complete"
+    ]
+  },
+  "matches": {},
+  "forbiddenSubstrings": [
+    "TODO",
+    "TBD",
+    "작성하세요",
+    "미정",
+    "placeholder"
+  ]
+}

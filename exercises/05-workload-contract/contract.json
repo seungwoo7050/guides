@@ -1,0 +1,73 @@
+{
+  "contractVersion": 1,
+  "title": "Kubernetes workload contract",
+  "requiredPaths": [
+    "/status",
+    "/workload",
+    "/health",
+    "/resources",
+    "/network",
+    "/storage",
+    "/scheduling",
+    "/disruption",
+    "/conditions",
+    "/ownership"
+  ],
+  "nonEmptyPaths": [
+    "/workload/name",
+    "/workload/kind",
+    "/workload/profile",
+    "/workload/owner",
+    "/health/readyMeaning",
+    "/resources/requestRationale",
+    "/network/defaultPolicy",
+    "/disruption/recoveryEvidence"
+  ],
+  "minimumItems": {
+    "/conditions": 4,
+    "/ownership": 5,
+    "/network/allowedFlows": 3,
+    "/disruption/scenarios": 3
+  },
+  "arrayItemRequiredFields": {
+    "/conditions": [
+      "type",
+      "signal",
+      "owner",
+      "action"
+    ],
+    "/ownership": [
+      "boundary",
+      "applicationTeam",
+      "platformTeam"
+    ],
+    "/network/allowedFlows": [
+      "direction",
+      "peer",
+      "purpose"
+    ],
+    "/disruption/scenarios": [
+      "event",
+      "expectedBehavior",
+      "evidence"
+    ]
+  },
+  "arrayUniqueBy": {
+    "/conditions": "type",
+    "/ownership": "boundary"
+  },
+  "containsValues": {},
+  "allowedValues": {
+    "/status": [
+      "complete"
+    ]
+  },
+  "matches": {},
+  "forbiddenSubstrings": [
+    "TODO",
+    "TBD",
+    "작성하세요",
+    "미정",
+    "placeholder"
+  ]
+}

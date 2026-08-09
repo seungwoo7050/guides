@@ -1,0 +1,18 @@
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: service-name
+  description: 한 문장으로 설명하는 서비스 책임
+  annotations:
+    github.com/project-slug: northstar/service-name
+    northstar.dev/platform-profile: stateless-http/3.2.0
+    northstar.dev/support-tier: supported
+spec:
+  type: service
+  lifecycle: production
+  owner: group:default/team-name
+  system: system-name
+  dependsOn:
+    - resource:default/service-name-database
+  providesApis:
+    - api:default/service-name-http

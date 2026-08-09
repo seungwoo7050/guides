@@ -1,0 +1,13 @@
+.guide/
+.workspace/
+__pycache__/
+*.pyc
+*.log
+*.tmp
+*.tfstate
+*.tfstate.*
+.terraform/
+.tofu/
+kubeconfig*
+*.pem
+*.key

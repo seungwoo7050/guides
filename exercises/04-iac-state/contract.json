@@ -1,0 +1,72 @@
+{
+  "contractVersion": 1,
+  "title": "IaC state contract",
+  "requiredPaths": [
+    "/status",
+    "/stateUnits",
+    "/resourceMappings",
+    "/lockingAndSecurity",
+    "/planApply",
+    "/driftPolicy",
+    "/migration",
+    "/destroy"
+  ],
+  "nonEmptyPaths": [
+    "/lockingAndSecurity/backend",
+    "/lockingAndSecurity/lockRule",
+    "/lockingAndSecurity/restoreEvidence",
+    "/planApply/stalePlanRule",
+    "/migration/rollbackBoundary",
+    "/destroy/completionEvidence"
+  ],
+  "minimumItems": {
+    "/stateUnits": 3,
+    "/resourceMappings": 3,
+    "/driftPolicy": 4,
+    "/migration/steps": 4
+  },
+  "arrayItemRequiredFields": {
+    "/stateUnits": [
+      "id",
+      "owner",
+      "scope",
+      "blastRadius"
+    ],
+    "/resourceMappings": [
+      "address",
+      "externalIdentity",
+      "writer",
+      "importOrAdopt"
+    ],
+    "/driftPolicy": [
+      "type",
+      "detect",
+      "action",
+      "owner"
+    ],
+    "/migration/steps": [
+      "step",
+      "precondition",
+      "evidence"
+    ]
+  },
+  "arrayUniqueBy": {
+    "/stateUnits": "id",
+    "/resourceMappings": "address",
+    "/driftPolicy": "type"
+  },
+  "containsValues": {},
+  "allowedValues": {
+    "/status": [
+      "complete"
+    ]
+  },
+  "matches": {},
+  "forbiddenSubstrings": [
+    "TODO",
+    "TBD",
+    "작성하세요",
+    "미정",
+    "placeholder"
+  ]
+}

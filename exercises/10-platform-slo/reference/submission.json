@@ -1,0 +1,135 @@
+{
+  "status": "complete",
+  "journeys": [
+    {
+      "name": "preview-environment-ready",
+      "start": "valid policy-allowed request accepted",
+      "success": "Ready + external smoke within 15 minutes",
+      "sli": "successful requests / valid accepted requests",
+      "target": "99% over 30 days",
+      "owner": "environment capability"
+    },
+    {
+      "name": "production-release-observed",
+      "start": "approved immutable release promoted",
+      "success": "observed digest + rollout health within 20 minutes",
+      "sli": "successful observations / eligible promotions",
+      "target": "99.9% over 30 days",
+      "owner": "delivery/runtime platform"
+    }
+  ],
+  "failureTaxonomy": [
+    {
+      "class": "platform-defect",
+      "sloFailure": true,
+      "owner": "platform capability",
+      "action": "incident/repair"
+    },
+    {
+      "class": "dependency-timeout",
+      "sloFailure": true,
+      "owner": "platform + provider",
+      "action": "bounded retry and provider escalation"
+    },
+    {
+      "class": "invalid-input",
+      "sloFailure": false,
+      "owner": "requester; UX trends platform",
+      "action": "actionable validation"
+    },
+    {
+      "class": "policy-deny",
+      "sloFailure": false,
+      "owner": "requester/policy",
+      "action": "remediation or approval"
+    },
+    {
+      "class": "application-crash",
+      "sloFailure": false,
+      "owner": "application team unless platform default caused it",
+      "action": "workload evidence"
+    }
+  ],
+  "correlation": {
+    "requestIdentity": "request ID",
+    "operationIdentity": "operation ID across retries",
+    "resourceIdentity": "resource UID + generation",
+    "releaseIdentity": "source/artifact/environment release ID",
+    "signals": [
+      "trace spans",
+      "bounded-cardinality metrics",
+      "structured logs",
+      "append-only audit"
+    ]
+  },
+  "alerts": [
+    {
+      "name": "fast-burn-production-promotion",
+      "condition": "short-window error budget burn with minimum traffic",
+      "action": "stop new production wave and page delivery owner",
+      "runbook": "platform API or upgrade runbook by failure stage"
+    },
+    {
+      "name": "slow-burn-preview-provisioning",
+      "condition": "long-window latency/failure burn",
+      "action": "investigate capacity, dependency and recurring error class",
+      "runbook": "provisioning stuck"
+    }
+  ],
+  "errorBudgetActions": {
+    "healthy": "continue controlled feature/migration work",
+    "fastBurn": "pause risky rollout and prioritize diagnosis",
+    "exhausted": "restrict non-reliability change while allowing security/recovery fixes"
+  },
+  "capacity": {
+    "units": [
+      "API requests",
+      "controller work items",
+      "cluster CPU/memory",
+      "provider quota",
+      "runner concurrency",
+      "telemetry ingestion"
+    ],
+    "headroomRule": "forecast growth + failure reserve + upgrade surge + tenant burst before allocatable capacity",
+    "admission": "per-tenant rate/concurrency, production reserve and explicit retry-after",
+    "evidence": "queue age, saturation, quota and journey latency"
+  },
+  "supportTiers": [
+    {
+      "name": "production-critical",
+      "scope": "production delivery/identity/control plane",
+      "hours": "on-call",
+      "escalation": "SLO alert → incident process"
+    },
+    {
+      "name": "supported",
+      "scope": "standard profile and staging",
+      "hours": "business hours with escalation",
+      "escalation": "status evidence → capability owner"
+    },
+    {
+      "name": "preview",
+      "scope": "new profile/capability",
+      "hours": "limited cohort",
+      "escalation": "feedback channel and rollback to supported path"
+    }
+  ],
+  "cost": {
+    "direct": [
+      "tenant compute/storage/egress"
+    ],
+    "shared": [
+      "control plane",
+      "security/telemetry",
+      "headroom",
+      "support engineering"
+    ],
+    "showback": "team/profile/environment usage and safe optimization actions",
+    "guardrail": "cost reduction cannot consume declared failure/upgrade reserve"
+  },
+  "communication": {
+    "userImpact": "affected capability, environment/region, existing workload vs new change",
+    "updates": "mitigation, workaround risk and next update time",
+    "recovery": "journey verification and backlog drain before resolved"
+  }
+}

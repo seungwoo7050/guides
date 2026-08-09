@@ -1,0 +1,74 @@
+{
+  "contractVersion": 1,
+  "title": "Multi-tenancy contract",
+  "requiredPaths": [
+    "/status",
+    "/tenantDefinition",
+    "/profiles",
+    "/isolationAxes",
+    "/quotas",
+    "/fairness",
+    "/telemetry",
+    "/cost",
+    "/lifecycle"
+  ],
+  "nonEmptyPaths": [
+    "/tenantDefinition/unit",
+    "/tenantDefinition/securityMeaning",
+    "/quotas/increasePath",
+    "/fairness/systemReserve",
+    "/telemetry/queryIsolation",
+    "/lifecycle/retirementEvidence"
+  ],
+  "minimumItems": {
+    "/profiles": 2,
+    "/isolationAxes": 6,
+    "/quotas/types": 5,
+    "/lifecycle/stages": 4
+  },
+  "arrayItemRequiredFields": {
+    "/profiles": [
+      "name",
+      "trust",
+      "boundaries",
+      "support",
+      "costTradeoff"
+    ],
+    "/isolationAxes": [
+      "axis",
+      "shared",
+      "isolated",
+      "evidence"
+    ],
+    "/quotas/types": [
+      "resource",
+      "limit",
+      "owner"
+    ],
+    "/lifecycle/stages": [
+      "stage",
+      "owner",
+      "condition"
+    ]
+  },
+  "arrayUniqueBy": {
+    "/profiles": "name",
+    "/isolationAxes": "axis",
+    "/quotas/types": "resource",
+    "/lifecycle/stages": "stage"
+  },
+  "containsValues": {},
+  "allowedValues": {
+    "/status": [
+      "complete"
+    ]
+  },
+  "matches": {},
+  "forbiddenSubstrings": [
+    "TODO",
+    "TBD",
+    "작성하세요",
+    "미정",
+    "placeholder"
+  ]
+}

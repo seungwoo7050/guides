@@ -1,0 +1,128 @@
+{
+  "status": "complete",
+  "capability": {
+    "name": "ServiceEnvironment",
+    "version": "v1alpha1",
+    "owner": "platform-control-plane",
+    "supportTier": "supported"
+  },
+  "request": {
+    "resourceIdentity": "owner + service + environmentClass",
+    "idempotency": "client key is stored with canonical spec hash; duplicate returns existing operation",
+    "validation": [
+      "owner exists",
+      "profile is supported",
+      "release uses immutable digest"
+    ],
+    "approval": "production public exposure requires security approval"
+  },
+  "conditionTypes": [
+    "Ready",
+    "Progressing",
+    "Blocked",
+    "Degraded"
+  ],
+  "conditions": [
+    {
+      "type": "Progressing",
+      "meaning": "accepted request has unfinished dependencies",
+      "userAction": "observe status unless retry budget is exhausted",
+      "failureOwner": "platform-control-plane"
+    },
+    {
+      "type": "Ready",
+      "meaning": "current generation passed runtime readiness and external smoke",
+      "userAction": "use environment",
+      "failureOwner": "none"
+    },
+    {
+      "type": "Blocked",
+      "meaning": "input, approval or quota requires a decision",
+      "userAction": "follow stable reason and remediation",
+      "failureOwner": "request or policy owner"
+    },
+    {
+      "type": "Degraded",
+      "meaning": "resource exists but supported journey is impaired",
+      "userAction": "review impact and escalation link",
+      "failureOwner": "named dependency or platform owner"
+    }
+  ],
+  "ownership": [
+    {
+      "boundary": "application source and readiness behavior",
+      "writer": "team-checkout",
+      "reader": "build/runtime platform",
+      "failureOwner": "team-checkout"
+    },
+    {
+      "boundary": "platform resource spec/status",
+      "writer": "platform API/controller",
+      "reader": "portal/CLI/automation",
+      "failureOwner": "platform-control-plane"
+    },
+    {
+      "boundary": "cluster scheduling capacity",
+      "writer": "runtime-platform",
+      "reader": "scheduler/platform status",
+      "failureOwner": "runtime-platform"
+    },
+    {
+      "boundary": "production policy",
+      "writer": "platform-security",
+      "reader": "API/admission/delivery",
+      "failureOwner": "platform-security"
+    }
+  ],
+  "externalEffects": [
+    {
+      "effect": "namespace and workload identity",
+      "writer": "runtime adapter",
+      "externalIdentity": "cluster + namespace UID",
+      "retryRule": "adopt matching owner/resource UID",
+      "cleanup": "revoke identity after workload and audit export"
+    },
+    {
+      "effect": "database instance",
+      "writer": "data capability controller",
+      "externalIdentity": "provider resource ID",
+      "retryRule": "query operation before create retry",
+      "cleanup": "apply RetainData or Delete policy"
+    },
+    {
+      "effect": "GitOps desired release",
+      "writer": "promotion writer",
+      "externalIdentity": "repository path + commit",
+      "retryRule": "same release ID produces no new commit",
+      "cleanup": "retire commit only after workload/data policy"
+    }
+  ],
+  "deletion": {
+    "policyOptions": [
+      "Delete",
+      "RetainData",
+      "Archive",
+      "Block"
+    ],
+    "finalCondition": "Deleted only after external resource inventory, credential revocation and orphan check"
+  },
+  "escapeHatch": {
+    "scope": "unsupported runtime option on one service environment",
+    "requires": [
+      "risk owner",
+      "support level",
+      "expiry",
+      "compensating control"
+    ],
+    "returnPath": "profile extension or migration to supported version"
+  },
+  "support": {
+    "hours": "business hours for staging; on-call for production control plane",
+    "escalation": "status operation link → capability owner → incident process",
+    "evidence": [
+      "operation trace",
+      "condition history",
+      "audit decision"
+    ]
+  }
+}

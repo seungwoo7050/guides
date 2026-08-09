@@ -1,0 +1,76 @@
+{
+  "contractVersion": 1,
+  "title": "Identity policy and supply-chain contract",
+  "requiredPaths": [
+    "/status",
+    "/identities",
+    "/secretLifecycle",
+    "/policyStages",
+    "/exception",
+    "/breakGlass",
+    "/trustChain",
+    "/auditEvents",
+    "/containment"
+  ],
+  "nonEmptyPaths": [
+    "/secretLifecycle/sourceOwner",
+    "/secretLifecycle/materialization",
+    "/secretLifecycle/revocation",
+    "/exception/expiryRule",
+    "/breakGlass/closeCondition",
+    "/containment/recoveryEvidence"
+  ],
+  "minimumItems": {
+    "/identities": 3,
+    "/policyStages": 4,
+    "/trustChain": 5,
+    "/auditEvents": 5
+  },
+  "arrayItemRequiredFields": {
+    "/identities": [
+      "type",
+      "attestation",
+      "scope",
+      "ttl",
+      "revocation"
+    ],
+    "/policyStages": [
+      "stage",
+      "input",
+      "decision",
+      "feedback"
+    ],
+    "/trustChain": [
+      "stage",
+      "subject",
+      "artifactOrState",
+      "verification"
+    ],
+    "/auditEvents": [
+      "event",
+      "identity",
+      "redaction",
+      "retentionOwner"
+    ]
+  },
+  "arrayUniqueBy": {
+    "/identities": "type",
+    "/policyStages": "stage",
+    "/trustChain": "stage",
+    "/auditEvents": "event"
+  },
+  "containsValues": {},
+  "allowedValues": {
+    "/status": [
+      "complete"
+    ]
+  },
+  "matches": {},
+  "forbiddenSubstrings": [
+    "TODO",
+    "TBD",
+    "작성하세요",
+    "미정",
+    "placeholder"
+  ]
+}

@@ -1,0 +1,161 @@
+{
+  "status": "complete",
+  "identities": [
+    {
+      "type": "human",
+      "attestation": "organization IdP + MFA",
+      "scope": "team resources; production elevation by approval",
+      "ttl": "interactive session hours",
+      "revocation": "directory change and active session revoke"
+    },
+    {
+      "type": "workload",
+      "attestation": "runtime service account and workload attestation",
+      "scope": "named dependency and audience",
+      "ttl": "minutes to hours",
+      "revocation": "workload/owner removal or issuer deny"
+    },
+    {
+      "type": "automation",
+      "attestation": "trusted workflow/controller identity",
+      "scope": "one build, registry or environment capability",
+      "ttl": "job/operation lifetime",
+      "revocation": "operation end, controller disable or trust policy change"
+    }
+  ],
+  "secretLifecycle": {
+    "sourceOwner": "credential authority or external service owner",
+    "reference": "versioned secret reference in platform resource; no plaintext in Git",
+    "materialization": "delivered only to attested workload as bounded file/token",
+    "rotation": [
+      "issue candidate",
+      "consumer validation",
+      "activate",
+      "observe old use",
+      "revoke old",
+      "clean copies"
+    ],
+    "revocation": "issuer revoke plus workload restart/reload and access verification",
+    "logging": "identity/reference/version only; value redacted"
+  },
+  "policyStages": [
+    {
+      "stage": "local/PR",
+      "input": "source and declared config",
+      "decision": "lint/warn",
+      "feedback": "fast remediation before merge"
+    },
+    {
+      "stage": "build",
+      "input": "dependency, artifact and evidence",
+      "decision": "candidate eligibility",
+      "feedback": "release report"
+    },
+    {
+      "stage": "platform API",
+      "input": "identity, tenant, environment, spec and approval",
+      "decision": "accept/deny/block",
+      "feedback": "stable code and action"
+    },
+    {
+      "stage": "admission/runtime",
+      "input": "rendered live object and context",
+      "decision": "enforce/detect",
+      "feedback": "admission reason and runtime alert"
+    }
+  ],
+  "exception": {
+    "fields": [
+      "policy ID",
+      "resource scope",
+      "risk owner",
+      "approver",
+      "compensating control",
+      "expiry"
+    ],
+    "expiryRule": "notify before expiry; reviewed renewal or staged enforcement, never silent permanence",
+    "visibility": "catalog and policy audit"
+  },
+  "breakGlass": {
+    "trigger": "declared incident and normal path unavailable",
+    "scope": "minimum resource/verb with short TTL",
+    "audit": "session/action recording and immediate alert",
+    "closeCondition": "desired state reconciled, temporary credential revoked and incident review assigned"
+  },
+  "trustChain": [
+    {
+      "stage": "source",
+      "subject": "reviewed repository revision",
+      "artifactOrState": "commit SHA",
+      "verification": "protected change and workflow-owner review"
+    },
+    {
+      "stage": "builder",
+      "subject": "ephemeral trusted runner",
+      "artifactOrState": "build execution",
+      "verification": "attested identity and pinned definition"
+    },
+    {
+      "stage": "artifact",
+      "subject": "registry publisher",
+      "artifactOrState": "immutable digest",
+      "verification": "digest, provenance and SBOM association"
+    },
+    {
+      "stage": "promotion",
+      "subject": "release policy",
+      "artifactOrState": "candidate evidence bundle",
+      "verification": "environment gates and exception"
+    },
+    {
+      "stage": "runtime",
+      "subject": "deployment/admission controller",
+      "artifactOrState": "observed digest and identity",
+      "verification": "signature/provenance policy and workload status"
+    }
+  ],
+  "auditEvents": [
+    {
+      "event": "authorization-deny",
+      "identity": "subject + resource + policy decision ID",
+      "redaction": "request payload fields classified/redacted",
+      "retentionOwner": "security audit"
+    },
+    {
+      "event": "credential-issued",
+      "identity": "issuer + subject + audience + expiry",
+      "redaction": "token value never stored",
+      "retentionOwner": "identity platform"
+    },
+    {
+      "event": "secret-access",
+      "identity": "workload + reference + version",
+      "redaction": "secret value omitted",
+      "retentionOwner": "secret platform"
+    },
+    {
+      "event": "policy-exception",
+      "identity": "resource + policy + approver + expiry",
+      "redaction": "sensitive business reason access-limited",
+      "retentionOwner": "policy owner"
+    },
+    {
+      "event": "break-glass",
+      "identity": "actor + incident + scope + session",
+      "redaction": "secret/payload redacted",
+      "retentionOwner": "independent audit"
+    }
+  ],
+  "containment": {
+    "trigger": "builder, artifact, controller or credential compromise suspected",
+    "actions": [
+      "pause promotion",
+      "preserve evidence",
+      "revoke identity",
+      "quarantine artifact",
+      "inventory deployments",
+      "restore trusted component"
+    ],
+    "recoveryEvidence": "trusted rebuild, rotated credentials, desired/live inventory and staged journey verification"
+  }
+}

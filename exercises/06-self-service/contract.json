@@ -1,0 +1,73 @@
+{
+  "contractVersion": 1,
+  "title": "Self-service golden path",
+  "requiredPaths": [
+    "/status",
+    "/api",
+    "/conditionTypes",
+    "/errors",
+    "/catalog",
+    "/profile",
+    "/lifecycle",
+    "/escapeHatch",
+    "/automationPaths"
+  ],
+  "nonEmptyPaths": [
+    "/api/version",
+    "/api/resourceIdentity",
+    "/api/statusUrl",
+    "/catalog/metadataSource",
+    "/catalog/runtimeSource",
+    "/profile/version",
+    "/escapeHatch/expiryRule"
+  ],
+  "minimumItems": {
+    "/conditionTypes": 4,
+    "/errors": 5,
+    "/lifecycle": 8,
+    "/automationPaths": 2
+  },
+  "arrayItemRequiredFields": {
+    "/errors": [
+      "code",
+      "retryable",
+      "owner",
+      "remediation"
+    ],
+    "/lifecycle": [
+      "stage",
+      "success",
+      "failure",
+      "evidence"
+    ],
+    "/automationPaths": [
+      "client",
+      "contract"
+    ]
+  },
+  "arrayUniqueBy": {
+    "/errors": "code",
+    "/lifecycle": "stage"
+  },
+  "containsValues": {
+    "/conditionTypes": [
+      "Ready",
+      "Progressing",
+      "Blocked",
+      "Degraded"
+    ]
+  },
+  "allowedValues": {
+    "/status": [
+      "complete"
+    ]
+  },
+  "matches": {},
+  "forbiddenSubstrings": [
+    "TODO",
+    "TBD",
+    "작성하세요",
+    "미정",
+    "placeholder"
+  ]
+}

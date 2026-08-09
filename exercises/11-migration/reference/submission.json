@@ -1,0 +1,172 @@
+{
+  "status": "complete",
+  "change": {
+    "component": "stateless-http platform profile",
+    "sourceVersion": "2.8.0",
+    "targetVersion": "3.2.0",
+    "semanticDifference": "workload identity audience, default-deny egress and telemetry schema become explicit versioned contracts",
+    "reason": "remove static cloud credential and unsupported telemetry path"
+  },
+  "inventory": {
+    "source": "catalog metadata joined with live workload/profile discovery",
+    "categories": [
+      {
+        "item": "service/profile version",
+        "owner": "platform profile",
+        "query": "catalog and workload label"
+      },
+      {
+        "item": "owner/support tier",
+        "owner": "service owner",
+        "query": "catalog owner resolution"
+      },
+      {
+        "item": "custom network egress",
+        "owner": "application/security",
+        "query": "policy and flow inventory"
+      },
+      {
+        "item": "static credential use",
+        "owner": "identity platform",
+        "query": "secret reference/access audit"
+      },
+      {
+        "item": "telemetry schema/collector",
+        "owner": "observability",
+        "query": "deployment and ingestion inventory"
+      }
+    ]
+  },
+  "compatibility": [
+    {
+      "dimension": "API spec",
+      "supported": "v2 fields convert to v3 defaults with explicit preview",
+      "evidence": "conversion fixtures"
+    },
+    {
+      "dimension": "stored status",
+      "supported": "new controller reads old conditions; old controller cannot read new-only state after rewrite",
+      "evidence": "round-trip test"
+    },
+    {
+      "dimension": "network",
+      "supported": "declared flows work; undeclared egress is blocked",
+      "evidence": "connectivity fixture"
+    },
+    {
+      "dimension": "identity",
+      "supported": "dependency accepts old/new audience during migration window",
+      "evidence": "auth integration test"
+    },
+    {
+      "dimension": "telemetry",
+      "supported": "dual ingest dashboards during one wave",
+      "evidence": "signal comparison"
+    }
+  ],
+  "preflight": [
+    {
+      "check": "valid owner and maintenance contact",
+      "blockReason": "no one can approve or respond",
+      "owner": "service owner"
+    },
+    {
+      "check": "all external egress declared",
+      "blockReason": "v3 default deny would break dependency",
+      "owner": "application/security"
+    },
+    {
+      "check": "dependency accepts new identity",
+      "blockReason": "authentication outage",
+      "owner": "identity/dependency owner"
+    },
+    {
+      "check": "capacity for surge/drain",
+      "blockReason": "upgrade cannot maintain replicas",
+      "owner": "runtime platform"
+    },
+    {
+      "check": "rollback artifact and state snapshot",
+      "blockReason": "unsafe recovery",
+      "owner": "platform profile"
+    }
+  ],
+  "waves": [
+    {
+      "name": "platform-fixtures",
+      "targets": "owned representative workloads",
+      "entry": "all automated contract tests pass",
+      "exit": "failure drills and rollback pass"
+    },
+    {
+      "name": "development-canary",
+      "targets": "low-risk teams with standard and one exception",
+      "entry": "owner opt-in and preflight",
+      "exit": "journey SLO and support review"
+    },
+    {
+      "name": "production-canary",
+      "targets": "representative stateless services",
+      "entry": "staging observation complete",
+      "exit": "error budget and identity/network evidence stable"
+    },
+    {
+      "name": "remaining-fleet",
+      "targets": "eligible services by risk batches",
+      "entry": "no open stop condition",
+      "exit": "inventory target and old credential decline"
+    }
+  ],
+  "abortCriteria": [
+    {
+      "signal": "production journey fast burn",
+      "threshold": "declared alert threshold",
+      "action": "stop new wave and assess rollback"
+    },
+    {
+      "signal": "authorization failure",
+      "threshold": "unexpected deny above baseline",
+      "action": "pause identity/network activation"
+    },
+    {
+      "signal": "unknown state conversion",
+      "threshold": "any invariant violation",
+      "action": "isolate resource and stop migration"
+    }
+  ],
+  "rollback": {
+    "boundary": "before v3-only state rewrite and old credential revocation; after that use forward repair or restore",
+    "target": "profile 2.8 release + compatible policy/collector",
+    "procedure": "stop waves, restore canary, verify journeys, then batch rollback if safe",
+    "forwardRepair": "reissue identity or add explicit egress through reviewed v3 config"
+  },
+  "deprecation": {
+    "newUseStop": "v2 new service creation disabled after v3 production canary",
+    "deadline": "2027-02-01",
+    "support": "migration report, automated PR and office hours",
+    "exception": "risk owner + expiry no later than final removal window",
+    "completionEvidence": "no v2 live profiles, old credential revoked, old controller/policy/docs removed and final cost scan"
+  },
+  "metrics": [
+    {
+      "name": "eligible/completed/blocked",
+      "meaning": "migration state inventory",
+      "owner": "migration controller"
+    },
+    {
+      "name": "wave success/rollback",
+      "meaning": "change safety by cohort",
+      "owner": "platform profile"
+    },
+    {
+      "name": "journey SLO delta",
+      "meaning": "user impact",
+      "owner": "platform SRE"
+    },
+    {
+      "name": "old credential usage",
+      "meaning": "security/lifecycle completion",
+      "owner": "identity platform"
+    }
+  ]
+}

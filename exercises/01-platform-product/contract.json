@@ -1,0 +1,82 @@
+{
+  "contractVersion": 1,
+  "title": "Platform product brief",
+  "requiredPaths": [
+    "/status",
+    "/product",
+    "/users",
+    "/currentJourney",
+    "/evidence",
+    "/outcomes",
+    "/firstCapability",
+    "/nonGoals",
+    "/risks"
+  ],
+  "nonEmptyPaths": [
+    "/product/name",
+    "/product/owner",
+    "/product/problemStatement",
+    "/firstCapability/name",
+    "/firstCapability/exitEvidence"
+  ],
+  "minimumItems": {
+    "/users": 2,
+    "/currentJourney": 4,
+    "/evidence": 3,
+    "/outcomes": 2,
+    "/nonGoals": 2,
+    "/risks": 2
+  },
+  "arrayItemRequiredFields": {
+    "/users": [
+      "id",
+      "role",
+      "job",
+      "pain"
+    ],
+    "/currentJourney": [
+      "step",
+      "owner",
+      "waitOrFailure",
+      "evidence"
+    ],
+    "/evidence": [
+      "type",
+      "source",
+      "finding"
+    ],
+    "/outcomes": [
+      "name",
+      "measure",
+      "target",
+      "guardrail"
+    ],
+    "/nonGoals": [
+      "item",
+      "reason"
+    ],
+    "/risks": [
+      "risk",
+      "owner",
+      "mitigation"
+    ]
+  },
+  "arrayUniqueBy": {
+    "/users": "id",
+    "/outcomes": "name"
+  },
+  "containsValues": {},
+  "allowedValues": {
+    "/status": [
+      "complete"
+    ]
+  },
+  "matches": {},
+  "forbiddenSubstrings": [
+    "TODO",
+    "TBD",
+    "작성하세요",
+    "미정",
+    "placeholder"
+  ]
+}

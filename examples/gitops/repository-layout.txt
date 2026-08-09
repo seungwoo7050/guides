@@ -1,0 +1,24 @@
+gitops/
+├── profiles/
+│   └── stateless-http/
+│       └── 3.2.0/
+├── environments/
+│   ├── staging/
+│   │   └── checkout/
+│   │       ├── release.yaml
+│   │       └── configuration.yaml
+│   └── production/
+│       └── checkout/
+│           ├── release.yaml
+│           └── configuration.yaml
+└── clusters/
+    ├── staging-a/
+    │   └── source.yaml
+    └── production-a/
+        └── source.yaml
+
+Ownership example:
+- profiles/: platform team
+- staging service path: application team + promotion bot
+- production service path: promotion bot, protected review
+- clusters/: runtime platform team

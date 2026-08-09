@@ -1,0 +1,157 @@
+{
+  "status": "complete",
+  "api": {
+    "version": "platform.northstar.dev/v1alpha1",
+    "resourceIdentity": "service + environment class + owner",
+    "acceptance": "202 Accepted with resource, operation and generation",
+    "statusUrl": "/v1/service-environments/{id}",
+    "idempotency": "client key + canonical spec hash",
+    "deletePolicies": [
+      "Delete",
+      "RetainData",
+      "Archive",
+      "Block"
+    ]
+  },
+  "conditionTypes": [
+    "Ready",
+    "Progressing",
+    "Blocked",
+    "Degraded"
+  ],
+  "errors": [
+    {
+      "code": "INVALID_PROFILE",
+      "retryable": false,
+      "owner": "requester",
+      "remediation": "select a supported profile/version"
+    },
+    {
+      "code": "POLICY_APPROVAL_REQUIRED",
+      "retryable": false,
+      "owner": "requester/policy",
+      "remediation": "attach approval or reduce exposure"
+    },
+    {
+      "code": "TENANT_QUOTA_EXCEEDED",
+      "retryable": false,
+      "owner": "tenant owner",
+      "remediation": "remove resources or request dated quota increase"
+    },
+    {
+      "code": "DEPENDENCY_TIMEOUT",
+      "retryable": true,
+      "owner": "platform dependency",
+      "remediation": "observe bounded retry and escalate after budget"
+    },
+    {
+      "code": "CONTROLLER_INVARIANT",
+      "retryable": false,
+      "owner": "platform control plane",
+      "remediation": "operation is isolated; follow incident link"
+    }
+  ],
+  "catalog": {
+    "metadataSource": "versioned service descriptor accepted by catalog",
+    "runtimeSource": "platform status and deployment controller",
+    "fields": [
+      "service ID",
+      "owner",
+      "repository",
+      "profile version",
+      "dependencies",
+      "runbook",
+      "SLO",
+      "lifecycle"
+    ],
+    "freshness": "metadata ingestion and runtime status have separate timestamps"
+  },
+  "profile": {
+    "name": "stateless-http",
+    "version": "3.2.0",
+    "contains": [
+      "build workflow",
+      "runtime defaults",
+      "identity",
+      "telemetry",
+      "policy",
+      "support"
+    ],
+    "update": "central references + migration campaign, not template re-run"
+  },
+  "lifecycle": [
+    {
+      "stage": "Discover",
+      "success": "supported profile and limits are visible",
+      "failure": "wrong profile or hidden limitation",
+      "evidence": "docs/catalog search"
+    },
+    {
+      "stage": "Request",
+      "success": "valid versioned request accepted",
+      "failure": "validation/policy/quota deny",
+      "evidence": "request and decision IDs"
+    },
+    {
+      "stage": "Create",
+      "success": "repository, catalog and staging operation created",
+      "failure": "partial external effects",
+      "evidence": "operation/resource map"
+    },
+    {
+      "stage": "Develop",
+      "success": "standard local/build workflow works",
+      "failure": "unsupported language/profile behavior",
+      "evidence": "workflow result"
+    },
+    {
+      "stage": "Release",
+      "success": "immutable artifact promoted",
+      "failure": "gate or deployment failure",
+      "evidence": "release record"
+    },
+    {
+      "stage": "Operate",
+      "success": "status, SLO and runbook available",
+      "failure": "unowned incident or stale metadata",
+      "evidence": "catalog/telemetry"
+    },
+    {
+      "stage": "Migrate",
+      "success": "profile version changed through verified wave",
+      "failure": "compatibility block",
+      "evidence": "migration record"
+    },
+    {
+      "stage": "Retire",
+      "success": "traffic/data/credential/resource handled",
+      "failure": "orphan or unknown consumer",
+      "evidence": "retirement audit and cost scan"
+    }
+  ],
+  "escapeHatch": {
+    "levels": [
+      "supported extension",
+      "reviewed exception",
+      "bring your own",
+      "unsupported"
+    ],
+    "requires": [
+      "reason",
+      "risk owner",
+      "support level",
+      "compensating control"
+    ],
+    "expiryRule": "reviewed exception has explicit expiry and return path; overdue is visible in catalog"
+  },
+  "automationPaths": [
+    {
+      "client": "CLI/CI",
+      "contract": "same platform API and status resource as portal"
+    },
+    {
+      "client": "controller",
+      "contract": "service descriptor changes generate idempotent API request"
+    }
+  ]
+}

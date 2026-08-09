@@ -1,0 +1,77 @@
+{
+  "contractVersion": 1,
+  "title": "Platform journey SLO",
+  "requiredPaths": [
+    "/status",
+    "/journeys",
+    "/failureTaxonomy",
+    "/correlation",
+    "/alerts",
+    "/errorBudgetActions",
+    "/capacity",
+    "/supportTiers",
+    "/cost",
+    "/communication"
+  ],
+  "nonEmptyPaths": [
+    "/correlation/operationIdentity",
+    "/capacity/headroomRule",
+    "/capacity/admission",
+    "/cost/showback",
+    "/communication/userImpact"
+  ],
+  "minimumItems": {
+    "/journeys": 2,
+    "/failureTaxonomy": 5,
+    "/alerts": 2,
+    "/supportTiers": 3
+  },
+  "arrayItemRequiredFields": {
+    "/journeys": [
+      "name",
+      "start",
+      "success",
+      "sli",
+      "target",
+      "owner"
+    ],
+    "/failureTaxonomy": [
+      "class",
+      "sloFailure",
+      "owner",
+      "action"
+    ],
+    "/alerts": [
+      "name",
+      "condition",
+      "action",
+      "runbook"
+    ],
+    "/supportTiers": [
+      "name",
+      "scope",
+      "hours",
+      "escalation"
+    ]
+  },
+  "arrayUniqueBy": {
+    "/journeys": "name",
+    "/failureTaxonomy": "class",
+    "/alerts": "name",
+    "/supportTiers": "name"
+  },
+  "containsValues": {},
+  "allowedValues": {
+    "/status": [
+      "complete"
+    ]
+  },
+  "matches": {},
+  "forbiddenSubstrings": [
+    "TODO",
+    "TBD",
+    "작성하세요",
+    "미정",
+    "placeholder"
+  ]
+}

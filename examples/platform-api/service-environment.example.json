@@ -1,0 +1,18 @@
+{
+  "apiVersion": "platform.northstar.dev/v1alpha1",
+  "kind": "ServiceEnvironment",
+  "metadata": {
+    "name": "checkout-staging",
+    "owner": "team-checkout",
+    "idempotencyKey": "checkout-staging-generation-4"
+  },
+  "spec": {
+    "service": "checkout",
+    "environmentClass": "staging",
+    "releaseDigest": "sha256:0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
+    "runtimeProfile": "stateless-http/3.2.0",
+    "dataProfile": "postgres-small",
+    "exposure": "internal",
+    "deletionPolicy": "RetainData"
+  }
+}

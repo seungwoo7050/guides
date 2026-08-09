@@ -1,0 +1,77 @@
+{
+  "contractVersion": 1,
+  "title": "Platform capstone plan",
+  "requiredPaths": [
+    "/status",
+    "/product",
+    "/resources",
+    "/controlPlane",
+    "/delivery",
+    "/runtimeAndTenancy",
+    "/security",
+    "/operations",
+    "/scenarios",
+    "/uncheckedClaims",
+    "/projectTransition"
+  ],
+  "nonEmptyPaths": [
+    "/product/problem",
+    "/product/outcome",
+    "/controlPlane/readyEvidence",
+    "/delivery/artifactIdentity",
+    "/security/trustBoundary",
+    "/operations/journeySlo",
+    "/projectTransition/firstContribution"
+  ],
+  "minimumItems": {
+    "/resources": 5,
+    "/scenarios": 8,
+    "/uncheckedClaims": 3,
+    "/projectTransition/steps": 4
+  },
+  "arrayItemRequiredFields": {
+    "/resources": [
+      "kind",
+      "owner",
+      "desiredSource",
+      "statusOwner",
+      "deletePolicy"
+    ],
+    "/scenarios": [
+      "name",
+      "initialState",
+      "event",
+      "expectedState",
+      "evidence",
+      "owner"
+    ],
+    "/uncheckedClaims": [
+      "claim",
+      "whyUnchecked",
+      "nextValidation"
+    ],
+    "/projectTransition/steps": [
+      "step",
+      "artifact",
+      "completion"
+    ]
+  },
+  "arrayUniqueBy": {
+    "/resources": "kind",
+    "/scenarios": "name"
+  },
+  "containsValues": {},
+  "allowedValues": {
+    "/status": [
+      "complete"
+    ]
+  },
+  "matches": {},
+  "forbiddenSubstrings": [
+    "TODO",
+    "TBD",
+    "작성하세요",
+    "미정",
+    "placeholder"
+  ]
+}

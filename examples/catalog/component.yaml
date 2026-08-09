@@ -1,0 +1,23 @@
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: checkout
+  description: 장바구니 주문 전환을 소유하는 HTTP 서비스
+  annotations:
+    github.com/project-slug: northstar/checkout
+    northstar.dev/platform-profile: stateless-http/3.2.0
+    northstar.dev/support-tier: production-critical
+    northstar.dev/status-api: https://platform.example/v1/services/checkout
+  links:
+    - url: https://docs.example/services/checkout/runbook
+      title: Runbook
+      icon: docs
+spec:
+  type: service
+  lifecycle: production
+  owner: group:default/team-checkout
+  system: commerce
+  dependsOn:
+    - resource:default/checkout-database
+  providesApis:
+    - api:default/checkout-http

@@ -1,0 +1,86 @@
+{
+  "contractVersion": 1,
+  "title": "Platform migration plan",
+  "requiredPaths": [
+    "/status",
+    "/change",
+    "/inventory",
+    "/compatibility",
+    "/preflight",
+    "/waves",
+    "/abortCriteria",
+    "/rollback",
+    "/deprecation",
+    "/metrics"
+  ],
+  "nonEmptyPaths": [
+    "/change/sourceVersion",
+    "/change/targetVersion",
+    "/change/semanticDifference",
+    "/inventory/source",
+    "/rollback/boundary",
+    "/deprecation/deadline",
+    "/deprecation/completionEvidence"
+  ],
+  "minimumItems": {
+    "/inventory/categories": 5,
+    "/compatibility": 5,
+    "/preflight": 5,
+    "/waves": 4,
+    "/abortCriteria": 3,
+    "/metrics": 4
+  },
+  "arrayItemRequiredFields": {
+    "/inventory/categories": [
+      "item",
+      "owner",
+      "query"
+    ],
+    "/compatibility": [
+      "dimension",
+      "supported",
+      "evidence"
+    ],
+    "/preflight": [
+      "check",
+      "blockReason",
+      "owner"
+    ],
+    "/waves": [
+      "name",
+      "targets",
+      "entry",
+      "exit"
+    ],
+    "/abortCriteria": [
+      "signal",
+      "threshold",
+      "action"
+    ],
+    "/metrics": [
+      "name",
+      "meaning",
+      "owner"
+    ]
+  },
+  "arrayUniqueBy": {
+    "/inventory/categories": "item",
+    "/compatibility": "dimension",
+    "/waves": "name",
+    "/metrics": "name"
+  },
+  "containsValues": {},
+  "allowedValues": {
+    "/status": [
+      "complete"
+    ]
+  },
+  "matches": {},
+  "forbiddenSubstrings": [
+    "TODO",
+    "TBD",
+    "작성하세요",
+    "미정",
+    "placeholder"
+  ]
+}

@@ -1,0 +1,170 @@
+{
+  "status": "complete",
+  "tenantDefinition": {
+    "unit": "application team + environment trust zone",
+    "securityMeaning": "authorization, network visibility and credential audience boundary; namespace alone is not full isolation",
+    "costMeaning": "direct usage owner with shared overhead allocation"
+  },
+  "profiles": [
+    {
+      "name": "development-shared",
+      "trust": "internal non-sensitive development",
+      "boundaries": [
+        "shared cluster",
+        "namespace per team",
+        "default-deny network",
+        "quota"
+      ],
+      "support": "business-hours",
+      "costTradeoff": "low cost, larger shared blast radius"
+    },
+    {
+      "name": "production-standard",
+      "trust": "internal production",
+      "boundaries": [
+        "production cluster pool",
+        "namespace/service identity",
+        "restricted policy",
+        "quota/priority"
+      ],
+      "support": "production platform SLO",
+      "costTradeoff": "shared efficiency with reserved headroom"
+    },
+    {
+      "name": "high-isolation",
+      "trust": "sensitive or low mutual trust",
+      "boundaries": [
+        "separate account/project",
+        "separate cluster/node pool",
+        "separate key/telemetry access"
+      ],
+      "support": "dedicated agreement",
+      "costTradeoff": "higher cost and slower provisioning"
+    }
+  ],
+  "isolationAxes": [
+    {
+      "axis": "identity",
+      "shared": "organization issuer",
+      "isolated": "tenant role, audience and service account",
+      "evidence": "authorization tests"
+    },
+    {
+      "axis": "compute",
+      "shared": "cluster/node pool by profile",
+      "isolated": "quota, priority or dedicated nodes",
+      "evidence": "scheduling and saturation drill"
+    },
+    {
+      "axis": "network",
+      "shared": "cluster network/DNS",
+      "isolated": "default deny and explicit flows",
+      "evidence": "connectivity tests"
+    },
+    {
+      "axis": "storage",
+      "shared": "provider/backend",
+      "isolated": "volume identity, key, access and retention",
+      "evidence": "attach/restore/delete tests"
+    },
+    {
+      "axis": "telemetry",
+      "shared": "collector/backend",
+      "isolated": "query authorization and redaction",
+      "evidence": "cross-tenant access test"
+    },
+    {
+      "axis": "control-plane",
+      "shared": "platform API/controllers",
+      "isolated": "rate, per-tenant queue and object visibility",
+      "evidence": "load/fairness drill"
+    }
+  ],
+  "quotas": {
+    "types": [
+      {
+        "resource": "compute request",
+        "limit": "profile/team budget",
+        "owner": "runtime platform + tenant"
+      },
+      {
+        "resource": "environment count",
+        "limit": "preview count and TTL",
+        "owner": "platform product"
+      },
+      {
+        "resource": "controller concurrency",
+        "limit": "per tenant work queue",
+        "owner": "control plane"
+      },
+      {
+        "resource": "telemetry ingestion",
+        "limit": "rate/cardinality budget",
+        "owner": "observability platform"
+      },
+      {
+        "resource": "provider objects",
+        "limit": "load balancer/volume/database quota",
+        "owner": "capability owner"
+      }
+    ],
+    "increasePath": "usage/trend + duration + cost owner + global headroom + expiry/review",
+    "capacityMeaning": "quota is admission/fairness, not a guarantee that shared capacity exists"
+  },
+  "fairness": {
+    "perTenant": "rate and reconcile concurrency",
+    "priorities": [
+      "platform-system",
+      "production",
+      "staging",
+      "preview"
+    ],
+    "systemReserve": "capacity and queue slots reserved for platform system and production recovery",
+    "overloadAction": "reject/defer low priority with retry-after instead of unbounded queue"
+  },
+  "telemetry": {
+    "queryIsolation": "tenant role limits logs/traces/metrics while platform operator access is audited",
+    "redaction": "secret and classified payload fields removed before shared backend",
+    "cardinality": "tenant/profile aggregate; request identity remains trace/log, not metric label"
+  },
+  "cost": {
+    "direct": [
+      "compute",
+      "storage",
+      "egress",
+      "managed capability"
+    ],
+    "shared": [
+      "control plane",
+      "telemetry",
+      "security",
+      "reliability headroom"
+    ],
+    "model": "showback first; shared overhead method is visible"
+  },
+  "lifecycle": {
+    "stages": [
+      {
+        "stage": "Create",
+        "owner": "platform + tenant owner",
+        "condition": "owner, profile, quota, policy and cost center valid"
+      },
+      {
+        "stage": "Operate",
+        "owner": "tenant/platform by boundary",
+        "condition": "usage, exception and ownership visible"
+      },
+      {
+        "stage": "Transfer",
+        "owner": "old/new owner + platform",
+        "condition": "authorization, cost and support updated"
+      },
+      {
+        "stage": "Retire",
+        "owner": "tenant owner",
+        "condition": "data export/retention, credential/resource cleanup and audit"
+      }
+    ],
+    "retirementEvidence": "runtime/resource absence or retained IDs, revoked identities, telemetry retention and final cost scan"
+  }
+}

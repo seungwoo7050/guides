@@ -1,0 +1,78 @@
+{
+  "contractVersion": 1,
+  "title": "Reconciliation design",
+  "requiredPaths": [
+    "/status",
+    "/resourceModel",
+    "/conditionTypes",
+    "/reconcileSteps",
+    "/failureClasses",
+    "/fieldOwnership",
+    "/finalization",
+    "/evidence"
+  ],
+  "nonEmptyPaths": [
+    "/resourceModel/desiredSource",
+    "/resourceModel/observedSource",
+    "/resourceModel/generationRule",
+    "/finalization/terminalCondition"
+  ],
+  "minimumItems": {
+    "/conditionTypes": 4,
+    "/reconcileSteps": 5,
+    "/failureClasses": 4,
+    "/fieldOwnership": 3,
+    "/evidence": 4
+  },
+  "arrayItemRequiredFields": {
+    "/reconcileSteps": [
+      "name",
+      "input",
+      "idempotency",
+      "evidence",
+      "onFailure"
+    ],
+    "/failureClasses": [
+      "class",
+      "retryable",
+      "condition",
+      "action"
+    ],
+    "/fieldOwnership": [
+      "field",
+      "writer",
+      "conflictPolicy"
+    ],
+    "/evidence": [
+      "signal",
+      "identity",
+      "purpose"
+    ]
+  },
+  "arrayUniqueBy": {
+    "/reconcileSteps": "name",
+    "/failureClasses": "class",
+    "/fieldOwnership": "field"
+  },
+  "containsValues": {
+    "/conditionTypes": [
+      "Progressing",
+      "Ready",
+      "Blocked",
+      "Degraded"
+    ]
+  },
+  "allowedValues": {
+    "/status": [
+      "complete"
+    ]
+  },
+  "matches": {},
+  "forbiddenSubstrings": [
+    "TODO",
+    "TBD",
+    "작성하세요",
+    "미정",
+    "placeholder"
+  ]
+}

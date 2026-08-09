@@ -1,0 +1,213 @@
+{
+  "status": "complete",
+  "product": {
+    "name": "Northstar standard service platform",
+    "problem": "표준 HTTP 서비스의 생성·배포·운영이 ticket, 복사된 workflow와 불명확한 owner에 흩어져 있습니다.",
+    "users": [
+      "application developer",
+      "service owner",
+      "platform operator"
+    ],
+    "outcome": "유효 staging 요청의 90%가 30분 안에 Ready하며 manual handoff와 orphan를 줄입니다.",
+    "nonGoals": [
+      "all cloud services",
+      "all language/framework standardization"
+    ]
+  },
+  "resources": [
+    {
+      "kind": "Service",
+      "owner": "service owner through platform API",
+      "desiredSource": "service descriptor",
+      "statusOwner": "catalog/control plane",
+      "deletePolicy": "archive metadata after runtime retirement"
+    },
+    {
+      "kind": "ServiceEnvironment",
+      "owner": "application team",
+      "desiredSource": "platform API spec",
+      "statusOwner": "environment controller",
+      "deletePolicy": "environment class retention policy"
+    },
+    {
+      "kind": "Release",
+      "owner": "delivery platform + application request",
+      "desiredSource": "verified artifact/promotion record",
+      "statusOwner": "deployment observer",
+      "deletePolicy": "retain audit and artifact policy"
+    },
+    {
+      "kind": "CapabilityBinding",
+      "owner": "service/capability owners",
+      "desiredSource": "versioned binding spec",
+      "statusOwner": "capability controller",
+      "deletePolicy": "data-specific retain/delete"
+    },
+    {
+      "kind": "Migration",
+      "owner": "platform component owner",
+      "desiredSource": "migration plan/resource target",
+      "statusOwner": "migration controller",
+      "deletePolicy": "retain history after terminal state"
+    },
+    {
+      "kind": "PolicyException",
+      "owner": "risk owner + policy approver",
+      "desiredSource": "exception request",
+      "statusOwner": "policy system",
+      "deletePolicy": "expire and retain audit"
+    }
+  ],
+  "controlPlane": {
+    "flow": [
+      "validate",
+      "authorize",
+      "build dependency graph",
+      "write IaC/GitOps desired state",
+      "observe external state",
+      "publish conditions",
+      "finalize"
+    ],
+    "idempotency": "resource UID/generation and external operation IDs",
+    "readyEvidence": "current generation, dependency conditions, observed artifact digest and external smoke",
+    "failureIsolation": "poison resource becomes Blocked/Degraded without halting other tenant queues"
+  },
+  "delivery": {
+    "artifactIdentity": "immutable OCI digest tied to source and trusted build provenance",
+    "promotion": "preview → staging → production using the same digest and environment gates",
+    "gitops": "protected desired path, observed revision, drift/prune policy and break-glass close",
+    "rollback": "previous release if data/config compatible; otherwise verified roll-forward"
+  },
+  "runtimeAndTenancy": {
+    "profile": "stateless-http/3.2.0 with readiness, identity, telemetry, resource and disruption contract",
+    "tenantProfiles": [
+      "development-shared",
+      "production-standard",
+      "high-isolation"
+    ],
+    "fairness": "per-tenant quota/rate/concurrency and production/system reserve",
+    "data": "managed capability owns persistence and retention outside Pod lifecycle"
+  },
+  "security": {
+    "trustBoundary": "human/workload/automation identities and source→builder→artifact→promotion→runtime verification",
+    "secret": "reference and short-lived materialization; rotation/revocation evidence",
+    "policy": "PR/build/API/admission/runtime stages with versioned fixtures",
+    "exception": "scope, risk owner, approver, expiry and compensating control",
+    "containment": "pause promotion, revoke identity, quarantine artifact and inventory deployments"
+  },
+  "operations": {
+    "journeySlo": "staging environment Ready within 30 minutes for 90% of valid requests; production release observation 99.9%",
+    "capacity": "queue/cluster/provider/telemetry units with failure and upgrade headroom",
+    "cost": "tenant showback plus visible shared overhead and orphan scan",
+    "support": "production-critical/supported/preview tiers and owner escalation",
+    "upgrade": "inventory, compatibility, preflight, canary/waves, abort/rollback and deprecation"
+  },
+  "scenarios": [
+    {
+      "name": "normal-create",
+      "initialState": "service exists, no staging",
+      "event": "valid staging request",
+      "expectedState": "Ready current generation",
+      "evidence": "operation, policy, artifact and smoke",
+      "owner": "environment capability"
+    },
+    {
+      "name": "duplicate-timeout",
+      "initialState": "operation accepted but response lost",
+      "event": "same idempotency key resubmitted",
+      "expectedState": "existing operation returned, no duplicate resource",
+      "evidence": "external resource map",
+      "owner": "control plane"
+    },
+    {
+      "name": "partial-provision",
+      "initialState": "database created",
+      "event": "runtime policy deny",
+      "expectedState": "Blocked with retained/cleanup decision",
+      "evidence": "condition, cost and external IDs",
+      "owner": "capability + requester"
+    },
+    {
+      "name": "gitops-drift",
+      "initialState": "production desired digest A",
+      "event": "manual live digest B",
+      "expectedState": "revert or audited emergency workflow",
+      "evidence": "drift event and desired/live revision",
+      "owner": "runtime/incident"
+    },
+    {
+      "name": "tenant-exhaustion",
+      "initialState": "shared capacity healthy",
+      "event": "preview burst",
+      "expectedState": "tenant limited, production/other tenants protected",
+      "evidence": "quota, queue and journey SLI",
+      "owner": "platform capacity"
+    },
+    {
+      "name": "credential-policy-failure",
+      "initialState": "normal identity and policy",
+      "event": "issuer outage or bad policy rollout",
+      "expectedState": "bounded impact, no static fallback, rollback/repair",
+      "evidence": "audit and representative fixture",
+      "owner": "identity/policy"
+    },
+    {
+      "name": "profile-upgrade",
+      "initialState": "services on v2",
+      "event": "migration to v3",
+      "expectedState": "wave completion or explicit block/rollback",
+      "evidence": "inventory, preflight and SLO",
+      "owner": "profile owner"
+    },
+    {
+      "name": "service-retirement",
+      "initialState": "production service active",
+      "event": "approved retirement",
+      "expectedState": "traffic/data/credential/resource handled and catalog archived",
+      "evidence": "retirement audit, orphan and cost scan",
+      "owner": "service owner"
+    }
+  ],
+  "uncheckedClaims": [
+    {
+      "claim": "Kubernetes network policy blocks all undesired paths",
+      "whyUnchecked": "core exercise has no real cluster/CNI",
+      "nextValidation": "local/target cluster connectivity tests"
+    },
+    {
+      "claim": "SLO target is achievable at production load",
+      "whyUnchecked": "no real traffic or capacity measurements",
+      "nextValidation": "pilot cohort and load/capacity evidence"
+    },
+    {
+      "claim": "supply-chain controls resist a compromised builder",
+      "whyUnchecked": "paper design only",
+      "nextValidation": "threat exercise and isolated build/admission test"
+    }
+  ],
+  "projectTransition": {
+    "firstContribution": "add a failure fixture or actionable status improvement to an open-source controller/platform repository",
+    "steps": [
+      {
+        "step": "deterministic prototype",
+        "artifact": "JSON resources + reconcile simulation",
+        "completion": "normal/duplicate/partial/delete fixtures pass"
+      },
+      {
+        "step": "local runtime profile",
+        "artifact": "kind/OpenTofu/GitOps subset",
+        "completion": "failure and cleanup evidence"
+      },
+      {
+        "step": "existing repository study",
+        "artifact": "ownership/state/test map",
+        "completion": "maintainer-compatible issue or test"
+      },
+      {
+        "step": "small contribution",
+        "artifact": "test, documentation, policy or controller PR",
+        "completion": "reviewed change and learned limits"
+      }
+    ]
+  }
+}

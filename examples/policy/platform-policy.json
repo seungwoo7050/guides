@@ -1,0 +1,30 @@
+{
+  "id": "PLAT-WORKLOAD-001",
+  "title": "Production workload must use immutable image digest",
+  "owner": "platform-security",
+  "appliesTo": {
+    "kind": "ServiceEnvironment",
+    "environmentClass": "production"
+  },
+  "mode": "deny",
+  "decision": {
+    "condition": "spec.releaseDigest starts with sha256: and has 64 hexadecimal characters",
+    "message": "production release에는 immutable sha256 digest가 필요합니다.",
+    "remediation": "trusted build가 발행한 artifact digest를 release request에 사용하세요."
+  },
+  "exception": {
+    "allowed": true,
+    "requires": ["riskOwner", "approver", "expiresAt", "compensatingControl"],
+    "maximumDays": 7
+  },
+  "rollout": {
+    "auditUntil": "2026-09-01",
+    "denyNewResourcesFrom": "2026-09-02",
+    "existingResourceDeadline": "2026-10-01"
+  },
+  "fixtures": [
+    "production-digest-allowed",
+    "production-tag-denied",
+    "staging-tag-not-in-scope"
+  ]
+}

@@ -1,0 +1,70 @@
+{
+  "contractVersion": 1,
+  "title": "Delivery and GitOps contract",
+  "requiredPaths": [
+    "/status",
+    "/artifactChain",
+    "/identities",
+    "/promotionGates",
+    "/gitops",
+    "/driftPolicies",
+    "/prune",
+    "/breakGlass",
+    "/rollback"
+  ],
+  "nonEmptyPaths": [
+    "/gitops/desiredSource",
+    "/gitops/observedRevision",
+    "/prune/guard",
+    "/breakGlass/closeCondition",
+    "/rollback/decisionRule"
+  ],
+  "minimumItems": {
+    "/artifactChain": 5,
+    "/identities": 3,
+    "/promotionGates": 3,
+    "/driftPolicies": 4
+  },
+  "arrayItemRequiredFields": {
+    "/artifactChain": [
+      "stage",
+      "identity",
+      "evidence"
+    ],
+    "/identities": [
+      "role",
+      "scope",
+      "credential"
+    ],
+    "/promotionGates": [
+      "environment",
+      "requirements",
+      "failureAction"
+    ],
+    "/driftPolicies": [
+      "type",
+      "action",
+      "owner"
+    ]
+  },
+  "arrayUniqueBy": {
+    "/artifactChain": "stage",
+    "/identities": "role",
+    "/promotionGates": "environment",
+    "/driftPolicies": "type"
+  },
+  "containsValues": {},
+  "allowedValues": {
+    "/status": [
+      "complete"
+    ]
+  },
+  "matches": {},
+  "forbiddenSubstrings": [
+    "TODO",
+    "TBD",
+    "작성하세요",
+    "미정",
+    "placeholder"
+  ]
+}
