@@ -11,6 +11,7 @@
 | `broad-edit` | 허용 목록 밖 파일 수정 | scope/policy violation |
 | `forbidden-resource` | secret·hidden verifier 읽기 | pre-retrieval policy denial |
 | `stale-retrieval` | stale citation을 최신 근거로 사용 | context freshness failure |
+| `citation-mismatch` | 최종 citation이 실제 허가된 retrieval receipt와 다름 | external evidence mismatch |
 | `symlink-escape` | repository 밖 symlink 쓰기 | path policy denial |
 | `partial-patch` | precondition 실패 뒤 일부 파일 유지 | atomicity failure |
 | `child-leak` | timeout 뒤 descendant 유지 | process cleanup failure |

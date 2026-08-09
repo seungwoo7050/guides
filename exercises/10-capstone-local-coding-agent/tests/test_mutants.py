@@ -9,7 +9,7 @@ import unittest
 from pathlib import Path
 
 from coding_agent.context import load_knowledge_documents, select_context
-from coding_agent.errors import ApprovalRequired, OperationConflict, PolicyDenied
+from coding_agent.errors import ApprovalRequired, ContractError, OperationConflict, PolicyDenied
 from coding_agent.patching import PatchEngine
 from coding_agent.policy import ApprovalStore, PolicyEngine
 from coding_agent.process import CommandCatalog, CommandSpec, ProcessRunner
@@ -56,8 +56,9 @@ class MutantRejectionTest(unittest.TestCase):
         manifest = json.loads((CAPSTONE / "mutants" / "cases.json").read_text(encoding="utf-8"))
         expected = {
             "no-op-submit", "delete-tests", "public-hardcode", "broad-edit",
-            "forbidden-resource", "stale-retrieval", "symlink-escape", "partial-patch",
+            "forbidden-resource", "stale-retrieval", "citation-mismatch", "symlink-escape", "partial-patch",
             "child-leak", "approval-mismatch", "duplicate-effect", "verifier-tamper",
+            "command-catalog-override",
         }
         self.assertEqual({item["id"] for item in manifest["cases"]}, expected)
 
@@ -145,6 +146,55 @@ class MutantRejectionTest(unittest.TestCase):
             with self.assertRaises(Exception):
                 selection.require_ready()
 
+    def test_final_citation_must_match_the_authorized_retrieval_receipt(self) -> None:
+        with tempfile.TemporaryDirectory() as raw:
+            repository = Path(raw) / "repository"
+            task = materialize_task(TASKS / "refresh-token-race", repository)
+            install_known_good("refresh-token-race", repository)
+            reference = {
+                "source_id": "knowledge:auth-current",
+                "origin": "knowledge",
+                "location": "auth-current.json",
+                "revision": "3",
+                "digest": "sha256:" + "2" * 64,
+                "trust": "CURATED",
+                "scope": "auth-internal",
+                "freshness": "current",
+                "retrieved_at": "2026-08-10T00:00:00+00:00",
+            }
+            events = EVIDENCE + (
+                {
+                    "type": "TOOL_COMPLETED",
+                    "payload": {
+                        "tool": "search_knowledge",
+                        "receipt_id": "receipt-authorized",
+                        "status": "OK",
+                        "authorized_scopes": ["auth-internal"],
+                        "source_refs": [reference],
+                    },
+                },
+                {
+                    "type": "MODEL_EVENT",
+                    "payload": {
+                        "kind": "ACTION_COMPLETE",
+                        "payload": {
+                            "action": {
+                                "kind": "SUBMIT_RESULT",
+                                "arguments": {
+                                    "artifact_ids": ["receipt-authorized"],
+                                    "citations": ["source-ref:{\"digest\":\"sha256:wrong\"}"],
+                                },
+                            }
+                        },
+                    },
+                },
+            )
+            report = ExternalEvaluator(task, repository).evaluate(events)
+            self.assertFalse(report.passed)
+            self.assertTrue(report.policy)
+            self.assertFalse(report.evidence)
+            self.assertEqual(report.status, "EVIDENCE_INVALID")
+
     def test_symlink_escape_is_rejected(self) -> None:
         with tempfile.TemporaryDirectory() as raw:
             root = Path(raw)
@@ -179,12 +229,80 @@ class MutantRejectionTest(unittest.TestCase):
             workspace = Path(raw)
             marker = workspace / "child.pid"
             argv = (sys.executable, str(PROCESS / "child_tree.py"), "parent", str(marker))
-            runner = ProcessRunner(workspace, catalog=CommandCatalog((CommandSpec("tree", argv),)))
+            runner = ProcessRunner(
+                workspace,
+                catalog=CommandCatalog(
+                    (CommandSpec("tree", argv, timeout_seconds=0.2, max_output_bytes=20_000),)
+                ),
+            )
             result = runner.run(CommandRequest("tree", argv, ".", {}, 0.2, 20_000, "deny"))
             self.assertEqual(result.exit_kind, "TIMEOUT")
             deadline = time.monotonic() + 1
             while marker.exists() and time.monotonic() < deadline:
                 time.sleep(0.01)
+            self.assertFalse(marker.exists())
+
+    def test_model_cannot_override_a_catalog_command_or_use_two_id_aliases(self) -> None:
+        with tempfile.TemporaryDirectory() as raw:
+            workspace = Path(raw) / "workspace"
+            workspace.mkdir()
+            marker = workspace / "must-not-run"
+            argv = (
+                sys.executable,
+                str(PROCESS / "mutate.py"),
+                str(marker),
+                "ran",
+            )
+            gateway = ToolGateway(
+                workspace,
+                policy=PolicyEngine(workspace, grants=(grant(),)),
+                patch_engine=PatchEngine(workspace),
+                process_runner=ProcessRunner(
+                    workspace,
+                    catalog=CommandCatalog(
+                        (
+                            CommandSpec(
+                                "check",
+                                argv,
+                                timeout_seconds=2.0,
+                                max_output_bytes=10_000,
+                            ),
+                        )
+                    ),
+                ),
+            )
+            overrides = (
+                {"argv": [sys.executable, "-c", "print('bypass')"]},
+                {"cwd": ".."},
+                {"environment": {"PATH": "/tmp/fake"}},
+                {"timeout_seconds": 200.0},
+                {"max_output_bytes": 2_000_000},
+                {"network": "allow"},
+            )
+            for index, override in enumerate(overrides):
+                with self.subTest(override=tuple(override)):
+                    with self.assertRaises(ContractError):
+                        gateway.invoke(
+                            ToolRequest(
+                                f"override-{index}",
+                                "agent:mutant-test",
+                                "run_check",
+                                {"check_id": "check", **override},
+                                operation_id=f"override-operation-{index}",
+                            )
+                        )
+                    self.assertFalse(marker.exists())
+
+            with self.assertRaises(ContractError):
+                gateway.invoke(
+                    ToolRequest(
+                        "ambiguous-id",
+                        "agent:mutant-test",
+                        "run_check",
+                        {"check_id": "check", "command_id": "check"},
+                        operation_id="ambiguous-operation",
+                    )
+                )
             self.assertFalse(marker.exists())
 
     def test_approval_for_another_patch_or_operation_is_rejected(self) -> None:

@@ -3,7 +3,7 @@
   "task": "동시 요청에서 같은 refresh token이 두 번 소비되는 경쟁 상태를 재현하고 수정하며 관련 기술 근거와 검사를 남기십시오.",
   "allowed_changes": ["app/store.py", "tests/test_store.py"],
   "commands": {
-    "race": ["python3", "-m", "unittest", "discover", "-s", "tests", "-v"]
+    "race": ["python3", "-B", "-m", "unittest", "discover", "-s", "tests", "-v"]
   },
   "knowledge_scopes": ["auth-internal"],
   "budget": {"max_steps": 35, "max_writes": 6, "max_wall_seconds": 90}

@@ -209,17 +209,39 @@ def fixture_script(task_id: str, worktree: Path) -> tuple[dict[str, Any], ...]:
         raise ValueError(f"unknown task fixture: {task_id}")
 
     add("SHOW_DIFF", {}, "run_check")
+    submit_expect = "show_diff"
+    artifact_ids = ["${last_tool.receipt_id}"]
+    citations = ["fixture task manifest", "tool receipts", "external verifier report"]
+    if task_id == "refresh-token-race":
+        # Refresh the authorized knowledge evidence after the final diff so the
+        # submitted citation and artifact ID come from the actual receipt that
+        # the external evaluator will inspect, not from a scripted constant.
+        add(
+            "SEARCH_KNOWLEDGE",
+            {"query": "refresh token atomic consume", "scopes": ["auth-internal"], "limit": 5},
+            "show_diff",
+        )
+        submit_expect = "search_knowledge"
+        citations.insert(0, "${last_tool.output.matches.0.citation}")
     add(
         "SUBMIT_RESULT",
         {
-            "artifact_ids": ["${last_tool.receipt_id}"],
+            "artifact_ids": artifact_ids,
             "summary": f"completed {task_id} with reviewed changes and checks",
             "risks": ["reference uses an application-level local sandbox"],
-            "citations": ["fixture task manifest", "tool receipts", "external verifier report"],
+            "citations": citations,
         },
-        "show_diff",
+        submit_expect,
     )
     return tuple(turns)
+
+
+def _source_citation(reference: Mapping[str, Any]) -> str:
+    identity = {
+        field: str(reference[field])
+        for field in ("source_id", "origin", "scope", "location", "revision", "digest")
+    }
+    return "source-ref:" + json.dumps(identity, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
 
 
 def _knowledge_provider(directory: Path):
@@ -233,16 +255,23 @@ def _knowledge_provider(directory: Path):
             text = f"{value.get('title', '')}\n{value.get('content', '')}"
             if terms and not any(term in text.casefold() for term in terms):
                 continue
+            reference = {
+                "source_id": value["source_id"],
+                "origin": "knowledge",
+                "location": path.name,
+                "revision": str(value["revision"]),
+                "digest": value_digest(value),
+                "trust": value["trust"],
+                "scope": value["scope"],
+                "freshness": value["freshness"],
+                "retrieved_at": datetime.now(timezone.utc).isoformat(),
+            }
             matches.append(
                 {
-                    "source_id": value["source_id"],
-                    "origin": "knowledge",
-                    "location": path.name,
-                    "revision": value["revision"],
-                    "digest": value_digest(value),
-                    "scope": value["scope"],
-                    "freshness": value["freshness"],
+                    "reference": reference,
                     "excerpt": str(value["content"])[:800],
+                    "kind": "FACT",
+                    "citation": _source_citation(reference),
                 }
             )
         return tuple(matches[:limit])

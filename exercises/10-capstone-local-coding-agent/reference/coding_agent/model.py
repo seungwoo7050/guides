@@ -281,9 +281,19 @@ class ScriptedModelAdapter:
         def lookup(match: re.Match[str]) -> Any:
             current: Any = last_tool
             for component in match.group(1).lstrip(".").split("."):
-                if not isinstance(current, Mapping) or component not in current:
+                if isinstance(current, Mapping) and component in current:
+                    current = current[component]
+                    continue
+                if (
+                    isinstance(current, Sequence)
+                    and not isinstance(current, (str, bytes))
+                    and component.isdigit()
+                    and int(component) < len(current)
+                ):
+                    current = current[int(component)]
+                    continue
+                else:
                     raise ContractError(f"script placeholder does not exist: {match.group(0)}")
-                current = current[component]
             return current
 
         full = cls._PLACEHOLDER.fullmatch(value)

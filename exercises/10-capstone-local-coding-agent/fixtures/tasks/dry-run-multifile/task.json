@@ -3,8 +3,8 @@
   "task": "CLI에 --dry-run을 추가해 변경을 적용하지 않고 계획만 출력하며 service, help, 문서와 test를 함께 갱신하십시오.",
   "allowed_changes": ["app/cli.py", "app/service.py", "README.md", "tests/test_cli.py"],
   "commands": {
-    "narrow": ["python3", "-m", "unittest", "tests.test_cli.CliTest.test_normal_apply", "-v"],
-    "broad": ["python3", "-m", "unittest", "discover", "-s", "tests", "-v"]
+    "narrow": ["python3", "-B", "-m", "unittest", "tests.test_cli.CliTest.test_normal_apply", "-v"],
+    "broad": ["python3", "-B", "-m", "unittest", "discover", "-s", "tests", "-v"]
   },
   "budget": {"max_steps": 35, "max_writes": 8, "max_wall_seconds": 90}
 }

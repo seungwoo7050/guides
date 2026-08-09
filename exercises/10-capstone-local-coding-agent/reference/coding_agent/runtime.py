@@ -168,18 +168,40 @@ class AgentRuntime:
             )
         self.state["observations"].append(observation)
         self.state["artifacts"].append(receipt.receipt_id)
-        self._event(
-            "TOOL_COMPLETED",
-            {
-                "tool": receipt.tool,
-                "receipt_id": receipt.receipt_id,
-                "status": receipt.status,
-                "effect": receipt.effect,
-                "resource": receipt.resource,
-                "output_digest": value_digest(dict(receipt.output)),
-                "duplicate": receipt.duplicate,
-            },
-        )
+        event_payload: dict[str, Any] = {
+            "tool": receipt.tool,
+            "receipt_id": receipt.receipt_id,
+            "status": receipt.status,
+            "effect": receipt.effect,
+            "resource": receipt.resource,
+            "output_digest": value_digest(dict(receipt.output)),
+            "duplicate": receipt.duplicate,
+        }
+        if tool == "search_knowledge":
+            scopes = receipt.output.get("scopes", ())
+            matches = receipt.output.get("matches", ())
+            source_refs: list[dict[str, Any]] = []
+            if isinstance(matches, (list, tuple)):
+                for match in matches:
+                    reference = match.get("reference") if isinstance(match, Mapping) else None
+                    if not isinstance(reference, Mapping):
+                        continue
+                    fields = (
+                        "source_id",
+                        "origin",
+                        "location",
+                        "revision",
+                        "digest",
+                        "trust",
+                        "scope",
+                        "freshness",
+                        "retrieved_at",
+                    )
+                    if all(field in reference for field in fields):
+                        source_refs.append({field: reference[field] for field in fields})
+            event_payload["authorized_scopes"] = tuple(scopes) if isinstance(scopes, (list, tuple)) else ()
+            event_payload["source_refs"] = tuple(source_refs)
+        self._event("TOOL_COMPLETED", event_payload)
 
     def run(self) -> RunResult:
         if self.state["status"] in TERMINAL:

@@ -3,7 +3,7 @@
   "task": "만료 시각이 현재 시각과 같은 token을 만료로 처리하고 회귀 검사를 추가하십시오.",
   "allowed_changes": ["app/tokens.py", "tests/test_tokens.py"],
   "commands": {
-    "unit": ["python3", "-m", "unittest", "discover", "-s", "tests", "-v"]
+    "unit": ["python3", "-B", "-m", "unittest", "discover", "-s", "tests", "-v"]
   },
   "budget": {"max_steps": 20, "max_writes": 4, "max_wall_seconds": 60}
 }
