@@ -1,0 +1,12 @@
+{
+  "schema_version": 1,
+  "id": "identity-triangle",
+  "conventions": "cg-left-handed-column-v1",
+  "extent": [64, 64],
+  "vertices": [
+    {"position": [-0.7, -0.6, 0.5], "color_linear": [1.0, 0.0, 0.0, 1.0]},
+    {"position": [0.7, -0.6, 0.5], "color_linear": [0.0, 1.0, 0.0, 1.0]},
+    {"position": [0.0, 0.7, 0.5], "color_linear": [0.0, 0.0, 1.0, 1.0]}
+  ],
+  "indices": [0, 1, 2]
+}

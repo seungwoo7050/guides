@@ -1,0 +1,11 @@
+{
+  "schema_version": 1,
+  "source_language": ["msl", "hlsl"],
+  "entry_points": {"vertex": "vertex_main", "fragment": "fragment_main"},
+  "vertex_layout": ["float3-position@0", "float4-color@12"],
+  "offline_tool": {
+    "repository": "https://github.com/libsdl-org/SDL_shadercross",
+    "commit": "e55cf5e31ced6f3d1be5cc6d0c50e99384f9f4ba"
+  },
+  "generated_binaries_tracked": false
+}

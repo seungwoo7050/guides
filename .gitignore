@@ -1,6 +1,11 @@
 .guide/
 build/
+build-*/
 out/
+__pycache__/
+*.pyc
+exercises/08-renderer-capstone/project/workspace/
+exercises/08-renderer-capstone/project/.workspace.*/
 *.log
 *.ppm
 *.pgm
@@ -9,3 +14,8 @@ out/
 *.dxil
 *.metallib
 .DS_Store
+
+# Small, reviewed deterministic teaching oracles are source artifacts.
+!exercises/08-renderer-capstone/project/reference/expected/
+!exercises/08-renderer-capstone/project/reference/expected/**/*.ppm
+!exercises/08-renderer-capstone/project/reference/expected/**/*.pgm
