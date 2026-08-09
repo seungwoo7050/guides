@@ -3,6 +3,7 @@
 ## 학습 목표
 
 - query polling과 log-based CDC의 차이를 source semantics로 설명한다.
+- file manifest와 API cursor를 non-log source의 재개 가능한 progress로 설계한다.
 - 초기 snapshot과 이후 change stream을 틈이나 중복 없이 연결하는 조건을 설명한다.
 - transaction boundary, update before/after, delete와 schema change를 downstream record로 보존한다.
 - connector restart, retention 초과와 re-snapshot을 복구 절차로 설계한다.
@@ -65,6 +66,36 @@ source의 transaction log 또는 logical replication stream을 읽는다.
 - source-specific semantics
 
 CDC라고 자동으로 무손실인 것은 아니다. connector와 sink 사이의 checkpoint·retry를 검증해야 한다.
+
+## File·API capture의 progress contract
+
+모든 source가 transaction log를 제공하지는 않는다. File과 API도 “읽었다”는 상태 대신 재현 가능한 progress identity가 필요하다.
+
+### File delivery
+
+한 delivery manifest에는 최소한 object version/path, byte size, checksum, schema/version, 생성 시각과 complete marker를 둔다. Directory listing이나 filename만으로 completeness를 추측하지 않는다.
+
+- write 중인 partial file은 complete marker 또는 atomic publish 전까지 읽지 않는다.
+- 같은 이름의 mutable object는 checksum/version이 바뀌면 새 input으로 취급하거나 거부한다.
+- delivery duplicate와 record/event duplicate를 서로 다른 identity로 검사한다.
+- 처리 결과가 publish되기 전 manifest와 input version을 보존한다.
+
+### API pagination과 cursor
+
+Page 번호는 source가 변하면 같은 범위를 다시 가리키지 않을 수 있다. 가능한 경우 stable compound cursor와 cutoff를 사용하고, 경계 overlap을 의도적으로 읽은 뒤 stable event/entity identity로 dedup한다.
+
+```text
+request(cursor=C, cutoff=T)
+→ raw response를 durable하게 기록
+→ checksum·count 검증
+→ next cursor C'를 commit
+```
+
+Response를 받은 뒤 raw write 전에 cursor를 전진하면 omission이 생긴다. Raw write 뒤 cursor commit 전에 failure가 나면 replay duplicate가 생길 수 있으므로 idempotent raw identity가 필요하다. Rate limit, retry budget, response loss와 source-side retention을 run manifest에 기록한다.
+
+### Raw boundary와 source 보호
+
+Raw capture는 source payload, capture identity, observed time와 source position/cursor를 복구 가능한 범위에서 보존한다. 무제한 보존이나 전체 field 수집을 뜻하지 않는다. Source DB snapshot, API retry와 file redelivery가 production 부하·비용·권한 한계를 넘지 않도록 rate, concurrency, maximum lookback과 pause 조건을 둔다.
 
 ## consistent initial snapshot
 
@@ -226,6 +257,14 @@ runbook:
 
 ## 실패 모드
 
+### partial 또는 mutable file을 정상 input으로 승인
+
+Listing에 보였다는 이유로 write 중인 file을 처리하거나 같은 object key의 변경을 놓친다. Complete marker와 immutable version/checksum을 manifest에 고정한다.
+
+### cursor committed before durable capture
+
+API response를 raw boundary에 기록하기 전에 next cursor를 저장해 crash 뒤 해당 page를 다시 찾지 못한다. Durable raw write와 검증 뒤 cursor를 전진하고 overlap replay를 허용한다.
+
 ### snapshot-stream gap
 
 snapshot 완료 뒤 position을 잡아 중간 변경을 잃는다.
@@ -266,6 +305,7 @@ connector나 downstream buffer가 한 transaction 전체를 memory에 보관하�
 
 ## 완료 기준
 
+- file manifest와 API cursor를 checksum·cutoff·raw commit에 연결한다.
 - snapshot+position+stream을 하나의 무손실 capture 계약으로 설명한다.
 - transaction, delete, key와 schema change를 downstream에 보존한다.
 - connector restart와 retention 초과를 실제 복구 절차로 설계한다.

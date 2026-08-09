@@ -156,18 +156,45 @@ job update 때 과거 checkpoint state를 새 code가 읽어야 한다.
 
 ## backpressure
 
-sink가 느리면 upstream state와 queue가 늘어난다.
+장기 input rate를 `λ`, 지속 가능한 service rate를 `μ`라고 하면 `λ > μ`인 동안 backlog는 계속 증가한다. Buffer를 늘리는 것은 짧은 burst를 흡수할 뿐 안정 상태를 만들지 않으며, 지연과 failure replay 범위를 뒤로 미룬다.
 
-관찰:
+전파 경로를 end-to-end로 추적한다.
 
-- records in/out rate
-- busy/backpressured/idle time
-- pending async requests
-- checkpoint duration와 alignment
-- state size
-- sink commit latency
+```text
+slow sink
+→ output buffer full
+→ operator emit block
+→ upstream queue/state 증가
+→ source poll 감소와 lag 증가
+→ watermark 정체
+→ state cleanup 지연
+→ checkpoint 확대와 recovery 악화
+```
 
-buffer를 크게 만드는 것은 지연을 숨기고 failure replay를 키울 수 있다.
+관찰할 값:
+
+- record·byte input/output rate와 source lag
+- busy/backpressured/idle time와 oldest queued event age
+- pending async request, queue bytes와 spill 사용량
+- watermark/event-time lag
+- state size, checkpoint duration·alignment와 restore time
+- sink latency·error·throttle와 commit rate
+
+원인은 평균 capacity 부족, 일시 burst, hot key/partition skew, slow sink, checkpoint·GC overhead, poison record의 무한 retry로 분류한다. 같은 lag 증상이라도 대응은 다르다.
+
+- buffering에는 최대 bytes와 age를 둔다.
+- throttling과 bounded retry에는 backoff·jitter·concurrency cap을 둔다.
+- scaling/repartition은 key ordering, state migration과 sink limit을 확인한다.
+- load shedding은 허용된 low-priority record만 명시적으로 drop/quarantine하고 필수 사건을 무음으로 버리지 않는다.
+- degraded output은 approximate 여부와 consumer-visible finality를 표시한다.
+
+장애가 끝나도 backlog는 즉시 사라지지 않는다.
+
+```text
+recovery time ≈ backlog / (recovery capacity - live arrival rate)
+```
+
+Recovery capacity가 live rate 이하이면 backlog는 줄지 않는다. Live와 replay/backfill lane, quota와 priority를 분리하고 pause/abort 조건을 둔다. Overload로 event가 allowed-lateness 밖으로 밀리면 capacity incident가 data correctness incident가 되므로 quarantine·correction·batch replay와 reconciliation까지 runbook에 포함한다.
 
 ## 실패 모드
 
@@ -225,3 +252,4 @@ engine 내부 state는 정확하지만 sink가 append하고 consumer가 duplicat
 - source position, operator state와 sink commit의 recovery 관계를 설계한다.
 - dedup key·scope·TTL과 backfill 경로를 명시한다.
 - checkpoint/state upgrade를 배포 계약에 포함한다.
+- source부터 sink까지 backpressure 경로를 추적하고 retry storm·backlog recovery가 late-data 정책에 미치는 영향을 계산한다.

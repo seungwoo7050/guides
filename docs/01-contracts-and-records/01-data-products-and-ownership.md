@@ -120,6 +120,19 @@ consumer도 책임이 있다.
 
 “누군가 쓸 수 있으니 영원히 유지한다”는 계약은 운영할 수 없다. 실제 consumer와 deprecation 절차를 추적해야 한다.
 
+## 네 책임 높이와 인계
+
+한 팀이 여러 역할을 맡을 수 있지만 책임은 섞지 않는다.
+
+| 역할 | 소유하는 결정 | 인계할 근거 |
+|---|---|---|
+| source owner | 업무 정본, transaction, source schema와 변경 통지 | consistent snapshot 또는 source position, 보존·부하 한계 |
+| producer owner | canonical record, grain·identity·time·correction 계약 | schema/semantic version, input coverage, publish·quality 상태 |
+| operator owner | 실행, retry, backfill, 비용, 사고와 복구 | run/attempt, input·output snapshot, quality·lineage, runbook |
+| consumer owner | 사용하는 field·metric, freshness와 finality 요구 | 실제 의존성, 허용 correction, migration 완료와 sign-off |
+
+`source task success → producer publish → consumer read`를 한 success 상태로 줄이지 않는다. 각 인계에서 owner, version, quality gate와 consumer-visible state를 확인한다. 특히 producer가 schema를 호환되게 바꿔도 consumer가 의미 변경을 승인했다는 뜻은 아니다.
+
 ## SLO와 품질 차원
 
 서비스 SLO처럼 데이터 제품도 소비자가 관찰할 수 있는 목표가 필요하다.
@@ -184,6 +197,33 @@ runbook: runbooks/sales_daily.md
 
 YAML 형식 자체보다 정보의 검증 가능성이 중요하다.
 
+## Consumer inventory와 폐기
+
+지원 중인 contract에는 실제 consumer inventory가 있어야 한다.
+
+```text
+consumer identity
+사용 중인 dataset/schema/field/metric
+freshness·finality·correction 요구
+owner와 연락 경로
+마지막 사용 근거
+migration/deprecation 상태
+```
+
+Breaking change와 retirement는 다음 순서로 운영한다.
+
+```text
+실제 의존성 조사
+→ replacement와 old/new 의미 차이 공개
+→ dual output 또는 versioned contract
+→ consumer별 reconciliation과 canary cutover
+→ migration 완료 기록
+→ deprecation 기간
+→ read 차단·metadata 보존·retention에 따른 physical cleanup
+```
+
+Lineage나 query history는 동적 export와 외부 consumer를 놓칠 수 있으므로 owner 확인을 함께 사용한다. 사용자가 없다는 추정만으로 dataset을 지우지 않고, 반대로 owner 없는 가능성만으로 영구 지원하지도 않는다.
+
 ## 실패 모드
 
 ### task green, data wrong
@@ -238,3 +278,5 @@ owner와 consumer가 불명확해 실패해도 영향과 우선순위를 결정�
 - source of truth, canonical record와 consumer product의 소유자를 구분한다.
 - grain과 key를 기반으로 uniqueness와 reconciliation 규칙을 제안한다.
 - task 성공만으로 데이터가 맞다고 주장하지 않고 소비자 관점의 evidence를 설계한다.
+- source·producer·operator·consumer 책임과 인계 근거를 분리한다.
+- consumer inventory를 근거로 변경, cutover, deprecation과 retirement를 운영한다.

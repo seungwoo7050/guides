@@ -208,6 +208,28 @@ sunset:
   - v7 support removed after retention boundary
 ```
 
+## 혼합 판본과 cutover 증거
+
+계획은 배포 순서만이 아니라 실제 조합의 결과를 남겨야 한다.
+
+| writer | reader | 확인할 data | 판정 근거 |
+|---|---|---|---|
+| old | old | 기존 production fixture | 변경 전 baseline |
+| old | new | 오래된 partition·event | backward와 historical read |
+| new | old | 혼합 배포 기간의 새 record | forward 또는 명시적 차단 |
+| new | new | 새 field·의미와 correction | 새 contract의 정상 경로 |
+
+의미가 호환되지 않으면 registry 설정을 완화하지 말고 versioned dataset/topic을 사용한다. 안전한 cutover에는 다음 근거가 필요하다.
+
+1. old/new output이 같은 source cutoff와 reference version을 사용한다.
+2. key·count·aggregate·sample 차이를 expected/unexplained로 분류한다.
+3. 대표적인 canary consumer가 새 결과와 correction/finality를 읽는다.
+4. consumer별 migration 상태와 old contract 사용을 추적한다.
+5. rollback은 writer, reader, state, dataset pointer 중 어느 높이를 되돌리는지 밝힌다.
+6. deprecation 종료 뒤에도 historical record와 lineage를 해석할 metadata를 보존한다.
+
+Dual write가 오래 지속되면 두 contract가 서로 다른 정본이 될 수 있다. Cutover 종료 조건과 mismatch alert를 미리 정한다.
+
 ## 실패 모드
 
 ### schema check passes, meaning breaks
@@ -258,6 +280,7 @@ rename migration에서 old/new field가 서로 다른 값이 된다. 한 source 
 - physical compatibility와 semantic correctness를 구분한다.
 - field 변화에 대해 producer·consumer·historical data·rollback·sunset 계획을 제시한다.
 - schema registry 통과를 최종 품질 증거로 오해하지 않는다.
+- old/new writer·reader matrix와 consumer별 cutover 증거를 남긴다.
 
 ## 공식 자료 연결
 
