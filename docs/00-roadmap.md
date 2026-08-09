@@ -29,6 +29,8 @@ Kubernetes, Terraform/OpenTofu, GitOps controller, developer portal 사용 경�
 
 ## 2. 선행 브랜치와 소유권
 
+이 학습 지도는 `main` 커밋 `887f4b8a679195c5b6c13457a91e0b0af357ccff`의 `platform-engineering` 객체를 구현 기준으로 사용합니다. 게시 전에는 원격 `main`을 다시 확인하고, 계약이 바뀌었다면 이 표와 실제 근거를 함께 갱신합니다.
+
 ### 직접 기준선
 
 [`web-infra`](https://github.com/seungwoo7050/guides/tree/web-infra)는 다음 능력을 소유합니다.
@@ -39,13 +41,48 @@ Kubernetes, Terraform/OpenTofu, GitOps controller, developer portal 사용 경�
 
 이 가이드는 같은 내용을 다시 설명하지 않습니다. 대신 여러 팀이 그 능력을 공통 인터페이스로 소비할 때 생기는 문제를 다룹니다.
 
-### 권장 연결
+### 정본이 권장하는 연결
 
 - [`distributed-services`](https://github.com/seungwoo7050/guides/tree/distributed-services): platform API와 controller의 timeout·retry·idempotency·부분 실패
 - [`computer-networks`](https://github.com/seungwoo7050/guides/tree/computer-networks): cluster·service·gateway·DNS 경로의 실패 분리
-- [`unix-systems`](https://github.com/seungwoo7050/guides/tree/unix-systems): process·file·permission·socket 관찰
 - [`cybersecurity`](https://github.com/seungwoo7050/guides/tree/cybersecurity): 위협 모델, 공격 경로, hardening과 사고 대응
-- [`distributed-systems`](https://github.com/seungwoo7050/guides/tree/distributed-systems): control plane의 복제·합의·failure detector를 더 깊게 이해할 때
+- [`cloud-computing`](https://github.com/seungwoo7050/guides/tree/cloud-computing): 공급자·소비자 책임과 failure domain·비용·관리 경계
+- [`data-engineering`](https://github.com/seungwoo7050/guides/tree/data-engineering): pipeline workload의 자원·품질·lineage 요구를 platform contract로 받는 경계
+
+### 소유·비소유와 종료 계약
+
+| ID | `main` 원문 |
+|---|---|
+| `OWN-1` | 플랫폼 사용자와 golden path |
+| `OWN-2` | Infrastructure as Code와 drift |
+| `OWN-3` | 컨테이너 오케스트레이션 |
+| `OWN-4` | 재사용 가능한 CI/CD·GitOps |
+| `OWN-5` | identity·secret·관측·catalog·multi-tenancy |
+| `EXIT-1` | self-service 서비스 경로를 설계한다 |
+| `EXIT-2` | 정책·배포·관측을 플랫폼 계약으로 자동화한다 |
+| `EXIT-3` | 플랫폼 SLO·용량·업그레이드를 운영한다 |
+
+비소유 범위는 단일 서비스 공개 운영 재교육, 애플리케이션 도메인 로직, 조직 문화 일반론만의 DevOps와 특정 클라우드 자격증 범위입니다. `agentic-systems`, `machine-learning`, `distributed-systems`, `cloud-computing`, `game-development`는 순서를 강제하지 않는 인접 연결이며, 정해진 `continues_to`는 없습니다.
+
+### 트랙과 선형 경로
+
+`platform-engineering`이 필수 구성이고 실제 선형 경로에 들어가는 트랙은 다음 두 개입니다.
+
+```text
+infrastructure-platform / host-platform
+git → unix-systems → computer-networks → web-infra → cybersecurity → platform-engineering
+
+infrastructure-platform / cloud-platform
+git → unix-systems → computer-networks → web-infra → cloud-computing → cybersecurity → platform-engineering
+
+game-tools-platform / default
+git → python → unix-systems → game-development → web-infra → platform-engineering
+```
+
+- `data-engineering`, `distributed-systems` 트랙에서는 `recommended`입니다.
+- `web-backend`, `full-stack-web`, `saas-product-engineering`, `cloud-engineering`, `cybersecurity`, `machine-learning`, `agentic-systems`, `game-server`, `game-data-ml` 트랙에서는 `advanced`입니다.
+- `unix-systems`는 위 선형 경로의 권장 운영 기반이지만 이 브랜치 객체의 직접 `recommends`는 아닙니다.
+- `distributed-systems`는 control plane의 복제·합의를 더 깊게 구현할 때 연결하며 이 과정에서 일반 원리를 다시 가르치지 않습니다.
 
 ## 3. 학습 시나리오
 

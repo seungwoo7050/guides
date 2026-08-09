@@ -71,6 +71,27 @@ Kubernetes는 이 가이드의 중요한 구현 profile이지만 플랫폼 엔�
 
 이 영역은 각각 `web-infra`, `web-app`, `distributed-services`, `distributed-systems`, `cybersecurity`와 실제 조직의 전문 과정이 주로 소유합니다.
 
+### `main`의 소유 계약
+
+이 브랜치는 최신 `main`에서 `specialization`으로 분류됩니다. 아래 문구는 구현 범위를 임의로 넓히거나 줄이지 않기 위한 정본입니다.
+
+| 구분 | 계약 |
+|---|---|
+| 직접 필수 | `web-infra` |
+| 권장 기반 | `distributed-services`, `cybersecurity`, `computer-networks`, `cloud-computing`, `data-engineering` |
+| 인접 연결 | `agentic-systems`, `machine-learning`, `distributed-systems`, `cloud-computing`, `game-development` |
+| 정해진 후속 브랜치 | 없음. 완료 뒤 실제 플랫폼·도구 저장소에 기여하고, 프로젝트 목적에 맞는 인접 브랜치를 선택합니다. |
+
+이 브랜치가 주로 소유하는 범위는 다음 다섯 가지입니다.
+
+1. 플랫폼 사용자와 golden path
+2. Infrastructure as Code와 drift
+3. 컨테이너 오케스트레이션
+4. 재사용 가능한 CI/CD·GitOps
+5. identity·secret·관측·catalog·multi-tenancy
+
+단일 서비스 공개 운영 재교육, 애플리케이션 도메인 로직, 조직 문화 일반론만의 DevOps와 특정 클라우드 자격증 범위는 명시적으로 소유하지 않습니다.
+
 ## 선행 지식
 
 ### 필수 기준선
@@ -82,13 +103,27 @@ Kubernetes는 이 가이드의 중요한 구현 profile이지만 플랫폼 엔�
 
 ### 권장 기반
 
-- [`unix-systems`](https://github.com/seungwoo7050/guides/tree/unix-systems): 실행 상태와 장애 근거 수집
 - [`computer-networks`](https://github.com/seungwoo7050/guides/tree/computer-networks): DNS·TLS·routing·service path 진단
 - [`distributed-services`](https://github.com/seungwoo7050/guides/tree/distributed-services): timeout·retry·idempotency·부분 실패
 - [`cybersecurity`](https://github.com/seungwoo7050/guides/tree/cybersecurity): threat model·least privilege·사고 대응
-- [`distributed-systems`](https://github.com/seungwoo7050/guides/tree/distributed-systems): control plane의 복제·합의 한계를 더 깊게 이해할 때
+- [`cloud-computing`](https://github.com/seungwoo7050/guides/tree/cloud-computing): 공급자·소비자 책임, failure domain, 비용과 관리 경계
+- [`data-engineering`](https://github.com/seungwoo7050/guides/tree/data-engineering): 여러 팀의 pipeline workload가 요구하는 자원·품질·lineage 계약
 
 모든 권장 브랜치를 먼저 완료할 필요는 없습니다. 각 문서가 요구하는 경계를 이해하지 못할 때 해당 가이드의 필요한 장으로 이동합니다.
+
+`unix-systems`는 아래 직무 트랙에서 플랫폼에 진입하기 전의 운영 관찰 기반입니다. `distributed-systems`는 복제·합의 자체를 구현하려는 후속 심화이며, 이 브랜치의 직접 필수나 권장 선행으로 강제하지 않습니다.
+
+## 업무 트랙에서의 위치
+
+`platform-engineering`이 실제 선형 경로에 포함되는 핵심 트랙은 두 개입니다.
+
+| 트랙 | 권장 선형 경로 |
+|---|---|
+| `infrastructure-platform` — host platform | `git → unix-systems → computer-networks → web-infra → cybersecurity → platform-engineering` |
+| `infrastructure-platform` — cloud platform | `git → unix-systems → computer-networks → web-infra → cloud-computing → cybersecurity → platform-engineering` |
+| `game-tools-platform` | `git → python → unix-systems → game-development → web-infra → platform-engineering` |
+
+`data-engineering`과 `distributed-systems` 트랙에서는 권장 인접 지식이고, 웹·SaaS·cloud·보안·ML·agent·게임 서버/데이터 트랙에서는 핵심 경로 뒤의 심화 선택입니다. 트랙의 위치는 브랜치 자체의 엄밀한 직접 의존성과 같지 않습니다.
 
 ## 읽는 순서
 
