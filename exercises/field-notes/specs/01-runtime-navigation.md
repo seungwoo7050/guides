@@ -22,11 +22,11 @@
 |---|---|---|
 | [`../shared`](../shared/) | public type, fixture와 Stage 01 contract runner | router·device integration 자체는 없음 |
 | [`../skeleton`](../skeleton/) | compile·launch 가능한 learner 앱 | ID/URL parsing, duplicate key, dirty-back decision과 관련 UI behavior가 TODO라 최초 contract 검사는 실패함 |
-| [`../reference`](../reference/) | list/detail/new/edit/sync/settings를 포함한 완전한 Stage 01 실행 앱 | SQLite·file·camera·location·network·notification은 없음 |
+| [`../reference`](../reference/) | Stage 01 public behavior를 포함해 이후 결과가 누적될 수 있는 실행 비교 기준 | 후속 기능의 존재가 Stage 01 실제 기기 evidence나 전체 과정 완료를 대신하지 않음 |
 
-권장 시작점은 `skeleton`이다. `reference/app/`과 `reference/src/`는 public behavior가 실제 Expo Router 앱에 연결되는 경로를 보여 주는 비교 기준이다. reference의 component 이름, 색상, 문구나 파일 배치를 복사할 필요는 없다.
+권장 시작점은 `skeleton`이다. `reference/app/`과 `reference/src/`는 public behavior가 실제 Expo Router 앱에 연결되는 경로를 보여 주는 누적 비교 기준이다. Stage 01을 연습할 때는 Stage 01 contract만 판정하고, 누적 reference의 후속 repository·adapter를 Stage 01 요구사항으로 소급하지 않는다. reference의 component 이름, 색상, 문구나 파일 배치를 복사할 필요는 없다.
 
-Stage 01의 record 세 개와 새로 저장한 record는 **현재 process의 memory에만** 있다. 편집 결과가 process restart 뒤 사라지는 것은 이 Stage의 의도적 미완성이다. Stage 02가 SQLite와 outbox를 추가한다. 반면 link target 검증, fallback, duplicate 방지와 dirty-back 정책은 Stage 01에서 완성해야 한다.
+Stage 01 learner 시작 구현의 record 세 개와 새로 저장한 record는 **현재 process의 memory에만** 있다. 편집 결과가 process restart 뒤 사라지는 것은 이 Stage 기준선의 의도적 미완성이고, Stage 02에서 SQLite와 outbox를 추가한다. 누적 reference에 후속 durable adapter가 있더라도 이 학습 순서는 바뀌지 않는다. 반면 link target 검증, fallback, duplicate 방지와 dirty-back 정책은 Stage 01에서 완성해야 한다.
 
 ## 기준 실행과 development build
 

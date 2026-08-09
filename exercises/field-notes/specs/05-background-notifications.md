@@ -10,6 +10,8 @@ Stage 04의 bounded sync worker를 OS가 제공하는 background 실행 기회�
 
 ## 시작 상태와 의도적 미완성
 
+이 절은 Stage 04 공개 계약을 완료한 learner 작업 복사본의 Stage 05 기준선이다. 누적 reference의 lifecycle core/package 또는 adapter 존재는 구현 근거일 수 있지만, 실제 scheduler·notification·cold-start device evidence나 Stage 완료를 자동으로 뜻하지 않는다. 자동 범위는 현재 package scripts와 verify 결과로 확인한다.
+
 시작 상태:
 
 - Stage 04의 durable outbox, claim/lease와 bounded sync worker

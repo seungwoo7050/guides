@@ -216,7 +216,7 @@ type CapabilityState =
   | { kind: "unavailable"; reason: string };
 ```
 
-이 예는 계층 분리를 보여 주기 위한 축약형이다. 실제 permission 계약에서는 capability availability와 `not-determined`·`granted`·`limited`·`denied` 상태를 별도로 모델링한다. Android와 iOS의 raw value가 달라도 app은 정규화된 의미를 기준으로 화면을 결정하되, platform 차이를 숨기지 않는다.
+이 예는 계층 분리를 보여 주기 위한 축약형이다. 실제 permission 계약에서는 capability availability와 `not-required`·`not-determined`·`granted`·`limited`·`denied`·`restricted` 상태를 별도로 모델링한다. `not-required`는 해당 system API가 전체 권한 요청 없이 제한된 사용자 선택을 제공한다는 뜻이지 전체 data grant가 아니다. Android와 iOS의 raw value가 달라도 app은 정규화된 의미를 기준으로 화면을 결정하되, platform 차이를 숨기지 않는다.
 
 ## startup을 상태 기계로 봅니다
 

@@ -25,7 +25,7 @@
 - route, malformed/stale link와 dirty-back behavior는 Stage 01 계약을 유지한다.
 - 실제 server upload와 background scheduler는 아직 없다.
 
-저장소의 current [`../reference`](../reference/)는 full Stage 01 기준 앱이며 Stage 03 완성 답안이 아니다. detail의 attachment placeholder와 settings의 native-feature TODO는 Stage 03에서 교체할 경계를 보여 준다.
+아래 미완성 목록은 Stage 02를 끝낸 learner 작업 복사본의 **Stage 03 시작 기준선**이다. 누적 [`../reference`](../reference/)에 camera·system picker·foreground location adapter와 후속 기능이 있더라도 그 구현 모양이 유일한 정답이거나 실제 Android/iOS 기기 검토까지 끝났다는 뜻은 아니다. 자동 범위는 현재 package scripts와 verify 결과로 확인한다.
 
 Stage 03 시작 시 다음은 의도적으로 미완성이다.
 
@@ -50,6 +50,7 @@ type CapabilityAvailability =
   | { kind: "unavailable"; reason: string };
 
 type PermissionState =
+  | { kind: "not-required" }
   | { kind: "not-determined" }
   | { kind: "granted" }
   | { kind: "limited"; description: string }
@@ -79,7 +80,7 @@ type PermissionState =
 
 camera, picker와 location **세 adapter 모두 필수**다. `RecordPayload.location`이 optional인 것은 사용자가 위치를 첨부하지 않을 수 있다는 뜻이지 `LocationPort` 구현·fault 검사를 생략해도 된다는 뜻이 아니다.
 
-system picker가 photo-library 전체 permission을 요구하지 않는 platform/API라면 실제 dialog를 만들지 않는다. 현재 shared `PermissionState`에는 `not-required`가 없으므로 adapter가 “사용자가 고른 항목 선택은 허용되지만 library 전체 grant를 받은 것은 아님”을 어떻게 표현했는지 기록하고 `requestPermission()`을 불필요하게 호출하지 않는다. system picker의 선택 범위와 library API의 `limited` permission을 같은 상태로 취급하지 않는다.
+system picker가 photo-library 전체 permission을 요구하지 않는 platform/API라면 `not-required`로 정규화하고 실제 dialog를 만들지 않는다. 이는 “사용자가 고른 항목 선택은 허용되지만 library 전체 grant를 받은 것은 아님”이라는 뜻이다. `requestPermission()`을 불필요하게 호출하지 않고, system picker의 선택 범위와 library API의 `limited` permission을 같은 상태로 취급하지 않는다.
 
 ## 상태·자원 소유권과 불변식
 
@@ -239,8 +240,8 @@ generated native file을 손으로 고쳐 통과시키지 않는다. manifest/pl
 | 데이터 | 수집 trigger | local 위치 | remote 전송 | 보존·삭제 | 사용자 control |
 |---|---|---|---|---|---|
 | record text | Save | SQLite | Stage 04 sync | 제품 정책 | 편집·삭제 |
-| selected/captured photo | 명시적 사진 action | app-owned file + SQLite metadata | 아직 미구현 | 제거·record 삭제 정책 | source 선택·제거 |
-| foreground location | 명시적 위치 action + 포함 선택 | record SQLite field | 아직 미구현 | record와 같은 정책 | 거절·생략·제거 |
+| selected/captured photo | 명시적 사진 action | app-owned file + SQLite metadata | Stage 03에서는 전송하지 않음; Stage 04+ sync 계약에서 별도 판정 | 제거·record 삭제 정책 | source 선택·제거 |
+| foreground location | 명시적 위치 action + 포함 선택 | record SQLite field | Stage 03에서는 전송하지 않음; Stage 04+ sync 계약에서 별도 판정 | record와 같은 정책 | 거절·생략·제거 |
 | permission state | OS query | memory/필요 최소 cache | 전송하지 않음 | 재조회 | Settings |
 
 사진 EXIF 위치·기기 정보·촬영 시각을 보존/제거할지 명시한다. 사용자가 별도로 선택하지 않은 EXIF 위치를 record 위치로 자동 승격하지 않는다. log·crash report·evidence에 exact coordinate, record text, local URI와 selected photo content를 넣지 않는다.

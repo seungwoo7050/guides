@@ -10,6 +10,8 @@ Field Notes를 development prototype에서 검토 가능한 Android/iOS release 
 
 ## 시작 상태와 의도적 미완성
 
+이 절은 Stage 01~05 결과를 가진 learner release candidate의 기준선이다. release contract와 build 검사의 현재 자동 범위는 package scripts와 verify 결과로 확인한다. 해당 파일이 있어도 Stage 06의 실제 Android/iOS build·설치, signing·store 및 사람 품질 검토는 별도 evidence 없이는 완료가 아니다.
+
 시작 상태:
 
 - Stage 01~05의 app, durable data와 공개 behavior 검사
@@ -79,9 +81,9 @@ Android AAB는 store가 APK를 생성하기 위한 bundle이며 일반적으로 
 
 `eas build` job 성공, Gradle/Xcode archive 생성이나 CNG diff가 각각 다른 gate다. 하나의 screenshot으로 합치지 않는다.
 
-## version과 artifact manifest
+## version과 release evidence schema v2
 
-release candidate마다 최소 다음을 연결한다.
+release candidate마다 최소 다음을 연결한다. 제출하는 `artifact-manifest.json`은 [`release-contract`](../release-contract/README.md)의 schema version 2를 사용한다.
 
 ```text
 source revision
@@ -102,6 +104,21 @@ signing identity의 비밀이 아닌 식별 근거
 native code가 있는 dependency나 app config/plugin을 바꾸면 binary rebuild가 필요하다. `runtimeVersion`은 별도의 update compatibility policy다. native change마다 문자열을 무조건 손으로 증가시키라는 규칙이 아니라, 선택한 policy가 incompatible update를 이전 binary에 전달하지 않도록 **effective runtime identity와 새 binary**를 함께 검증한다.
 
 같은 source라도 profile/config/toolchain/signing이 다르면 artifact가 다를 수 있다. artifact manifest에 credential·token·secret을 포함하지 않는다.
+
+한 manifest는 같은 `source`·`application`·`build` 후보 아래 고유 ref의 `artifacts[]`를 둔다.
+
+| platform | 필수로 구분할 artifact set | 설치 관찰 허용 범위 |
+|---|---|---|
+| Android | `android-aab` + `android-apk` 또는 `android-play-split-set` | APK는 physical/emulator, Play split은 physical |
+| iOS | `ios-xcarchive` + `ios-ipa` 또는 `ios-testflight-build` | IPA/TestFlight는 physical; simulator `.app`은 simulator evidence만 |
+
+`installation`은 설치한 `artifactRef`, 관찰한 app id/version/build/runtime, build와 같은 runtime fingerprint 또는 policy ref, device class와 launch 결과를 가진다. AAB·xcarchive 직접 설치, IPA의 simulator 설치, simulator `.app`의 physical 설치와 runtime mismatch를 known-wrong으로 거부한다.
+
+`signing[]`은 모든 artifact를 `artifactRef`로 가리키며 `not-run | claimed | manually-reviewed` 중 하나다. `claimed`에는 redacted identity와 방법·시각·evidence를, `manually-reviewed`에는 reviewer/date/review evidence를 추가한다. 후자는 사람 검토 기록일 뿐 signature trust나 credential 소유권을 자동 증명하지 않는다.
+
+store를 실행했다면 `publishingArtifactRef`, immutable `storeBuildRef`, track/status를 분리한다. store-delivered bytes는 `not-run | declared | manually-reviewed` 상태만 사용한다. local AAB/IPA digest를 전달 bytes로 재사용하거나 `declared`를 자동 verified로 올리지 않는다. Play split/TestFlight artifact와 install evidence는 같은 store build identity를 가리켜야 한다.
+
+validator의 `OK`는 schema와 ref/runtime/device matrix가 내부적으로 일관된다는 뜻이다. 실제 file digest 재계산, native build, signature trust, device install, store processing·전달, 교육적 완료나 `stable` 승인을 수행하지 않는다.
 
 ## 필수 native-boundary review
 
@@ -247,7 +264,7 @@ Stage 01~05의 실패를 release candidate에서 다시 결합한다.
 - CNG generation, Android/iOS Metro bundle
 - 가능한 host의 native compile와 artifact digest
 - migration/upgrade fixtures와 Stage 04/05 fault history
-- artifact manifest schema와 source/lock/config identity 연결
+- release evidence schema v2와 source/lock/config, `artifacts[]`·installation/signing/store ref 연결
 
 자동 검사는 UI 문자열이나 generated file 존재만으로 통과시키지 않는다. build command가 실행되지 않았거나 tool 부재로 생략됐으면 필수 성공으로 표시하지 않는다.
 
@@ -288,7 +305,9 @@ stage-06/
 
 - development·preview·production profile의 identity, backend, update와 signing owner가 분리돼 있다.
 - CNG, JS bundle, native compile, signed artifact, install과 store processing을 서로 다른 gate로 판정한다.
-- source·lockfile·config·version·runtime·artifact digest가 연결된다.
+- source·lockfile·config·version·runtime과 고유 ref의 Android AAB+APK/Play split, iOS xcarchive+IPA/TestFlight artifact set이 연결된다.
+- installation의 실제 artifact ref·device class·관찰 runtime/policy·launch 결과가 일치하며 known-wrong matrix가 거부된다.
+- artifact-linked signing claim/사람 검토와 store delivery declaration/사람 검토가 자동 진위 검증과 구분된다.
 - 기존 Expo/native dependency의 필수 boundary review가 Android/iOS 경로와 failure를 추적한다.
 - Android와 iOS installable release candidate를 실제 대상에 설치하고 결과를 기록했다. `미검사` platform은 완료로 판정하지 않는다.
 - 이전 local data, attachment와 unsynced/conflict 상태를 보존하며 upgrade한다.

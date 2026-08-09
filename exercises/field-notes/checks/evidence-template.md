@@ -37,8 +37,9 @@ device OS / vendor:
 app identifier:
 app version / versionCode 또는 buildNumber:
 runtimeVersion / update identity:
+runtime fingerprint 또는 policy ref:
 build profile / toolchain:
-artifact type / digest:
+artifact ref / kind / local-or-store identity / digest:
 DB schema / fixture version:
 network / account / permission / capability 상태:
 ```
@@ -114,11 +115,15 @@ actual remote/apply history:
 
 - resolved app config / CNG 결과:
 - native compile command와 exit status:
-- artifact type·digest·signing의 비밀 아닌 identity:
-- install/upgrade target과 결과:
-- store upload/processing을 실행했다면 별도 결과:
+- schema v2 source/application/build identity:
+- Android AAB ref + APK/Play split ref 또는 `not-run` 근거:
+- iOS xcarchive ref + IPA/TestFlight ref 또는 `not-run` 근거:
+- artifact별 signing 상태(`not-run`/`claimed`/`manually-reviewed`), redacted identity와 review evidence:
+- install/upgrade artifactRef, device class, observed app/build/runtime/policy, launch 결과:
+- store를 실행했다면 publishingArtifactRef, storeBuildRef, track/status:
+- store-delivered bytes 상태(`not-run`/`declared`/`manually-reviewed`), artifactRef/digest와 review evidence:
 
-CNG, JS bundle, native compile, signed artifact, device install과 store processing을 각각 구분한다.
+CNG, JS bundle, native compile, signed artifact, device install과 store processing을 각각 구분한다. `claimed`/`declared`를 자동 검증으로, schema 통과를 signature trust·credential ownership·store-delivered bytes 증명으로 바꾸지 않는다.
 
 ## 보장하지 않는 범위와 알려진 한계
 

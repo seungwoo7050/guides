@@ -36,12 +36,12 @@ OS 사건의 정확한 시점과 횟수는 앱이 소유하지 않는다. 앱이
 | photo picker | system picker | selected/cancelled/error + durable-copy reconciliation | provider URI, Activity/process recreation, pending-result API | selected asset, iCloud-backed result, 임시 file 수명 |
 | camera | OS/device | capture/cancel/error + interruption | camera hardware/Activity/device 차이 | camera permission/session/interruption |
 | location | OS service | coordinate + accuracy + time 또는 explicit failure | precise/approximate, service availability | reduced/full accuracy, authorization status |
-| permission | OS + 사용자 | not-determined/granted/limited/denied/restricted와 fallback | can-ask-again, Settings 변경, capability/build 설정 | limited/provisional 등 capability별 상태와 Settings 변경 |
+| permission | OS + 사용자 | not-required/not-determined/granted/limited/denied/restricted와 fallback | can-ask-again, Settings 변경, capability/build 설정 | picker의 request-free 선택, limited/provisional 등 capability별 상태와 Settings 변경 |
 | notification | OS/provider + application | message → validated intent → current state reconciliation | channel, Android permission, token, tap | permission, category, token, tap |
 | background | OS scheduler + app worker | bounded·restartable worker trigger | WorkManager/vendor policy, recent/force-stop 차이 | BGTaskScheduler/system policy, expiration, physical-device 제한 |
 | secure storage | platform storage | 작은 credential read/write/recovery 결과 | Keystore-backed encryption, uninstall/backup behavior | Keychain accessibility, reinstall/backup behavior |
 | file | platform filesystem + repository | app-owned copy, checksum, row/file reconciliation | files/cache/storage pressure | documents/library/cache, backup·offload 정책 |
-| release | build/store systems + release owner | app/build/runtime/source/artifact identity | applicationId, versionCode, keystore, AAB와 install APK 구분 | bundle id, buildNumber, profile, archive/IPA/TestFlight 구분 |
+| release | build/store systems + release owner | app/build/runtime/source와 고유 artifact ref, signing/store 관찰 상태 | applicationId, versionCode, AAB+APK/Play split, keystore claim/review | bundle id, buildNumber, xcarchive+IPA/TestFlight, signing claim/review |
 
 ## 추상화 기준
 

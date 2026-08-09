@@ -10,6 +10,8 @@ Stage 02의 outbox command를 remote contract와 연결한다. timeout, response
 
 ## 시작 상태와 의도적 미완성
 
+이 절은 Stage 03을 끝낸 learner 작업 복사본의 Stage 04 기준선이다. 누적 reference에 sync source·package나 test가 있더라도 현재 package scripts와 verify 결과가 연결한 공개 행동, 이 Stage의 fault history와 완료 조건을 각각 확인한다.
+
 시작할 때 다음 자원이 있어야 한다.
 
 - Stage 02의 `records`·`outbox` transaction과 schema migration

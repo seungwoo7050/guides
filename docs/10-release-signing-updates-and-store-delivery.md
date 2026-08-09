@@ -117,6 +117,31 @@ signing identity의 비밀이 아닌 식별 정보
 
 같은 source revision을 다른 환경에서 만들 수 있으므로 commit hash만으로 충분하지 않다.
 
+## release evidence schema는 여러 artifact와 관찰을 연결합니다
+
+Field Notes의 [release evidence contract](../exercises/field-notes/release-contract/README.md)는 schema version 2를 사용한다. 한 `ReleaseEvidence`의 `source`·`application`·`build`가 같은 release candidate를 식별하고, `artifacts[]`의 각 산출물은 고유 `ref`를 가진다.
+
+```text
+Android: android-aab + (android-apk | android-play-split-set)
+iOS:     ios-xcarchive + (ios-ipa | ios-testflight-build)
+```
+
+괄호 안 산출물은 설치 후보의 대안이다. AAB와 APK/Play split, xcarchive와 IPA/TestFlight를 한 파일이나 한 digest로 합치지 않는다. local file artifact는 이름·크기·SHA-256을 선언하고, store build artifact는 immutable `storeBuildRef`를 선언한다. schema validator는 이 문자열들의 내부 일관성을 검사할 뿐 실제 파일을 열어 digest를 다시 계산하지 않는다.
+
+설치 관찰은 `installation.artifactRef`로 정확한 설치 후보를 가리킨다. `verified` 상태에는 device class, 관찰한 application id·version·build number·runtimeVersion, build와 같은 runtime fingerprint 또는 policy ref, `launchResult=passed`와 raw evidence가 필요하다. 허용 matrix는 Android APK의 physical/emulator, Play split의 physical, iOS IPA/TestFlight의 physical, simulator `.app`의 simulator다. AAB·xcarchive 직접 설치와 simulator/physical 뒤바꾸기는 거부한다. 이 판정도 제출 evidence의 모순을 거르는 것이며 validator가 실제 device를 조작했다는 뜻은 아니다.
+
+signing은 artifact마다 다음 상태를 별도로 기록한다.
+
+```text
+not-run            실행하지 않은 이유와 필요한 evidence
+claimed            artifactRef + redacted identity + 관찰 방법/evidence
+manually-reviewed  claim + reviewer/date/review evidence
+```
+
+`claimed`를 자동 통과로 올리지 않는다. `manually-reviewed`도 사람 검토 기록이지 signature trust chain, private key 보호나 credential 소유권을 암호학적으로 증명하는 상태가 아니다.
+
+store 관찰은 upload artifact를 가리키는 `publishingArtifactRef`, console의 immutable `storeBuildRef`, track/status와 전달 bytes 상태를 분리한다. 전달 bytes는 `not-run | declared | manually-reviewed`만 사용하고 자동 `verified` boolean을 만들지 않는다. `declared` digest는 관찰자의 선언이고 `manually-reviewed`는 그 선언을 사람이 검토했다는 뜻이다. 어느 쪽도 AAB/archive/IPA source digest가 store 재서명·split/thinning 뒤 사용자에게 전달된 bytes와 같음을 자동 증명하지 않는다.
+
 ## native runtime과 update를 연결합니다
 
 remote JavaScript/assets update는 설치된 binary가 제공하는 native API와 호환돼야 한다.
@@ -250,7 +275,7 @@ binary upload가 자동으로 모든 사용자에게 공개된다는 뜻은 아�
 
 현재 store 요구사항은 자주 바뀌므로 release 시점에 공식 console과 문서를 다시 확인한다.
 
-AAB는 store가 device별 APK를 생성하는 publishing format이며 기기에 직접 설치하는 artifact가 아니다. iOS archive도 그 자체가 임의 device 설치 증거가 아니다. source build에서 얻은 AAB/archive digest는 그 입력 artifact를 식별하지만 store가 처리·재서명해 사용자에게 전달한 bytes와 동일함을 증명하지 않는다. release evidence에는 publishing artifact digest, store build/track identity와 실제 device install evidence를 별도 행으로 남긴다.
+AAB는 store가 device별 APK를 생성하는 publishing format이며 기기에 직접 설치하는 artifact가 아니다. iOS archive도 그 자체가 임의 device 설치 증거가 아니다. source build에서 얻은 AAB/archive/IPA digest는 그 입력 artifact를 식별하지만 store가 처리·재서명·split 또는 thinning 뒤 사용자에게 전달한 bytes와 동일함을 증명하지 않는다. release evidence에는 `publishingArtifactRef`, store build/track identity, store-delivered artifact ref와 실제 device install evidence를 별도 행으로 남긴다.
 
 ## staged rollout과 관측
 

@@ -15,7 +15,7 @@
 
 ## 환경
 
-| ID | Platform | 실제 기기/대체 환경 | Device·model | OS·vendor | App id/version/build | Runtime/update | Profile·artifact digest | 수행자/date |
+| ID | Platform | 실제 기기/대체 환경 | Device·model | OS·vendor | App id/version/build | Runtime/update·fingerprint/policy | Profile·installed artifactRef/digest | 수행자/date |
 |---|---|---|---|---|---|---|---|---|
 | A1 | Android | 미검사 |  |  |  |  |  |  |
 | I1 | iOS | 미검사 |  |  |  |  |  |  |
@@ -56,8 +56,8 @@
 | recent 제거와 process recreation | 미검사 | 실제 관찰과 next startup state |
 | force-stop 뒤 task/notification | 미검사 | force-stop을 일반 background와 구분 |
 | vendor battery restriction | 미검사 | device 설정/정책과 관찰; 다른 vendor 일반화 금지 |
-| APK install/upgrade | 미검사 | APK digest, applicationId/versionCode, install/launch |
-| AAB가 있으면 store/install 경계 | 미검사 | AAB를 APK install 성공으로 표시하지 않음 |
+| APK/Play split install·upgrade | 미검사 | physical install artifactRef/digest 또는 storeBuildRef, applicationId/versionCode/runtime, launch |
+| AAB와 store/install 경계 | 미검사 | publishing AAB ref와 APK/Play split ref를 분리하고 AAB를 install 성공으로 표시하지 않음 |
 
 ## iOS 고유 확인
 
@@ -68,7 +68,7 @@
 | app/scene background·사용자 종료 | 미검사 | task/process 관찰과 next startup state |
 | picker/camera scene 왕복 | 미검사 | result/cancel과 draft/file state |
 | interactive back/modal dismiss | 미검사 | confirm/focus/draft 결과 |
-| device-signed install/upgrade | 미검사 | bundle id/buildNumber, artifact identity, launch |
+| xcarchive와 IPA/TestFlight install·upgrade | 미검사 | archive ref와 physical install artifactRef/storeBuildRef, bundle id/buildNumber/runtime, launch; simulator `.app` 대체 금지 |
 | remote update/runtime compatibility | 미검사 | effective runtimeVersion과 binary/update identity |
 
 full Xcode, signing identity 또는 실제 iPhone이 없으면 iOS CNG·bundle 결과를 이 표의 device 통과로 쓰지 않는다. 각 행은 `미검사`로 유지하고 필요한 host/device/account를 적는다.

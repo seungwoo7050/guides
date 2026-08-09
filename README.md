@@ -101,6 +101,8 @@ Stage 06  native boundary, Android·iOS 품질 matrix와 release evidence
 
 [`exercises/field-notes`](exercises/field-notes/README.md)는 의도적으로 미완성인 skeleton, 공개 행동 계약, 대표 실패와 reference를 제공한다. 순수 동기화 전이는 [`examples/sync-model`](examples/sync-model/README.md)에서 관찰한다. 단계 결과를 단순히 크게 반복하지 않고 여러 실패를 한 release candidate에 결합하는 종료 과제는 [capstone](capstone/README.md)이다.
 
+누적 reference의 정확한 자동 검증 범위는 현재 root/reference package scripts, [Field Notes의 상태 설명](exercises/field-notes/README.md#누적-reference와-단계별-시작-상태)과 해당 source에서 실행한 `verify.sh` 결과로 확인한다. package·test·문서가 존재한다는 사실을 해당 Stage의 실제 device·release 완료나 자동 `stable` 근거로 해석하지 않는다.
+
 ## 시작과 검증
 
 ```sh

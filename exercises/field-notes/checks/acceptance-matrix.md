@@ -48,14 +48,15 @@
 | REL-01 | 06 | 이전 schema+outbox+attachment/conflict | app upgrade | durable data와 attempted snapshot 보존, 정상/recovery 시작 | 자동+실제 기기 | 미검사 | |
 | NATIVE-01 | 06 | clean source/config | 선택 module boundary review | JS→config/autolink→Android/iOS→runtime failure trace와 source 근거 | 사람 | 미검사 | |
 | BUILD-01 | 06 | clean source | CNG + JS bundle | generated source/bundle로만 기록; native build 통과로 표시 안 함 | 자동+사람 | 미검사 | |
-| BUILD-02 | 06 | Android preview artifact | 실제 Android install/upgrade/smoke | APK/install path, source/build/runtime/digest와 device 결과 연결 | 실제 기기 | 미검사 | |
-| BUILD-03 | 06 | iOS preview artifact | 실제 iOS install/upgrade/smoke | device-signed artifact, source/build/runtime/digest와 device 결과 연결 | 실제 기기 | 미검사 | |
+| BUILD-02 | 06 | Android AAB+APK/Play split 후보 | 실제 Android install/upgrade/smoke | physical install artifactRef, app/build/runtime/policy/launch와 device 결과 연결; AAB 직접 설치 금지 | 실제 기기 | 미검사 | |
+| BUILD-03 | 06 | iOS xcarchive+IPA/TestFlight 후보 | 실제 iOS install/upgrade/smoke | physical install artifactRef, app/build/runtime/policy/launch와 device 결과 연결; simulator `.app` 대체 금지 | 실제 기기 | 미검사 | |
 | BUILD-04 | 06 | incompatible native change | update compatibility 판정 | old binary에 incompatible JS update 전달 금지; 새 binary 근거 | 자동+사람 | 미검사 | |
 | A11Y-01 | 06 | large font + TalkBack | create/permission/offline/conflict flow | 모든 상태·오류·action 접근, focus/draft 보존 | 실제 기기+사람 | 미검사 | |
 | A11Y-02 | 06 | large font + VoiceOver | create/permission/offline/conflict flow | 모든 상태·오류·action 접근, focus/draft 보존 | 실제 기기+사람 | 미검사 | |
 | PERF-01 | 06 | release-like build + fixed fixture | launch/scroll/save/100-command workload | 목표·측정 조건과 결과, interaction failure 여부 기록 | 실제 기기+사람 | 미검사 | |
-| RELEASE-01 | 06 | release candidate | manifest review | source·lock/config·app/build/runtime·artifact digest 연결 | 자동+사람 | 미검사 | |
+| RELEASE-01 | 06 | release candidate | schema v2 manifest review | source·lock/config·app/build/runtime 아래 고유 refs의 Android AAB+APK/Play split, iOS xcarchive+IPA/TestFlight set 연결 | 자동+사람 | 미검사 | |
 | RELEASE-02 | 06 | privacy/data inventory | declaration review | 실제 storage/permission/telemetry와 일치, 법률 판단 분리 | 사람 | 미검사 | |
+| RELEASE-03 | 06 | artifact/store identity | signing·store evidence review | artifact-linked `claimed`/`manually-reviewed`, publishing/store build ref, delivered bytes `declared`/review와 자동 비보장 분리 | 사람 | 미검사 | |
 
 ## 결과 값
 

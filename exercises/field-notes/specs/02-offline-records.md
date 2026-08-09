@@ -16,12 +16,12 @@ UI의 local 정본을 SQLite로 옮기고, network 없이 record를 생성·편�
 
 ## 시작 상태와 의도적 미완성
 
-시작점은 Stage 01을 완료한 learner 앱이다. 저장소의 [`../reference`](../reference/)는 완전한 Stage 01 기준 앱이므로 별도 작업 복사본의 base로 사용할 수 있지만, 다음 상태는 의도적으로 없다.
+시작점은 Stage 01을 완료한 별도 learner 작업 복사본이다. 아래 목록은 **Stage 02 시작 직전 기준선**이며 누적 [`../reference`](../reference/)의 현재 기능 목록이 아니다. reference에는 후속 Stage 결과가 누적될 수 있으므로, Stage 02 연습에서는 Stage 01 결과를 보존한 learner 복사본에서 다음 미완성 상태를 채운다.
 
 - record는 process memory의 fixture뿐이다.
 - `Stage01RecordRepository`에는 durable save와 outbox가 없다.
-- sync 화면은 placeholder이며 실제 server·worker가 없다.
-- attachment 화면은 placeholder이고 app-owned file lifecycle이 없다.
+- Stage 02 시작 기준의 sync 화면은 placeholder이며 실제 server·worker가 없다.
+- Stage 02 시작 기준의 attachment 화면은 placeholder이고 app-owned file lifecycle이 없다.
 - process restart 뒤 Stage 01에서 만든 record와 draft는 사라진다.
 
 Stage 02는 route·validation·dirty-back·malformed/stale link behavior를 유지한 채 repository adapter를 교체한다. 실제 remote server, request retry와 conflict resolution은 Stage 04까지 의도적으로 미완성이다.

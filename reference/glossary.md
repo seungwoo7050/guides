@@ -116,7 +116,7 @@ device, OS version와 현재 binary에 기능이 존재하는지 나타낸다. �
 
 ### permission state
 
-권한의 not-determined, granted, limited, denied, restricted와 다시 요청 가능 여부를 포함한 제품 상태다. 한 번 허용된 권한도 Settings·정책·OS 사건으로 철회될 수 있다.
+권한의 not-required, not-determined, granted, limited, denied, restricted와 다시 요청 가능 여부를 포함한 제품 상태다. `not-required`는 전체 권한 grant가 아니라 해당 API가 요청 없이 제공하는 제한된 접근이다. 한 번 허용된 권한도 Settings·정책·OS 사건으로 철회될 수 있다.
 
 ### limited permission
 
@@ -146,11 +146,11 @@ Android `applicationId`와 iOS bundle identifier처럼 설치·signing·store re
 
 ### source/build/runtime identity
 
-source revision, application identifier, semantic version, build number, signing identity, `runtimeVersion`과 artifact digest를 연결한 provenance다. 어느 code가 어느 설치 산출물에 들어갔는지 추적한다.
+source revision, application identifier, semantic version, build number, runtime fingerprint/policy와 고유 ref의 artifact 집합을 연결한 provenance다. signing claim/review, 설치 관찰과 store build를 각 artifact에 연결해 어느 code가 어느 publishing·설치 산출물에 들어갔는지 추적한다.
 
 ### installable artifact
 
-대상 device/emulator에 실제 설치할 수 있는 APK 또는 iOS app/IPA다. store upload용 AAB, JavaScript bundle, CNG 생성 성공만으로 대체하지 않는다.
+대상 device/emulator에 실제 설치할 수 있는 APK/Play split 또는 iOS app/IPA/TestFlight build다. store upload용 AAB, xcarchive, JavaScript bundle, CNG 생성 성공만으로 대체하지 않는다. simulator `.app`은 physical iOS 설치 artifact가 아니다.
 
 ### acceptance evidence
 

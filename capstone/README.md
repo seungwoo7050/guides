@@ -56,7 +56,7 @@ reference app는 공개 행동의 한 구현이다. 유일한 architecture나 �
 9. background task가 전혀 실행되지 않는 조건을 만든다. 다음 foreground resume가 같은 bounded worker로 pending 상태를 전진시킨다.
 10. 오래되거나 중복된 conflict notification으로 cold start한다. payload를 정본으로 쓰지 않고 migration/session 뒤 최신 DB 상태를 읽어 한 번만 올바른 route를 연다.
 11. 선택한 native dependency 하나를 TypeScript call→plugin/autolinking→Android/iOS source/config→thread/lifecycle/error→binary/runtime mismatch까지 추적한다.
-12. 같은 source revision의 Android와 iOS artifact/config evidence를 모아 publishing artifact와 실제 install evidence, 수행하지 못한 signing/store 항목을 구분한다.
+12. 같은 source/build identity 아래 Android AAB+APK/Play split, iOS xcarchive+IPA/TestFlight를 고유 artifact ref로 연결한다. 설치 artifact·관찰 runtime/launch, artifact별 signing claim/review, store build와 전달 bytes declaration/review를 분리하고 수행하지 못한 항목은 `not-run`으로 둔다.
 
 fault server와 test fixture는 허가된 local 환경에서만 사용한다. production push, 사용자 data나 store release에 failure를 주입하지 않는다.
 
@@ -114,9 +114,10 @@ template의 빈칸을 그대로 제출하거나 결과를 `OK` 한 단어로 요
 ### Gate 5 — native/release traceability
 
 - existing native dependency의 JS→config→Android/iOS→runtime 경계를 읽었다.
-- source·lockfile·generated config·app/build/runtime·artifact identity가 연결된다.
-- AAB/archive 같은 publishing artifact와 설치 가능한/실제 설치된 artifact를 구분한다.
-- signing·store 처리·rollout을 실행하지 않았으면 자동화 결과로 대체하지 않는다.
+- release-contract schema v2에서 source·lockfile·generated config·app/build/runtime과 고유 `artifacts[]` ref가 연결된다.
+- Android AAB+APK/Play split, iOS xcarchive+IPA/TestFlight를 구분하고 installation이 실제 설치 후보 ref·physical device·관찰 runtime/policy·launch 결과를 가리킨다.
+- signing의 `claimed`/`manually-reviewed`, store-delivered bytes의 `declared`/`manually-reviewed`를 자동 trust·delivery 검증으로 확대하지 않는다.
+- signing·store 처리·rollout을 실행하지 않았으면 `not-run`을 자동화 결과로 대체하지 않는다.
 
 ## 대표 비합격 사례
 
@@ -130,6 +131,7 @@ template의 빈칸을 그대로 제출하거나 결과를 `OK` 한 단어로 요
 - notification body를 최신 업무 상태로 사용함
 - native module 경계 “읽기” 대신 한 플랫폼 custom module만 구현함
 - Expo Go, CNG generation 또는 AAB 생성만으로 Android/iOS 동작과 설치를 주장함
+- simulator `.app`을 iOS physical evidence로, IPA를 simulator evidence로 기록하거나 upload artifact digest를 store-delivered bytes로 재사용함
 - evidence에 token·record text·정확한 위치·사진 원본을 포함함
 
 ## 사람 검토 질문
@@ -141,7 +143,7 @@ template의 빈칸을 그대로 제출하거나 결과를 `OK` 한 단어로 요
 5. notification cold start가 stale payload가 아니라 latest repository를 읽는가?
 6. 선택한 native dependency의 양 플랫폼 entry, thread, lifecycle과 error 의미가 실제 source/config에 근거하는가?
 7. device·accessibility evidence가 특정 build identity와 연결되는가?
-8. artifact digest가 무엇을 식별하고 store 처리·서명·사용자 전달 중 무엇은 증명하지 못하는가?
+8. 각 artifact ref/digest가 무엇을 식별하고 signing claim, store build·전달 bytes declaration 중 무엇은 증명하지 못하는가?
 9. `not-run` 항목이 exit capability 판단에 어떤 제한을 남기는가?
 10. 인접 브랜치가 소유하는 backend 운영·일반 보안·native 전문 영역을 모바일 완료 주장에 섞지 않았는가?
 

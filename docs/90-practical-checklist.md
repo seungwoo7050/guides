@@ -88,8 +88,9 @@
 - [ ] reference가 통과하고 의도적 skeleton·known-wrong mutant가 거부된다.
 - [ ] process kill, old schema upgrade와 permission revoke를 실제로 만든다.
 - [ ] release-like build·실제 기기에서 startup/list/image/sync와 보조기술을 검토한다.
-- [ ] source·lockfile·generated config·toolchain·app/build/runtime identity를 artifact에 연결했다.
-- [ ] AAB/archive, installable APK/app/IPA와 store가 실제 전달한 build를 구분한다.
+- [ ] schema v2에서 source·lockfile·generated config·toolchain·app/build/runtime 아래 고유 `artifacts[]` ref를 연결했다.
+- [ ] Android AAB+APK/Play split, iOS xcarchive+IPA/TestFlight와 실제 install artifact ref를 구분한다.
+- [ ] artifact-linked signing `claimed`/사람 검토와 store-delivered bytes `declared`/사람 검토를 자동 trust·delivery 검증으로 표현하지 않는다.
 - [ ] remote update 호환성, signing owner/recovery, store metadata와 rollout 중 미실행 항목을 표시한다.
 - [ ] 자동 검사 통과를 교육적 완성이나 `stable` 승인으로 표현하지 않는다.
 

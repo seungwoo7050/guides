@@ -2,7 +2,7 @@
 
 Field Notes는 현장 조사자가 network가 불안정한 장소에서 기록·사진·선택적 위치를 저장하고, 나중에 server와 동기화하는 모바일 앱이다.
 
-이 디렉터리는 빈 프로젝트 생성 지시만 제공하지 않는다. 실행 가능한 Stage 01 앱, 의도적으로 미완성인 learner skeleton, framework와 분리된 public contract, 단계별 대표 실패와 사람이 검토할 evidence 형식을 함께 제공한다. reference의 구현 모양이나 화면 문자열을 복사하는 것이 목표가 아니라 같은 사건 뒤 같은 업무 상태와 관측 결과를 만드는 것이 목표다.
+이 디렉터리는 빈 프로젝트 생성 지시만 제공하지 않는다. 실행 가능한 누적 reference 앱, 의도적으로 미완성인 learner skeleton, framework와 분리된 public contract, 단계별 대표 실패와 사람이 검토할 evidence 형식을 함께 제공한다. reference의 구현 모양이나 화면 문자열을 복사하는 것이 목표가 아니라 같은 사건 뒤 같은 업무 상태와 관측 결과를 만드는 것이 목표다.
 
 ## 디렉터리 역할
 
@@ -10,11 +10,17 @@ Field Notes는 현장 조사자가 network가 불안정한 장소에서 기록·
 |---|---|---|
 | [`shared`](shared/) | 단계가 공유하는 domain type, port, fixture와 framework-neutral contract runner | type을 구현했다는 사실만으로 device 동작을 보장하지 않는다. |
 | [`skeleton`](skeleton/) | compile·launch 가능하지만 Stage 01 parser, deduplication, back policy와 일부 UI 검사가 의도적으로 미완성인 시작점 | 처음부터 test가 통과하는 정답 프로젝트가 아니다. |
-| [`reference`](reference/) | list/detail/new/edit/sync/settings와 link·restoration 경계를 연결한 완전한 Stage 01 실행 예시 | SQLite, media, 실제 sync와 release 품질까지 완성된 앱이 아니다. |
+| [`reference`](reference/) | 현재 package scripts와 공개 contract가 검사하는 행동을 연결한 누적 실행 예시 | 파일·script 존재만으로 실제 device·signing·store, 전체 Stage 또는 `stable` 승인을 뜻하지 않는다. |
 | [`specs`](specs/) | Stage별 학습 결과, 시작 상태, public behavior, 실패 주입과 evidence 계약 | 문서를 읽거나 체크박스를 채운 것만으로 Stage를 통과하지 않는다. |
 | `checks/` | acceptance matrix, device matrix와 evidence template | 자동 생성된 stable 판정표가 아니다. |
 
-`reference/app/`은 route entry, `reference/src/`는 application·adapter·component 경계다. Stage 01의 정답 문자열을 찾기보다 [`shared/src/testkit.ts`](shared/src/testkit.ts)가 요구하는 public behavior와 실제 device 관찰을 함께 읽는다.
+`reference/app/`은 route entry, `reference/src/`는 application·adapter·component 경계다. 단계별 정답 문자열을 찾기보다 [`shared/src/contracts.ts`](shared/src/contracts.ts), 공개 test와 실제 device 관찰을 함께 읽는다.
+
+## 누적 reference와 단계별 시작 상태
+
+누적 reference의 정확한 자동 범위는 root와 `reference`의 현재 package scripts, 이 README의 명령과 같은 source에서 실행한 `verify.sh` 결과로 확인한다. 새 package·adapter·test 파일이 보인다는 사실만으로 연결 검사, 실제 device 결과 또는 release 준비가 끝났다고 해석하지 않는다.
+
+각 spec의 “시작 상태와 의도적 미완성”은 **그 Stage를 처음 수행하는 learner 작업 복사본의 기준선**이다. 현재 누적 reference의 기능 목록이 아니다. 예를 들어 Stage 01의 memory repository와 Stage 02 시작 전 placeholder 설명은 학습 순서를 고정하는 계약이며, 현재 reference가 SQLite·media를 제거해야 한다는 뜻이 아니다. Stage별 연습은 별도 learner 복사본에서 수행하고 누적 reference는 공개 행동 비교와 회귀 검사에 사용한다.
 
 ## 왜 하나의 누적 프로젝트인가
 
@@ -79,10 +85,10 @@ type RecordSyncState =
 ```sh
 npm ci
 npm run typecheck
-npm run test:stage01
+./verify.sh
 ```
 
-`npm run test:stage01`은 reference contract가 통과해야 한다. 아래 명령은 learner TODO가 남은 최초 skeleton에서 **실패해야 정상**이며, Stage 01을 구현한 뒤 통과시킨다.
+단계별 좁은 검사는 root `package.json`의 현재 `test:stageNN`/`check:stageNN` script를 사용한다. `verify.sh` 결과에서 필수·선택·미실행 suite와 자동 검사의 비보장 범위를 함께 읽는다. 아래 명령은 learner TODO가 남은 최초 skeleton에서 **실패해야 정상**이며, Stage 01을 구현한 뒤 통과시킨다.
 
 ```sh
 npm run test:stage01:skeleton
