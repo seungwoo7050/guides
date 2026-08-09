@@ -13,6 +13,7 @@ export default function RootLayout() {
         <Stack
           screenOptions={{
             headerBackButtonDisplayMode: "minimal",
+            headerBackButtonMenuEnabled: false,
             headerStyle: { backgroundColor: "#f5f1e8" },
             headerTintColor: "#173b33",
             headerTitleStyle: { fontWeight: "800" },
@@ -37,4 +38,3 @@ export default function RootLayout() {
     </SafeAreaProvider>
   );
 }
-

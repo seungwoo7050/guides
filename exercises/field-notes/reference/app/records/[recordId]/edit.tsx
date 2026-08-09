@@ -12,14 +12,19 @@ import { useUnsavedDraftGuard } from "../../../src/navigation/useUnsavedDraftGua
 export default function EditRecordRoute() {
   const router = useRouter();
   const params = useLocalSearchParams<{ recordId?: string | string[] }>();
-  const { getRecord, saveRecord } = useAppRuntime();
+  const { getRecord, saveRecord, setDraftActive } = useAppRuntime();
   const [record, setRecord] = useState<FieldRecord | null | undefined>(undefined);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [saveError, setSaveError] = useState<string | null>(null);
   const [dirty, setDirty] = useState(false);
-  const permitNavigation = useUnsavedDraftGuard(dirty);
+  const { leaveAfterCommit, requestLeave } = useUnsavedDraftGuard(dirty);
   const rawId = Array.isArray(params.recordId) ? params.recordId[0] ?? "" : params.recordId ?? "";
   const normalized = normalizeRecordId(rawId);
+
+  useEffect(() => {
+    setDraftActive(true);
+    return () => setDraftActive(false);
+  }, [setDraftActive]);
 
   useEffect(() => {
     if (normalized.kind === "invalid") {
@@ -74,8 +79,7 @@ export default function EditRecordRoute() {
         payload,
       });
       setSaveError(null);
-      permitNavigation();
-      router.replace(`/records/${encodeURIComponent(record.id)}`);
+      leaveAfterCommit(() => router.replace(`/records/${encodeURIComponent(record.id)}`));
     } catch (error) {
       setSaveError(String(error));
     }
@@ -96,7 +100,7 @@ export default function EditRecordRoute() {
       ) : null}
       <RecordForm
         initialValue={initialValue}
-        onCancel={() => router.back()}
+        onCancel={requestLeave}
         onDirtyChange={setDirty}
         onSubmit={save}
         submitLabel="변경 저장"

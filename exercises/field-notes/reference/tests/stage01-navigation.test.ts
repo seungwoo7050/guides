@@ -5,11 +5,22 @@ import {
   resolvedAppScheme,
 } from "../src/adapters/ExpoLinkIntentAdapter";
 import {
+  LatestStartupIntentBuffer,
   RecentIntentSet,
   resolveNavigationIntent,
   StartupIntentCoordinator,
 } from "../src/navigation/decision";
 import {
+  applyReservedRoute,
+  CrossSourceRouteArbiter,
+} from "../src/navigation/CrossSourceRouteArbiter";
+import {
+  handlePreventedDraftNavigation,
+  OneShotNavigationPermit,
+  requestDraftLeave,
+} from "../src/navigation/draftLeavePolicy";
+import {
+  intentKey,
   parseNavigationIntent,
   stage01Navigation,
 } from "../src/navigation/stage01";
@@ -181,5 +192,99 @@ describe("Stage 01 navigation behavior", () => {
     await expect(
       coordinator.handle(intent, "record:forest-edge:detail"),
     ).resolves.toEqual({ kind: "duplicate" });
+  });
+
+  it("keeps the latest bounded warm link until bootstrap can consume it", () => {
+    const buffer = new LatestStartupIntentBuffer();
+    buffer.offer(parseNavigationIntent("/records/forest-edge"));
+    buffer.offer(parseNavigationIntent("/settings"));
+    expect(buffer.take()).toEqual({ kind: "open-settings", source: "link" });
+    expect(buffer.take()).toBeNull();
+  });
+
+  it("releases a failed startup reservation so the same route can retry", async () => {
+    let attempts = 0;
+    const coordinator = new StartupIntentCoordinator({
+      ready: async () => {
+        attempts += 1;
+        if (attempts === 1) throw new Error("opening database failed once");
+      },
+      recordExists: async () => true,
+    });
+    const intent = parseNavigationIntent("/records/forest-edge");
+    await expect(coordinator.handle(intent, intentKey(intent))).rejects.toThrow("failed once");
+    await expect(coordinator.handle(intent, intentKey(intent))).resolves.toEqual({
+      kind: "navigate",
+      href: "/records/forest-edge",
+    });
+  });
+
+  it("deduplicates committed link/notification routes but releases failed routing", () => {
+    const arbiter = new CrossSourceRouteArbiter(4);
+    const link = parseNavigationIntent("/records/forest-edge");
+    const first = arbiter.reserveLink(link);
+    expect(first).not.toBeNull();
+    expect(() => applyReservedRoute(first!, () => {
+      throw new Error("router was not ready");
+    })).toThrow("router was not ready");
+    const retry = arbiter.reserveNotification({
+      kind: "open-record",
+      recordId: "forest-edge",
+    });
+    expect(retry).not.toBeNull();
+    retry?.commit();
+    expect(arbiter.reserveLink(link)).toBeNull();
+  });
+
+  it("leaves clean drafts directly and dispatches dirty leave only after approval", () => {
+    const events: string[] = [];
+    expect(requestDraftLeave(false, () => events.push("unexpected"), () => events.push("left")))
+      .toBe("left");
+    let approve: (() => void) | undefined;
+    expect(requestDraftLeave(true, (discard) => {
+      events.push("confirm");
+      approve = discard;
+    }, () => events.push("discarded"))).toBe("confirmation-requested");
+    expect(events).toEqual(["left", "confirm"]);
+    approve?.();
+    expect(events).toEqual(["left", "confirm", "discarded"]);
+  });
+
+  it("grants exactly one committed navigation without bypassing a later dirty leave", () => {
+    const permit = new OneShotNavigationPermit();
+    expect(permit.consume()).toBe(false);
+    permit.grant();
+    expect(permit.consume()).toBe(true);
+    expect(permit.consume()).toBe(false);
+    permit.grant();
+    permit.revoke();
+    expect(permit.consume()).toBe(false);
+  });
+
+  it("uses one confirmation for cancel and no confirmation for committed navigation", () => {
+    const permit = new OneShotNavigationPermit();
+    let approve: (() => void) | undefined;
+    const confirms: string[] = [];
+    const dispatched: string[] = [];
+    expect(handlePreventedDraftNavigation(
+      permit,
+      (discard) => {
+        confirms.push("confirm");
+        approve = discard;
+      },
+      () => dispatched.push("cancel-action"),
+    )).toBe("confirmation-requested");
+    approve?.();
+    expect(confirms).toEqual(["confirm"]);
+    expect(dispatched).toEqual(["cancel-action"]);
+
+    permit.grant();
+    expect(handlePreventedDraftNavigation(
+      permit,
+      () => confirms.push("unexpected"),
+      () => dispatched.push("saved-replace"),
+    )).toBe("bypassed");
+    expect(confirms).toEqual(["confirm"]);
+    expect(dispatched).toEqual(["cancel-action", "saved-replace"]);
   });
 });

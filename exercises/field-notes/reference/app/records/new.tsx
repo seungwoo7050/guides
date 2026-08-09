@@ -1,6 +1,6 @@
 import type { RecordPayload } from "@field-notes/shared";
 import { useRouter } from "expo-router";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useAppRuntime } from "../../src/application/AppRuntime";
 import {
   RecordForm,
@@ -12,23 +12,27 @@ import { useUnsavedDraftGuard } from "../../src/navigation/useUnsavedDraftGuard"
 
 export default function NewRecordRoute() {
   const router = useRouter();
-  const { newRecordId, saveRecord } = useAppRuntime();
+  const { newRecordId, saveRecord, setDraftActive } = useAppRuntime();
   const [dirty, setDirty] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
-  const permitNavigation = useUnsavedDraftGuard(dirty);
+  const { leaveAfterCommit, requestLeave } = useUnsavedDraftGuard(dirty);
   const initialValue = useMemo<RecordDraft>(
     () => ({ title: "", notes: "", status: "draft", observedAt: new Date().toISOString() }),
     [],
   );
   const recordId = useMemo(() => newRecordId(), [newRecordId]);
 
+  useEffect(() => {
+    setDraftActive(true);
+    return () => setDraftActive(false);
+  }, [setDraftActive]);
+
   const save = async (draft: RecordDraft) => {
     const payload: RecordPayload = { ...draft };
     try {
       await saveRecord({ id: recordId, expectedLocalRevision: null, payload });
       setSaveError(null);
-      permitNavigation();
-      router.replace(`/records/${encodeURIComponent(recordId)}`);
+      leaveAfterCommit(() => router.replace(`/records/${encodeURIComponent(recordId)}`));
     } catch (error) {
       setSaveError(String(error));
     }
@@ -49,7 +53,7 @@ export default function NewRecordRoute() {
       ) : null}
       <RecordForm
         initialValue={initialValue}
-        onCancel={() => router.back()}
+        onCancel={requestLeave}
         onDirtyChange={setDirty}
         onSubmit={save}
       />

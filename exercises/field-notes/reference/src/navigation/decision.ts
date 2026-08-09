@@ -52,6 +52,29 @@ export class RecentIntentSet {
     }
     return true;
   }
+
+  public has(key: string): boolean {
+    return this.keys.has(key);
+  }
+
+  public forget(key: string): void {
+    this.keys.delete(key);
+  }
+}
+
+/** Keeps at most one latest warm input while startup state is not ready. */
+export class LatestStartupIntentBuffer {
+  private latest: NavigationIntent | null = null;
+
+  public offer(intent: NavigationIntent): void {
+    this.latest = intent;
+  }
+
+  public take(): NavigationIntent | null {
+    const intent = this.latest;
+    this.latest = null;
+    return intent;
+  }
 }
 
 export class StartupIntentCoordinator {
@@ -60,7 +83,10 @@ export class StartupIntentCoordinator {
       ready(): Promise<void>;
       recordExists(recordId: string): Promise<boolean>;
     },
-    private readonly recent = new RecentIntentSet(),
+    private readonly recent: {
+      accept(key: string): boolean;
+      forget?(key: string): void;
+    } = new RecentIntentSet(),
   ) {}
 
   public async handle(
@@ -70,7 +96,16 @@ export class StartupIntentCoordinator {
     if (!this.recent.accept(key)) {
       return { kind: "duplicate" };
     }
-    await this.dependencies.ready();
-    return resolveNavigationIntent(intent, this.dependencies.recordExists);
+    try {
+      await this.dependencies.ready();
+      return await resolveNavigationIntent(intent, this.dependencies.recordExists);
+    } catch (error) {
+      this.recent.forget?.(key);
+      throw error;
+    }
+  }
+
+  public release(key: string): void {
+    this.recent.forget?.(key);
   }
 }

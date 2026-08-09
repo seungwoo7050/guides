@@ -45,7 +45,7 @@ export class ExpoLinkIntentAdapter implements NavigationIntentPort {
 }
 
 /**
- * Stage 05 will compose a notification adapter with this link adapter. Keeping
- * that input absent is intentional: a placeholder notification payload must
- * never be treated as authoritative record data in Stage 01.
+ * Notification envelopes keep their own durable claim/state owner and are not
+ * parsed here. The application composes both sources only at a bounded route
+ * arbiter, after each source has independently validated its input.
  */
