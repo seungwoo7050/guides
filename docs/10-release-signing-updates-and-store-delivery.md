@@ -119,14 +119,14 @@ signing identity의 비밀이 아닌 식별 정보
 
 ## release evidence schema는 여러 artifact와 관찰을 연결합니다
 
-Field Notes의 [release evidence contract](../exercises/field-notes/release-contract/README.md)는 schema version 2를 사용한다. 한 `ReleaseEvidence`의 `source`·`application`·`build`가 같은 release candidate를 식별하고, `artifacts[]`의 각 산출물은 고유 `ref`를 가진다.
+Field Notes의 [release evidence contract](../exercises/field-notes/release-contract/README.md)는 schema version 2를 사용한다. `ReleaseEvidence` 하나는 Android 또는 iOS 한 platform만 표현한다. release candidate는 같은 source/tree/lock과 profile/app version/runtime identity를 가진 Android·iOS manifest 두 개를 제출하고 cross-platform assessment로 묶는다. platform마다 다른 app id·build number·tool·generated config digest는 동일성 비교에서 제외한다. 각 manifest의 `source`·`application`·`build`가 같은 platform candidate를 식별하고, `artifacts[]`의 각 산출물은 고유 `ref`를 가진다.
 
 ```text
 Android: android-aab + (android-apk | android-play-split-set)
 iOS:     ios-xcarchive + (ios-ipa | ios-testflight-build)
 ```
 
-괄호 안 산출물은 설치 후보의 대안이다. AAB와 APK/Play split, xcarchive와 IPA/TestFlight를 한 파일이나 한 digest로 합치지 않는다. local file artifact는 이름·크기·SHA-256을 선언하고, store build artifact는 immutable `storeBuildRef`를 선언한다. schema validator는 이 문자열들의 내부 일관성을 검사할 뿐 실제 파일을 열어 digest를 다시 계산하지 않는다.
+괄호 안 산출물은 설치 후보의 대안이다. AAB와 APK/Play split, xcarchive와 IPA/TestFlight를 한 파일이나 한 digest로 합치지 않는다. regular local file artifact는 이름·크기·SHA-256을 선언하고, store build artifact는 immutable `storeBuildRef`를 선언한다. `.xcarchive`와 simulator `.app`은 directory bundle이므로 이름·regular file 수·regular byte 합과 `sha256-canonical-tree-v1` manifest digest를 선언한다. canonical manifest는 path·POSIX mode(실행 bit 포함)·file content·symlink target을 결정적으로 식별하며 계산 command와 manifest 자체를 evidence로 남긴다. mtime·uid/gid·xattr는 제외하고 signing/entitlement는 별도 gate로 검토한다. schema validator는 이 문자열들의 내부 일관성을 검사할 뿐 실제 file/directory를 열어 digest를 다시 계산하지 않는다.
 
 설치 관찰은 `installation.artifactRef`로 정확한 설치 후보를 가리킨다. `verified` 상태에는 device class, 관찰한 application id·version·build number·runtimeVersion, build와 같은 runtime fingerprint 또는 policy ref, `launchResult=passed`와 raw evidence가 필요하다. 허용 matrix는 Android APK의 physical/emulator, Play split의 physical, iOS IPA/TestFlight의 physical, simulator `.app`의 simulator다. AAB·xcarchive 직접 설치와 simulator/physical 뒤바꾸기는 거부한다. 이 판정도 제출 evidence의 모순을 거르는 것이며 validator가 실제 device를 조작했다는 뜻은 아니다.
 

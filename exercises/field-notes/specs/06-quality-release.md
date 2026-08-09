@@ -83,7 +83,7 @@ Android AAB는 store가 APK를 생성하기 위한 bundle이며 일반적으로 
 
 ## version과 release evidence schema v2
 
-release candidate마다 최소 다음을 연결한다. 제출하는 `artifact-manifest.json`은 [`release-contract`](../release-contract/README.md)의 schema version 2를 사용한다.
+release candidate마다 최소 다음을 연결한다. 제출하는 `artifact-manifest.android.json`과 `artifact-manifest.ios.json`은 [`release-contract`](../release-contract/README.md)의 schema version 2를 사용한다. schema v2 manifest 하나는 한 platform만 표현하며 두 파일은 같은 source revision·tree digest·lock digest와 release profile/app version/runtime identity를 가져야 한다.
 
 ```text
 source revision
@@ -105,7 +105,7 @@ native code가 있는 dependency나 app config/plugin을 바꾸면 binary rebuil
 
 같은 source라도 profile/config/toolchain/signing이 다르면 artifact가 다를 수 있다. artifact manifest에 credential·token·secret을 포함하지 않는다.
 
-한 manifest는 같은 `source`·`application`·`build` 후보 아래 고유 ref의 `artifacts[]`를 둔다.
+한 manifest는 같은 platform의 `source`·`application`·`build` 후보 아래 고유 ref의 `artifacts[]`를 둔다. `installation`과 `store`도 해당 platform만 기록한다. 두 manifest를 validator CLI에 함께 전달해 Android/iOS가 같은 source/lock 후보인지 확인하며, 양 platform artifact를 한 manifest에 섞지 않는다.
 
 | platform | 필수로 구분할 artifact set | 설치 관찰 허용 범위 |
 |---|---|---|
@@ -113,6 +113,8 @@ native code가 있는 dependency나 app config/plugin을 바꾸면 binary rebuil
 | iOS | `ios-xcarchive` + `ios-ipa` 또는 `ios-testflight-build` | IPA/TestFlight는 physical; simulator `.app`은 simulator evidence만 |
 
 `installation`은 설치한 `artifactRef`, 관찰한 app id/version/build/runtime, build와 같은 runtime fingerprint 또는 policy ref, device class와 launch 결과를 가진다. AAB·xcarchive 직접 설치, IPA의 simulator 설치, simulator `.app`의 physical 설치와 runtime mismatch를 known-wrong으로 거부한다.
+
+`.xcarchive`와 simulator `.app`은 regular file이 아닌 directory bundle이다. 이 둘은 `identity=directory-tree`와 `treeDigestAlgorithm=sha256-canonical-tree-v1`을 사용하고, root-relative path를 정렬한 canonical manifest에서 regular file count·byte 합·tree SHA-256을 계산한다. 임의 zip digest나 directory 이름에 대한 file digest를 대신 쓰지 않으며 canonical manifest·생성 command·tool version을 제출 evidence에 포함한다. 정확한 record 형식은 release-contract 문서를 따른다.
 
 `signing[]`은 모든 artifact를 `artifactRef`로 가리키며 `not-run | claimed | manually-reviewed` 중 하나다. `claimed`에는 redacted identity와 방법·시각·evidence를, `manually-reviewed`에는 reviewer/date/review evidence를 추가한다. 후자는 사람 검토 기록일 뿐 signature trust나 credential 소유권을 자동 증명하지 않는다.
 
@@ -259,13 +261,15 @@ Stage 01~05의 실패를 release candidate에서 다시 결합한다.
 
 - 전체 public behavior/unit/contract/integration suite
 - reference 통과, Stage 01 skeleton rejection과 명명된 known-wrong model rejection
-- link·structure·license와 source fingerprint
+- link·structure와 source fingerprint
 - resolved app config와 profile 정적 계약
 - CNG generation, Android/iOS Metro bundle
 - migration/upgrade fixtures와 Stage 04/05 fault history
 - release evidence schema v2와 source/lock/config, `artifacts[]`·installation/signing/store ref 연결
 
-현재 verify의 CNG·bundle은 **native compile, signed artifact 생성 또는 실제 artifact digest 재계산이 아니다**. Android/iOS native compile, AAB/APK/xcarchive/IPA 생성·digest, signing, install과 store 처리는 외부 build/device gate이며 기본 verify summary에서 `NOT-RUN` 수동 항목으로 남는다. 허가된 local build나 CI가 이를 실행했다면 command, host/toolchain, exit status, 고유 artifact ref와 실제 file에서 계산한 digest를 별도 evidence로 연결한다.
+현재 verify의 CNG·bundle은 **native compile, signed artifact 생성 또는 실제 artifact digest 재계산이 아니다**. Android/iOS native compile, AAB/APK/xcarchive/IPA 생성·digest, signing, install과 store 처리는 외부 build/device gate이며 기본 verify summary에서 `NOT-RUN` 수동 항목으로 남는다. 허가된 local build나 CI가 이를 실행했다면 command, host/toolchain, exit status, 고유 artifact ref와 실제 regular file digest 또는 canonical directory tree digest를 별도 evidence로 연결한다.
+
+`LICENSE.md`와 `LICENSES/`는 source fingerprint에 포함되지만 현재 verify는 라이선스 문구의 존재·정확성·dependency license를 별도 판정하지 않는다. 이 항목은 release evidence에서 실행 command가 없으면 `미검사`로 두고 사람이 검토한다.
 
 자동 검사는 UI 문자열이나 generated file 존재만으로 통과시키지 않는다. 외부 build command가 실행되지 않았거나 tool 부재로 생략됐으면 필수 성공으로 표시하지 않으며, release-contract fixture의 예시 digest를 실제 artifact digest로 재사용하지 않는다.
 
@@ -288,7 +292,8 @@ cloud build는 유일한 필수 구현 수단이 아니다. local native build, 
 ```text
 stage-06/
 ├── release-candidate.md
-├── artifact-manifest.json
+├── artifact-manifest.android.json
+├── artifact-manifest.ios.json
 ├── native-boundary-review.md
 ├── cng-and-build-results.md
 ├── device-matrix.md
@@ -306,7 +311,7 @@ stage-06/
 
 - development·preview·production profile의 identity, backend와 signing owner가 분리돼 있다. remote update를 사용하면 profile별 channel·runtime owner도 분리하고, 사용하지 않으면 설정과 evidence에서 비활성화·`미검사`를 명시한다.
 - CNG, JS bundle, native compile, signed artifact, install과 store processing을 서로 다른 gate로 판정한다.
-- source·lockfile·config·version·runtime과 고유 ref의 Android AAB+APK/Play split, iOS xcarchive+IPA/TestFlight artifact set이 연결된다.
+- 같은 source·lockfile 후보를 가리키는 플랫폼별 schema v2 manifest 두 개에서 config·version·runtime과 고유 ref의 Android AAB+APK/Play split, iOS xcarchive+IPA/TestFlight artifact set이 연결된다.
 - installation의 실제 artifact ref·device class·관찰 runtime/policy·launch 결과가 일치하며 known-wrong matrix가 거부된다.
 - artifact-linked signing claim/사람 검토와 store delivery declaration/사람 검토가 자동 진위 검증과 구분된다.
 - 기존 Expo/native dependency의 필수 boundary review가 Android/iOS 경로와 failure를 추적한다.

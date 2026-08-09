@@ -21,16 +21,25 @@ secret 값과 credential file은 첨부하지 않는다.
 
 ## machine-checkable release manifest
 
-[`release-contract`](../exercises/field-notes/release-contract/README.md)의 schema version 2로 `artifact-manifest.json`을 제출한다. 한 manifest의 `source`·`application`·`build`는 같은 release candidate를 식별하고 `artifacts[]`의 `ref`는 중복되지 않아야 한다.
+[`release-contract`](../exercises/field-notes/release-contract/README.md)의 schema version 2로 다음 **플랫폼별 manifest 두 개**를 제출한다.
 
-| artifact ref | platform | kind/역할 | local file 또는 store build identity | digest | source/build 연결 | evidence |
-|---|---|---|---|---|---|---|
-| | Android | `android-aab` / publishing | | | | |
-| | Android | `android-apk` 또는 `android-play-split-set` / install candidate | | | | |
-| | iOS | `ios-xcarchive` / archive | | | | |
-| | iOS | `ios-ipa` 또는 `ios-testflight-build` / install candidate | | | | |
+```text
+artifact-manifest.android.json
+artifact-manifest.ios.json
+```
 
-Android 후보는 AAB와 APK/Play split을, iOS 후보는 xcarchive와 IPA/TestFlight build를 별도 ref로 가진다. AAB는 직접 설치 artifact가 아니고 xcarchive도 임의 device 설치 증거가 아니다. 같은 상위 source/build identity를 공유한다는 사실과 각 artifact bytes/store identity를 모두 남긴다.
+한 manifest의 `application.platform`, `artifacts[]`, `installation`과 `store`는 한 platform만 표현한다. 각 manifest의 `source`·`application`·`build`는 같은 platform release candidate를 식별하고 `artifacts[]`의 `ref`는 중복되지 않아야 한다. 두 파일은 같은 source revision·tree digest·lock digest, build profile, app version, runtimeVersion과 runtime fingerprint/policy ref를 가져야 하며 validator CLI의 cross-platform assessment로 함께 확인한다. platform별 app id·build number·tool·generated config digest는 달라도 된다. Android와 iOS artifact를 한 manifest에 섞지 않는다.
+
+| manifest | artifact ref | platform | kind/역할 | local file·directory tree 또는 store build identity | digest | source/build 연결 | evidence |
+|---|---|---|---|---|---|---|---|
+| Android | | Android | `android-aab` / publishing | | | | |
+| Android | | Android | `android-apk` 또는 `android-play-split-set` / install candidate | | | | |
+| iOS | | iOS | `ios-xcarchive` / archive | | | | |
+| iOS | | iOS | `ios-ipa` 또는 `ios-testflight-build` / install candidate | | | | |
+
+Android manifest는 AAB와 APK/Play split을, iOS manifest는 xcarchive와 IPA/TestFlight build를 별도 ref로 가진다. AAB는 직접 설치 artifact가 아니고 xcarchive도 임의 device 설치 증거가 아니다. 두 manifest가 같은 상위 source/lock identity를 공유한다는 사실과 각 artifact bytes/directory tree/store identity를 모두 남긴다.
+
+`.xcarchive`와 simulator `.app`은 directory bundle이므로 `local-bytes`나 임의 zip digest로 기록하지 않는다. release-contract의 `sha256-canonical-tree-v1` 절차로 `directoryName`, regular `fileCount`, regular file의 `byteSize` 합과 `treeSha256`을 만들고 canonical manifest·생성 command·tool version을 raw evidence로 보존한다. schema 통과는 validator가 directory를 다시 읽었다는 뜻이 아니다.
 
 ### artifact-linked signing
 

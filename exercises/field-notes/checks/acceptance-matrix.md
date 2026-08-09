@@ -56,7 +56,7 @@
 | A11Y-01 | 06 | large font + TalkBack | create/permission/offline/conflict flow | 모든 상태·오류·action 접근, focus/draft 보존 | 실제 기기+사람 | 미검사 | |
 | A11Y-02 | 06 | large font + VoiceOver | create/permission/offline/conflict flow | 모든 상태·오류·action 접근, focus/draft 보존 | 실제 기기+사람 | 미검사 | |
 | PERF-01 | 06 | release-like build + fixed fixture | launch/scroll/save/100-command workload | 목표·측정 조건과 결과, interaction failure 여부 기록 | 실제 기기+사람 | 미검사 | |
-| RELEASE-01 | 06 | release candidate | schema v2 manifest review | source·lock/config·app/build/runtime 아래 고유 refs의 Android AAB+APK/Play split, iOS xcarchive+IPA/TestFlight set 연결 | 자동+사람 | 미검사 | |
+| RELEASE-01 | 06 | release candidate | 플랫폼별 schema v2 manifest pair review | 같은 source·lock/profile/version/runtime 아래 Android AAB+APK/Play split ref와 iOS xcarchive tree+IPA/TestFlight ref 연결 | 자동+사람 | 미검사 | |
 | RELEASE-02 | 06 | privacy/data inventory | declaration review | 실제 storage/permission/telemetry와 일치, 법률 판단 분리 | 사람 | 미검사 | |
 | RELEASE-03 | 06 | artifact/store identity | signing·store evidence review | artifact-linked `claimed`/`manually-reviewed`, publishing/store build ref, delivered bytes `declared`/review와 자동 비보장 분리 | 사람 | 미검사 | |
 

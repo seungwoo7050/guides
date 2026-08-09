@@ -163,4 +163,4 @@ fixture와 validator `OK`는 `artifacts[]`, artifact ref, runtime/device matrix�
 
 `verify.sh`는 저장소 밖의 unique temporary directory에 log를 남기고 필수 suite를 끝까지 집계한다. 출력된 절대 log path를 evidence에 연결하며, 같은 이름의 repository file이나 고정 `/tmp` log를 덮어쓰지 않는다. `.guide/mobile-app/`만 정리하려면 `make clean`을 사용한다.
 
-검사 결과에는 자동 실행, `not-run` 수동 항목과 environment limitation이 구분돼야 한다. 현재 verify의 CNG·Metro bundle은 native compile이나 artifact 생성/digest가 아니다. Android/iOS compile, AAB/APK/xcarchive/IPA 생성과 실제 file digest, signing·install·store는 외부 gate이며 별도 명령/evidence가 없으면 `NOT-RUN`으로 남긴다. 자동 통과는 교육적 완성이나 stable 판정이 아니며, cloud build·signing·store upload·실제 Android/iOS device 결과를 대신하지 않는다.
+검사 결과에는 자동 실행, `not-run` 수동 항목과 environment limitation이 구분돼야 한다. 현재 verify의 CNG·Metro bundle은 native compile이나 artifact 생성/digest가 아니다. Android/iOS compile, AAB/APK/xcarchive/IPA 생성과 실제 regular-file 또는 canonical directory-tree digest, signing·install·store는 외부 gate이며 별도 명령/evidence가 없으면 `NOT-RUN`으로 남긴다. 자동 통과는 교육적 완성이나 stable 판정이 아니며, cloud build·signing·store upload·실제 Android/iOS device 결과를 대신하지 않는다.

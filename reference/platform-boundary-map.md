@@ -41,7 +41,7 @@ OS 사건의 정확한 시점과 횟수는 앱이 소유하지 않는다. 앱이
 | background | OS scheduler + app worker | bounded·restartable worker trigger | WorkManager/vendor policy, recent/force-stop 차이 | BGTaskScheduler/system policy, expiration, physical-device 제한 |
 | secure storage | platform storage | 작은 credential read/write/recovery 결과 | Keystore-backed encryption, uninstall/backup behavior | Keychain accessibility, reinstall/backup behavior |
 | file | platform filesystem + repository | app-owned copy, checksum, row/file reconciliation | files/cache/storage pressure | documents/library/cache, backup·offload 정책 |
-| release | build/store systems + release owner | app/build/runtime/source와 고유 artifact ref, signing/store 관찰 상태 | applicationId, versionCode, AAB+APK/Play split, keystore claim/review | bundle id, buildNumber, xcarchive+IPA/TestFlight, signing claim/review |
+| release | build/store systems + release owner | 같은 source/profile/version/runtime의 플랫폼별 manifest pair와 고유 artifact ref, signing/store 관찰 상태 | applicationId, versionCode, AAB+APK/Play split, keystore claim/review | bundle id, buildNumber, xcarchive tree+IPA/TestFlight, signing claim/review |
 
 ## 추상화 기준
 

@@ -115,9 +115,9 @@ actual remote/apply history:
 
 - resolved app config / CNG 결과:
 - native compile command와 exit status:
-- schema v2 source/application/build identity:
+- schema v2 Android/iOS manifest pair의 같은 source/lock/profile/version/runtime identity:
 - Android AAB ref + APK/Play split ref 또는 `not-run` 근거:
-- iOS xcarchive ref + IPA/TestFlight ref 또는 `not-run` 근거:
+- iOS xcarchive canonical tree ref + IPA/TestFlight ref 또는 `not-run` 근거:
 - artifact별 signing 상태(`not-run`/`claimed`/`manually-reviewed`), redacted identity와 review evidence:
 - install/upgrade artifactRef, device class, observed app/build/runtime/policy, launch 결과:
 - store를 실행했다면 publishingArtifactRef, storeBuildRef, track/status:

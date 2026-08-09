@@ -56,7 +56,7 @@ reference app는 공개 행동의 한 구현이다. 유일한 architecture나 �
 9. background task가 전혀 실행되지 않는 조건을 만든다. 다음 foreground resume가 같은 bounded worker로 pending 상태를 전진시킨다.
 10. 오래되거나 중복된 conflict notification으로 cold start한다. payload를 정본으로 쓰지 않고 migration/session 뒤 최신 DB 상태를 읽어 한 번만 올바른 route를 연다.
 11. 선택한 native dependency 하나를 TypeScript call→plugin/autolinking→Android/iOS source/config→thread/lifecycle/error→binary/runtime mismatch까지 추적한다.
-12. 같은 source/build identity 아래 Android AAB+APK/Play split, iOS xcarchive+IPA/TestFlight를 고유 artifact ref로 연결한다. 설치 artifact·관찰 runtime/launch, artifact별 signing claim/review, store build와 전달 bytes declaration/review를 분리하고 수행하지 못한 항목은 `not-run`으로 둔다.
+12. 같은 source/profile/version/runtime identity를 가진 플랫폼별 manifest pair에서 Android AAB+APK/Play split, iOS xcarchive canonical tree+IPA/TestFlight를 고유 artifact ref로 연결한다. 설치 artifact·관찰 runtime/launch, artifact별 signing claim/review, store build와 전달 bytes declaration/review를 분리하고 수행하지 못한 항목은 `not-run`으로 둔다.
 
 fault server와 test fixture는 허가된 local 환경에서만 사용한다. production push, 사용자 data나 store release에 failure를 주입하지 않는다.
 
@@ -114,7 +114,7 @@ template의 빈칸을 그대로 제출하거나 결과를 `OK` 한 단어로 요
 ### Gate 5 — native/release traceability
 
 - existing native dependency의 JS→config→Android/iOS→runtime 경계를 읽었다.
-- release-contract schema v2에서 source·lockfile·generated config·app/build/runtime과 고유 `artifacts[]` ref가 연결된다.
+- release-contract의 플랫폼별 schema v2 manifest pair에서 같은 source·lockfile·profile·app version·runtime과 고유 `artifacts[]` ref가 연결된다.
 - Android AAB+APK/Play split, iOS xcarchive+IPA/TestFlight를 구분하고 installation이 실제 설치 후보 ref·physical device·관찰 runtime/policy·launch 결과를 가리킨다.
 - signing의 `claimed`/`manually-reviewed`, store-delivered bytes의 `declared`/`manually-reviewed`를 자동 trust·delivery 검증으로 확대하지 않는다.
 - signing·store 처리·rollout을 실행하지 않았으면 `not-run`을 자동화 결과로 대체하지 않는다.
