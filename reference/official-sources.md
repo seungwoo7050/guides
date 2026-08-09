@@ -1,6 +1,6 @@
 # 공식 자료
 
-최종 검토일: **2026-08-09**
+최종 검토일: **2026-08-10**
 
 이 가이드는 특정 제품을 필수 구현으로 고정하지 않는다. 아래 자료는 개념을 실제 플랫폼에 적용할 때 확인할 공식 출처다. API, 설정 이름과 기본값은 바뀔 수 있으므로 사용 시점에 다시 검증한다.
 
@@ -14,9 +14,9 @@
 
 ## Schema와 record format
 
-### Apache Avro Specification
+### Apache Avro 1.12.0 Specification
 
-- https://avro.apache.org/docs/current/specification/
+- https://avro.apache.org/docs/1.12.0/specification/
 - writer/reader schema resolution, default와 type promotion을 실제 format 규칙으로 검토할 때 사용한다.
 
 ### Confluent Schema Registry 문서

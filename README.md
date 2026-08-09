@@ -22,9 +22,10 @@ make verify
 make clean
 ```
 
-- `make prepare`는 source를 바꾸지 않고 Python 환경과 저장소 fingerprint를 기록한다.
-- `make check`는 네트워크와 외부 서비스 없이 문서·예제·validator의 빠른 계약을 검사한다.
-- `make verify`는 외부 임시 복사본에서 reference가 통과하고 skeleton이 의도된 이유로 실패하는지, capstone 설계 계약과 source 불변성을 함께 검사한다.
+- `make prepare`는 Python 3.11 이상과 필수 도구를 확인하고 전체 구조를 검사한 뒤, HEAD·Git index·source·도구 identity를 담은 mode `0600` marker를 원자적으로 기록한다. source와 learner workspace는 바꾸지 않는다.
+- `make check`는 네트워크와 외부 서비스 없이 문서·내부 링크·예제, reference·starter·known-wrong 계약과 준비·검증·정리·workspace 안전 회귀를 검사한다.
+- `make verify`는 현재 marker를 확인하고 저장소 밖 배타 로그와 격리 복사본에서 필수 검사를 모두 실행한다. 성공·실패 모두에서 source, learner workspace, Git index와 HEAD가 보존되는지 확인한다.
+- `make clean`은 `.guide`와 가이드가 만든 cache만 제거하고 learner workspace는 보존한다.
 - `VERIFY_LOG`는 저장소 밖의 아직 존재하지 않는 절대 경로만 허용한다. 생략하면 충돌 없는 임시 로그를 만든다.
 
 학습 순서와 세 경로는 [`docs/00-roadmap.md`](docs/00-roadmap.md)에 있다.
@@ -84,7 +85,7 @@ make clean
 ./scripts/check-workspace.sh exercises/02-batch-processing/01-replay-safe-batch
 ```
 
-workspace 도구는 manifest에 등록된 exercise만 허용하고, 경로 탈출·symlink·필수 파일 누락을 거부한다. 초기 workspace는 의도한 학습 계약에서 실패한다. 구현 뒤 같은 검사 명령이 통과해야 완료다.
+workspace 도구는 manifest에 등록된 exercise만 허용하고 경로 탈출·symlink·특수 파일을 거부한다. lock과 sibling staging을 사용해 mode와 bytes를 확인한 뒤 macOS/Linux의 native no-replace rename으로 한 번만 publish하므로 기존 workspace를 덮어쓰지 않는다. 충돌·실패·중단 때는 자신이 만든 staging과 lock만 정리한다. 초기 workspace는 의도한 학습 계약에서 실패하며, 구현 뒤 같은 검사 명령이 통과해야 완료다.
 
 Capstone은 완성 코드를 제공하지 않는다. 대신 입력·상태·실패·산출물·검증 rubric을 제공하며, 학습자가 구현 기술을 선택한다.
 

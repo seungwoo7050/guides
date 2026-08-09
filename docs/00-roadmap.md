@@ -167,14 +167,16 @@ replay·reconciliation·quality·lineage·freshness
 | 구획 | 핵심 문서 | 구현·설계 연습 |
 |---|---|---|
 | 계약 | data product·schema·identity·분석 역사 | [`schema evolution`](../exercises/01-contracts-and-records/01-schema-evolution/README.md), [`batch capstone`](../exercises/06-capstones/01-batch-data-product/README.md) |
-| Batch | snapshot·replay·publish | [`replay-safe batch`](../exercises/02-batch-processing/01-replay-safe-batch/README.md) |
-| Stream | event time·watermark | [`event-time windows`](../exercises/03-stream-processing/01-event-time-windows/README.md) |
-| CDC | snapshot·position·merge | [`CDC snapshot merge`](../exercises/04-ingestion-and-storage/01-cdc-snapshot-merge/README.md) |
-| 운영 | interval·backfill·reconcile | [`backfill plan`](../exercises/05-orchestration-and-operations/01-backfill-plan/README.md) |
-| 품질 | checks·freshness·lineage | [`quality and lineage`](../exercises/05-orchestration-and-operations/02-quality-and-lineage/README.md) |
+| Batch | snapshot·replay·publish·partition·join | [`replay-safe batch`](../exercises/02-batch-processing/01-replay-safe-batch/README.md), [`partitioned join`](../exercises/02-batch-processing/02-partitioned-join/README.md) |
+| Stream | event time·watermark·state·dedup | [`event-time windows`](../exercises/03-stream-processing/01-event-time-windows/README.md), [`stateful dedup`](../exercises/03-stream-processing/02-stateful-dedup/README.md) |
+| CDC·storage | snapshot·position·merge·compaction | [`CDC snapshot merge`](../exercises/04-ingestion-and-storage/01-cdc-snapshot-merge/README.md), [`compaction planner`](../exercises/04-ingestion-and-storage/02-compaction-planner/README.md) |
+| 운영 | interval·backfill·run state | [`backfill plan`](../exercises/05-orchestration-and-operations/01-backfill-plan/README.md), [`run ledger`](../exercises/05-orchestration-and-operations/03-run-ledger-backfill/README.md) |
+| 품질 | quarantine·reconciliation·freshness·lineage | [`quality and lineage`](../exercises/05-orchestration-and-operations/02-quality-and-lineage/README.md), [`quality reconciliation`](../exercises/05-orchestration-and-operations/04-quality-reconciliation/README.md) |
 | Capstone A | batch 데이터 제품 | [`batch capstone`](../exercises/06-capstones/01-batch-data-product/README.md) |
 | Capstone B | event-time pipeline | [`stream capstone`](../exercises/06-capstones/02-event-time-pipeline/README.md) |
 | Capstone C | CDC analytics platform | [`CDC capstone`](../exercises/06-capstones/03-cdc-analytics-platform/README.md) |
+
+정본 계약의 다섯 `owns`와 세 `exit_capabilities`가 문서·실습·대표 실패·capstone evidence로 이어지는 전체 지도는 [`contract traceability`](../reference/contract-traceability.md)에서 확인한다.
 
 ## 실행 계약
 
@@ -189,29 +191,33 @@ make clean
 
 `prepare.sh`는 다음만 담당한다.
 
-- Python 3.11 이상을 확인한다.
-- source bytes·mode와 symlink fingerprint를 계산한다.
-- `.guide/data-engineering/prepared.json`에 guide ID와 fingerprint를 기록한다.
-- source, exercise skeleton과 Git index를 수정하지 않는다.
+- Python 3.11 이상과 Git·make·mktemp 실행 환경을 확인한다.
+- source의 path·kind·bytes·전체 mode, symlink와 raw Git index를 fingerprint한다.
+- `.guide/data-engineering/prepared.json`을 원자적으로 발행하고 guide ID, HEAD, source/index fingerprint와 검증한 tool identity를 기록한다.
+- source, learner workspace, exercise skeleton과 Git index가 준비 전후 같은지 확인한다.
 
-`make check`는 빠른 정적 검사를 수행한다.
+`make check`는 로컬 수락 검사를 수행한다.
 
 - 필수 파일과 문서 section
 - Markdown 내부 링크
-- Python syntax와 unit test
-- manifest·workspace 경로 계약
+- artifact를 만들지 않는 Python syntax와 example unit test
+- manifest·reference·starter·known-wrong semantic 계약
+- prepare·verify log·cleanup·workspace 안전 회귀 검사
 
 `make verify`는 외부 임시 복사본에서 다음을 검사한다.
 
-- 모든 example의 결정적 결과
-- 각 reference가 통과하고 skeleton이 지정된 semantic code로 실패하는지
-- capstone artifact validator가 유효 fixture를 수용하고 누락 fixture를 거부하는지
-- source와 실행 권한이 검증 전후 바뀌지 않는지
-- 로그가 저장소 밖에 남고 임시 디렉터리가 정리되는지
+- 모든 example의 결정적 결과와 전체 구조 계약
+- 각 reference가 정확한 success marker로 통과하고 skeleton·known-wrong이 지정된 semantic code로 실패하는지
+- capstone template가 유효하고 의도적으로 미완성인지, 완성 submission 구조는 placeholder·누락·손상 artifact를 거부하는지
+- source, learner workspace, Git index와 격리 복사본이 성공·실패 뒤에도 바뀌지 않는지
+- 로그를 저장소 밖 새 파일로 배타 생성하고 owned 임시 디렉터리만 정리하는지
+
+`make clean`은 `.guide`와 가이드가 만든 cache만 제거하며 learner workspace의 bytes와 mode는 보존한다.
 
 ## 버전 기준과 이식성
 
-- 필수 실행 환경: Python 3.11 이상, POSIX shell
+- 필수 실행 환경: Python 3.11 이상, Bash, Git, `make`, `mktemp`
+- workspace의 배타 publish: macOS의 `renamex_np(RENAME_EXCL)` 또는 Linux의 `renameat2(RENAME_NOREPLACE)`가 필요하다. 지원하지 않는 플랫폼에서는 기존 workspace를 덮어쓰는 fallback 없이 안전하게 실패한다.
 - 기본 example과 exercise: Python 표준 라이브러리만 사용
 - 외부 도구: 개념을 실제 플랫폼에 적용하는 선택 profile이며 root 검증의 필수 조건이 아니다.
 
