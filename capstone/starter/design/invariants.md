@@ -11,6 +11,9 @@
 - State Machine Safety: `TODO`
 - Client At-Most-Once Effect: `TODO`
 - Snapshot Equivalence: `TODO`
+- One Write Authority Per Shard Epoch: `TODO`
+
+각 항목에 invariant가 처음 깨지는 최소 trace와 oracle diagnostic ID를 함께 기록합니다.
 
 각 항목에는 다음을 추가합니다.
 

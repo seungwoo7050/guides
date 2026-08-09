@@ -14,6 +14,8 @@
 - 허용 fault: `TODO`
 - Byzantine message 여부: `TODO`
 
+partition 중 delivery attempt는 소비되어 `PARTITION_DROPPED`가 됩니다. heal은 이후 전송에만 적용하며, 오래된 packet 도착은 partition 전에 별도 delivery를 delay해 모델링합니다.
+
 ## Time
 
 - clock 종류: virtual monotonic time
@@ -25,3 +27,5 @@
 - core의 persist 원자성: `TODO`
 - persist 완료와 message send의 순서: `TODO`
 - corruption 처리: `TODO`
+
+atomic save fault는 `fail_next_save("before" | "after")`로 재현합니다. 실제 torn write와 filesystem flush 의미는 이 in-memory profile의 비보장 범위입니다.

@@ -1,8 +1,9 @@
 """Starter package for the deterministic replicated key-value capstone."""
 
 from .cluster import Cluster
+from .network import DeterministicNetwork
 from .node import Node
-from .storage import MemoryStorage, PersistentState
+from .storage import MemoryStorage, PersistentState, SimulatedCrash
 from .types import (
     ClientRequest,
     ClientResponse,
@@ -13,6 +14,8 @@ from .types import (
     Role,
     SessionRecord,
     Snapshot,
+    build_snapshot,
+    canonical_fingerprint,
 )
 
 __all__ = [
@@ -20,6 +23,7 @@ __all__ = [
     "ClientResponse",
     "Cluster",
     "Command",
+    "DeterministicNetwork",
     "LogEntry",
     "MemoryStorage",
     "Message",
@@ -29,4 +33,7 @@ __all__ = [
     "Role",
     "SessionRecord",
     "Snapshot",
+    "SimulatedCrash",
+    "build_snapshot",
+    "canonical_fingerprint",
 ]

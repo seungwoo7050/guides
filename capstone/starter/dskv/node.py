@@ -4,7 +4,15 @@ from __future__ import annotations
 from typing import Any
 
 from .storage import MemoryStorage, PersistentState
-from .types import ClientRequest, ClientResponse, Message, Role
+from .types import (
+    ClientRequest,
+    ClientResponse,
+    Message,
+    Role,
+    SessionRecord,
+    Snapshot,
+    build_snapshot,
+)
 
 
 class Node:
@@ -23,12 +31,21 @@ class Node:
         self.peers = tuple(peers)
         self.storage = storage
         self.election_timeout = election_timeout
+        durable = storage.load()
         self.role = Role.FOLLOWER
         self.leader_id: str | None = None
-        self.commit_index = storage.load().snapshot.last_included_index if storage.load().snapshot else 0
+        self.commit_index = durable.snapshot.last_included_index if durable.snapshot else 0
         self.last_applied = self.commit_index
-        self.state_machine: dict[str, Any] = {}
-        self.client_sessions: dict[str, Any] = {}
+        self.state_machine: dict[str, Any] = (
+            dict(durable.snapshot.state_machine) if durable.snapshot else {}
+        )
+        self.client_sessions: dict[str, SessionRecord] = (
+            dict(durable.snapshot.client_sessions) if durable.snapshot else {}
+        )
+        self.configuration: tuple[str, ...] = (
+            durable.snapshot.configuration
+            if durable.snapshot else tuple(sorted((node_id, *peers)))
+        )
         self.next_index: dict[str, int] = {}
         self.match_index: dict[str, int] = {}
         self._responses: list[ClientResponse] = []
@@ -89,6 +106,43 @@ class Node:
         self._responses.clear()
         return responses
 
+    def create_snapshot(self, through_index: int) -> Snapshot:
+        """Atomically snapshot the state applied through exactly `through_index`.
+
+        The starter intentionally does not reconstruct historical application
+        state, so compaction is only legal at the current `last_applied` boundary.
+        """
+        if through_index != self.last_applied:
+            raise ValueError("snapshot boundary must equal last_applied")
+        if self.last_applied > self.commit_index:
+            raise ValueError("snapshot boundary must not include uncommitted state")
+        state = self.persistent
+        previous = state.snapshot
+        if previous and through_index < previous.last_included_index:
+            raise ValueError("snapshot boundary must not move backwards")
+        if previous and through_index == previous.last_included_index:
+            return previous
+        term = previous.last_included_term if previous else 0
+        for entry in state.log:
+            if entry.index == through_index:
+                term = entry.term
+                break
+        if through_index > 0 and term == 0:
+            raise ValueError("snapshot boundary is not present in durable history")
+        generation = (previous.generation + 1) if previous else 1
+        snapshot = build_snapshot(
+            last_included_index=through_index,
+            last_included_term=term,
+            state_machine=dict(self.state_machine),
+            client_sessions=dict(self.client_sessions),
+            configuration=self.configuration,
+            generation=generation,
+        )
+        state.snapshot = snapshot
+        state.log = [entry for entry in state.log if entry.index > through_index]
+        self.storage.save(state)
+        return snapshot
+
     def state_summary(self) -> dict[str, Any]:
         state = self.persistent
         return {
@@ -102,4 +156,13 @@ class Node:
             "commit_index": self.commit_index,
             "last_applied": self.last_applied,
             "state_machine": dict(self.state_machine),
+            "client_sessions": {
+                key: {
+                    "last_sequence": value.last_sequence,
+                    "last_fingerprint": value.last_fingerprint,
+                    "last_result": value.last_result,
+                }
+                for key, value in sorted(self.client_sessions.items())
+            },
+            "configuration": list(self.configuration),
         }
