@@ -23,6 +23,7 @@ schema는 다음 형태다.
 - 같은 type
 - `int -> long -> double` widening
 - writer에 없는 reader field는 optional이거나 명시적 default가 있을 때 허용
+- writer에서 생략 가능한 field를 reader가 required로 바꾸려면 명시적 default가 있어야 함
 - rename은 자동 추론하지 않음
 
 ## 완료 기준

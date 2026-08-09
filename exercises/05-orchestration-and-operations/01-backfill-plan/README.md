@@ -13,8 +13,8 @@
 
 - `backfill_id`, 원인과 소유자
 - timezone-aware `[start, end)` data interval
-- 고정된 source snapshot 또는 offset
-- transform·schema·reference data version
+- `lsn:`, `snapshot:`, `version:`, `etag:` 또는 `sha256:` prefix와 공백 없는 고정 식별자로 pin한 source snapshot/offset (`snapshot:latest` 같은 floating 값은 금지)
+- `git:<7-40 hex>` transform commit과 공백 및 `latest/current/main/head/tip`이 없는 정확한 schema·reference data version
 - live write와 backfill output의 격리 방식
 - canary interval과 stop condition
 - publish·resume·rollback 절차
@@ -27,6 +27,7 @@
 - 작은 canary 결과를 대사한 뒤 전체 범위를 publish한다.
 - 실패 지점 뒤 이미 완료한 interval을 식별해 재개할 수 있다.
 - rollback이 코드 rollback만이 아니라 consumer-visible snapshot 복구까지 설명한다.
+- repository 안의 계획은 `dry_run=true`를 유지하고 실제 자원 변경은 사람 승인 뒤 별도 환경에서 수행한다.
 
 ## 자기 설명
 
@@ -42,3 +43,5 @@
 ```
 
 초기 skeleton은 `GUIDE_SEMANTIC:backfill-plan`으로 실패한다.
+
+이 checker는 JSON 구조, pinning 표현과 안전 gate만 자동 검사한다. 실제 source snapshot의 존재·접근 권한, canary 실행 결과, stop condition의 업무 적합성, publish/rollback 명령과 consumer 복구 가능성은 runtime evidence와 사람 검토로 확인해야 한다. 구조 검사 통과만으로 backfill 실행 준비가 완료됐다고 판단하지 않는다.

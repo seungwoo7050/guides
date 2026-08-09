@@ -5,37 +5,112 @@
       "path": "exercises/01-contracts-and-records/01-schema-evolution",
       "kind": "code",
       "checker": "tests/check.py",
-      "semantic_failure": "GUIDE_SEMANTIC:schema-evolution"
+      "success_marker": "OK schema-evolution",
+      "semantic_failure": "GUIDE_SEMANTIC:schema-evolution",
+      "known_bad": [
+        "known_bad/ignores-writer-optionality"
+      ]
     },
     {
       "path": "exercises/02-batch-processing/01-replay-safe-batch",
       "kind": "code",
       "checker": "tests/check.py",
-      "semantic_failure": "GUIDE_SEMANTIC:replay-safe-batch"
+      "success_marker": "OK replay-safe-batch",
+      "semantic_failure": "GUIDE_SEMANTIC:replay-safe-batch",
+      "known_bad": [
+        "known_bad/first-wins-duplicates"
+      ]
+    },
+    {
+      "path": "exercises/02-batch-processing/02-partitioned-join",
+      "kind": "code",
+      "checker": "tests/check.py",
+      "success_marker": "OK partitioned-join",
+      "semantic_failure": "GUIDE_SEMANTIC:partitioned-join",
+      "known_bad": [
+        "known_bad/process-randomized-hash"
+      ]
     },
     {
       "path": "exercises/03-stream-processing/01-event-time-windows",
       "kind": "code",
       "checker": "tests/check.py",
-      "semantic_failure": "GUIDE_SEMANTIC:event-time-windows"
+      "success_marker": "OK event-time-windows",
+      "semantic_failure": "GUIDE_SEMANTIC:event-time-windows",
+      "known_bad": [
+        "known_bad/first-wins-duplicate"
+      ]
+    },
+    {
+      "path": "exercises/03-stream-processing/02-stateful-dedup",
+      "kind": "code",
+      "checker": "tests/check.py",
+      "success_marker": "OK stateful-dedup",
+      "semantic_failure": "GUIDE_SEMANTIC:stateful-dedup",
+      "known_bad": [
+        "known_bad/conflict-reapproval"
+      ]
     },
     {
       "path": "exercises/04-ingestion-and-storage/01-cdc-snapshot-merge",
       "kind": "code",
       "checker": "tests/check.py",
-      "semantic_failure": "GUIDE_SEMANTIC:cdc-snapshot-merge"
+      "success_marker": "OK cdc-snapshot-merge",
+      "semantic_failure": "GUIDE_SEMANTIC:cdc-snapshot-merge",
+      "known_bad": [
+        "known_bad/arrival-order-wins"
+      ]
+    },
+    {
+      "path": "exercises/04-ingestion-and-storage/02-compaction-planner",
+      "kind": "code",
+      "checker": "tests/check.py",
+      "success_marker": "OK compaction-planner",
+      "semantic_failure": "GUIDE_SEMANTIC:compaction-planner",
+      "known_bad": [
+        "known_bad/path-greedy-stranding"
+      ]
     },
     {
       "path": "exercises/05-orchestration-and-operations/01-backfill-plan",
       "kind": "design",
       "checker": "tests/check.py",
-      "semantic_failure": "GUIDE_SEMANTIC:backfill-plan"
+      "success_marker": "OK backfill-plan",
+      "semantic_failure": "GUIDE_SEMANTIC:backfill-plan",
+      "known_bad": [
+        "known_bad/superficial-plan",
+        "known_bad/floating-inputs"
+      ]
     },
     {
       "path": "exercises/05-orchestration-and-operations/02-quality-and-lineage",
       "kind": "code",
       "checker": "tests/check.py",
-      "semantic_failure": "GUIDE_SEMANTIC:quality-lineage"
+      "success_marker": "OK quality-lineage",
+      "semantic_failure": "GUIDE_SEMANTIC:quality-lineage",
+      "known_bad": [
+        "known_bad/coerces-empty-metadata"
+      ]
+    },
+    {
+      "path": "exercises/05-orchestration-and-operations/03-run-ledger-backfill",
+      "kind": "code",
+      "checker": "tests/check.py",
+      "success_marker": "OK run-ledger-backfill",
+      "semantic_failure": "GUIDE_SEMANTIC:run-ledger-backfill",
+      "known_bad": [
+        "known_bad/zero-capacity-bypass"
+      ]
+    },
+    {
+      "path": "exercises/05-orchestration-and-operations/04-quality-reconciliation",
+      "kind": "code",
+      "checker": "tests/check.py",
+      "success_marker": "OK quality-reconciliation",
+      "semantic_failure": "GUIDE_SEMANTIC:quality-reconciliation",
+      "known_bad": [
+        "known_bad/conflict-reapproval"
+      ]
     },
     {
       "path": "exercises/06-capstones/01-batch-data-product",

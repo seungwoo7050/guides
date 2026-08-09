@@ -21,10 +21,11 @@ def publish(root: Path, logical_id: str, rows: list[dict]) -> str: ...
 
 `publish`:
 
-- 논리 rows의 content hash를 snapshot ID로 사용한다.
+- logical interval ID와 canonical rows의 content hash를 snapshot ID로 사용한다.
 - snapshot을 staging에서 완성한 뒤 `CURRENT` pointer를 교체한다.
 - 같은 rows를 재실행하면 같은 snapshot ID를 반환한다.
 - consumer는 항상 완성된 snapshot만 읽는다.
+- 같은 ID의 payload가 충돌하거나 기존 snapshot이 불완전하면 pointer를 바꾸지 않고 실패한다.
 
 ## 완료 기준
 

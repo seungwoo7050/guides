@@ -27,6 +27,7 @@ changes = [
 - delete보다 오래된 update가 나중에 도착해도 row가 부활하지 않는다.
 - delete 뒤 더 새로운 `INSERT`는 허용한다.
 - 같은 position의 중복 change는 한 번만 반영한다.
+- 같은 key/position에 서로 다른 change나 snapshot payload가 있으면 임의로 하나를 고르지 않고 거부한다.
 
 이 모델의 정수 position은 한 source의 total order를 축소 표현한다. 실제 source에서는 partition, transaction, LSN/binlog offset과 connector resume token의 보장 범위를 별도로 확인해야 한다.
 

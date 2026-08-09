@@ -1,0 +1,22 @@
+{
+  "backfill_id": "sales-repair",
+  "reason": "repair historical data",
+  "owner": "analytics",
+  "interval": {
+    "start": "2026-08-01T00:00:00Z",
+    "end": "2026-08-08T00:00:00Z",
+    "semantics": "[start,end)"
+  },
+  "input_snapshots": {"orders": "latest"},
+  "transform_revision": "main",
+  "schema_versions": {"orders": 1},
+  "reference_versions": {"rules": "v1"},
+  "isolation": {"mode": "separate-output", "location": "", "live_writer_conflict": "forbidden"},
+  "canary": {"approval_required": true},
+  "stop_conditions": ["errors", "errors"],
+  "reconciliation": {"count": "count", "keys": "keys", "aggregates": ["sum"]},
+  "publish": {"mode": "staged-snapshot-swap", "requires_canary_approval": true},
+  "resume": {"checkpoint_key": "run", "completed_intervals_are_immutable": true},
+  "rollback": {"method": "restore", "previous_snapshot_recorded": true},
+  "dry_run": false
+}

@@ -24,7 +24,7 @@ record grain은 `id` 한 개다. `id`, `event_time`, `value`는 필수다.
 
 반환값에는 다음이 있어야 한다.
 
-- `quality`: row count, distinct key 수, duplicate key, 필수값 null, latest event time, passed
+- `quality`: row count, distinct key 수, duplicate key, 필수값 null, invalid event time, latest event time, passed
 - `lineage`: run ID, job, code revision, input/output dataset의 namespace·name·snapshot, event type
 - 품질 실패 시 `event_type=FAIL`이고 publish된 output 목록은 비어 있음
 - 품질 통과 시 `event_type=COMPLETE`이고 output snapshot이 포함됨
@@ -35,6 +35,7 @@ record grain은 `id` 한 개다. `id`, `event_time`, `value`는 필수다.
 - 품질 실패가 process exception 없이도 `FAIL` lineage를 만든다.
 - input과 output 이름만 아니라 snapshot/version을 기록한다.
 - code revision과 run ID로 같은 결과를 다시 조사할 수 있다.
+- 비어 있지 않은 run/job/revision과 versioned dataset identity가 없으면 lineage 생성을 거부한다.
 
 ## 자기 설명
 

@@ -31,6 +31,7 @@ def lateness_class(event_time: str, watermark: str, allowed_minutes: int) -> str
 `window_totals`:
 
 - `event_id`가 같은 event는 한 번만 반영한다.
+- 같은 `event_id`의 logical payload가 다르면 조용히 하나를 선택하지 않고 거부한다.
 - UTC event time을 `[window_start, window_end)` fixed window에 배치한다.
 - 입력 도착 순서와 무관한 정렬 결과를 반환한다.
 - processing time이나 현재 시각을 사용하지 않는다.
@@ -50,6 +51,7 @@ def lateness_class(event_time: str, watermark: str, allowed_minutes: int) -> str
 - duplicate event가 합계를 두 번 늘리지 않는다.
 - timezone이 없는 timestamp는 거부한다.
 - on-time, correctable late, dropped late를 구분한다.
+- 빈 input에서도 잘못된 window/lateness 인자를 거부한다.
 
 ## 자기 설명
 
