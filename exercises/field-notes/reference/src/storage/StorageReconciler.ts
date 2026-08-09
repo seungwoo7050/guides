@@ -25,7 +25,13 @@ export class StorageReconciler implements StorageMaintenance {
       report.failures.push({ resource: "staging", reason: String(error) });
     }
 
-    const attachments = await this.attachments.listAttachments();
+    let attachments: Awaited<ReturnType<AttachmentRepository["listAttachments"]>>;
+    try {
+      attachments = await this.attachments.listAttachments();
+    } catch (error) {
+      report.failures.push({ resource: "attachment-index", reason: String(error) });
+      return report;
+    }
     for (const attachment of attachments) {
       if (attachment.state === "removed") continue;
       if (attachment.state === "cleanup-pending") {
@@ -59,7 +65,14 @@ export class StorageReconciler implements StorageMaintenance {
         .filter((attachment) => attachment.state !== "removed")
         .map((attachment) => attachment.localUri),
     );
-    for (const uri of await this.files.listOrphans()) {
+    let orphanUris: string[];
+    try {
+      orphanUris = await this.files.listOrphans();
+    } catch (error) {
+      report.failures.push({ resource: "owned-file-index", reason: String(error) });
+      return report;
+    }
+    for (const uri of orphanUris) {
       if (referenced.has(uri)) continue;
       try {
         await this.files.remove(uri);

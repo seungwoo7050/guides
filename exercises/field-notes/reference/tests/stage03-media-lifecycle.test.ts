@@ -1,4 +1,5 @@
 import type { Clock, RecordPayload } from "@field-notes/shared";
+import { SerializedForegroundPipeline } from "../src/application/SerializedForegroundPipeline";
 import { DeviceFeatureCoordinator } from "../src/device/DeviceFeatureCoordinator";
 import {
   DeterministicCameraAdapter,
@@ -151,6 +152,25 @@ describe("Stage 03 media lifecycle", () => {
     expect(snapshot.externalMediaOperations[0]).toMatchObject({ state: "failed" });
   });
 
+  it("terminalizes a thrown external UI operation and permits an explicit retry", async () => {
+    const { coordinator, camera, store } = await setup();
+    camera.capture = async () => {
+      throw new Error("native activity disappeared");
+    };
+    expect(await coordinator.capturePhoto("forest-edge")).toEqual(
+      expect.objectContaining({ kind: "interrupted" }),
+    );
+    expect((await store.snapshot()).externalMediaOperations.at(-1)).toMatchObject({
+      state: "interrupted",
+      failureReason: "external-ui-threw",
+    });
+
+    camera.capture = async () => ({ kind: "cancelled" });
+    expect(await coordinator.capturePhoto("forest-edge")).toEqual({ kind: "cancelled" });
+    expect((await store.snapshot()).externalMediaOperations.map((operation) => operation.state))
+      .toEqual(["interrupted", "cancelled"]);
+  });
+
   it("cleans partial staging and commits no metadata when provider copy fails", async () => {
     const { coordinator, files, picker, store } = await setup();
     files.addTemporary("provider://partial", "0123456789");
@@ -215,6 +235,26 @@ describe("Stage 03 media lifecycle", () => {
     expect(camera.captures).toBe(0);
   });
 
+  it("maps a thrown location adapter to failed and allows a later retry", async () => {
+    const { coordinator, location } = await setup();
+    location.current = async () => {
+      throw new Error("native location bridge unavailable");
+    };
+    await expect(coordinator.measureLocation()).resolves.toEqual(
+      expect.objectContaining({ kind: "failed" }),
+    );
+    location.current = async () => ({
+      kind: "measured",
+      latitude: 37.5,
+      longitude: 127,
+      accuracyMeters: 8,
+      measuredAt: "2026-08-09T15:00:00.000Z",
+    });
+    await expect(coordinator.measureLocation()).resolves.toEqual(
+      expect.objectContaining({ kind: "preview" }),
+    );
+  });
+
   it("leaves a DB-fault orphan for Stage 02 reconciliation while preserving the record", async () => {
     const { coordinator, files, picker, store } = await setup();
     files.addTemporary("provider://db-fault", "owned before metadata rollback");
@@ -234,6 +274,33 @@ describe("Stage 03 media lifecycle", () => {
     const report = await new StorageReconciler(store, files).reconcile();
     expect(report.removedOrphanUris).toHaveLength(1);
     expect(files.ownedUris()).toEqual([]);
+  });
+
+  it("serializes foreground reconciliation behind owned-file metadata completion", async () => {
+    const pipeline = new SerializedForegroundPipeline();
+    const owned = new Set<string>();
+    const metadata = new Set<string>();
+    let releaseCommit: (() => void) | undefined;
+    const waitForCommit = new Promise<void>((resolve) => {
+      releaseCommit = resolve;
+    });
+    const acquire = pipeline.run(async () => {
+      owned.add("file://field-notes/owned/serialized.bin");
+      await waitForCommit;
+      metadata.add("file://field-notes/owned/serialized.bin");
+    });
+    await Promise.resolve();
+    const reconcile = pipeline.run(async () => {
+      for (const uri of owned) {
+        if (!metadata.has(uri)) owned.delete(uri);
+      }
+    });
+    await Promise.resolve();
+    expect(owned).toEqual(new Set(["file://field-notes/owned/serialized.bin"]));
+    releaseCommit?.();
+    await Promise.all([acquire, reconcile]);
+    expect(owned).toEqual(new Set(["file://field-notes/owned/serialized.bin"]));
+    expect(metadata).toEqual(new Set(["file://field-notes/owned/serialized.bin"]));
   });
 
   it("recovers an Android pending result once and rejects duplicate delivery", async () => {

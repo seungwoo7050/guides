@@ -189,7 +189,19 @@ export class DeviceFeatureCoordinator {
 
     this.launchInFlightOperationId = operation.operationId;
     try {
-      return await this.consumeMediaResult(operation, await launch(), false);
+      let result: MediaAcquisitionResult;
+      try {
+        result = await launch();
+      } catch {
+        await this.terminate(operation, "interrupted", "external-ui-threw").catch(
+          () => undefined,
+        );
+        return {
+          kind: "interrupted",
+          reason: `${source} external UI failed before returning a result`,
+        };
+      }
+      return await this.consumeMediaResult(operation, result, false);
     } finally {
       this.launchInFlightOperationId = null;
     }
@@ -359,7 +371,12 @@ export class DeviceFeatureCoordinator {
     }
 
     const generation = ++this.locationGeneration;
-    const result = await this.location.current();
+    let result: Awaited<ReturnType<LocationPort["current"]>>;
+    try {
+      result = await this.location.current();
+    } catch {
+      return { kind: "failed", reason: "foreground location adapter failed" };
+    }
     if (generation !== this.locationGeneration) return { kind: "interrupted" };
     if (result.kind === "measured") {
       return {

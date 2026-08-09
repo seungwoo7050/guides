@@ -92,7 +92,15 @@ export class ExpoForegroundLocationAdapter implements LocationPort {
     if (availability.kind === "unavailable") {
       return { kind: "unavailable", reason: availability.reason };
     }
-    const currentPermission = await this.permission();
+    let currentPermission: PermissionState;
+    try {
+      currentPermission = await this.permission();
+    } catch {
+      return {
+        kind: "failed",
+        reason: "foreground location permission could not be rechecked",
+      };
+    }
     if (!permissionAllowsUse(currentPermission)) {
       return { kind: "permission-revoked", permission: currentPermission };
     }

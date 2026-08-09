@@ -2,6 +2,7 @@ import type {
   CameraPort,
   MediaAcquisitionResult,
   PendingMediaResultPort,
+  PermissionState,
   PhotoPickerPort,
 } from "@field-notes/shared";
 import * as ImagePicker from "expo-image-picker";
@@ -20,6 +21,29 @@ export type ExpoImagePickerApi = Pick<
   | "launchImageLibraryAsync"
   | "getPendingResultAsync"
 >;
+
+export type CameraAvailabilityProbe = () => Promise<boolean | null>;
+
+const CAMERA_AVAILABILITY_DEADLINE_MS = 250;
+
+async function boundedCameraAvailability(
+  probe: CameraAvailabilityProbe,
+  deadlineMs: number,
+): Promise<boolean | null> {
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  try {
+    return await Promise.race([
+      probe(),
+      new Promise<null>((resolve) => {
+        timer = setTimeout(() => resolve(null), deadlineMs);
+      }),
+    ]);
+  } catch {
+    return null;
+  } finally {
+    if (timer !== undefined) clearTimeout(timer);
+  }
+}
 
 type PickerRawResult = Awaited<
   ReturnType<ExpoImagePickerApi["getPendingResultAsync"]>
@@ -75,10 +99,25 @@ export class ExpoImagePickerCameraAdapter implements CameraPort {
   public constructor(
     private readonly api: ExpoImagePickerApi = ImagePicker,
     private readonly platform: string = Platform.OS,
+    private readonly availabilityProbe: CameraAvailabilityProbe = async () => null,
+    private readonly availabilityDeadlineMs = CAMERA_AVAILABILITY_DEADLINE_MS,
   ) {}
 
   public async availability() {
-    return nativeModuleAvailability(this.platform, "camera");
+    const module = nativeModuleAvailability(this.platform, "camera");
+    if (module.kind === "unavailable" || this.platform === "web") return module;
+    const available = await boundedCameraAvailability(
+      this.availabilityProbe,
+      this.availabilityDeadlineMs,
+    );
+    if (available === true) return { kind: "available" } as const;
+    if (available === false) {
+      return { kind: "unavailable", reason: "camera hardware is unavailable" } as const;
+    }
+    return {
+      kind: "limited",
+      description: "camera hardware availability is unknown until explicit launch",
+    } as const;
   }
 
   public async permission() {
@@ -90,7 +129,16 @@ export class ExpoImagePickerCameraAdapter implements CameraPort {
   }
 
   public async capture(): Promise<MediaAcquisitionResult> {
-    const current = await this.permission();
+    let current: PermissionState;
+    try {
+      current = await this.permission();
+    } catch {
+      return {
+        kind: "failed",
+        code: "permission-revoked",
+        reason: "camera permission could not be rechecked at capture time",
+      };
+    }
     if (!permissionAllowsUse(current)) {
       return {
         kind: "failed",

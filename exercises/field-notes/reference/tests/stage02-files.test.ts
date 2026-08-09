@@ -90,6 +90,47 @@ describe("Stage 02 file ownership and reconciliation", () => {
     expect(files.ownedUris()).toEqual([]);
   });
 
+  it("does not infer an empty authoritative index or delete files when listing fails", async () => {
+    const store = await readyStore();
+    const files = new DeterministicFileStore();
+    files.addOrphan("file://field-notes/owned/orphan.bin", "keep on index failure");
+    const unavailableIndex = {
+      attachOwnedFile: store.attachOwnedFile.bind(store),
+      markMissing: store.markMissing.bind(store),
+      markRemoved: store.markRemoved.bind(store),
+      listAttachments: async () => {
+        throw new Error("transient attachment index failure");
+      },
+    };
+
+    const report = await new StorageReconciler(unavailableIndex, files).reconcile();
+    expect(report.failures).toEqual([
+      expect.objectContaining({ resource: "attachment-index" }),
+    ]);
+    expect(report.removedOrphanUris).toEqual([]);
+    expect(files.ownedUris()).toEqual(["file://field-notes/owned/orphan.bin"]);
+  });
+
+  it("reports owned-file listing failure as retryable maintenance evidence", async () => {
+    const store = await readyStore();
+    const baseFiles = new DeterministicFileStore();
+    const unavailableFiles = {
+      takeOwnership: baseFiles.takeOwnership.bind(baseFiles),
+      remove: baseFiles.remove.bind(baseFiles),
+      exists: baseFiles.exists.bind(baseFiles),
+      cleanupStaging: baseFiles.cleanupStaging.bind(baseFiles),
+      listOrphans: async () => {
+        throw new Error("transient owned index failure");
+      },
+    };
+
+    const report = await new StorageReconciler(store, unavailableFiles).reconcile();
+    expect(report.failures).toEqual([
+      expect.objectContaining({ resource: "owned-file-index" }),
+    ]);
+    expect(report.removedOrphanUris).toEqual([]);
+  });
+
   it("marks a row missing when bytes disappear outside the database", async () => {
     const store = await readyStore();
     const files = new DeterministicFileStore();

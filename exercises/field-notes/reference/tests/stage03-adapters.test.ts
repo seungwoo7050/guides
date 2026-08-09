@@ -138,6 +138,46 @@ describe("Stage 03 Expo adapter mapping", () => {
     expect(launch).not.toHaveBeenCalled();
   });
 
+  it("reports real no-camera probes and keeps an unprobed mobile camera unknown", async () => {
+    const unavailable = new ExpoImagePickerCameraAdapter(
+      imageApi(),
+      "android",
+      async () => false,
+    );
+    expect(await unavailable.availability()).toEqual({
+      kind: "unavailable",
+      reason: "camera hardware is unavailable",
+    });
+    expect(await new ExpoImagePickerCameraAdapter(imageApi(), "ios").availability())
+      .toEqual(expect.objectContaining({ kind: "limited" }));
+    const never = new Promise<boolean | null>(() => undefined);
+    await expect(new ExpoImagePickerCameraAdapter(
+      imageApi(),
+      "android",
+      () => never,
+      1,
+    ).availability()).resolves.toEqual(expect.objectContaining({ kind: "limited" }));
+  });
+
+  it("maps a second camera permission-query rejection to a retryable result", async () => {
+    let query = 0;
+    const launch = jest.fn();
+    const camera = new ExpoImagePickerCameraAdapter(imageApi({
+      getCameraPermissionsAsync: jest.fn(async () => {
+        query += 1;
+        if (query === 2) throw new Error("native permission bridge unavailable");
+        return granted;
+      }),
+      launchCameraAsync: launch,
+    }), "android");
+
+    expect(await camera.permission()).toEqual({ kind: "granted" });
+    expect(await camera.capture()).toEqual(
+      expect.objectContaining({ kind: "failed", code: "permission-revoked" }),
+    );
+    expect(launch).not.toHaveBeenCalled();
+  });
+
   it("separates picker cancel, pending error, and invalid success", async () => {
     expect(normalizeImagePickerResult({ canceled: true, assets: null }, "launch")).toEqual({
       kind: "cancelled",
@@ -201,6 +241,25 @@ describe("Stage 03 Expo adapter mapping", () => {
       expect.objectContaining({ kind: "unavailable" }),
     );
     expect(permissionQuery).not.toHaveBeenCalled();
+  });
+
+  it("maps a second foreground-location permission-query rejection without throwing", async () => {
+    let query = 0;
+    const measure = jest.fn();
+    const location = new ExpoForegroundLocationAdapter(locationApi({
+      getForegroundPermissionsAsync: jest.fn(async () => {
+        query += 1;
+        if (query === 2) throw new Error("permission bridge unavailable");
+        return granted;
+      }),
+      getCurrentPositionAsync: measure,
+    }), "android", 100);
+
+    expect(await location.permission()).toEqual({ kind: "granted" });
+    await expect(location.current()).resolves.toEqual(
+      expect.objectContaining({ kind: "failed", reason: expect.stringContaining("rechecked") }),
+    );
+    expect(measure).not.toHaveBeenCalled();
   });
 
   it("rejects finite timestamps outside the Date range without throwing", () => {
