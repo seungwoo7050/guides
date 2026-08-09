@@ -1,0 +1,45 @@
+{
+  "schemaVersion": 1,
+  "source": {
+    "commit": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "treeSha256": "1111111111111111111111111111111111111111111111111111111111111111",
+    "packageLockSha256": "2222222222222222222222222222222222222222222222222222222222222222"
+  },
+  "application": {
+    "platform": "android",
+    "applicationId": "dev.openai.guides.fieldnotes.reference",
+    "version": "1.0.0",
+    "buildNumber": "42",
+    "runtimeVersion": "runtime-fixture"
+  },
+  "build": {
+    "profile": "preview",
+    "tool": "EAS fixture — not an actual build",
+    "generatedConfigSha256": "3333333333333333333333333333333333333333333333333333333333333333",
+    "nativeBoundaryReviewRef": "reference/native-project-reading.md"
+  },
+  "artifact": {
+    "kind": "android-aab",
+    "fileName": "field-notes-preview.aab",
+    "byteSize": 123456,
+    "sha256": "4444444444444444444444444444444444444444444444444444444444444444"
+  },
+  "signing": {
+    "status": "not-run",
+    "reason": "fixture에는 실제 signing credential이 없다",
+    "requiredEvidence": "apksigner 또는 build service의 redacted certificate identity"
+  },
+  "installation": {
+    "status": "not-run",
+    "reason": "AAB는 기기에 직접 설치하는 artifact가 아니다",
+    "requiredEvidence": "같은 source의 APK 또는 Play-generated split install smoke"
+  },
+  "store": {
+    "status": "not-run",
+    "reason": "fixture는 store project에 접근하지 않는다",
+    "requiredEvidence": "track, upload identity, review와 rollout evidence"
+  },
+  "limitations": [
+    "fixture digest는 실제 artifact나 store가 재서명해 전달한 bytes를 증명하지 않는다"
+  ]
+}
