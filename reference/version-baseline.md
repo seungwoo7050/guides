@@ -23,12 +23,13 @@
 |---|---|
 | Zephyr | 4.4.0 stable |
 | 언어 기준 | Zephyr 4.4 기본 C17 |
-| Zephyr SDK | 1.0 |
+| Python | 3.12 이상 |
+| Zephyr SDK | 1.0.1 |
 | host simulation | `native_sim` |
 | Cortex-M/QEMU | `mps2/an521/cpu0` 또는 현재 문서에서 지원하는 동등 Cortex-M target |
 | build frontend | `west` + CMake/Ninja |
 
-Zephyr 4.4.0은 2026-04-14에 발표된 stable release이고, 4.4 release는 기본 C standard를 C17로 올렸습니다. 이 가이드가 자동으로 최신 release로 이동하지는 않습니다. 다음 major/minor로 올릴 때 문서·명령·generated artifact와 실습 가정을 다시 검토합니다.
+Zephyr 4.4.0은 2026-04-14에 발표된 stable release이고, 4.4 release는 최소 Python을 3.12로 올리고 C17을 기본 C standard로 선택했으며 SDK 1.0 계열을 지원합니다. 재현 기준은 현재 공식 설치 문서의 patch release인 SDK 1.0.1까지 고정합니다. 이 가이드가 자동으로 최신 release로 이동하지는 않습니다. 다음 major/minor 또는 SDK patch로 올릴 때 문서·명령·generated artifact와 실습 가정을 다시 검토합니다.
 
 ## 선택 명령 예시
 

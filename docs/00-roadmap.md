@@ -41,13 +41,28 @@ reset
 - virtual/physical address를 구분하는 이유
 - cache line, memory hierarchy와 memory ordering이 존재한다는 사실
 
+`operating-systems` 브랜치에서 다음 상태 모델을 설명할 수 있어야 합니다.
+
+- interrupt와 deferred completion
+- scheduling, blocking, wakeup과 synchronization
+- device request, DMA completion과 resource lifetime
+
 실제 assembly 작성, kernel 구현과 RTOS 사용 경험은 필수 조건이 아닙니다.
 
 ### 권장
 
-- `operating-systems`: interrupt, scheduling, wait queue, synchronization, device request와 DMA completion
-- `unix-systems`: serial device, process, file permission, debugger와 host 도구 관찰
 - `cybersecurity`: secure boot, provisioning과 debug access의 위협 모델을 확장할 때
+
+`git`은 embedded 트랙 전체의 공통 기반입니다. `unix-systems`의 serial device, process, file permission와 debugger 사용 경험은 선택적 host 도구 배경이며 카탈로그의 직접 `requires`나 `recommends`는 아닙니다.
+
+## 카탈로그 계약과 트랙
+
+- 종류: `specialization`
+- 직접 필수: `c`, `computer-architecture`, `operating-systems`
+- 권장 인접 기반: `cybersecurity`
+- `connects`, `continues_to`: 없음
+
+embedded 트랙의 기본 선형 경로는 `git → c → computer-architecture → operating-systems → embedded-systems`입니다. `systems-programming`, `cybersecurity`, `game-engine-core` 트랙에서는 핵심 경로 뒤의 `advanced` 선택지이며 그 트랙들의 선형 진입 경로에는 포함되지 않습니다.
 
 ## 완료 후 할 수 있어야 하는 일
 
@@ -153,7 +168,7 @@ reset과 전원 손실을 예외가 아니라 설계 입력으로 취급합니�
 | 13~16 | [update와 rollback 모델](../exercises/06-update-rollback-model/README.md) | trial·confirm·revert 상태 기계 |
 | 전체 | [현장 센서 노드 capstone](../capstone/field-sensor-node/README.md) | acquisition·storage·power·recovery·verification 통합 |
 
-실습은 reference code가 없어도 완료할 수 있도록 제출 artifact와 acceptance criteria를 문서로 고정합니다. 선택적으로 Zephyr나 vendor SDK로 구현하되, framework API가 상태 설명을 대신하지 않습니다.
+각 실습은 실행 가능한 starter, 하나의 비교 reference, 정상·경계·실패 fixture와 공개 행동 checker를 제공합니다. reference는 유일한 설계를 뜻하지 않습니다. 선택적으로 Zephyr나 vendor SDK로 옮기되 framework API가 상태 설명을 대신하지 않습니다.
 
 ## 구현 프로필
 
@@ -161,7 +176,7 @@ reset과 전원 손실을 예외가 아니라 설계 입력으로 취급합니�
 
 필수 환경:
 
-- Python 3.12 이상
+- Python 3.10 이상
 - POSIX 호환 `sh`
 - `make`
 
@@ -172,7 +187,8 @@ reset과 전원 손실을 예외가 아니라 설계 입력으로 취급합니�
 2026-08 기준 권장 기준선:
 
 - Zephyr 4.4.0 stable
-- Zephyr SDK 1.0
+- Zephyr SDK 1.0.1
+- Python 3.12 이상
 - C17
 - application logic: `native_sim`
 - Cortex-M exception·memory map: QEMU가 지원되는 MPS2 계열 target
@@ -198,6 +214,15 @@ scheduling, semaphore, wait queue, page cache와 device completion의 일반 상
 
 이 가이드는 boot slot, image lifecycle와 rollback의 상태 계약을 소유합니다. image authenticity, key provisioning, debug authorization, threat model과 anti-rollback security policy의 심화는 `cybersecurity`가 소유합니다.
 
+### 명시적인 비소유 범위
+
+- 일반 POSIX 애플리케이션
+- 전자회로 설계 전체
+- 모바일 앱
+- 특정 보드 제품 매뉴얼 전체
+
+필요한 접점은 현재 펌웨어의 상태·자원·실패 모델에 적용되는 만큼만 설명하고 소유 브랜치 또는 공식 제품 문서로 연결합니다.
+
 ## 검증의 한계
 
 - host 상태 모델은 interrupt latency, peripheral timing과 electrical behavior를 증명하지 않습니다.
@@ -210,7 +235,8 @@ scheduling, semaphore, wait queue, page cache와 device completion의 일반 상
 ## 완료 기준
 
 - `./prepare.sh` 뒤 `./verify.sh`가 성공합니다.
-- 6개 설계 실습 가운데 최소 4개를 실제 artifact로 완료합니다.
-- capstone의 [acceptance criteria](../capstone/field-sensor-node/acceptance.md)를 구현 프로필에 맞게 충족합니다.
+- 6개 실습의 필수 host 설계·상태 모델과 정상·경계·실패 fixture를 모두 완료합니다.
+- capstone의 [acceptance criteria](../capstone/field-sensor-node/acceptance.md)에 열거된 12개 필수 시나리오를 결정적으로 재현합니다.
+- Zephyr, QEMU 또는 실제 보드에서는 한 개의 end-to-end slice를 선택할 수 있지만 host 모델 완료를 대신하지 않으며 hardware profile 자체는 브랜치 필수 조건이 아닙니다.
 - simulator와 실제 board의 관찰 결과를 같은 보장으로 표현하지 않습니다.
 - 낯선 firmware 저장소에서 작은 issue를 재현하고 test·문서·코드 변경 중 하나를 리뷰 가능한 형태로 제시합니다.

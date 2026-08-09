@@ -1,6 +1,6 @@
 # 임베디드 시스템 가이드
 
-이 저장소는 C 프로그램과 컴퓨터 구조의 기본 지식을 가진 개발자가 **펌웨어 애플리케이션, 장치 드라이버, RTOS 기반 시스템과 보드 지원 코드**에 처음 합류할 수 있도록 안내합니다.
+이 저장소는 C, 컴퓨터 구조와 운영체제의 기본 상태 모델을 익힌 개발자가 **펌웨어 애플리케이션, 장치 드라이버, RTOS 기반 시스템과 보드 지원 코드**에 처음 합류할 수 있도록 안내합니다.
 
 목표는 특정 MCU의 레지스터 이름이나 한 제조사의 SDK를 외우는 것이 아닙니다. 다음 경계를 반복해서 추적하는 능력을 만듭니다.
 
@@ -112,7 +112,7 @@ Zephyr, QEMU, cross compiler와 실제 보드는 선택 구현 프로필입니�
 핵심 개념은 특정 RTOS에 종속되지 않습니다. 선택 구현 프로필은 다음과 같습니다.
 
 - Zephyr 4.4.0 stable과 C17
-- Zephyr SDK 1.0
+- Zephyr SDK 1.0.1
 - host application 검증용 `native_sim`
 - Cortex-M interrupt·memory map 관찰용 QEMU board
 - 실제 보드 한 개는 선택 사항
@@ -125,12 +125,23 @@ Zephyr, QEMU, cross compiler와 실제 보드는 선택 구현 프로필입니�
 
 - `c` 브랜치의 C 언어·메모리·API·빌드 영역
 - `computer-architecture` 브랜치의 데이터 표현, ISA, 주소와 memory hierarchy 기본 개념
+- `operating-systems` 브랜치의 interrupt, scheduling, synchronization와 device I/O 상태 모델
 
 권장:
 
-- `operating-systems`의 interrupt, scheduling, 동기화와 device I/O 상태 모델
-- `unix-systems`의 process·file·serial 도구 관찰 능력
 - `cybersecurity`의 위협 모델과 key·identity 경계는 secure boot와 provisioning을 확장할 때 필요합니다.
+
+`git`은 embedded 업무 트랙의 공통 기반이고, `unix-systems`의 process·file·serial 관찰 능력은 선택적 host 도구 배경입니다. 둘을 이 브랜치의 직접 필수·권장 계약과 혼동하지 않습니다.
+
+## 카탈로그와 트랙 위치
+
+이 브랜치는 `specialization`이며 embedded 트랙의 기본 경로는 다음과 같습니다.
+
+```text
+git → c → computer-architecture → operating-systems → embedded-systems
+```
+
+`systems-programming`, `cybersecurity`, `game-engine-core` 트랙에서는 핵심 경로 뒤의 `advanced` 선택지입니다. 카탈로그의 `connects`와 `continues_to`는 비어 있으므로 내부 후속 브랜치를 임의로 약속하지 않습니다. 완료 뒤에는 실제 Zephyr·vendor SDK의 application, driver, board와 test issue로 이동합니다.
 
 이 브랜치에서는 C pointer, object lifetime, compiler/linker의 일반 개념과 CPU interrupt 원리를 처음부터 다시 가르치지 않습니다. 펌웨어에서 달라지는 적용 경계만 설명합니다.
 
@@ -151,9 +162,12 @@ Zephyr, QEMU, cross compiler와 실제 보드는 선택 구현 프로필입니�
 
 ## 의도적으로 다루지 않는 것
 
-- C 언어 입문과 POSIX 프로그래밍의 반복
+- 일반 POSIX 애플리케이션과 C 언어 입문의 반복
+- 전자회로 설계 전체
+- 모바일 앱
+- 특정 보드 제품 매뉴얼 전체
 - CPU pipeline, cache와 ISA의 전체 설명
-- PCB·회로 설계, signal integrity, RF와 EMC 설계
+- PCB signal integrity, RF와 EMC 설계
 - FPGA·HDL
 - Linux kernel driver와 일반-purpose OS porting
 - Bluetooth, Wi-Fi, TCP/IP stack 전체
