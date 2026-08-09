@@ -42,7 +42,7 @@ traffic, data decision, credential/exception, runtime/provider resource, queue/q
 
 ## Model Evidence
 
-`evidence/platform-model-report.json`은 reference implementation을 5초 제한 child process에서 실행한 결정적 결과다. `PE-001..PE-010`이 모두 통과하며 implementation, public contract와 report SHA-256을 manifest가 고정한다. capstone validator는 현재 reference를 다시 실행해 저장된 report와 JSON 동등성을 비교한다.
+`evidence/platform-model-report.json`은 reference implementation을 5초 제한 child process에서 실행한 결정적 결과다. `PE-001..PE-010`이 모두 통과하며 canonical six ID, implementation, public `contract.json`, 실행되는 `tests/contract.py`와 report SHA-256을 manifest가 고정한다. capstone validator는 manifest가 선언한 implementation을 다시 실행해 저장된 report와 JSON 동등성을 비교한다. 학습자 dossier에서는 자신의 `.workspace/13-platform-control-plane/platform_model.py`와 그 report hash를 선언한다.
 
 이 evidence는 idempotency, evidence gate, partial effects, tenant isolation, drift, break-glass, identity fallback 거부, wave abort, cleanup과 deterministic snapshot의 합성 공개 행동만 증명한다.
 

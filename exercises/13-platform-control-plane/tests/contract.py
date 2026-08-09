@@ -12,6 +12,20 @@ class ContractFailure(AssertionError):
     pass
 
 
+CANONICAL_IDENTIFIERS = {
+    "service_id": "svc-payments",
+    "resource_id": "env-payments-staging",
+    "operation_id": "op-payments-staging-v3",
+    "tenant_id": "tenant-checkout",
+    "artifact_id": "sha256:" + "a" * 64,
+    "profile_id": "stateless-http/v3",
+}
+
+OTHER_TENANT = "tenant-observability"
+OTHER_SERVICE = "svc-observability"
+OTHER_ENVIRONMENT = "env-observability"
+
+
 @dataclass(frozen=True)
 class Check:
     id: str
@@ -29,8 +43,8 @@ def initial_state(*, quota_a: int = 2, quota_b: int = 3) -> dict[str, Any]:
     return {
         "schema_version": 1,
         "tenants": {
-            "tenant-a": {"environment_quota": quota_a},
-            "tenant-b": {"environment_quota": quota_b},
+            CANONICAL_IDENTIFIERS["tenant_id"]: {"environment_quota": quota_a},
+            OTHER_TENANT: {"environment_quota": quota_b},
         },
         "environments": {},
         "operations": {},
@@ -45,13 +59,13 @@ def initial_state(*, quota_a: int = 2, quota_b: int = 3) -> dict[str, Any]:
 
 def environment_request(
     *,
-    operation_id: str = "op-a-1",
-    idempotency_key: str = "idem-a-1",
-    tenant_id: str = "tenant-a",
-    service_id: str = "svc-a",
-    environment_id: str = "env-a-1",
-    artifact_digest: str = "sha256:" + "a" * 64,
-    profile_version: str = "stateless-http/v2",
+    operation_id: str = CANONICAL_IDENTIFIERS["operation_id"],
+    idempotency_key: str = "idem-payments-staging-v3",
+    tenant_id: str = CANONICAL_IDENTIFIERS["tenant_id"],
+    service_id: str = CANONICAL_IDENTIFIERS["service_id"],
+    environment_id: str = CANONICAL_IDENTIFIERS["resource_id"],
+    artifact_digest: str = CANONICAL_IDENTIFIERS["artifact_id"],
+    profile_version: str = CANONICAL_IDENTIFIERS["profile_id"],
     credential_mode: str = "workload-identity",
 ) -> dict[str, Any]:
     return {
@@ -84,7 +98,11 @@ def requested(module: Any, state: dict[str, Any], request: dict[str, Any] | None
     return response["state"]
 
 
-def ready(module: Any, state: dict[str, Any], operation_id: str = "op-a-1") -> dict[str, Any]:
+def ready(
+    module: Any,
+    state: dict[str, Any],
+    operation_id: str = CANONICAL_IDENTIFIERS["operation_id"],
+) -> dict[str, Any]:
     response = call(
         module,
         "reconcile",
@@ -103,23 +121,27 @@ def pe_001(module: Any) -> dict[str, Any]:
     state = initial_state()
     accepted = call(module, "request_environment", state, environment_request())
     require(accepted["result"].get("status") == "Accepted", "valid request must be accepted")
-    progress = accepted["state"]["environments"].get("env-a-1", {})
+    progress = accepted["state"]["environments"].get(CANONICAL_IDENTIFIERS["resource_id"], {})
     require(progress.get("condition") == "Progressing", "accepted request is not Ready yet")
     reconciled = call(
         module,
         "reconcile",
         accepted["state"],
         {
-            "operation_id": "op-a-1",
+            "operation_id": CANONICAL_IDENTIFIERS["operation_id"],
             "outcome": "ready",
             "evidence": [{"kind": "external-smoke", "status": "pass", "revision": "rev-17"}],
         },
     )
-    environment = reconciled["state"]["environments"]["env-a-1"]
+    environment = reconciled["state"]["environments"][CANONICAL_IDENTIFIERS["resource_id"]]
     require(reconciled["result"].get("status") == "Ready", "normal reconcile must become Ready")
     require(environment.get("observed_artifact_digest") == environment.get("artifact_digest"), "observed digest must match desired")
     require(environment.get("evidence"), "Ready must retain external evidence")
-    return {"condition": environment["condition"], "evidence_count": len(environment["evidence"])}
+    return {
+        "condition": environment["condition"],
+        "evidence_count": len(environment["evidence"]),
+        "identifiers": dict(CANONICAL_IDENTIFIERS),
+    }
 
 
 def pe_002(module: Any) -> dict[str, Any]:
@@ -138,35 +160,50 @@ def pe_002(module: Any) -> dict[str, Any]:
 
 def pe_003(module: Any) -> dict[str, Any]:
     state = requested(module, initial_state())
-    no_evidence = call(module, "reconcile", state, {"operation_id": "op-a-1", "outcome": "ready", "evidence": []})
-    require(no_evidence["state"]["environments"]["env-a-1"]["condition"] != "Ready", "evidence-free Ready must be rejected")
+    no_evidence = call(
+        module,
+        "reconcile",
+        state,
+        {"operation_id": CANONICAL_IDENTIFIERS["operation_id"], "outcome": "ready", "evidence": []},
+    )
+    require(
+        no_evidence["state"]["environments"][CANONICAL_IDENTIFIERS["resource_id"]]["condition"] != "Ready",
+        "evidence-free Ready must be rejected",
+    )
     partial = call(
         module,
         "reconcile",
         state,
         {
-            "operation_id": "op-a-1",
+            "operation_id": CANONICAL_IDENTIFIERS["operation_id"],
             "outcome": "partial",
-            "external_resource_id": "db/tenant-a/svc-a",
+            "external_resource_id": "db/tenant-checkout/svc-payments",
             "evidence": [{"kind": "provider-operation", "id": "provider-91"}],
         },
     )
-    environment = partial["state"]["environments"]["env-a-1"]
+    environment = partial["state"]["environments"][CANONICAL_IDENTIFIERS["resource_id"]]
     require(environment.get("condition") == "Degraded", "partial effect must be visible")
     require(environment.get("cleanup_required") is True, "partial effect must require a decision or cleanup")
-    require(environment.get("external_effects") == ["db/tenant-a/svc-a"], "external effect identity must be retained")
+    require(
+        environment.get("external_effects") == ["db/tenant-checkout/svc-payments"],
+        "external effect identity must be retained",
+    )
     repeated = call(
         module,
         "reconcile",
         partial["state"],
         {
-            "operation_id": "op-a-1",
+            "operation_id": CANONICAL_IDENTIFIERS["operation_id"],
             "outcome": "partial",
-            "external_resource_id": "db/tenant-a/svc-a",
+            "external_resource_id": "db/tenant-checkout/svc-payments",
             "evidence": [{"kind": "provider-operation", "id": "provider-91"}],
         },
     )
-    require(repeated["state"]["environments"]["env-a-1"]["external_effects"] == ["db/tenant-a/svc-a"], "retry must not duplicate the external effect")
+    require(
+        repeated["state"]["environments"][CANONICAL_IDENTIFIERS["resource_id"]]["external_effects"]
+        == ["db/tenant-checkout/svc-payments"],
+        "retry must not duplicate the external effect",
+    )
     return {"condition": "Degraded", "external_effect_count": 1}
 
 
@@ -174,25 +211,31 @@ def pe_004(module: Any) -> dict[str, Any]:
     state = initial_state(quota_a=1, quota_b=2)
     a_state = requested(module, state)
     over_quota = environment_request(
-        operation_id="op-a-2",
-        idempotency_key="idem-a-2",
-        environment_id="env-a-2",
+        operation_id="op-payments-preview-v3",
+        idempotency_key="idem-payments-preview-v3",
+        environment_id="env-payments-preview",
     )
     before = copy.deepcopy(a_state)
     rejected = call(module, "request_environment", a_state, over_quota)
     require(rejected["result"].get("code") == "TENANT_QUOTA_EXCEEDED", "tenant quota must reject excess work")
     require(rejected["state"] == before, "quota rejection must be atomic")
     b_request = environment_request(
-        operation_id="op-b-1",
-        idempotency_key="idem-b-1",
-        tenant_id="tenant-b",
-        service_id="svc-b",
-        environment_id="env-b-1",
+        operation_id="op-observability-1",
+        idempotency_key="idem-observability-1",
+        tenant_id=OTHER_TENANT,
+        service_id=OTHER_SERVICE,
+        environment_id=f"{OTHER_ENVIRONMENT}-1",
     )
     b_state = requested(module, rejected["state"], b_request)
-    b_ready = ready(module, b_state, "op-b-1")
-    require(b_ready["environments"]["env-b-1"]["condition"] == "Ready", "tenant-b must progress independently")
-    require(b_ready["environments"]["env-a-1"]["condition"] == "Progressing", "tenant-a work remains independently observable")
+    b_ready = ready(module, b_state, "op-observability-1")
+    require(
+        b_ready["environments"][f"{OTHER_ENVIRONMENT}-1"]["condition"] == "Ready",
+        "the other tenant must progress independently",
+    )
+    require(
+        b_ready["environments"][CANONICAL_IDENTIFIERS["resource_id"]]["condition"] == "Progressing",
+        "the canonical tenant work remains independently observable",
+    )
     return {"tenant_a": "Progressing", "tenant_b": "Ready", "quota_rejected": True}
 
 
@@ -202,9 +245,13 @@ def pe_005(module: Any) -> dict[str, Any]:
         module,
         "observe_drift",
         state,
-        {"environment_id": "env-a-1", "observed_artifact_digest": "sha256:" + "d" * 64, "break_glass": False},
+        {
+            "environment_id": CANONICAL_IDENTIFIERS["resource_id"],
+            "observed_artifact_digest": "sha256:" + "d" * 64,
+            "break_glass": False,
+        },
     )
-    environment = drifted["state"]["environments"]["env-a-1"]
+    environment = drifted["state"]["environments"][CANONICAL_IDENTIFIERS["resource_id"]]
     require(drifted["result"].get("code") == "DRIFT_REVERTED", "ordinary drift must reconcile")
     require(environment["observed_artifact_digest"] == environment["artifact_digest"], "observed state must converge to desired")
     require(any(item.get("event") == "drift.reconciled" for item in drifted["state"]["audit_events"]), "drift evidence is required")
@@ -217,7 +264,11 @@ def pe_006(module: Any) -> dict[str, Any]:
         module,
         "observe_drift",
         state,
-        {"environment_id": "env-a-1", "observed_artifact_digest": "sha256:" + "e" * 64, "break_glass": True},
+        {
+            "environment_id": CANONICAL_IDENTIFIERS["resource_id"],
+            "observed_artifact_digest": "sha256:" + "e" * 64,
+            "break_glass": True,
+        },
     )
     require(unbounded["result"].get("code") == "UNBOUNDED_BREAK_GLASS", "unbounded emergency change must be rejected")
     require(unbounded["state"] == state, "rejected break-glass must not change state")
@@ -226,7 +277,7 @@ def pe_006(module: Any) -> dict[str, Any]:
         "observe_drift",
         state,
         {
-            "environment_id": "env-a-1",
+            "environment_id": CANONICAL_IDENTIFIERS["resource_id"],
             "observed_artifact_digest": "sha256:" + "e" * 64,
             "break_glass": True,
             "approved_by": "incident-commander",
@@ -248,7 +299,7 @@ def pe_007(module: Any) -> dict[str, Any]:
     require(rejected["result"].get("code") == "STATIC_CREDENTIAL_FALLBACK", "static fallback must be denied")
     require(rejected["state"] == state, "credential denial must be atomic")
     accepted = call(module, "request_environment", state, environment_request())
-    credential = accepted["state"]["credentials"]["env-a-1"]
+    credential = accepted["state"]["credentials"][CANONICAL_IDENTIFIERS["resource_id"]]
     require(credential.get("mode") == "workload-identity" and credential.get("static_secret") is False, "accepted path must use workload identity")
     return {"static_denied": True, "mode": credential["mode"]}
 
@@ -257,11 +308,12 @@ def pe_008(module: Any) -> dict[str, Any]:
     state = initial_state()
     for index in range(1, 4):
         request = environment_request(
-            operation_id=f"op-b-{index}",
-            idempotency_key=f"idem-b-{index}",
-            tenant_id="tenant-b",
-            service_id=f"svc-{index}",
-            environment_id=f"env-b-{index}",
+            operation_id=f"op-observability-{index}",
+            idempotency_key=f"idem-observability-{index}",
+            tenant_id=OTHER_TENANT,
+            service_id=f"{OTHER_SERVICE}-{index}",
+            environment_id=f"{OTHER_ENVIRONMENT}-{index}",
+            profile_version="stateless-http/v2",
         )
         state = requested(module, state, request)
     migration = call(
@@ -275,18 +327,27 @@ def pe_008(module: Any) -> dict[str, Any]:
             "fail_wave": "wave-2",
             "abort_evidence": "p99 regression",
             "waves": [
-                {"name": "wave-1", "targets": ["env-b-1"]},
-                {"name": "wave-2", "targets": ["env-b-2"]},
-                {"name": "wave-3", "targets": ["env-b-3"]},
+                {"name": "wave-1", "targets": [f"{OTHER_ENVIRONMENT}-1"]},
+                {"name": "wave-2", "targets": [f"{OTHER_ENVIRONMENT}-2"]},
+                {"name": "wave-3", "targets": [f"{OTHER_ENVIRONMENT}-3"]},
             ],
         },
     )
     record = migration["state"]["migrations"]["mig-v3"]
     require(record.get("status") == "Aborted", "failed wave must abort migration")
     require([item["status"] for item in record["waves"]] == ["Completed", "Failed", "Pending"], "later waves must remain pending")
-    require(migration["state"]["environments"]["env-b-1"]["profile_version"] == "stateless-http/v3", "completed wave must be visible")
-    require(migration["state"]["environments"]["env-b-2"]["profile_version"] == "stateless-http/v2", "failed wave must not be promoted")
-    require(migration["state"]["environments"]["env-b-3"]["profile_version"] == "stateless-http/v2", "pending wave must not run")
+    require(
+        migration["state"]["environments"][f"{OTHER_ENVIRONMENT}-1"]["profile_version"] == "stateless-http/v3",
+        "completed wave must be visible",
+    )
+    require(
+        migration["state"]["environments"][f"{OTHER_ENVIRONMENT}-2"]["profile_version"] == "stateless-http/v2",
+        "failed wave must not be promoted",
+    )
+    require(
+        migration["state"]["environments"][f"{OTHER_ENVIRONMENT}-3"]["profile_version"] == "stateless-http/v2",
+        "pending wave must not run",
+    )
     return {"statuses": [item["status"] for item in record["waves"]], "aborted": True}
 
 
@@ -296,34 +357,44 @@ def pe_009(module: Any) -> dict[str, Any]:
         module,
         state,
         environment_request(
-            operation_id="op-b-1",
-            idempotency_key="idem-b-1",
-            tenant_id="tenant-b",
-            service_id="svc-b",
-            environment_id="env-b-1",
+            operation_id="op-observability-1",
+            idempotency_key="idem-observability-1",
+            tenant_id=OTHER_TENANT,
+            service_id=OTHER_SERVICE,
+            environment_id=f"{OTHER_ENVIRONMENT}-1",
         ),
     )
     retired = call(
         module,
         "retire_service",
         state,
-        {"operation_id": "retire-svc-a", "service_id": "svc-a", "approved_by": "owner-a", "evidence": "RET-7"},
+        {
+            "operation_id": "retire-svc-payments",
+            "service_id": CANONICAL_IDENTIFIERS["service_id"],
+            "approved_by": "owner-payments",
+            "evidence": "RET-7",
+        },
     )
     final = retired["state"]
-    require("env-a-1" not in final["environments"], "retired runtime state must be removed")
-    require("env-a-1" not in final["credentials"], "retired credential must be removed")
-    require("op-a-1" not in final["operations"], "retired queue/operation state must be removed")
-    require("svc-a" in final["tombstones"], "retirement tombstone must remain")
-    require("env-b-1" in final["environments"], "another tenant/service must remain")
+    require(CANONICAL_IDENTIFIERS["resource_id"] not in final["environments"], "retired runtime state must be removed")
+    require(CANONICAL_IDENTIFIERS["resource_id"] not in final["credentials"], "retired credential must be removed")
+    require(CANONICAL_IDENTIFIERS["operation_id"] not in final["operations"], "retired queue/operation state must be removed")
+    require(CANONICAL_IDENTIFIERS["service_id"] in final["tombstones"], "retirement tombstone must remain")
+    require(f"{OTHER_ENVIRONMENT}-1" in final["environments"], "another tenant/service must remain")
     repeated = call(
         module,
         "retire_service",
         final,
-        {"operation_id": "retire-svc-a", "service_id": "svc-a", "approved_by": "owner-a", "evidence": "RET-7"},
+        {
+            "operation_id": "retire-svc-payments",
+            "service_id": CANONICAL_IDENTIFIERS["service_id"],
+            "approved_by": "owner-payments",
+            "evidence": "RET-7",
+        },
     )
     require(repeated["result"].get("reused") is True, "retirement retry must be idempotent")
     require(repeated["state"] == final, "retirement retry must not change evidence")
-    return {"retired": "svc-a", "other_environment_retained": True}
+    return {"retired": CANONICAL_IDENTIFIERS["service_id"], "other_environment_retained": True}
 
 
 def pe_010(module: Any) -> dict[str, Any]:
@@ -339,9 +410,12 @@ def pe_010(module: Any) -> dict[str, Any]:
     require(isinstance(first, dict), "snapshot must return an object")
     serialized = json.dumps(first, ensure_ascii=False, sort_keys=True)
     require("must-not-appear" not in serialized, "snapshot must redact secret material")
-    first["tenants"]["tenant-a"]["environment_quota"] = 999
+    first["tenants"][CANONICAL_IDENTIFIERS["tenant_id"]]["environment_quota"] = 999
     second = module.snapshot(state)
-    require(second["tenants"]["tenant-a"]["environment_quota"] != 999, "snapshot must be a deep copy")
+    require(
+        second["tenants"][CANONICAL_IDENTIFIERS["tenant_id"]]["environment_quota"] != 999,
+        "snapshot must be a deep copy",
+    )
     require(second == module.snapshot(state), "snapshot must be deterministic")
     return {"redacted": True, "deep_copy": True, "deterministic": True}
 

@@ -60,14 +60,37 @@
     "EXIT-2": "정책·배포·관측을 플랫폼 계약으로 자동화한다",
     "EXIT-3": "플랫폼 SLO·용량·업그레이드를 운영한다"
   },
+  "trace_requirements": {
+    "owns": {
+      "OWN-1": ["PE-001", "PE-002", "PE-003"],
+      "OWN-2": ["PE-003", "PE-005", "PE-008", "PE-009"],
+      "OWN-3": ["PE-001", "PE-004", "PE-009"],
+      "OWN-4": ["PE-005", "PE-006"],
+      "OWN-5": ["PE-004", "PE-006", "PE-007", "PE-010"]
+    },
+    "exit_capabilities": {
+      "EXIT-1": ["PE-001", "PE-002", "PE-003", "PE-004", "PE-009"],
+      "EXIT-2": ["PE-003", "PE-005", "PE-006", "PE-007", "PE-010"],
+      "EXIT-3": ["PE-004", "PE-008", "PE-009"]
+    }
+  },
   "failure_scenarios": ["FS-01", "FS-02", "FS-03", "FS-04", "FS-05", "FS-06", "FS-07", "FS-08"],
+  "failure_trace_requirements": {
+    "FS-01": ["PE-002"],
+    "FS-02": ["PE-003"],
+    "FS-03": ["PE-004"],
+    "FS-04": ["PE-005", "PE-006"],
+    "FS-05": ["PE-007"],
+    "FS-06": ["PE-008"],
+    "FS-07": ["PE-003"],
+    "FS-08": ["PE-009"]
+  },
   "model": {
     "report_path": "evidence/platform-model-report.json",
-    "report_sha256": "a405fa1cf0e42c32aad7033716372a3a3d77c1bcb7769f447782e069132746c3",
-    "implementation_path": "exercises/13-platform-control-plane/reference/platform_model.py",
-    "implementation_sha256": "26fcd8e5337bc398f270622c744f74dbe0a19e11e110a9906171e119612aa0ea",
     "contract_path": "exercises/13-platform-control-plane/contract.json",
-    "contract_sha256": "37650aecef42526ed4ca27f5f89c02fc6c44f3d2da5bf2dd741c70f75717a27e",
+    "contract_sha256": "67c4ab2be0ca2f608ec46e4486ce004aadcf32e67dc11b7da325d31d2a719879",
+    "contract_code_path": "exercises/13-platform-control-plane/tests/contract.py",
+    "contract_code_sha256": "9d5cd111f0348df1f050d4e6f65ab6cfca678e927cbdd90ef4366250a19a3106",
     "check_ids": ["PE-001", "PE-002", "PE-003", "PE-004", "PE-005", "PE-006", "PE-007", "PE-008", "PE-009", "PE-010"]
   },
   "forbidden_tokens": ["TODO", "TBD", "작성하세요", "미정", "placeholder", "CHANGEME"]

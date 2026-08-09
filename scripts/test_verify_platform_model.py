@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import json
 import os
+import shutil
 import subprocess
 import sys
 import tempfile
@@ -51,8 +52,42 @@ class PlatformModelValidatorTests(unittest.TestCase):
             report = load_report(report_path)
         self.assertEqual("PASS", report["summary"]["result"])
         self.assertEqual(CONTRACT["check_ids"], [item["id"] for item in report["checks"]])
+        self.assertEqual(CONTRACT["identifiers"], report["identifiers"])
+        self.assertEqual(CONTRACT["identifiers"], report["checks"][0]["observed"]["identifiers"])
+        self.assertEqual(CONTRACT["contract_code"], report["contract_code"])
         self.assertEqual([], report["summary"]["failed_ids"])
         self.assertEqual([], report["summary"]["error_ids"])
+
+    def test_contract_code_tamper_is_a_harness_error(self) -> None:
+        with tempfile.TemporaryDirectory(prefix="platform-model-contract-tamper-") as temporary:
+            copied_root = Path(temporary) / "guide"
+            shutil.copytree(
+                ROOT,
+                copied_root,
+                ignore=shutil.ignore_patterns(".git", ".guide", ".workspace", "__pycache__"),
+            )
+            copied_contract_code = copied_root / "exercises/13-platform-control-plane/tests/contract.py"
+            copied_contract_code.write_text(
+                copied_contract_code.read_text(encoding="utf-8") + "\n# tampered contract code\n",
+                encoding="utf-8",
+            )
+            result = subprocess.run(
+                [
+                    sys.executable,
+                    str(copied_root / "scripts/verify_platform_model.py"),
+                    "--implementation",
+                    str(copied_root / "exercises/13-platform-control-plane/reference/platform_model.py"),
+                ],
+                cwd=copied_root,
+                env={**os.environ, "PYTHONDONTWRITEBYTECODE": "1"},
+                text=True,
+                capture_output=True,
+                check=False,
+                timeout=20,
+            )
+        self.assertEqual(2, result.returncode, result.stdout + result.stderr)
+        self.assertIn("[E_CONTRACT]", result.stderr)
+        self.assertIn("contract_code SHA-256", result.stderr)
 
     def test_starter_fails_only_declared_checks_without_harness_errors(self) -> None:
         with tempfile.TemporaryDirectory(prefix="platform-model-starter-") as temporary:

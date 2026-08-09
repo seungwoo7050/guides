@@ -361,6 +361,23 @@ Runbook은 [`docs/runbooks/`](runbooks/)를 참고해 capstone 환경에 맞게 
 
 `verify.sh` 통과를 실제 플랫폼의 안전성과 신뢰성 증명으로 사용하지 않습니다.
 
+이 저장소가 제공하는 실행 가능한 종료 과제는 [`projects/internal-developer-platform/`](../projects/internal-developer-platform/)에 있습니다. 아래 명령은 **가이드 저장소 루트**에서 실행합니다.
+
+```sh
+mkdir -p .workspace
+cp -R projects/internal-developer-platform/template \
+  .workspace/internal-developer-platform
+python3 scripts/verify_capstone.py \
+  .workspace/internal-developer-platform
+```
+
+처음 검사는 의도적으로 미완성 template를 거부합니다. learner control-plane report를 연결하는 전체 절차는 [Capstone README](../projects/internal-developer-platform/README.md#workspace)를 따릅니다. reference 해설은 다음처럼 검증합니다.
+
+```sh
+python3 scripts/verify_capstone.py \
+  projects/internal-developer-platform/reference
+```
+
 ## 8. 단계별 구현 순서
 
 ### 1단계: Paper platform

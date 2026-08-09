@@ -68,7 +68,7 @@ python3 scripts/verify_platform_model.py \
 python3 -m json.tool "$report_dir/platform-model-report.json"
 ```
 
-report에는 구현·계약 SHA-256, stable check ID, 공개 관찰값과 실행 한계가 포함됩니다.
+report에는 구현, 공개 `contract.json`, 실제 `tests/contract.py`의 경로·SHA-256, stable check ID, Capstone의 여섯 canonical ID, 공개 관찰값과 실행 한계가 포함됩니다. Capstone에 제출할 때는 학습자 구현으로 새 report를 만들고 manifest가 그 구현·report hash를 선언해야 합니다.
 
 ## 사람 검토와 한계
 

@@ -19,6 +19,14 @@ LAB = ROOT / "exercises/13-platform-control-plane"
 CONTRACT_PATH = LAB / "contract.json"
 CONTRACT_CODE = LAB / "tests/contract.py"
 HARNESS_EXIT = 2
+IDENTIFIER_KEYS = (
+    "service_id",
+    "resource_id",
+    "operation_id",
+    "tenant_id",
+    "artifact_id",
+    "profile_id",
+)
 
 
 class HarnessError(RuntimeError):
@@ -57,6 +65,21 @@ def load_json(path: Path) -> dict[str, Any]:
     if not isinstance(value, dict):
         raise HarnessError("E_CONTRACT", "contract top level must be an object")
     return value
+
+
+def validate_contract_metadata(contract: dict[str, Any]) -> None:
+    declared_code = contract.get("contract_code")
+    expected_path = CONTRACT_CODE.relative_to(ROOT).as_posix()
+    if not isinstance(declared_code, dict) or declared_code.get("path") != expected_path:
+        raise HarnessError("E_CONTRACT", f"contract_code.path must be {expected_path}")
+    if declared_code.get("sha256") != sha256(CONTRACT_CODE):
+        raise HarnessError("E_CONTRACT", "contract_code SHA-256 differs from tests/contract.py")
+
+    identifiers = contract.get("identifiers")
+    if not isinstance(identifiers, dict) or set(identifiers) != set(IDENTIFIER_KEYS):
+        raise HarnessError("E_CONTRACT", "contract identifiers must contain exactly the six canonical keys")
+    if any(not isinstance(identifiers[key], str) or not identifiers[key] for key in IDENTIFIER_KEYS):
+        raise HarnessError("E_CONTRACT", "contract identifiers must be non-empty strings")
 
 
 def safe_implementation(raw: str) -> Path:
@@ -131,6 +154,7 @@ def install_worker_audit_guard() -> None:
 
 def worker(implementation: str) -> int:
     try:
+        validate_contract_metadata(load_json(CONTRACT_PATH))
         contract_module = load_module(CONTRACT_CODE, "platform_public_contract")
         install_worker_audit_guard()
         module = load_module(Path(implementation), "learner_platform_model")
@@ -208,6 +232,12 @@ def make_report(implementation: Path, contract: dict[str, Any], checks: list[dic
     error_ids = [item["id"] for item in checks if item.get("status") == "error"]
     passed = len(checks) - len(failed_ids) - len(error_ids)
     result = "PASS" if passed == len(checks) else "FAIL"
+    identifiers = contract["identifiers"]
+    first_observation = checks[0].get("observed") if checks else None
+    if result == "PASS" and (
+        not isinstance(first_observation, dict) or first_observation.get("identifiers") != identifiers
+    ):
+        raise HarnessError("E_CONTRACT", "PE-001 observed evidence must retain the six canonical identifiers")
     return {
         "schema_version": 1,
         "guide": "platform-engineering",
@@ -216,10 +246,15 @@ def make_report(implementation: Path, contract: dict[str, Any], checks: list[dic
             "path": implementation.relative_to(ROOT).as_posix(),
             "sha256": sha256(implementation),
         },
+        "identifiers": identifiers,
         "contract": {
             "path": CONTRACT_PATH.relative_to(ROOT).as_posix(),
             "sha256": sha256(CONTRACT_PATH),
             "check_ids": expected_ids,
+        },
+        "contract_code": {
+            "path": CONTRACT_CODE.relative_to(ROOT).as_posix(),
+            "sha256": sha256(CONTRACT_CODE),
         },
         "checks": checks,
         "summary": {
@@ -298,6 +333,7 @@ def main(argv: list[str] | None = None) -> int:
         return HARNESS_EXIT
     try:
         contract = load_json(CONTRACT_PATH)
+        validate_contract_metadata(contract)
         implementation = safe_implementation(arguments.implementation)
         timeout_seconds = int(contract.get("execution", {}).get("timeout_seconds", 5))
         checks = invoke_worker(implementation, timeout_seconds)

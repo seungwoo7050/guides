@@ -6,7 +6,15 @@
       "message": "contract satisfied",
       "observed": {
         "condition": "Ready",
-        "evidence_count": 1
+        "evidence_count": 1,
+        "identifiers": {
+          "artifact_id": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "operation_id": "op-payments-staging-v3",
+          "profile_id": "stateless-http/v3",
+          "resource_id": "env-payments-staging",
+          "service_id": "svc-payments",
+          "tenant_id": "tenant-checkout"
+        }
       },
       "status": "pass",
       "title": "request and evidenced reconcile reach Ready"
@@ -99,7 +107,7 @@
       "message": "contract satisfied",
       "observed": {
         "other_environment_retained": true,
-        "retired": "svc-a"
+        "retired": "svc-payments"
       },
       "status": "pass",
       "title": "retirement cleans active state and retains evidence"
@@ -131,7 +139,11 @@
       "PE-010"
     ],
     "path": "exercises/13-platform-control-plane/contract.json",
-    "sha256": "37650aecef42526ed4ca27f5f89c02fc6c44f3d2da5bf2dd741c70f75717a27e"
+    "sha256": "67c4ab2be0ca2f608ec46e4486ce004aadcf32e67dc11b7da325d31d2a719879"
+  },
+  "contract_code": {
+    "path": "exercises/13-platform-control-plane/tests/contract.py",
+    "sha256": "9d5cd111f0348df1f050d4e6f65ab6cfca678e927cbdd90ef4366250a19a3106"
   },
   "execution": {
     "child_process": true,
@@ -143,6 +155,14 @@
     "timeout_seconds": 5
   },
   "guide": "platform-engineering",
+  "identifiers": {
+    "artifact_id": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "operation_id": "op-payments-staging-v3",
+    "profile_id": "stateless-http/v3",
+    "resource_id": "env-payments-staging",
+    "service_id": "svc-payments",
+    "tenant_id": "tenant-checkout"
+  },
   "implementation": {
     "path": "exercises/13-platform-control-plane/reference/platform_model.py",
     "sha256": "26fcd8e5337bc398f270622c744f74dbe0a19e11e110a9906171e119612aa0ea"

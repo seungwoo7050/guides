@@ -1,6 +1,18 @@
 {
   "schema_version": 1,
   "validator": "scripts/verify_platform_model.py",
+  "contract_code": {
+    "path": "exercises/13-platform-control-plane/tests/contract.py",
+    "sha256": "9d5cd111f0348df1f050d4e6f65ab6cfca678e927cbdd90ef4366250a19a3106"
+  },
+  "identifiers": {
+    "service_id": "svc-payments",
+    "resource_id": "env-payments-staging",
+    "operation_id": "op-payments-staging-v3",
+    "tenant_id": "tenant-checkout",
+    "artifact_id": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "profile_id": "stateless-http/v3"
+  },
   "implementation_api": [
     "request_environment",
     "reconcile",

@@ -13,35 +13,50 @@
       "catalog_text": "플랫폼 사용자와 golden path",
       "evidence": [
         {"file": "01-product.md", "heading": "Golden path"},
-        {"file": "evidence/platform-model-report.json", "json_pointer": "/checks/0"}
+        {"file": "evidence/platform-model-report.json", "json_pointer": "/checks/0"},
+        {"file": "evidence/platform-model-report.json", "json_pointer": "/checks/1"},
+        {"file": "evidence/platform-model-report.json", "json_pointer": "/checks/2"}
       ]
     },
     "OWN-2": {
       "catalog_text": "Infrastructure as Code와 drift",
       "evidence": [
         {"file": "04-iac-runtime.md", "heading": "IaC State와 Drift"},
-        {"file": "evidence/platform-model-report.json", "json_pointer": "/checks/4"}
+        {"file": "evidence/platform-model-report.json", "json_pointer": "/checks/2"},
+        {"file": "evidence/platform-model-report.json", "json_pointer": "/checks/4"},
+        {"file": "evidence/platform-model-report.json", "json_pointer": "/checks/7"},
+        {"file": "evidence/platform-model-report.json", "json_pointer": "/checks/8"}
       ]
     },
     "OWN-3": {
       "catalog_text": "컨테이너 오케스트레이션",
       "evidence": [
         {"file": "04-iac-runtime.md", "heading": "Kubernetes Runtime"},
-        {"file": "evidence/platform-model-report.json", "json_pointer": "/checks/3"}
+        {"file": "evidence/platform-model-report.json", "json_pointer": "/checks/0"},
+        {"file": "evidence/platform-model-report.json", "json_pointer": "/checks/3"},
+        {"file": "evidence/platform-model-report.json", "json_pointer": "/checks/8"}
       ]
     },
     "OWN-4": {
       "catalog_text": "재사용 가능한 CI/CD·GitOps",
       "evidence": [
+        {"file": "05-delivery.md", "heading": "Build Once와 Promotion"},
         {"file": "05-delivery.md", "heading": "GitOps Reconciliation"},
-        {"file": "evidence/platform-model-report.json", "json_pointer": "/checks/2"}
+        {"file": "evidence/platform-model-report.json", "json_pointer": "/checks/4"},
+        {"file": "evidence/platform-model-report.json", "json_pointer": "/checks/5"}
       ]
     },
     "OWN-5": {
       "catalog_text": "identity·secret·관측·catalog·multi-tenancy",
       "evidence": [
         {"file": "06-security-catalog.md", "heading": "Identity와 Secret"},
-        {"file": "evidence/platform-model-report.json", "json_pointer": "/checks/6"}
+        {"file": "06-security-catalog.md", "heading": "Catalog와 Developer Feedback"},
+        {"file": "07-slo-capacity.md", "heading": "Journey SLO"},
+        {"file": "04-iac-runtime.md", "heading": "Tenant Isolation과 Cleanup"},
+        {"file": "evidence/platform-model-report.json", "json_pointer": "/checks/3"},
+        {"file": "evidence/platform-model-report.json", "json_pointer": "/checks/5"},
+        {"file": "evidence/platform-model-report.json", "json_pointer": "/checks/6"},
+        {"file": "evidence/platform-model-report.json", "json_pointer": "/checks/9"}
       ]
     }
   },
@@ -50,21 +65,40 @@
       "catalog_text": "self-service 서비스 경로를 설계한다",
       "evidence": [
         {"file": "03-api-status.md", "heading": "Operation과 Evidence"},
-        {"file": "evidence/platform-model-report.json", "json_pointer": "/checks/0"}
+        {"file": "04-iac-runtime.md", "heading": "IaC State와 Drift"},
+        {"file": "04-iac-runtime.md", "heading": "Kubernetes Runtime"},
+        {"file": "evidence/platform-model-report.json", "json_pointer": "/checks/0"},
+        {"file": "evidence/platform-model-report.json", "json_pointer": "/checks/1"},
+        {"file": "evidence/platform-model-report.json", "json_pointer": "/checks/2"},
+        {"file": "evidence/platform-model-report.json", "json_pointer": "/checks/3"},
+        {"file": "evidence/platform-model-report.json", "json_pointer": "/checks/8"}
       ]
     },
     "EXIT-2": {
       "catalog_text": "정책·배포·관측을 플랫폼 계약으로 자동화한다",
       "evidence": [
+        {"file": "05-delivery.md", "heading": "Build Once와 Promotion"},
+        {"file": "05-delivery.md", "heading": "GitOps Reconciliation"},
         {"file": "06-security-catalog.md", "heading": "Policy와 Break-glass"},
-        {"file": "evidence/platform-model-report.json", "json_pointer": "/checks/5"}
+        {"file": "06-security-catalog.md", "heading": "Catalog와 Developer Feedback"},
+        {"file": "07-slo-capacity.md", "heading": "Journey SLO"},
+        {"file": "evidence/platform-model-report.json", "json_pointer": "/checks/2"},
+        {"file": "evidence/platform-model-report.json", "json_pointer": "/checks/4"},
+        {"file": "evidence/platform-model-report.json", "json_pointer": "/checks/5"},
+        {"file": "evidence/platform-model-report.json", "json_pointer": "/checks/6"},
+        {"file": "evidence/platform-model-report.json", "json_pointer": "/checks/9"}
       ]
     },
     "EXIT-3": {
       "catalog_text": "플랫폼 SLO·용량·업그레이드를 운영한다",
       "evidence": [
+        {"file": "07-slo-capacity.md", "heading": "Journey SLO"},
+        {"file": "07-slo-capacity.md", "heading": "Capacity와 Fairness"},
         {"file": "08-migration-runbook.md", "heading": "Migration Waves"},
-        {"file": "evidence/platform-model-report.json", "json_pointer": "/checks/7"}
+        {"file": "08-migration-runbook.md", "heading": "Retirement"},
+        {"file": "evidence/platform-model-report.json", "json_pointer": "/checks/3"},
+        {"file": "evidence/platform-model-report.json", "json_pointer": "/checks/7"},
+        {"file": "evidence/platform-model-report.json", "json_pointer": "/checks/8"}
       ]
     }
   },
@@ -98,6 +132,7 @@
       "title": "Drift와 bounded break-glass",
       "evidence": [
         {"file": "09-evidence.md", "heading": "FS-04 — Drift와 bounded break-glass"},
+        {"file": "evidence/platform-model-report.json", "json_pointer": "/checks/4"},
         {"file": "evidence/platform-model-report.json", "json_pointer": "/checks/5"}
       ]
     },
@@ -136,14 +171,27 @@
   ],
   "model_report": {
     "path": "evidence/platform-model-report.json",
-    "sha256": "a405fa1cf0e42c32aad7033716372a3a3d77c1bcb7769f447782e069132746c3",
+    "sha256": "ba0be2292baec9850887481581dcd88162ccef2510338604a8d63b6c03b6a499",
     "implementation": {
       "path": "exercises/13-platform-control-plane/reference/platform_model.py",
       "sha256": "26fcd8e5337bc398f270622c744f74dbe0a19e11e110a9906171e119612aa0ea"
     },
     "contract": {
       "path": "exercises/13-platform-control-plane/contract.json",
-      "sha256": "37650aecef42526ed4ca27f5f89c02fc6c44f3d2da5bf2dd741c70f75717a27e"
+      "sha256": "67c4ab2be0ca2f608ec46e4486ce004aadcf32e67dc11b7da325d31d2a719879",
+      "check_ids": ["PE-001", "PE-002", "PE-003", "PE-004", "PE-005", "PE-006", "PE-007", "PE-008", "PE-009", "PE-010"]
+    },
+    "contract_code": {
+      "path": "exercises/13-platform-control-plane/tests/contract.py",
+      "sha256": "9d5cd111f0348df1f050d4e6f65ab6cfca678e927cbdd90ef4366250a19a3106"
+    },
+    "identifiers": {
+      "service_id": "svc-payments",
+      "resource_id": "env-payments-staging",
+      "operation_id": "op-payments-staging-v3",
+      "tenant_id": "tenant-checkout",
+      "artifact_id": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "profile_id": "stateless-http/v3"
     },
     "check_ids": ["PE-001", "PE-002", "PE-003", "PE-004", "PE-005", "PE-006", "PE-007", "PE-008", "PE-009", "PE-010"]
   },

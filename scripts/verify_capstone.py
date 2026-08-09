@@ -22,7 +22,6 @@ CONTRACT_PATH = PROJECT / "contract.json"
 MANIFEST_NAME = "evidence-manifest.json"
 HARNESS_EXIT = 2
 HEADING = re.compile(r"^#{1,6}\s+(.+?)\s*#*\s*$")
-FENCE = re.compile(r"^\s*(`{3,}|~{3,})")
 
 
 class CapstoneError(RuntimeError):
@@ -69,7 +68,7 @@ def display(path: Path) -> str:
 
 def external_temp_root(candidates: Iterable[Path] | None = None) -> Path:
     choices = list(candidates) if candidates is not None else [
-        Path(tempfile.gettempdir()), Path('/private/tmp'), Path('/tmp'),
+        Path(tempfile.gettempdir()), Path("/private/tmp"), Path("/tmp"),
     ]
     inspected: set[Path] = set()
     for candidate in choices:
@@ -80,12 +79,16 @@ def external_temp_root(candidates: Iterable[Path] | None = None) -> Path:
         if resolved in inspected:
             continue
         inspected.add(resolved)
-        if not resolved.is_dir():
+        if not resolved.is_dir() or not os.access(resolved, os.W_OK | os.X_OK):
             continue
         if resolved == ROOT or ROOT in resolved.parents:
             continue
         return resolved
-    raise CapstoneError("E_MODEL_RUN", "no temporary directory outside the repository is available")
+    raise CapstoneError(
+        "E_TEMP",
+        "no writable temporary directory exists outside the repository",
+        True,
+    )
 
 
 def digest(path: Path) -> str:
@@ -172,17 +175,18 @@ def headings(text: str) -> list[str]:
     fence_character: str | None = None
     fence_length = 0
     for line in text.splitlines():
-        fence = FENCE.match(line)
-        if fence:
-            marker = fence.group(1)
-            if fence_character is None:
-                fence_character = marker[0]
-                fence_length = len(marker)
-            elif marker[0] == fence_character and len(marker) >= fence_length:
-                fence_character = None
-                fence_length = 0
-            continue
+        stripped = line.lstrip(" ")
+        indentation = len(line) - len(stripped)
+        marker = re.match(r"^(`{3,}|~{3,})", stripped) if indentation <= 3 else None
         if fence_character is not None:
+            if marker and marker.group(1)[0] == fence_character and len(marker.group(1)) >= fence_length:
+                if stripped[len(marker.group(1)) :].strip() == "":
+                    fence_character = None
+                    fence_length = 0
+            continue
+        if marker:
+            fence_character = marker.group(1)[0]
+            fence_length = len(marker.group(1))
             continue
         match = HEADING.match(line)
         if match:
@@ -255,7 +259,7 @@ def validate_markdown(paths: dict[str, Path], contract: dict[str, Any]) -> None:
             raise CapstoneError("E_IDENTIFIERS", f"{raw} is missing shared IDs: {', '.join(absent_ids)}")
 
 
-def validate_evidence_ref(artifact: Path, item: Any, label: str) -> None:
+def validate_evidence_ref(artifact: Path, item: Any, label: str) -> str | None:
     if not isinstance(item, dict) or not isinstance(item.get("file"), str):
         raise CapstoneError("E_REFERENCE", f"{label} must declare a file")
     has_heading = isinstance(item.get("heading"), str)
@@ -270,6 +274,7 @@ def validate_evidence_ref(artifact: Path, item: Any, label: str) -> None:
             raise CapstoneError(
                 "E_REFERENCE", f"{label} heading does not resolve: {item['file']}#{item['heading']}"
             )
+        return None
     else:
         if path.suffix != ".json":
             raise CapstoneError("E_REFERENCE", f"{label} JSON pointer target must be JSON")
@@ -284,6 +289,9 @@ def validate_evidence_ref(artifact: Path, item: Any, label: str) -> None:
             not isinstance(target, dict) or target.get("status") != "pass" or target.get("id") not in model_check_ids()
         ):
             raise CapstoneError("E_REFERENCE", f"{label} model pointer must resolve to a passing public check")
+        if item["file"] == contract_model_path():
+            return str(target["id"])
+        return None
 
 
 _CONTRACT: dict[str, Any] | None = None
@@ -306,6 +314,9 @@ def validate_trace_group(
     actual = manifest.get(name)
     if not isinstance(actual, dict) or set(actual) != set(expected):
         raise CapstoneError("E_TRACE", f"manifest {name} keys must be exactly: {', '.join(expected)}")
+    requirements = contract.get("trace_requirements", {}).get(name)
+    if not isinstance(requirements, dict) or set(requirements) != set(expected):
+        raise CapstoneError("E_CONTRACT", f"trace requirements for {name} must match its contract keys", True)
     for identifier, catalog_text in expected.items():
         entry = actual[identifier]
         if not isinstance(entry, dict) or entry.get("catalog_text") != catalog_text:
@@ -314,13 +325,23 @@ def validate_trace_group(
         if not isinstance(evidence, list) or len(evidence) < 2:
             raise CapstoneError("E_TRACE", f"{identifier} needs heading and JSON-pointer evidence")
         kinds = {"heading": False, "json_pointer": False}
+        observed_check_ids: list[str] = []
         for index, item in enumerate(evidence):
-            validate_evidence_ref(artifact, item, f"{identifier}.evidence[{index}]")
+            check_id = validate_evidence_ref(artifact, item, f"{identifier}.evidence[{index}]")
+            if check_id is not None:
+                observed_check_ids.append(check_id)
             if isinstance(item, dict):
                 for kind in kinds:
                     kinds[kind] = kinds[kind] or kind in item
         if not all(kinds.values()):
             raise CapstoneError("E_TRACE", f"{identifier} needs both file-heading and JSON-pointer evidence")
+        if len(observed_check_ids) != len(set(observed_check_ids)) or set(observed_check_ids) != set(
+            requirements[identifier]
+        ):
+            raise CapstoneError(
+                "E_TRACE_COVERAGE",
+                f"{identifier} model evidence must be exactly: {', '.join(requirements[identifier])}",
+            )
 
 
 def validate_failure_scenarios(artifact: Path, manifest: dict[str, Any], contract: dict[str, Any]) -> None:
@@ -333,6 +354,9 @@ def validate_failure_scenarios(artifact: Path, manifest: dict[str, Any], contrac
         for heading in contract["required_headings"]["09-evidence.md"]
         if heading.startswith("FS-") and " — " in heading
     }
+    requirements = contract.get("failure_trace_requirements")
+    if not isinstance(requirements, dict) or list(requirements) != expected_ids:
+        raise CapstoneError("E_CONTRACT", "failure trace requirements must match FS-01..FS-08", True)
     for scenario in scenarios:
         identifier = scenario["id"]
         if scenario.get("title") != heading_prefixes.get(identifier):
@@ -341,13 +365,23 @@ def validate_failure_scenarios(artifact: Path, manifest: dict[str, Any], contrac
         if not isinstance(evidence, list) or len(evidence) < 2:
             raise CapstoneError("E_FAILURE_SCENARIOS", f"{identifier} needs heading and model evidence")
         kinds = {"heading": False, "json_pointer": False}
+        observed_check_ids: list[str] = []
         for index, item in enumerate(evidence):
-            validate_evidence_ref(artifact, item, f"{identifier}.evidence[{index}]")
+            check_id = validate_evidence_ref(artifact, item, f"{identifier}.evidence[{index}]")
+            if check_id is not None:
+                observed_check_ids.append(check_id)
             if isinstance(item, dict):
                 for kind in kinds:
                     kinds[kind] = kinds[kind] or kind in item
         if not all(kinds.values()):
             raise CapstoneError("E_FAILURE_SCENARIOS", f"{identifier} needs both evidence kinds")
+        if len(observed_check_ids) != len(set(observed_check_ids)) or set(observed_check_ids) != set(
+            requirements[identifier]
+        ):
+            raise CapstoneError(
+                "E_TRACE_COVERAGE",
+                f"{identifier} model evidence must be exactly: {', '.join(requirements[identifier])}",
+            )
 
 
 def validate_model(artifact: Path, manifest: dict[str, Any], contract: dict[str, Any]) -> None:
@@ -355,42 +389,70 @@ def validate_model(artifact: Path, manifest: dict[str, Any], contract: dict[str,
     declared = manifest.get("model_report")
     if not isinstance(declared, dict):
         raise CapstoneError("E_MODEL", "manifest model_report is required")
-    for key in ("path", "sha256", "check_ids"):
-        expected_key = "report_path" if key == "path" else "report_sha256" if key == "sha256" else key
-        if declared.get(key) != expected.get(expected_key):
-            raise CapstoneError("E_MODEL_HASH", f"manifest model_report.{key} differs from contract")
-    for group in ("implementation", "contract"):
-        value = declared.get(group)
-        if not isinstance(value, dict):
-            raise CapstoneError("E_MODEL_HASH", f"manifest model_report.{group} is required")
-        if value.get("path") != expected.get(f"{group}_path") or value.get("sha256") != expected.get(
-            f"{group}_sha256"
-        ):
-            raise CapstoneError("E_MODEL_HASH", f"manifest {group} path/hash differs from contract")
+    if declared.get("path") != expected.get("report_path"):
+        raise CapstoneError("E_MODEL_HASH", "manifest model_report.path differs from contract")
+    declared_report_hash = declared.get("sha256")
+    if not isinstance(declared_report_hash, str) or not re.fullmatch(r"[0-9a-f]{64}", declared_report_hash):
+        raise CapstoneError("E_MODEL_HASH", "manifest model_report.sha256 must be a lowercase SHA-256")
+    if declared.get("check_ids") != expected.get("check_ids"):
+        raise CapstoneError("E_MODEL", "manifest model check IDs differ from contract")
+    if declared.get("identifiers") != contract.get("identifiers"):
+        raise CapstoneError("E_IDENTIFIERS", "manifest model identifiers differ from the scenario contract")
+
+    implementation = declared.get("implementation")
+    if not isinstance(implementation, dict) or not isinstance(implementation.get("path"), str):
+        raise CapstoneError("E_MODEL_HASH", "manifest model implementation path/hash is required")
+    implementation_hash = implementation.get("sha256")
+    if not isinstance(implementation_hash, str) or not re.fullmatch(r"[0-9a-f]{64}", implementation_hash):
+        raise CapstoneError("E_MODEL_HASH", "manifest implementation.sha256 must be a lowercase SHA-256")
+
+    expected_contract = {
+        "path": expected.get("contract_path"),
+        "sha256": expected.get("contract_sha256"),
+        "check_ids": expected.get("check_ids"),
+    }
+    expected_contract_code = {
+        "path": expected.get("contract_code_path"),
+        "sha256": expected.get("contract_code_sha256"),
+    }
+    if declared.get("contract") != expected_contract:
+        raise CapstoneError("E_MODEL_HASH", "manifest public contract identity differs from contract")
+    if declared.get("contract_code") != expected_contract_code:
+        raise CapstoneError("E_MODEL_HASH", "manifest executable contract identity differs from contract")
 
     report_path = submission_file(artifact, expected["report_path"])
-    if digest(report_path) != expected["report_sha256"]:
-        raise CapstoneError("E_MODEL_HASH", "stored model report SHA-256 differs from contract")
-    implementation_path = root_file(expected["implementation_path"])
+    if digest(report_path) != declared_report_hash:
+        raise CapstoneError("E_MODEL_HASH", "stored model report SHA-256 differs from its manifest")
+    implementation_path = root_file(implementation["path"])
     public_contract_path = root_file(expected["contract_path"])
-    if digest(implementation_path) != expected["implementation_sha256"]:
-        raise CapstoneError("E_MODEL_HASH", "model reference implementation SHA-256 differs from contract")
+    contract_code_path = root_file(expected["contract_code_path"])
+    if digest(implementation_path) != implementation_hash:
+        raise CapstoneError("E_MODEL_HASH", "learner model implementation SHA-256 differs from its manifest")
     if digest(public_contract_path) != expected["contract_sha256"]:
         raise CapstoneError("E_MODEL_HASH", "model public contract SHA-256 differs from contract")
+    if digest(contract_code_path) != expected["contract_code_sha256"]:
+        raise CapstoneError("E_MODEL_HASH", "model executable contract SHA-256 differs from contract")
 
     report = parse_json(report_path, "E_MODEL")
-    if report.get("implementation") != {
-        "path": expected["implementation_path"],
-        "sha256": expected["implementation_sha256"],
-    }:
+    if report.get("implementation") != implementation:
         raise CapstoneError("E_MODEL", "stored report identifies a different implementation")
-    report_contract = report.get("contract")
-    if not isinstance(report_contract, dict) or report_contract.get("path") != expected["contract_path"] or report_contract.get(
-        "sha256"
-    ) != expected["contract_sha256"] or report_contract.get("check_ids") != expected["check_ids"]:
-        raise CapstoneError("E_MODEL", "stored report identifies a different public contract")
+    if report.get("identifiers") != contract.get("identifiers"):
+        raise CapstoneError("E_IDENTIFIERS", "stored report identifiers differ from the scenario contract")
     checks = report.get("checks")
-    if not isinstance(checks, list) or [item.get("id") for item in checks if isinstance(item, dict)] != expected["check_ids"]:
+    first_observation = (
+        checks[0].get("observed")
+        if isinstance(checks, list) and checks and isinstance(checks[0], dict)
+        else None
+    )
+    if not isinstance(first_observation, dict) or first_observation.get("identifiers") != contract.get("identifiers"):
+        raise CapstoneError("E_IDENTIFIERS", "PE-001 observed evidence does not retain the scenario identifiers")
+    if report.get("contract") != expected_contract:
+        raise CapstoneError("E_MODEL", "stored report identifies a different public contract")
+    if report.get("contract_code") != expected_contract_code:
+        raise CapstoneError("E_MODEL", "stored report identifies different executable contract code")
+    if not isinstance(checks, list) or [
+        item.get("id") for item in checks if isinstance(item, dict)
+    ] != expected["check_ids"]:
         raise CapstoneError("E_MODEL", "stored report check IDs differ from PE-001..PE-010")
     if any(not isinstance(item, dict) or item.get("status") != "pass" for item in checks):
         raise CapstoneError("E_MODEL", "stored report contains a non-passing public check")
@@ -413,7 +475,7 @@ def validate_model(artifact: Path, manifest: dict[str, Any], contract: dict[str,
                     sys.executable,
                     str(verifier),
                     "--implementation",
-                    expected["implementation_path"],
+                    implementation["path"],
                     "--report",
                     str(regenerated_path),
                 ],
@@ -466,6 +528,50 @@ def validate_repository_contract(contract: dict[str, Any]) -> None:
     if scenario != contract.get("identifiers"):
         raise CapstoneError("E_CONTRACT", "scenario identifiers differ from capstone contract", True)
     root_file(str(contract.get("rubric_path", "")))
+
+    model = contract.get("model")
+    if not isinstance(model, dict):
+        raise CapstoneError("E_CONTRACT", "capstone model contract is required", True)
+    public_contract_path = root_file(str(model.get("contract_path", "")))
+    contract_code_path = root_file(str(model.get("contract_code_path", "")))
+    if digest(public_contract_path) != model.get("contract_sha256"):
+        raise CapstoneError("E_CONTRACT", "public model contract hash differs from capstone contract", True)
+    if digest(contract_code_path) != model.get("contract_code_sha256"):
+        raise CapstoneError("E_CONTRACT", "executable model contract hash differs from capstone contract", True)
+    public_contract = parse_json(public_contract_path, "E_CONTRACT", True)
+    if public_contract.get("identifiers") != contract.get("identifiers"):
+        raise CapstoneError("E_CONTRACT", "public model identifiers differ from capstone scenario", True)
+    if public_contract.get("check_ids") != model.get("check_ids"):
+        raise CapstoneError("E_CONTRACT", "public model check IDs differ from capstone contract", True)
+    if public_contract.get("contract_code") != {
+        "path": model.get("contract_code_path"),
+        "sha256": model.get("contract_code_sha256"),
+    }:
+        raise CapstoneError("E_CONTRACT", "public model contract does not pin its executable checks", True)
+
+    check_ids = set(model.get("check_ids", []))
+    trace_requirements = contract.get("trace_requirements")
+    if not isinstance(trace_requirements, dict):
+        raise CapstoneError("E_CONTRACT", "semantic trace requirements are required", True)
+    for group in ("owns", "exit_capabilities"):
+        expected_keys = set(contract.get(group, {}))
+        requirements = trace_requirements.get(group)
+        if not isinstance(requirements, dict) or set(requirements) != expected_keys:
+            raise CapstoneError("E_CONTRACT", f"semantic trace requirements for {group} are invalid", True)
+        for identifier, required in requirements.items():
+            if not isinstance(required, list) or not required or len(required) != len(set(required)):
+                raise CapstoneError("E_CONTRACT", f"{identifier} check coverage must be non-empty and unique", True)
+            if any(check_id not in check_ids for check_id in required):
+                raise CapstoneError("E_CONTRACT", f"{identifier} requires an unknown model check", True)
+
+    failure_requirements = contract.get("failure_trace_requirements")
+    if not isinstance(failure_requirements, dict) or list(failure_requirements) != contract.get("failure_scenarios"):
+        raise CapstoneError("E_CONTRACT", "failure trace requirements are invalid", True)
+    for identifier, required in failure_requirements.items():
+        if not isinstance(required, list) or not required or len(required) != len(set(required)):
+            raise CapstoneError("E_CONTRACT", f"{identifier} check coverage must be non-empty and unique", True)
+        if any(check_id not in check_ids for check_id in required):
+            raise CapstoneError("E_CONTRACT", f"{identifier} requires an unknown model check", True)
 
 
 def main(argv: list[str] | None = None) -> int:
