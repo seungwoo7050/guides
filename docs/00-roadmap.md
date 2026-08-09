@@ -2,30 +2,35 @@
 
 ## 대상 독자
 
-하나 이상의 언어로 함수, 조건문, 반복문, 자료구조와 모듈을 작성해 본 개발자를 대상으로 합니다. 이 가이드는 Python·C++ 문법 입문서가 아니며 compiler theory 전체를 증명하는 과정도 아닙니다.
+`cpp`, `algorithms`, `computer-architecture`의 종료 능력을 갖추고 작은 시스템 프로그램의 상태와 실패를 추적할 수 있는 개발자를 대상으로 합니다. 이 가이드는 Python·C++ 문법 입문서가 아니며 compiler theory 전체를 증명하는 과정도 아닙니다.
 
 실행 가능한 예제와 capstone skeleton에는 Python 3.12 이상, POSIX shell, `make`와 Git이 필요합니다. 핵심 문서는 언어 중립이며 C++20·LLVM·Tree-sitter·LSP 경로는 선택 확장입니다.
 
 ## 선행지식
 
-### 필수
+### 직접 필수 브랜치
 
-- 함수 호출과 지역 변수의 실행 상태를 손으로 추적할 수 있습니다.
-- list, map, stack과 tree의 기본 연산을 사용할 수 있습니다.
-- 작은 프로그램의 정상·경계·실패 입력을 작성할 수 있습니다.
+- [`cpp`](https://github.com/seungwoo7050/guides/tree/cpp): 수명·값·소유권·build·오류 경계를 적용합니다.
+- [`algorithms`](https://github.com/seungwoo7050/guides/tree/algorithms): tree·graph·worklist·fixed-point와 복잡도를 사용하고 known-bad를 반례로 검증합니다.
+- [`computer-architecture`](https://github.com/seungwoo7050/guides/tree/computer-architecture): ISA, register, stack, call과 memory 실행 경계를 추적합니다.
 
-### 권장
+이 능력의 확인 기준은 브랜치 이름을 읽은 경험이 아니라 함수 호출과 지역 변수 상태를 손으로 추적하고, tree·graph를 순회하며, 작은 프로그램의 정상·경계·실패 입력을 작성할 수 있는지입니다.
 
-- [`algorithms`](https://github.com/seungwoo7050/guides/tree/algorithms): tree traversal, graph, fixed-point와 복잡도
-- [`computer-architecture`](https://github.com/seungwoo7050/guides/tree/computer-architecture): ISA, register, stack, ABI와 object 실행 경계
+### 권장 브랜치
+
 - [`operating-systems`](https://github.com/seungwoo7050/guides/tree/operating-systems): process, virtual memory, file와 runtime 자원
-- 구현 언어 하나: `python`, `cpp` 또는 `c`
 
-모든 권장 브랜치를 완주할 필요는 없습니다. 각 문서가 필요한 접점을 명시하며 원래 브랜치의 소유 내용을 반복하지 않습니다.
+Python 3.12는 저장소 예제·skeleton·검사기의 도구 판본이고 직접 필수 브랜치가 아닙니다. `operating-systems`는 완주하지 않아도 시작할 수 있으며, 각 runtime 문서가 필요한 접점만 명시합니다.
 
 ## 종료 능력
 
-가이드를 마친 독자는 다음을 할 수 있어야 합니다.
+카탈로그가 선언한 종료 능력은 다음 세 가지입니다.
+
+1. 작은 언어의 frontend를 만듭니다.
+2. 정적 타입과 실행 모델을 구현합니다.
+3. 분석·진단·변환 도구를 확장합니다.
+
+이를 판단할 세부 학습 결과는 다음과 같습니다.
 
 - 언어의 syntax, static semantics와 runtime semantics를 서로 다른 계약으로 작성합니다.
 - source offset과 line/column을 변환하고 오류 뒤에도 유용한 diagnostic을 유지합니다.
@@ -41,6 +46,9 @@
 
 ## 다루지 않는 것
 
+- C++ 언어 기초
+- 특정 상용 compiler 전체의 구조와 제품별 API
+- CPU microarchitecture 설계
 - 형식 언어 이론과 type theory 전체
 - parser generator별 API 암기
 - 산업용 C++·Rust·JavaScript 언어 명세 전체
@@ -50,6 +58,16 @@
 - 고성능 production JIT, tiered compilation과 profile-guided optimization 전체
 
 이 주제들은 [확장 실습](80-extended-practice.md)과 실제 프로젝트에서 이어갑니다.
+
+Part 6의 backend·ABI·object·link·FFI는 IR과 runtime이 외부 실행 환경에 넘기는 계약만 다룹니다. ISA·pipeline·cache 설계는 `computer-architecture`, process·virtual memory·filesystem 정책은 `operating-systems`, C++ 문법·일반 build는 `cpp`의 정본을 짧게 전제하고 링크합니다.
+
+## 업무 트랙에서의 위치
+
+- `language-tooling`의 필수 선형 경로는 `git → c → cpp → algorithms → computer-architecture → language-implementation`입니다.
+- `systems-programming`과 `game-rendering`에서는 핵심 트랙 종료 뒤의 심화입니다.
+- `game-engine-core`에서는 선택 가능한 권장 보완입니다.
+
+이 브랜치 자체의 직접 의존성은 위 선형 경로 전체가 아니라 `cpp`, `algorithms`, `computer-architecture` 세 개입니다. 별도 `connects`와 `continues_to` 관계는 선언하지 않습니다.
 
 ## 학습 순서
 
@@ -121,6 +139,7 @@ lexer
 → parser / AST
 → name resolution / type checking
 → tree-walk interpreter
+→ CFG / data-flow / 의미 보존 pass
 → diagnostic conformance
 ```
 
@@ -152,6 +171,18 @@ LSP의 diagnostics / hover / definition subset
 | 7 | [언어 도구](../exercises/07-language-tools/README.md) | idempotence·round-trip·edit fixture |
 | 8 | [Mica capstone](../exercises/08-mica-capstone/README.md) | 단계별 CLI conformance runner |
 
+## 소유 범위와 종료 근거
+
+| 소유 범위 | 개념·단계 실습의 대표 실패 | Capstone 누적 근거 | 연결 종료 능력 |
+|---|---|---|---|
+| 문법·parser·AST | Part 2 / Exercise 02: longest-match, precedence, recovery 무진행, 잘못된 child span | `lex`·`parse` token/AST conformance | 작은 언어의 frontend |
+| scope·symbol·type checking·diagnostic | Parts 1·3 / Exercises 01·03: Unicode span, scope leak, duplicate/unknown name, type·flow 오류 | `check` semantic summary와 stable diagnostic | frontend, 정적 타입과 실행 모델 |
+| interpreter·VM·runtime | Part 4 / Exercise 04: short-circuit, overflow, frame·budget 실패 | tree-walk `run`, VM/backend differential | 정적 타입과 실행 모델 |
+| IR·CFG·data-flow·optimization | Part 5 / Exercise 05: malformed CFG, 잘못된 join, trap을 지우는 pass | 필수 CFG/analysis/pass trace와 의미 보존 기록 | 분석·진단·변환 도구 확장 |
+| formatter·linter·static analyzer·language server | Part 7 / Exercise 07: comment 손실, unsafe fix, stale version, UTF-16 위치 | formatter+linter 또는 LSP 선택 경로 | 분석·진단·변환 도구 확장 |
+
+Part 6은 IR·runtime 결과를 실행 artifact 경계에 적용하는 보조 경로이며 별도 소유 범위를 추가하지 않습니다. 각 행은 정상 결과뿐 아니라 표에 든 대표 실패가 검사 또는 사람 검토에서 거부되는 증거를 요구합니다.
+
 ## 권장 반복 방식
 
 각 phase에서 다음 기록을 남깁니다.
@@ -170,10 +201,12 @@ LSP의 diagnostics / hover / definition subset
 - Mica 핵심 CLI의 `lex`, `parse`, `check`, `run` 계약을 구현합니다.
 - 정상 fixture와 최소 5개 실패 fixture를 독립적으로 추가합니다.
 - 진단에는 stable code, primary span과 설명이 포함됩니다.
-- tree-walk 실행 경로와 bytecode/LLVM 중 하나를 구현합니다.
+- tree-walk 실행 경로, CFG·data-flow·의미 보존 pass를 구현합니다.
+- bytecode VM 또는 LLVM/다른 backend 중 하나를 구현합니다.
 - formatter/linter 또는 LSP subset 하나를 구현합니다.
+- 선택한 실행·도구 경로, known-bad와 자동 검사의 한계를 `IMPLEMENTATION.md`, `DECISIONS.md`, `LIMITATIONS.md`와 evidence에 기록합니다.
 - 자동 검사가 거부하지 못하는 범위와 아직 구현하지 않은 언어 기능을 기록합니다.
 
 ## 자동 검증의 한계
 
-저장소의 `verify.sh`는 문서·링크·명세 일관성, 작은 예제와 skeleton의 의도된 실패를 확인합니다. 완성 compiler의 의미 보존, 모든 입력에 대한 parser 종료, type soundness, optimization correctness 또는 editor 호환성을 증명하지 않습니다. capstone conformance runner도 공개 fixture에 대한 관찰 증거이며 추가 property·differential·fuzz 검증이 필요합니다.
+저장소의 `verify.sh`는 문서·링크·명세 일관성, 작은 예제, reference trace와 skeleton/known-bad의 관찰 가능한 계약을 확인합니다. 완성 compiler의 의미 보존, 모든 입력에 대한 parser 종료, type soundness, optimization correctness 또는 editor 호환성을 증명하지 않습니다. capstone conformance runner의 `--stage all`도 core 공개 fixture에 대한 증거일 뿐 branch나 learner의 교육적 완료 판정이 아니며, 추가 property·differential·fuzz 검증과 위 표의 사람 검토가 필요합니다.
