@@ -15,4 +15,5 @@ export const productionIds: IdGenerator = {
   recordId: () => nextId("record"),
   attachmentId: () => nextId("attachment"),
   commandId: () => nextId("command"),
+  externalOperationId: () => nextId("media-operation"),
 };

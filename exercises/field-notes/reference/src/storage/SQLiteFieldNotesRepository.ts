@@ -2,6 +2,8 @@ import type {
   Attachment,
   AttachmentRepository,
   Clock,
+  ExternalMediaOperation,
+  ExternalMediaOperationRepository,
   FieldRecord,
   IdGenerator,
   LocalDatabaseSnapshot,
@@ -68,6 +70,19 @@ type AttachmentRow = {
   mime_type: string;
   state: string;
   remote_id: string | null;
+};
+
+type ExternalMediaOperationRow = {
+  operation_id: string;
+  active_slot: number | null;
+  record_id: string;
+  source: string;
+  state: string;
+  created_at: string;
+  expires_at: string;
+  completed_at: string | null;
+  attachment_id: string | null;
+  failure_reason: string | null;
 };
 
 const RECORD_COLUMNS = `
@@ -176,6 +191,43 @@ function rowToAttachment(row: AttachmentRow): Attachment {
   };
 }
 
+function rowToExternalMediaOperation(
+  row: ExternalMediaOperationRow,
+): ExternalMediaOperation {
+  if (!(row.source === "camera" || row.source === "photo-picker")) {
+    throw new CorruptLocalDataError(
+      `external-media:${row.operation_id}`,
+      `unknown source ${row.source}`,
+    );
+  }
+  if (
+    !(
+      row.state === "launched" ||
+      row.state === "copying" ||
+      row.state === "completed" ||
+      row.state === "cancelled" ||
+      row.state === "failed" ||
+      row.state === "interrupted"
+    )
+  ) {
+    throw new CorruptLocalDataError(
+      `external-media:${row.operation_id}`,
+      `unknown state ${row.state}`,
+    );
+  }
+  return {
+    operationId: row.operation_id,
+    recordId: row.record_id,
+    source: row.source,
+    state: row.state,
+    createdAt: row.created_at,
+    expiresAt: row.expires_at,
+    completedAt: row.completed_at ?? undefined,
+    attachmentId: row.attachment_id ?? undefined,
+    failureReason: row.failure_reason ?? undefined,
+  };
+}
+
 function parsePayload(row: OutboxRow): RecordPayload | null {
   if (row.payload_json === null) return null;
   try {
@@ -242,7 +294,8 @@ export class SQLiteFieldNotesRepository
     RecordRepository,
     AttachmentRepository,
     OutboxRepository,
-    LocalStoreInspection
+    LocalStoreInspection,
+    ExternalMediaOperationRepository
 {
   private readonly clock: Clock;
   private readonly ids: IdGenerator;
@@ -363,6 +416,11 @@ export class SQLiteFieldNotesRepository
           throw new Error("record update lost its revision guard");
         }
       }
+      await txn.runAsync(
+        `DELETE FROM outbox
+         WHERE record_id = ? AND operation = 'upsert' AND state = 'pending'`,
+        [stableInput.id],
+      );
       await this.insertOutbox(txn, result.outbox);
     });
     if (result === undefined) throw new Error("save transaction produced no result");
@@ -523,9 +581,165 @@ export class SQLiteFieldNotesRepository
     return rows.map(rowToOutbox);
   }
 
+  public async beginExternalMediaOperation(input: {
+    operationId: string;
+    recordId: string;
+    source: ExternalMediaOperation["source"];
+    createdAt: string;
+    expiresAt: string;
+  }): Promise<ExternalMediaOperation> {
+    if (
+      !Number.isFinite(Date.parse(input.createdAt)) ||
+      !Number.isFinite(Date.parse(input.expiresAt)) ||
+      Date.parse(input.expiresAt) <= Date.parse(input.createdAt)
+    ) {
+      throw new Error("external media operation has invalid lifetime");
+    }
+    const db = await this.db();
+    await db.withExclusiveTransactionAsync(async (txn) => {
+      const record = await this.currentRecord(txn, input.recordId);
+      if (record === null || record.deletedAtLocal !== undefined) {
+        throw new Error("cannot launch media for a missing or deleted record");
+      }
+      const active = await txn.getFirstAsync<ExternalMediaOperationRow>(
+        "SELECT * FROM external_media_operations WHERE active_slot = 1",
+      );
+      if (active !== null) {
+        throw new Error("another external media operation is active");
+      }
+      await txn.runAsync(
+        `INSERT INTO external_media_operations (
+           operation_id, active_slot, record_id, source, state, created_at, expires_at
+         ) VALUES (?, 1, ?, ?, 'launched', ?, ?)`,
+        [
+          input.operationId,
+          input.recordId,
+          input.source,
+          input.createdAt,
+          input.expiresAt,
+        ],
+      );
+    });
+    return { ...input, state: "launched" };
+  }
+
+  public async activeExternalMediaOperation(): Promise<ExternalMediaOperation | null> {
+    const db = await this.db();
+    const row = await db.getFirstAsync<ExternalMediaOperationRow>(
+      "SELECT * FROM external_media_operations WHERE active_slot = 1",
+    );
+    return row === null ? null : rowToExternalMediaOperation(row);
+  }
+
+  public async claimExternalMediaResult(operationId: string): Promise<boolean> {
+    const db = await this.db();
+    const update = await db.runAsync(
+      `UPDATE external_media_operations SET state = 'copying'
+       WHERE operation_id = ? AND active_slot = 1 AND state = 'launched'`,
+      [operationId],
+    );
+    return update.changes === 1;
+  }
+
+  public async completeExternalMediaWithAttachment(input: {
+    operationId: string;
+    completedAt: string;
+    attachment: Omit<Attachment, "state">;
+  }): Promise<
+    | { kind: "completed"; attachment: Attachment }
+    | { kind: "stale" }
+  > {
+    if (
+      !input.attachment.localUri.startsWith("file://") ||
+      input.attachment.byteSize <= 0 ||
+      input.attachment.checksum === "" ||
+      !Number.isFinite(Date.parse(input.completedAt))
+    ) {
+      throw new Error("media completion requires a verified app-owned file");
+    }
+    const db = await this.db();
+    let result:
+      | { kind: "completed"; attachment: Attachment }
+      | { kind: "stale" } = { kind: "stale" };
+    await db.withExclusiveTransactionAsync(async (txn) => {
+      const row = await txn.getFirstAsync<ExternalMediaOperationRow>(
+        "SELECT * FROM external_media_operations WHERE operation_id = ?",
+        [input.operationId],
+      );
+      if (row === null || row.state !== "copying" || row.active_slot !== 1) return;
+      const operation = rowToExternalMediaOperation(row);
+      if (operation.recordId !== input.attachment.recordId) {
+        throw new Error("media completion does not match its operation");
+      }
+      const record = await this.currentRecord(txn, operation.recordId);
+      if (record === null || record.deletedAtLocal !== undefined) {
+        throw new Error("cannot attach media to a missing or deleted record");
+      }
+      const existing = await txn.getFirstAsync<AttachmentRow>(
+        "SELECT * FROM attachments WHERE id = ? OR local_uri = ?",
+        [input.attachment.id, input.attachment.localUri],
+      );
+      if (existing !== null) throw new Error("attachment identity collision");
+      const attachment: Attachment = {
+        ...input.attachment,
+        state: "local-ready",
+      };
+      await txn.runAsync(
+        `INSERT INTO attachments (
+           id, record_id, local_uri, checksum, byte_size, mime_type, state,
+           remote_id, created_at
+         ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        [
+          attachment.id,
+          attachment.recordId,
+          attachment.localUri,
+          attachment.checksum,
+          attachment.byteSize,
+          attachment.mimeType,
+          attachment.state,
+          attachment.remoteId ?? null,
+          input.completedAt,
+        ],
+      );
+      const update = await txn.runAsync(
+        `UPDATE external_media_operations
+         SET active_slot = NULL, state = 'completed', completed_at = ?, attachment_id = ?
+         WHERE operation_id = ? AND active_slot = 1 AND state = 'copying'`,
+        [input.completedAt, attachment.id, input.operationId],
+      );
+      if (update.changes !== 1) {
+        throw new Error("external media operation lost its completion guard");
+      }
+      result = { kind: "completed", attachment };
+    });
+    return result;
+  }
+
+  public async finishExternalMediaOperation(input: {
+    operationId: string;
+    state: "cancelled" | "failed" | "interrupted";
+    completedAt: string;
+    failureReason?: string;
+  }): Promise<boolean> {
+    const db = await this.db();
+    const update = await db.runAsync(
+      `UPDATE external_media_operations
+       SET active_slot = NULL, state = ?, completed_at = ?, failure_reason = ?
+       WHERE operation_id = ? AND active_slot = 1
+         AND state IN ('launched', 'copying')`,
+      [
+        input.state,
+        input.completedAt,
+        input.failureReason ?? null,
+        input.operationId,
+      ],
+    );
+    return update.changes === 1;
+  }
+
   public async snapshot(): Promise<LocalDatabaseSnapshot> {
     const db = await this.db();
-    const [records, attachments, outbox, processed, history] = await Promise.all([
+    const [records, attachments, outbox, processed, history, operations, version] = await Promise.all([
       db.getAllAsync<RecordRow>(`SELECT ${RECORD_COLUMNS} FROM records ORDER BY id`),
       db.getAllAsync<AttachmentRow>("SELECT * FROM attachments ORDER BY id"),
       db.getAllAsync<OutboxRow>("SELECT * FROM outbox ORDER BY created_at, command_id"),
@@ -535,10 +749,14 @@ export class SQLiteFieldNotesRepository
       db.getAllAsync<{ from_version: number; to_version: number }>(
         "SELECT from_version, to_version FROM schema_migrations ORDER BY to_version",
       ),
+      db.getAllAsync<ExternalMediaOperationRow>(
+        "SELECT * FROM external_media_operations ORDER BY created_at, operation_id",
+      ),
+      db.getFirstAsync<{ user_version: number }>("PRAGMA user_version"),
     ]);
     const conflicts: RecordConflict[] = [];
     return {
-      schemaVersion: CURRENT_SCHEMA_VERSION,
+      schemaVersion: version?.user_version ?? CURRENT_SCHEMA_VERSION,
       records: records.map(rowToRecord),
       attachments: attachments.map(rowToAttachment),
       outbox: outbox.map(rowToOutbox),
@@ -548,6 +766,7 @@ export class SQLiteFieldNotesRepository
         fromVersion: row.from_version,
         toVersion: row.to_version,
       })),
+      externalMediaOperations: operations.map(rowToExternalMediaOperation),
     };
   }
 }

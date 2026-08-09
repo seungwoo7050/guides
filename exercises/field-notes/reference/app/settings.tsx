@@ -9,6 +9,7 @@ import { StateNotice } from "../src/components/StateNotice";
 export default function SettingsRoute() {
   const {
     appState,
+    capabilities,
     inspectStorage,
     reconciliation,
     revision,
@@ -42,6 +43,18 @@ export default function SettingsRoute() {
         <Text style={styles.value}>{snapshot?.outbox.length ?? "…"} commands</Text>
         <Text style={styles.label}>관찰한 app lifecycle</Text>
         <Text style={styles.value}>{appState}</Text>
+        <Text style={styles.label}>camera access</Text>
+        <Text style={styles.value}>
+          {capabilities === null ? "checking" : `${capabilities.camera.availability.kind} · ${capabilities.camera.permission.kind}`}
+        </Text>
+        <Text style={styles.label}>system picker access</Text>
+        <Text style={styles.value}>
+          {capabilities === null ? "checking" : `${capabilities.photoPicker.availability.kind} · ${capabilities.photoPicker.permission.kind}`}
+        </Text>
+        <Text style={styles.label}>foreground location access</Text>
+        <Text style={styles.value}>
+          {capabilities === null ? "checking" : `${capabilities.location.availability.kind} · ${capabilities.location.permission.kind}`}
+        </Text>
       </View>
       {storageError ? (
         <StateNotice kind="error" message={storageError} title="저장소 진단" />
@@ -55,7 +68,7 @@ export default function SettingsRoute() {
         title="마지막 파일 정합성 검사"
       />
       <StateNotice
-        message="Camera/photo picker/location, remote SyncTransport, retry worker, background scheduler, notification은 후속 Stage의 명시적 TODO입니다. lifecycle 복귀 시 로컬 파일 정합성만 다시 검사합니다."
+        message="Camera, system picker와 foreground one-shot location은 사용자 action에서만 실행합니다. app active 복귀는 현재 availability/permission과 pending result만 다시 읽고 민감 action을 자동 재실행하지 않습니다. Remote SyncTransport, retry worker, background location과 notification은 후속 범위입니다."
         title="기능 경계"
       />
     </Screen>

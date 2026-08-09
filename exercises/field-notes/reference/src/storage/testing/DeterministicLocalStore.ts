@@ -2,10 +2,12 @@ import type {
   Attachment,
   AttachmentRepository,
   Clock,
+  ExternalMediaOperation,
+  ExternalMediaOperationRepository,
   FieldRecord,
   IdGenerator,
   LocalDatabaseSnapshot,
-  LocalStoreInspection,
+    LocalStoreInspection,
   OutboxEntry,
   OutboxRepository,
   RecordCommand,
@@ -33,6 +35,7 @@ type HarnessState = {
   conflicts: Map<string, RecordConflict>;
   processedIntentKeys: Set<string>;
   migrationHistory: { fromVersion: number; toVersion: number }[];
+  externalMediaOperations: Map<string, ExternalMediaOperation>;
 };
 
 function clonePayload(payload: RecordPayload): RecordPayload {
@@ -71,6 +74,12 @@ function cloneState(state: HarnessState): HarnessState {
     ),
     processedIntentKeys: new Set(state.processedIntentKeys),
     migrationHistory: state.migrationHistory.map((entry) => ({ ...entry })),
+    externalMediaOperations: new Map(
+      [...state.externalMediaOperations].map(([id, operation]) => [
+        id,
+        { ...operation },
+      ]),
+    ),
   };
 }
 
@@ -84,6 +93,7 @@ function emptyState(schemaVersion = 0): HarnessState {
     conflicts: new Map(),
     processedIntentKeys: new Set(),
     migrationHistory: [],
+    externalMediaOperations: new Map(),
   };
 }
 
@@ -114,7 +124,8 @@ export class DeterministicLocalStore
     RecordRepository,
     AttachmentRepository,
     OutboxRepository,
-    LocalStoreInspection
+    LocalStoreInspection,
+    ExternalMediaOperationRepository
 {
   private fault: DeterministicFault | null = null;
   private transactionTail: Promise<void> = Promise.resolve();
@@ -157,7 +168,7 @@ export class DeterministicLocalStore
           });
         }
         draft.legacyRecords = [];
-      } else if (fromVersion !== 2) {
+      } else if (fromVersion !== 2 && fromVersion !== 3) {
         throw new Error(`no migration from ${fromVersion}`);
       }
       this.consumeFault(`migration-to-${toVersion}`);
@@ -221,6 +232,15 @@ export class DeterministicLocalStore
       });
       draft.records.set(stableInput.id, result.record);
       this.consumeFault("after-record-write");
+      for (const [commandId, entry] of draft.outbox) {
+        if (
+          entry.recordId === stableInput.id &&
+          entry.operation === "upsert" &&
+          entry.state === "pending"
+        ) {
+          draft.outbox.delete(commandId);
+        }
+      }
       if (draft.outbox.has(result.command.commandId)) {
         throw new Error("duplicate command id");
       }
@@ -330,6 +350,133 @@ export class DeterministicLocalStore
       .map(cloneOutbox);
   }
 
+  public async beginExternalMediaOperation(input: {
+    operationId: string;
+    recordId: string;
+    source: ExternalMediaOperation["source"];
+    createdAt: string;
+    expiresAt: string;
+  }): Promise<ExternalMediaOperation> {
+    let result: ExternalMediaOperation | undefined;
+    await this.transaction((draft) => {
+      const record = draft.records.get(input.recordId);
+      if (record === undefined || record.deletedAtLocal !== undefined) {
+        throw new Error("cannot launch media for a missing or deleted record");
+      }
+      const active = [...draft.externalMediaOperations.values()].find(
+        (operation) =>
+          operation.state === "launched" || operation.state === "copying",
+      );
+      if (active !== undefined) {
+        throw new Error("another external media operation is active");
+      }
+      if (
+        !Number.isFinite(Date.parse(input.createdAt)) ||
+        !Number.isFinite(Date.parse(input.expiresAt)) ||
+        Date.parse(input.expiresAt) <= Date.parse(input.createdAt)
+      ) {
+        throw new Error("external media operation has invalid lifetime");
+      }
+      result = { ...input, state: "launched" };
+      draft.externalMediaOperations.set(input.operationId, result);
+    });
+    if (result === undefined) throw new Error("operation transaction produced no result");
+    return { ...result };
+  }
+
+  public async activeExternalMediaOperation(): Promise<ExternalMediaOperation | null> {
+    await this.ready();
+    const active = [...this.backing.state.externalMediaOperations.values()].find(
+      (operation) => operation.state === "launched" || operation.state === "copying",
+    );
+    return active === undefined ? null : { ...active };
+  }
+
+  public async claimExternalMediaResult(operationId: string): Promise<boolean> {
+    let claimed = false;
+    await this.transaction((draft) => {
+      const operation = draft.externalMediaOperations.get(operationId);
+      if (operation?.state !== "launched") return;
+      draft.externalMediaOperations.set(operationId, {
+        ...operation,
+        state: "copying",
+      });
+      claimed = true;
+    });
+    return claimed;
+  }
+
+  public async completeExternalMediaWithAttachment(input: {
+    operationId: string;
+    completedAt: string;
+    attachment: Omit<Attachment, "state">;
+  }): Promise<
+    | { kind: "completed"; attachment: Attachment }
+    | { kind: "stale" }
+  > {
+    let result:
+      | { kind: "completed"; attachment: Attachment }
+      | { kind: "stale" } = { kind: "stale" };
+    await this.transaction((draft) => {
+      const operation = draft.externalMediaOperations.get(input.operationId);
+      if (operation?.state !== "copying") return;
+      if (
+        operation.recordId !== input.attachment.recordId ||
+        !Number.isFinite(Date.parse(input.completedAt))
+      ) {
+        throw new Error("media completion does not match its operation");
+      }
+      const existing = [...draft.attachments.values()].find(
+        (attachment) =>
+          attachment.id === input.attachment.id ||
+          attachment.localUri === input.attachment.localUri,
+      );
+      if (existing !== undefined) {
+        throw new Error("attachment identity collision");
+      }
+      const attachment: Attachment = {
+        ...input.attachment,
+        state: "local-ready",
+      };
+      draft.attachments.set(attachment.id, attachment);
+      this.consumeFault("after-attachment-write");
+      draft.externalMediaOperations.set(input.operationId, {
+        ...operation,
+        state: "completed",
+        completedAt: input.completedAt,
+        attachmentId: attachment.id,
+      });
+      result = { kind: "completed", attachment: { ...attachment } };
+    });
+    return result;
+  }
+
+  public async finishExternalMediaOperation(input: {
+    operationId: string;
+    state: "cancelled" | "failed" | "interrupted";
+    completedAt: string;
+    failureReason?: string;
+  }): Promise<boolean> {
+    let completed = false;
+    await this.transaction((draft) => {
+      const operation = draft.externalMediaOperations.get(input.operationId);
+      if (
+        operation === undefined ||
+        !(operation.state === "launched" || operation.state === "copying")
+      ) {
+        return;
+      }
+      draft.externalMediaOperations.set(input.operationId, {
+        ...operation,
+        state: input.state,
+        completedAt: input.completedAt,
+        failureReason: input.failureReason,
+      });
+      completed = true;
+    });
+    return completed;
+  }
+
   public async snapshot(): Promise<LocalDatabaseSnapshot> {
     await this.ready();
     return {
@@ -346,6 +493,9 @@ export class DeterministicLocalStore
       ),
       processedIntentKeys: [...this.backing.state.processedIntentKeys].sort(),
       migrationHistory: this.backing.state.migrationHistory.map((entry) => ({ ...entry })),
+      externalMediaOperations: [...this.backing.state.externalMediaOperations.values()]
+        .sort((left, right) => left.operationId.localeCompare(right.operationId))
+        .map((operation) => ({ ...operation })),
     };
   }
 }
@@ -354,9 +504,11 @@ export function sequentialIds(): IdGenerator {
   let record = 0;
   let attachment = 0;
   let command = 0;
+  let externalOperation = 0;
   return {
     recordId: () => `record-${++record}`,
     attachmentId: () => `attachment-${++attachment}`,
     commandId: () => `command-${++command}`,
+    externalOperationId: () => `media-operation-${++externalOperation}`,
   };
 }

@@ -13,6 +13,7 @@ export class DeterministicFileStore implements AttachmentFileStore {
   private readonly staging = new Map<string, string>();
   private readonly owned = new Map<string, string>();
   private copyPartialFault = false;
+  private nextReportedByteSize: number | null = null;
 
   public constructor(private readonly ids: IdGenerator = sequentialIds()) {}
 
@@ -22,6 +23,10 @@ export class DeterministicFileStore implements AttachmentFileStore {
 
   public failNextCopyPartially(): void {
     this.copyPartialFault = true;
+  }
+
+  public reportNextOwnedByteSize(byteSize: number): void {
+    this.nextReportedByteSize = byteSize;
   }
 
   public addOrphan(uri: string, contents = "orphan"): void {
@@ -55,10 +60,12 @@ export class DeterministicFileStore implements AttachmentFileStore {
     const ownedUri = `${OWNED_DIRECTORY}${ownedFileName(id)}`;
     this.staging.delete(stagingUri);
     this.owned.set(ownedUri, contents);
+    const byteSize = this.nextReportedByteSize ?? contents.length;
+    this.nextReportedByteSize = null;
     return {
       ownedUri,
       checksum: `deterministic-${contents.length}-${contents.charCodeAt(0)}`,
-      byteSize: contents.length,
+      byteSize,
     };
   }
 

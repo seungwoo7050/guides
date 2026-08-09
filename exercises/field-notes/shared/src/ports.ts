@@ -2,6 +2,10 @@ import type {
   Attachment,
   CapabilityAvailability,
   FieldRecord,
+  ExternalMediaOperation,
+  LocationMeasurementResult,
+  MediaAcquisitionResult,
+  MediaSource,
   NavigationIntent,
   LocalDatabaseSnapshot,
   OutboxEntry,
@@ -20,6 +24,7 @@ export interface IdGenerator {
   recordId(): string;
   attachmentId(): string;
   commandId(): string;
+  externalOperationId(): string;
 }
 
 export interface RecordRepository {
@@ -80,6 +85,32 @@ export interface StorageMaintenance {
   reconcile(): Promise<StorageReconciliationReport>;
 }
 
+export interface ExternalMediaOperationRepository {
+  beginExternalMediaOperation(input: {
+    operationId: string;
+    recordId: string;
+    source: MediaSource;
+    createdAt: string;
+    expiresAt: string;
+  }): Promise<ExternalMediaOperation>;
+  activeExternalMediaOperation(): Promise<ExternalMediaOperation | null>;
+  claimExternalMediaResult(operationId: string): Promise<boolean>;
+  completeExternalMediaWithAttachment(input: {
+    operationId: string;
+    completedAt: string;
+    attachment: Omit<Attachment, "state">;
+  }): Promise<
+    | { kind: "completed"; attachment: Attachment }
+    | { kind: "stale" }
+  >;
+  finishExternalMediaOperation(input: {
+    operationId: string;
+    state: "cancelled" | "failed" | "interrupted";
+    completedAt: string;
+    failureReason?: string;
+  }): Promise<boolean>;
+}
+
 export type SyncResult =
   | {
       kind: "success";
@@ -105,36 +136,25 @@ export interface CameraPort {
   availability(): Promise<CapabilityAvailability>;
   permission(): Promise<PermissionState>;
   requestPermission(): Promise<PermissionState>;
-  capture(): Promise<
-    | { kind: "cancelled" }
-    | { kind: "captured"; temporaryUri: string; mimeType?: string }
-  >;
+  capture(): Promise<MediaAcquisitionResult>;
 }
 
 export interface PhotoPickerPort {
   availability(): Promise<CapabilityAvailability>;
   permission(): Promise<PermissionState>;
   requestPermission(): Promise<PermissionState>;
-  choose(): Promise<
-    | { kind: "cancelled" }
-    | { kind: "selected"; temporaryUri: string; mimeType?: string }
-  >;
+  choose(): Promise<MediaAcquisitionResult>;
+}
+
+export interface PendingMediaResultPort {
+  recoverPending(): Promise<MediaAcquisitionResult | null>;
 }
 
 export interface LocationPort {
   availability(): Promise<CapabilityAvailability>;
   permission(): Promise<PermissionState>;
   requestPermission(): Promise<PermissionState>;
-  current(): Promise<
-    | { kind: "unavailable"; reason: string }
-    | {
-        kind: "measured";
-        latitude: number;
-        longitude: number;
-        accuracyMeters: number;
-        measuredAt: string;
-      }
-  >;
+  current(): Promise<LocationMeasurementResult>;
 }
 
 export interface BackgroundScheduler {

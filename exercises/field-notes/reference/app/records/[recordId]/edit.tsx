@@ -66,7 +66,7 @@ export default function EditRecordRoute() {
     observedAt: record.observedAt,
   };
   const save = async (draft: RecordDraft) => {
-    const payload: RecordPayload = { ...draft };
+    const payload: RecordPayload = { ...draft, location: record.location };
     try {
       await saveRecord({
         id: record.id,

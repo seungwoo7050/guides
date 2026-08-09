@@ -96,6 +96,7 @@ export type LocalDatabaseSnapshot = {
   conflicts: RecordConflict[];
   processedIntentKeys: string[];
   migrationHistory: { fromVersion: number; toVersion: number }[];
+  externalMediaOperations: ExternalMediaOperation[];
 };
 
 export type RecordConflict = {
@@ -112,11 +113,57 @@ export type CapabilityAvailability =
   | { kind: "unavailable"; reason: string };
 
 export type PermissionState =
+  | { kind: "not-required" }
   | { kind: "not-determined" }
   | { kind: "granted" }
   | { kind: "limited"; description: string }
   | { kind: "denied"; canAskAgain: boolean }
   | { kind: "restricted"; reason: string };
+
+export type MediaSource = "camera" | "photo-picker";
+
+export type MediaFailureCode =
+  | "launch-failed"
+  | "permission-revoked"
+  | "interrupted"
+  | "invalid-result";
+
+export type MediaAcquisitionResult =
+  | { kind: "acquired"; temporaryUri: string; mimeType?: string }
+  | { kind: "cancelled" }
+  | { kind: "failed"; code: MediaFailureCode; reason: string };
+
+export type LocationMeasurementResult =
+  | {
+      kind: "measured";
+      latitude: number;
+      longitude: number;
+      accuracyMeters: number;
+      measuredAt: string;
+    }
+  | { kind: "permission-revoked"; permission: PermissionState }
+  | { kind: "unavailable"; reason: string }
+  | { kind: "failed"; reason: string };
+
+export type ExternalMediaOperationState =
+  | "launched"
+  | "copying"
+  | "completed"
+  | "cancelled"
+  | "failed"
+  | "interrupted";
+
+export type ExternalMediaOperation = {
+  operationId: string;
+  recordId: string;
+  source: MediaSource;
+  state: ExternalMediaOperationState;
+  createdAt: string;
+  expiresAt: string;
+  completedAt?: string;
+  attachmentId?: string;
+  failureReason?: string;
+};
 
 export type NavigationIntentSource =
   | "internal"

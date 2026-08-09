@@ -2,7 +2,7 @@ import { FIELD_RECORD_FIXTURES } from "@field-notes/shared";
 import type { SQLiteDatabase } from "expo-sqlite";
 import { CorruptLocalDataError } from "./localMutation";
 
-export const CURRENT_SCHEMA_VERSION = 3;
+export const CURRENT_SCHEMA_VERSION = 4;
 
 export const CREATE_V1_SCHEMA_SQL = `
 CREATE TABLE records (
@@ -82,6 +82,26 @@ CREATE TABLE processed_intents (
 CREATE INDEX conflicts_record_idx ON conflicts(record_id);
 `;
 
+export const MIGRATE_V3_TO_V4_SQL = `
+CREATE TABLE external_media_operations (
+  operation_id TEXT PRIMARY KEY NOT NULL,
+  active_slot INTEGER UNIQUE CHECK (active_slot IS NULL OR active_slot = 1),
+  record_id TEXT NOT NULL REFERENCES records(id),
+  source TEXT NOT NULL CHECK (source IN ('camera', 'photo-picker')),
+  state TEXT NOT NULL CHECK (
+    state IN ('launched', 'copying', 'completed', 'cancelled', 'failed', 'interrupted')
+  ),
+  created_at TEXT NOT NULL,
+  expires_at TEXT NOT NULL,
+  completed_at TEXT,
+  attachment_id TEXT UNIQUE REFERENCES attachments(id),
+  failure_reason TEXT
+);
+
+CREATE INDEX external_media_record_created_idx
+  ON external_media_operations(record_id, created_at, operation_id);
+`;
+
 export type LegacyV1FixtureRecord = {
   id: string;
   title: string;
@@ -129,6 +149,10 @@ async function applyStep(txn: MigrationTxn, fromVersion: number): Promise<void> 
   }
   if (fromVersion === 2) {
     await txn.execAsync(MIGRATE_V2_TO_V3_SQL);
+    return;
+  }
+  if (fromVersion === 3) {
+    await txn.execAsync(MIGRATE_V3_TO_V4_SQL);
     return;
   }
   throw new CorruptLocalDataError(
