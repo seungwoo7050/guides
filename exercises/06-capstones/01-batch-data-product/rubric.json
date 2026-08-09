@@ -1,0 +1,23 @@
+{
+  "version": 1,
+  "title": "Batch 데이터 제품 capstone",
+  "required_artifacts": [
+    "data-contract.md",
+    "input-manifest.json",
+    "pipeline-design.md",
+    "failure-matrix.md",
+    "quality-plan.json",
+    "reconciliation.md",
+    "runbook.md",
+    "submission.json"
+  ],
+  "criteria": [
+    "grain, stable key, event time, correction policy가 명시됨",
+    "input manifest와 transform/reference/schema version이 고정됨",
+    "동일 입력 replay가 같은 logical rows와 snapshot을 만듦",
+    "staging, validation, publish pointer와 partial failure가 설명됨",
+    "backfill canary, stop condition, resume, rollback이 있음",
+    "count, key, aggregate reconciliation과 freshness/lineage가 있음"
+  ],
+  "reference_implementation": false
+}

@@ -1,0 +1,10 @@
+{
+  "backfill_id": "sales-repair",
+  "interval": {
+    "start": "2026-08-01",
+    "end": "2026-08-02"
+  },
+  "publish": {
+    "mode": "overwrite"
+  }
+}

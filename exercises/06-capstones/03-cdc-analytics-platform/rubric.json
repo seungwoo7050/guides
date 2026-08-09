@@ -1,0 +1,25 @@
+{
+  "version": 1,
+  "title": "CDC analytics platform capstone",
+  "required_artifacts": [
+    "source-contract.md",
+    "snapshot-stream-protocol.md",
+    "cdc-envelope.md",
+    "table-layout.md",
+    "schema-change-plan.md",
+    "quality-reconciliation.md",
+    "security-retention.md",
+    "failure-matrix.md",
+    "incident-runbook.md",
+    "submission.json"
+  ],
+  "criteria": [
+    "snapshot 시작·종료와 source log position 연결이 설명됨",
+    "insert/update/delete와 transaction/source position이 보존됨",
+    "schema compatibility와 incompatible change 절차가 있음",
+    "raw immutable zone과 consumer table snapshot이 분리됨",
+    "compaction이 logical content와 lineage를 바꾸지 않음",
+    "restart, re-snapshot, backfill, rollback, source/sink 대사가 있음"
+  ],
+  "reference_implementation": false
+}

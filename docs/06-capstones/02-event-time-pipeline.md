@@ -1,0 +1,157 @@
+# Capstone B: Event-time 스트림 pipeline
+
+## 목적
+
+모바일/웹 행동 event에서 5분 단위 활동 집계를 만든다. 낮은 latency의 잠정 결과와 late correction을 함께 제공하며 duplicate, out-of-order, restart를 정상 입력으로 처리한다.
+
+## 입력
+
+각 event는 최소 다음 정보를 가진다.
+
+```text
+event_id
+user_id
+session_hint
+event_type
+occurred_at
+observed_at
+source_partition
+source_offset
+schema_version
+```
+
+fixture에는 다음이 포함된다.
+
+- 정상 순서 event
+- 2분, 20분, 26시간 늦은 event
+- 동일 event의 duplicate
+- 같은 timestamp의 여러 event
+- 미래 timestamp
+- partition별 속도 차이
+- restart 직전/후 record
+
+## 목표 output
+
+```text
+key: user_segment + window_start
+window_end
+event_count
+unique_users
+result_version
+completeness_state: EARLY | ON_TIME | CORRECTED | CLOSED
+watermark_at_emit
+published_at
+source_coverage
+```
+
+unique user 계산은 exact 또는 approximate 중 선택하되 보장과 오차를 명시한다.
+
+## 필수 artifact
+
+1. `event-contract.md`
+2. `window-policy.md`
+3. `state-and-checkpoint.md`
+4. `sink-contract.md`
+5. `quality-and-lateness.md`
+6. `failure-matrix.md`
+7. `reconciliation.md` — batch replay와 stream 결과 비교
+8. `runbook.md`
+9. `submission.json` — 구현 profile, 실행·검증 명령과 알려진 한계
+
+템플릿은 [`exercises/06-capstones/02-event-time-pipeline`](../../exercises/06-capstones/02-event-time-pipeline/README.md)에 있다.
+
+## 필수 정책
+
+### event time
+
+- timestamp 생성자와 timezone
+- invalid/future timestamp 처리
+- event time fallback 여부
+
+### window
+
+- fixed/sliding/session 중 선택
+- boundary와 key
+- batch replay와 동일한 calendar
+
+### watermark
+
+- source/partition progress 반영 방법
+- idle partition
+- watermark lag 관측
+
+### trigger
+
+- early frequency
+- on-time 조건
+- late correction debounce
+- accumulating/discarding/retraction
+
+### allowed lateness
+
+- state retention
+- 자동 correction 기간
+- 기간 밖 event의 quarantine/backfill 경로
+
+### sink
+
+- stable output key
+- result version 또는 pane ID
+- duplicate/retry 처리
+- previous result update/retraction
+
+## 필수 실패 시나리오
+
+1. sink write 성공 뒤 checkpoint 전 crash
+2. checkpoint 성공 뒤 source commit 전 crash
+3. duplicate event가 TTL 안/밖에 도착
+4. 늦은 event가 이미 on-time인 window를 수정
+5. session window를 사용한다면 late event가 두 session을 merge
+6. 한 partition이 idle하거나 지연돼 watermark를 막음
+7. sink가 10분간 느려져 backpressure 발생
+8. state schema를 변경한 새 version으로 restore
+
+## 품질과 관측
+
+- partition별 source lag
+- event-time lag와 watermark
+- early/on-time/late pane 수
+- late drop/quarantine count
+- duplicate count
+- state size와 checkpoint duration
+- sink commit latency
+- batch replay와 window 결과 diff
+
+## batch reconciliation
+
+동일 offset 범위를 bounded input으로 고정해 batch 계산을 수행한다. stream의 `CLOSED` 결과와 비교한다.
+
+불일치가 허용되는 경우:
+
+- approximate algorithm의 문서화된 오차
+- correction window 밖 data
+- batch와 stream이 다른 reference snapshot을 사용한 경우 — 이는 가능하면 제거해야 한다.
+
+## 완료 판정
+
+- arrival order를 바꿔도 closed 결과가 같다.
+- duplicate와 restart가 한 번 반영된 것과 동등한 sink 상태를 만든다.
+- early 결과가 consumer에게 잠정임을 표시하고 correction을 적용할 수 있다.
+- watermark 정체와 late distribution을 관찰할 수 있다.
+- state와 sink failure를 주입한 뒤 checkpoint에서 복구한다.
+- batch replay와 차이를 key/window별로 설명한다.
+
+## 범위 밖
+
+- 전역 완전 순서 보장
+- 임의의 외부 API를 exactly-once로 호출
+- 실제 개인정보 event
+- 특정 stream engine의 cluster 운영 전체
+
+## 후속 확장
+
+- sessionization
+- streaming join과 temporal dimension
+- online feature materialization
+- multi-region source
+- schema/state migration automation

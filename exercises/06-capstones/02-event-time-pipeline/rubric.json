@@ -1,0 +1,24 @@
+{
+  "version": 1,
+  "title": "Event-time stream capstone",
+  "required_artifacts": [
+    "event-contract.md",
+    "window-policy.md",
+    "state-and-checkpoint.md",
+    "sink-contract.md",
+    "quality-and-lateness.md",
+    "failure-matrix.md",
+    "reconciliation.md",
+    "runbook.md",
+    "submission.json"
+  ],
+  "criteria": [
+    "event time, ingestion time, processing time이 분리됨",
+    "window, watermark, trigger, allowed lateness 계약이 명시됨",
+    "dedup key·state TTL·checkpoint·restart 경계가 있음",
+    "sink result key와 correction/version 또는 upsert 계약이 있음",
+    "backpressure·idle partition·poison event 실패가 포함됨",
+    "batch replay와 stream 결과를 대사하는 방법이 있음"
+  ],
+  "reference_implementation": false
+}

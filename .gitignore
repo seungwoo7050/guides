@@ -1,0 +1,9 @@
+.guide/
+workspace/
+**/workspace/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.coverage
+*.log
+.DS_Store

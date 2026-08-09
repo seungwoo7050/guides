@@ -1,0 +1,61 @@
+{
+  "backfill_id": "sales-net-v2-202608",
+  "reason": "currency conversion reference data was corrected",
+  "owner": "analytics-platform",
+  "interval": {
+    "start": "2026-08-01T00:00:00Z",
+    "end": "2026-08-08T00:00:00Z",
+    "semantics": "[start,end)"
+  },
+  "input_snapshots": {
+    "orders_cdc": "lsn:0/16B6C50",
+    "fx_rates": "snapshot:fx-2026-08-09-r2"
+  },
+  "transform_revision": "git:9f20b92",
+  "schema_versions": {
+    "orders": 4,
+    "sales_daily": 2
+  },
+  "reference_versions": {
+    "currency_rules": "2026-08-r2"
+  },
+  "isolation": {
+    "mode": "separate-output",
+    "location": "sales_daily_backfill/sales-net-v2-202608",
+    "live_writer_conflict": "forbidden"
+  },
+  "canary": {
+    "interval": {
+      "start": "2026-08-01T00:00:00Z",
+      "end": "2026-08-02T00:00:00Z"
+    },
+    "approval_required": true
+  },
+  "stop_conditions": [
+    "duplicate_key_count > 0",
+    "aggregate_delta_ratio > 0.001",
+    "source_freshness_lag_minutes > 30"
+  ],
+  "reconciliation": {
+    "count": "source distinct order_id versus output contributing_orders",
+    "keys": "anti-join source eligible keys and output lineage keys",
+    "aggregates": [
+      "currency,sum(amount_minor)",
+      "sales_date,count(distinct order_id)"
+    ]
+  },
+  "publish": {
+    "mode": "staged-snapshot-swap",
+    "consumer_pointer": "sales_daily/CURRENT",
+    "requires_canary_approval": true
+  },
+  "resume": {
+    "checkpoint_key": "backfill_id+data_interval",
+    "completed_intervals_are_immutable": true
+  },
+  "rollback": {
+    "method": "restore previous consumer snapshot pointer",
+    "previous_snapshot_recorded": true
+  },
+  "dry_run": true
+}

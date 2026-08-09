@@ -1,0 +1,11 @@
+{
+  "manifest_id": "TODO",
+  "data_interval": {
+    "start": "TODO",
+    "end": "TODO"
+  },
+  "sources": [],
+  "transform_revision": "TODO",
+  "schema_versions": {},
+  "reference_versions": {}
+}

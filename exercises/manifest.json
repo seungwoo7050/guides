@@ -1,0 +1,53 @@
+{
+  "version": 1,
+  "exercises": [
+    {
+      "path": "exercises/01-contracts-and-records/01-schema-evolution",
+      "kind": "code",
+      "checker": "tests/check.py",
+      "semantic_failure": "GUIDE_SEMANTIC:schema-evolution"
+    },
+    {
+      "path": "exercises/02-batch-processing/01-replay-safe-batch",
+      "kind": "code",
+      "checker": "tests/check.py",
+      "semantic_failure": "GUIDE_SEMANTIC:replay-safe-batch"
+    },
+    {
+      "path": "exercises/03-stream-processing/01-event-time-windows",
+      "kind": "code",
+      "checker": "tests/check.py",
+      "semantic_failure": "GUIDE_SEMANTIC:event-time-windows"
+    },
+    {
+      "path": "exercises/04-ingestion-and-storage/01-cdc-snapshot-merge",
+      "kind": "code",
+      "checker": "tests/check.py",
+      "semantic_failure": "GUIDE_SEMANTIC:cdc-snapshot-merge"
+    },
+    {
+      "path": "exercises/05-orchestration-and-operations/01-backfill-plan",
+      "kind": "design",
+      "checker": "tests/check.py",
+      "semantic_failure": "GUIDE_SEMANTIC:backfill-plan"
+    },
+    {
+      "path": "exercises/05-orchestration-and-operations/02-quality-and-lineage",
+      "kind": "code",
+      "checker": "tests/check.py",
+      "semantic_failure": "GUIDE_SEMANTIC:quality-lineage"
+    },
+    {
+      "path": "exercises/06-capstones/01-batch-data-product",
+      "kind": "capstone"
+    },
+    {
+      "path": "exercises/06-capstones/02-event-time-pipeline",
+      "kind": "capstone"
+    },
+    {
+      "path": "exercises/06-capstones/03-cdc-analytics-platform",
+      "kind": "capstone"
+    }
+  ]
+}
