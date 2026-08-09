@@ -108,9 +108,11 @@ REQUIRED_FILES = [
     "projects/relay-arena-vertical-slice/tests/known_bad.py",
     "reference/glossary.md",
     "reference/artifact-checklists.md",
+    "reference/completion-evidence.md",
     "reference/engine-crosswalk.md",
     "reference/fixture-schemas.md",
     "reference/role-entry-map.md",
+    "reference/safety-and-environment.md",
 ]
 
 IGNORED_PARTS = {".git", ".guide", "__pycache__"}

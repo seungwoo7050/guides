@@ -42,22 +42,43 @@
 실습은 다음을 포함한다.
 
 - 합성 system brief 또는 fixture
-- 학습자가 작성할 산출물
+- 의도적으로 미완성인 학습자 template/starter
+- fixture가 결정하는 결과의 완성 reference 또는 expected evidence
 - 대표 오답
 - 사람 검토 질문
 - 완료 기준
 
-완성 reference answer는 필수가 아니다. 자동 검사는 문장 정답을 강제하지 않고 구조·식별자·교차 참조와 실행 가능한 예제를 확인한다.
+설계 문구를 하나의 정답으로 강제하지 않는다. 다만 시간 계산, 상태 전이, command trace, schema migration, percentile, release gate처럼 입력으로 결정 가능한 결과에는 완성 reference/expected evidence가 필요하다. 자동 검사는 CSV/JSON 관측값과 공개 불변식을 읽고, 사람 판단은 `MANUAL_REVIEW_REQUIRED` 질문과 필요한 증거로 분리한다.
+
+검사기는 같은 공개 계약으로 다음 세 방향을 확인해야 한다.
+
+1. 완성 reference는 통과한다.
+2. 미완성 template/starter는 거부된다.
+3. 최소 한 개의 대표 behavioral mutant는 거부된다.
+
+source 문자열이나 특정 문장 일치를 학습 완료의 대리 지표로 사용하지 않는다. 검증 과정은 추적 fixture/template, reference와 학습자 workspace를 덮어쓰거나 삭제하지 않아야 한다.
 
 fixture를 변경하면 다음을 실행한다.
 
 ```sh
 make fixtures
 make example
+make meta
 ./verify.sh
 ```
 
 known-bad case를 제거하거나 checker가 거짓 성공하도록 바꾸지 않는다.
+
+## 안전·생성물·커밋 범위
+
+- 실제 사용자·production 데이터, API key, token, cookie와 credential-bearing 설정을 fixture나 로그에 넣지 않는다.
+- 기본 검사는 Python 3.10 표준 라이브러리와 합성 fixture만 사용하며 유료 자원, 실제 배포나 외부 시스템 변경을 요구하지 않는다.
+- 학습자 작업은 `scripts/new-workspace.sh`로 저장소 밖 새 경로에 만들고 기존 경로·symlink를 덮어쓰지 않는다.
+- `.guide/`, cache, log, build·dist·out과 editor 개인 설정을 커밋하지 않는다.
+- `make clean`의 범위를 marker와 Python cache보다 넓히지 않는다. 학습자 workspace나 명시되지 않은 실행 결과는 정리 대상이 아니다.
+- commit 전 `git diff --check`, source/secret/generated-file audit와 관련 검사를 실행하고 의미 단위의 확인된 경로만 stage한다.
+
+세부 규칙은 [안전·환경·증거 계약](reference/safety-and-environment.md)을 따른다.
 
 ## 외부 자료
 

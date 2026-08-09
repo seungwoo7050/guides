@@ -183,7 +183,7 @@ retry로 숨기기 전에 flake를 별도 failure로 관리합니다.
 
 ## 실습 연결
 
-모든 실습이 bug evidence와 validation을 요구합니다. Capstone에서는 `test-and-observability-plan.md`, `reproduction-bundle/`과 replay hash를 제출합니다.
+모든 실습이 bug evidence와 validation을 요구합니다. Capstone에서는 `test-and-observability-plan.md`, 프로젝트 README에 정의한 [`evidence/` bundle](../projects/relay-arena-vertical-slice/README.md#필수-evidence-bundle)과 replay checkpoint/hash를 제출합니다.
 
 ## 기존 브랜치와 경계
 

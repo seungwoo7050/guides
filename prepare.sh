@@ -21,7 +21,9 @@ required = [
     root / "README.md",
     root / "docs/00-roadmap.md",
     root / "scripts/verify.py",
+    root / "scripts/check_submission.py",
     root / "examples/fixed-step-replay/sim.py",
+    root / "projects/relay-arena-vertical-slice/tests/check_contract.py",
 ]
 for path in required:
     if not path.is_file():

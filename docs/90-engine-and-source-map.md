@@ -4,6 +4,8 @@
 
 공식 문서의 API, package와 권장 방식은 바뀔 수 있습니다. 아래 자료는 **2026-08-09에 확인한 진입 링크**이며, 프로젝트가 사용하는 정확한 engine version의 문서를 다시 확인해야 합니다.
 
+확인 범위는 아래 21개 URL이 Epic, Unity, Godot, Microsoft와 Steamworks의 공식 domain에서 의도한 문서로 열리는지와 제목·주제가 설명에 맞는지까지입니다. 현재 Epic 링크는 Unreal Engine 5.8 문서로, Godot 링크는 rolling `stable` 문서로 해석되므로 이 확인이 개별 프로젝트 version과 API compatibility를 보장하지는 않습니다. 네트워크 확인은 로컬 `verify.sh`의 필수 조건이 아니며 링크가 바뀌면 확인일과 설명을 함께 갱신합니다.
+
 ## 개념 교차표
 
 | 가이드 개념 | Unity 계열 | Unreal Engine 계열 | Godot 계열 |

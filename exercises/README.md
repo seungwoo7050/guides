@@ -13,7 +13,7 @@ README의 범위와 완료 조건 확인
 → Capstone에서 같은 계약을 다시 사용
 ```
 
-템플릿은 정답 문구를 강제하지 않는다. 자동 검사는 초기 fixture의 구조와 교차 참조만 검사하며, 작성한 판단이 타당한지는 상태·실패·근거를 읽을 수 있는 다른 사람이 검토해야 한다.
+각 실습의 `template/`은 의도적으로 미완성이고 `reference/`는 fixture가 결정하는 관측값과 한 가지 완성 해설을 제공한다. reference는 복사할 문장 정답이 아니라 계산·상태 전이·trace·gate를 비교할 기준이다. 공통 검사기는 같은 계약으로 reference 통과, template와 대표 오답 거부를 확인한다. 작성한 설계 판단은 상태·실패·근거를 읽을 수 있는 다른 사람이 별도로 검토한다.
 
 ## 실습 목록
 
@@ -35,3 +35,30 @@ README의 범위와 완료 조건 확인
 - 평균만 제시하지 않고 경계·최악·실패 사례를 포함한다.
 - “엔진이 처리한다”는 문장 대신 프로젝트가 확인해야 할 보장을 쓴다.
 - 구현하지 않은 범위와 후속 전문 브랜치를 명시한다.
+
+## 격리·검증 순서
+
+저장소 root에서 존재하지 않는 외부 절대 경로를 지정한다.
+
+```sh
+WORK_PARENT="$(mktemp -d)"
+./scripts/new-workspace.sh "$WORK_PARENT/game-development"
+```
+
+각 `submission/` 복사본을 작성한 뒤 공통 검사기에 실습 ID와 경로를 전달한다.
+
+```sh
+python3 scripts/check_submission.py \
+  --exercise 01 \
+  --submission "$WORK_PARENT/game-development/exercises/01-time-step-analysis/submission"
+```
+
+기계 판정 가능한 결과가 맞으면 `AUTOMATED_OK`가 출력된다. 이어지는 `MANUAL_REVIEW_REQUIRED`는 성공을 취소하는 오류가 아니라, 자동 검사가 판단하지 않는 trade-off·근거·한계 질문이다. 해당 답과 증거가 없으면 실습을 교육적으로 완료했다고 보지 않는다.
+
+검사기 방향 자체는 다음 명령으로 확인한다.
+
+```sh
+python3 scripts/check_submission.py --self-test
+```
+
+이 meta-test는 8개 reference 통과, 8개 template 거부와 실습별 known-bad mutant 거부를 요구한다. 검사기는 추적 source나 외부 learner workspace를 수정·정리하지 않는다.

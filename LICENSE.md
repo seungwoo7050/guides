@@ -10,6 +10,6 @@ Markdown 문서와 문서에 포함된 설명, 표, 그림은 [Creative Commons 
 
 ## 코드
 
-소스 코드, 셸 스크립트, 설정 예제와 실행 가능한 실습 파일은 [MIT License](LICENSES/MIT.txt)에 따라 이용할 수 있습니다.
+소스 코드, 셸 스크립트, 설정 예제, 실행 가능한 실습 파일과 저장소에서 제작한 합성 JSON/CSV fixture는 [MIT License](LICENSES/MIT.txt)에 따라 이용할 수 있습니다.
 
 별도 라이선스 고지가 들어 있는 외부 의존성에는 해당 의존성의 라이선스가 우선 적용됩니다.

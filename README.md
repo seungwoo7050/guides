@@ -133,7 +133,7 @@
 | [07 성능 예산](exercises/07-performance-budget-review/README.md) | target device profile에서 CPU·GPU·memory·loading 병목 판정 |
 | [08 릴리스 검토](exercises/08-release-readiness/README.md) | 입력·접근성·save·crash·telemetry·content validation release gate |
 
-정답 구현을 복사하는 구조는 제공하지 않습니다. 각 실습은 초기 자료, 템플릿, 대표 오답과 사람 검토 질문을 제공하며 자동 검사는 제출 문장의 정답을 판정하지 않습니다.
+각 실습은 초기 자료, 의도적으로 미완성인 template, 완성 reference/expected evidence, 대표 오답과 사람 검토 질문을 제공합니다. 공통 제출 검사기는 문구나 내부 구현이 아니라 fixture가 결정하는 CSV/JSON 관측값과 공개 불변식을 판정하며, reference 통과·template와 알려진 오답 거부를 함께 확인합니다.
 
 ## 실행 예제
 
@@ -152,25 +152,36 @@ render frame duration
 
 [`projects/relay-arena-vertical-slice`](projects/relay-arena-vertical-slice/README.md)는 1~2명이 구현할 수 있는 작은 arena game을 가정합니다.
 
-필수 profile은 엔진 구현이 아니라 다음 산출물을 완성합니다.
+완료에는 두 묶음이 모두 필요합니다.
 
 ```text
+13개 설계·검토 산출물
 runtime·state ownership map
 → fixed-step·input command trace
 → scene/entity lifecycle
 → asset manifest와 loading plan
-→ save/replay schema
+→ movement·presentation·save/replay
 → authority·latency model
 → test·telemetry·performance budget
 → release decision
+
+실행 가능한 구현 evidence
+input command → bounded fixed-step → gameplay state
+→ presentation event → save/replay
+→ failure reproduction → profile 전후 → regression result
 ```
 
-Profile A는 설계·검토 근거를 완성합니다. 두 번째 종료 능력까지 입증하려면 Unity, Unreal Engine, Godot, 자체 framework의 Profile B 또는 기존 엔진 프로젝트의 동등한 작은 기능 변경 근거가 추가로 필요합니다. 엔진별 API가 아니라 동일한 상태·실패·검증 계약을 만족하는지가 평가 기준이며, network Profile C는 선택 심화입니다.
+기본 Profile B는 Python 3.10 표준 라이브러리 기반 headless starter를 완성하는 경로입니다. `simulate`, `migrate-save`, `profile`과 같은 public contract로 정상·hitch·duplicate/non-owner·stale resource·corrupt save·replay divergence·수정 전후를 검사합니다. Unity, Unreal Engine, Godot 또는 자체 framework에서 같은 assertion과 identity/evidence를 제공하는 동등 경로로 대체할 수 있습니다. AI/navigation과 실제 network transport는 선택 심화입니다.
 
 ## 준비와 검증
 
 ```sh
 ./prepare.sh
+make check
+make fixtures
+make example
+make capstone
+make meta
 ./verify.sh
 ```
 
@@ -183,16 +194,32 @@ Profile A는 설계·검토 근거를 완성합니다. 두 번째 종료 능력�
 - JSON fixture의 schema와 교차 참조
 - 문서 공통 절과 ownership 경계
 - fixed-step replay 예제의 deterministic state hash
-- 검사기 자체가 깨진 fixture를 실제로 거부하는 meta-check
+- 8개 실습의 reference 통과, 미완성 template와 대표 오답 거부
+- Capstone reference 통과, starter와 네 종류 behavioral mutant 거부
 - 검증 전후 원본 source snapshot 불변성
 
-빠른 개발 검사는 다음과 같습니다.
+학습자 파일은 저장소 밖 새 절대 경로에 만듭니다. 생성기는 기존 경로와 symlink를 덮어쓰지 않습니다.
 
 ```sh
-make check
-make example
-make fixtures
+WORK_PARENT="$(mktemp -d)"
+make workspace DEST="$WORK_PARENT/game-development"
 ```
+
+실습을 작성한 뒤 같은 공개 계약으로 기계 판정 부분을 확인합니다. 예를 들어 01 제출 경로는 다음과 같습니다.
+
+```sh
+make submission \
+  EXERCISE=01 \
+  SUBMISSION="$WORK_PARENT/game-development/exercises/01-time-step-analysis/submission"
+```
+
+성공 시 `AUTOMATED_OK`와 자동화하지 않은 판단의 `MANUAL_REVIEW_REQUIRED`가 따로 출력됩니다. 로컬 marker와 Python cache만 정리하려면 다음을 실행합니다. 학습자 workspace는 삭제하지 않습니다.
+
+```sh
+make clean
+```
+
+세부 계약 연결은 [완료 증거와 계약 추적표](reference/completion-evidence.md), 데이터·권한·cleanup·라이선스 경계는 [안전·환경·증거 계약](reference/safety-and-environment.md)에서 확인합니다.
 
 ## 학습 방식과 한계
 
@@ -200,5 +227,6 @@ make fixtures
 - Capstone은 범용 게임 엔진이나 상용 수준 게임의 완성을 요구하지 않습니다.
 - “60 FPS”, “deterministic”, “server authoritative” 같은 표현은 측정 환경·보장 범위·실패 조건과 함께만 근거로 사용합니다.
 - 자동 검사는 구조와 공개 행동을 확인하지만 설명의 정확성이나 교육적 완성을 대신 판정하지 않습니다.
+- headless path는 실제 engine callback, GPU, target hardware, platform lifecycle/storage 또는 실제 network transport를 증명하지 않습니다.
 
 이 가이드의 종료점은 특정 엔진의 인증서가 아니라, 게임 프로젝트의 한 기능을 **시간·상태·자산·표현·저장·네트워크·성능·릴리스 계약**으로 분해하고 실제 코드베이스에서 작은 변경을 완성할 수 있는 상태입니다.

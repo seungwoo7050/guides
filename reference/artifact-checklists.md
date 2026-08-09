@@ -68,3 +68,18 @@
 - [ ] known issue에 impact, owner, fallback과 re-review trigger가 있다.
 - [ ] rollback/feature-disable와 post-release telemetry가 있다.
 - [ ] evidence가 정확한 candidate와 target에서 수집됐다.
+
+## Capstone 실행 evidence
+
+- [ ] 정확히 13개의 필수 설계 산출물이 있고 `ai-and-navigation.md`는 선택으로 구분된다.
+- [ ] implementation identity에 source revision, Python 또는 engine/build/content identity가 있다.
+- [ ] smooth/jittered/hitch가 같은 canonical gameplay state를 만들고 catch-up 상한이 관측된다.
+- [ ] duplicate·stale·non-owner와 client result claim이 authoritative state를 바꾸지 않는다.
+- [ ] stale load completion은 generation에서 거부되고 optional cosmetic 누락은 control-ready를 막지 않는다.
+- [ ] v1→v2 migration이 stable id와 설정을 보존하며 corrupt 입력이 기존 output을 덮어쓰지 않는다.
+- [ ] known-bad replay의 first-divergence checkpoint와 command가 기록된다.
+- [ ] 같은 workload의 profile 수정 전후와 보존한 gameplay invariant가 있다.
+- [ ] reference 통과, starter와 알려진 behavioral mutant 거부, 학습자 구현 통과 로그가 있다.
+- [ ] 실제 engine/GPU/device/platform/network를 검사하지 않은 한계가 명시된다.
+
+전체 `owns → 문서 → 실습·실패 → Capstone → exit_capabilities` 연결은 [완료 증거와 계약 추적표](completion-evidence.md), 격리·cleanup·데이터·라이선스 검토는 [안전·환경·증거 계약](safety-and-environment.md)을 사용한다.

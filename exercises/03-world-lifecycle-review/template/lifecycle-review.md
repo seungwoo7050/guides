@@ -18,9 +18,9 @@ process
 
 ## unload/cancel 순서
 
-1. 
-2. 
-3. 
+1.
+2.
+3.
 
 ## generation과 handle 정책
 
