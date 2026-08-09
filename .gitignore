@@ -13,9 +13,17 @@ __pycache__/
 *.tfstate.*
 *.tfplan
 *.plan
+*.bin
+*.tfvars
+*.tfvars.json
 .terraform/
 .tofu/
 kubeconfig*
+*.kubeconfig
 *.pem
 *.key
+*.p12
+*.pfx
+id_rsa*
+id_ed25519*
 reports/

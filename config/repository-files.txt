@@ -1,3 +1,4 @@
+.gitattributes
 .gitignore
 CONTRIBUTING.md
 LICENSE.md

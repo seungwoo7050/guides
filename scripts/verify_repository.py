@@ -39,7 +39,8 @@ REQUIRED_IGNORE_PATTERNS = {
     '.guide/', '.workspace/', '__pycache__/', '*.pyc', '.DS_Store',
     '.env', '.env.*', '.venv/', '.pytest_cache/', '*.log', '*.tmp',
     '*.tfstate', '*.tfstate.*', '*.tfplan', '*.plan', '.terraform/', '.tofu/',
-    'kubeconfig*', '*.pem', '*.key', 'reports/',
+    '*.bin', '*.tfvars', '*.tfvars.json', 'kubeconfig*', '*.kubeconfig',
+    '*.pem', '*.key', '*.p12', '*.pfx', 'id_rsa*', 'id_ed25519*', 'reports/',
 }
 
 
@@ -572,7 +573,11 @@ def check_ignore_and_secrets() -> None:
     if missing:
         fail(f'.gitignore is missing safety patterns: {missing}')
 
-    forbidden_names = re.compile(r'(^|/)(?:\.env(?:\..*)?|kubeconfig[^/]*|[^/]+\.(?:pem|key|tfstate|tfplan))$')
+    forbidden_names = re.compile(
+        r'(^|/)(?:\.env(?:\..*)?|kubeconfig[^/]*|[^/]+\.kubeconfig|'
+        r'id_(?:rsa|ed25519)(?:\..*)?|[^/]+\.tfstate(?:\..*)?|'
+        r'[^/]+\.tfvars(?:\.json)?|[^/]+\.(?:pem|key|p12|pfx|tfplan|plan|bin))$'
+    )
     secret_patterns = {
         'private key': re.compile(rb'-----BEGIN (?:RSA |EC |OPENSSH |DSA )?PRIVATE KEY-----'),
         'AWS access key': re.compile(rb'\bAKIA[0-9A-Z]{16}\b'),
