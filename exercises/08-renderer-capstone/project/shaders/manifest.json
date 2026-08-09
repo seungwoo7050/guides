@@ -7,7 +7,12 @@
   },
   "entry_points": {"vertex": "vertex_main", "fragment": "fragment_main"},
   "vertex_layout": ["float3-position@0", "float4-color@12"],
-  "metal_source_hash_fnv1a64": "f6d7c86e9a48ac03",
+  "uniform_bindings": {
+    "vertex": ["FrameUniforms{float4x4 mvp; float4 tint;}@buffer(0)"],
+    "fragment": []
+  },
+  "hlsl_uniform_binding": "register(b0, space1)",
+  "metal_source_hash_fnv1a64": "39792c301b65ff19",
   "minimum_sdl3": "3.4.10",
   "offline_tool": {
     "repository": "https://github.com/libsdl-org/SDL_shadercross",

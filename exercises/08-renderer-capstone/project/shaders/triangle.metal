@@ -10,8 +10,15 @@ struct VertexOut {
   float4 color;
 };
 
-vertex VertexOut vertex_main(VertexIn input [[stage_in]]) {
-  return {float4(input.position, 1.0), input.color};
+struct FrameUniforms {
+  float4x4 mvp;
+  float4 tint;
+};
+
+vertex VertexOut vertex_main(
+    VertexIn input [[stage_in]],
+    constant FrameUniforms& frame [[buffer(0)]]) {
+  return {frame.mvp * float4(input.position, 1.0), input.color * frame.tint};
 }
 
 fragment float4 fragment_main(VertexOut input [[stage_in]]) {

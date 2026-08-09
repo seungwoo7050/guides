@@ -7,10 +7,15 @@ struct VertexOut {
   float4 color : TEXCOORD0;
 };
 
+cbuffer FrameUniforms : register(b0, space1) {
+  float4x4 frame_mvp;
+  float4 frame_tint;
+};
+
 VertexOut vertex_main(VertexIn input) {
   VertexOut output;
-  output.position = float4(input.position, 1.0);
-  output.color = input.color;
+  output.position = mul(frame_mvp, float4(input.position, 1.0));
+  output.color = input.color * frame_tint;
   return output;
 }
 
