@@ -1,0 +1,23 @@
+{
+  "expo": {
+    "name": "Field Notes Reference",
+    "slug": "field-notes-reference",
+    "version": "1.0.0",
+    "scheme": "fieldnotes",
+    "orientation": "default",
+    "userInterfaceStyle": "automatic",
+    "newArchEnabled": true,
+    "ios": {
+      "bundleIdentifier": "dev.openai.guides.fieldnotes.reference",
+      "supportsTablet": true
+    },
+    "android": {
+      "package": "dev.openai.guides.fieldnotes.reference",
+      "predictiveBackGestureEnabled": true
+    },
+    "plugins": ["expo-router", "expo-dev-client"],
+    "experiments": {
+      "typedRoutes": false
+    }
+  }
+}
