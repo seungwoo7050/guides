@@ -4,6 +4,7 @@ from __future__ import annotations
 import hashlib
 import json
 import os
+import shutil
 import stat
 import subprocess
 import sys
@@ -92,6 +93,7 @@ class VerifyCloudModelMetaTests(unittest.TestCase):
     def test_single_defect_mutants_are_rejected_by_known_checks(self) -> None:
         expected = {
             "cm_001_public_state.py": ["CM-001"],
+            "cm_002_accept_unknown_plan.py": ["CM-002"],
             "cm_003_deny_owner.py": ["CM-003"],
             "cm_004_cross_tenant_read.py": ["CM-004"],
             "cm_005_write_before_quota.py": ["CM-005"],
@@ -102,6 +104,7 @@ class VerifyCloudModelMetaTests(unittest.TestCase):
             "cm_010_silent_drain.py": ["CM-010"],
             "cm_011_partial_cleanup.py": ["CM-011"],
             "cm_012_tenant_resurrection.py": ["CM-012"],
+            "cm_013_content_evidence.py": ["CM-013"],
         }
         with tempfile.TemporaryDirectory(prefix="cloud-model-mutants-") as temporary:
             temporary_path = Path(temporary)
@@ -126,6 +129,19 @@ class VerifyCloudModelMetaTests(unittest.TestCase):
                 self.assertEqual(2, completed.returncode, completed.stdout + completed.stderr)
                 self.assertIn(f"MODEL VERIFY ERROR [{code}]", completed.stderr)
                 self.assertNotIn("MODEL RESULT:", completed.stdout)
+
+    def test_absolute_and_lexical_traversal_outside_repository_are_rejected(self) -> None:
+        with tempfile.TemporaryDirectory(prefix="cloud-model-outside-") as temporary:
+            outside = Path(temporary) / "outside.py"
+            shutil.copy2(REFERENCE, outside)
+            traversal = Path(os.path.relpath(outside, ROOT))
+            self.assertIn("..", traversal.parts)
+            for implementation in (outside, traversal):
+                with self.subTest(implementation=str(implementation)):
+                    completed = invoke(implementation)
+                    self.assertEqual(2, completed.returncode, completed.stdout + completed.stderr)
+                    self.assertIn("MODEL VERIFY ERROR [E_PATH]", completed.stderr)
+                    self.assertNotIn("MODEL RESULT:", completed.stdout)
 
     def test_report_is_deterministic_private_and_create_only(self) -> None:
         with tempfile.TemporaryDirectory(prefix="cloud-model-determinism-") as temporary:

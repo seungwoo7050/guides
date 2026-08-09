@@ -1,4 +1,9 @@
 {
+  "schema_version": 1,
+  "artifact_id": "03-managed-service-contract",
+  "workspace_source": "template",
+  "validator": "scripts/check_artifact.py",
+  "expected_starter_failures": ["E_UNFILLED"],
   "required_files": ["service-contract.md"],
   "forbidden_tokens": ["TODO", "<작성>", "TBD"],
   "minimum_bytes": {"service-contract.md": 3600},

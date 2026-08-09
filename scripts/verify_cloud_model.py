@@ -53,27 +53,34 @@ def relative_label(path: Path) -> str:
 
 
 def regular_file(path: Path, label: str) -> Path:
-    candidate = path if path.is_absolute() else Path.cwd() / path
-    candidate = candidate.absolute()
+    root = ROOT.resolve(strict=True)
+    candidate = (path if path.is_absolute() else Path.cwd() / path).absolute()
     try:
-        relative = candidate.relative_to(ROOT)
+        relative = candidate.relative_to(root)
     except ValueError as error:
         raise VerifyError("E_PATH", f"{label} escapes the guide repository") from error
+    if not relative.parts or any(component in ("", ".", "..") for component in relative.parts):
+        raise VerifyError("E_PATH", f"{label} must use a canonical in-repository path")
 
-    current = ROOT
+    current = root
     for component in relative.parts:
         current = current / component
         try:
             mode = current.lstat().st_mode
-        except FileNotFoundError as error:
+        except OSError as error:
             raise VerifyError("E_PATH", f"{label} does not exist: {path}") from error
         if stat.S_ISLNK(mode):
             raise VerifyError("E_PATH", f"{label} may not use symlinks: {path}")
-    if not stat.S_ISREG(candidate.stat().st_mode):
+    try:
+        resolved = candidate.resolve(strict=True)
+        resolved.relative_to(root)
+    except (OSError, RuntimeError, ValueError) as error:
+        raise VerifyError("E_PATH", f"{label} escapes the guide repository") from error
+    if not stat.S_ISREG(resolved.stat().st_mode):
         raise VerifyError("E_PATH", f"{label} must be a regular file: {path}")
-    if candidate.suffix != ".py":
+    if resolved.suffix != ".py":
         raise VerifyError("E_PATH", f"{label} must be a Python file: {path}")
-    return candidate
+    return resolved
 
 
 def load_module(path: Path, module_name: str) -> tuple[ModuleType, int, int]:

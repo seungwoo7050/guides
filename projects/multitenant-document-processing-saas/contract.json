@@ -16,19 +16,7 @@
     "CAP-010",
     "CAP-011"
   ],
-  "expected_starter_failures": [
-    "CAP-001",
-    "CAP-002",
-    "CAP-003",
-    "CAP-004",
-    "CAP-005",
-    "CAP-006",
-    "CAP-007",
-    "CAP-008",
-    "CAP-009",
-    "CAP-010",
-    "CAP-011"
-  ],
+  "expected_starter_failures": ["E_UNFILLED"],
   "check_file_map": {
     "CAP-001": "01-responsibility-matrix.md",
     "CAP-002": "02-resource-and-state-inventory.md",
