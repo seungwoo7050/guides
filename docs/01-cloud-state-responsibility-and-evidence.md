@@ -217,7 +217,7 @@ rollback_or_compensation
 - 같은 요청 재시도로 중복 resource 생성
 - console에는 최신 상태가 보이지만 audit export는 지연
 
-따라서 provisioning workflow에도 `distributed-services`에서 다룬 불확실한 결과와 idempotency가 필요합니다.
+따라서 provisioning workflow에도 [`distributed-services`의 partial failure·uncertain outcome](https://github.com/seungwoo7050/guides/blob/distributed-services/docs/01-boundaries-and-failure/01-partial-failure-and-uncertain-outcomes.md)과 [idempotency·single effect](https://github.com/seungwoo7050/guides/blob/distributed-services/docs/02-delivery-and-consistency/01-idempotency-and-single-effects.md)가 필요합니다. 이 브랜치에서는 그 일반 알고리즘을 재교육하지 않고 provider operation ID, desired/observed resource와 과금·cleanup evidence에 적용합니다.
 
 ```text
 client request ID

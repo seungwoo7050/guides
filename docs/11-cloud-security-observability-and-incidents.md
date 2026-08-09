@@ -2,7 +2,7 @@
 
 클라우드 보안은 방화벽 규칙 몇 개나 “암호화 enabled” 표시로 끝나지 않습니다. control plane, workload runtime, managed service, tenant data와 evidence가 서로 다른 identity와 수명을 가지므로 **누가 무엇을 바꿀 수 있고, 침해가 어느 resource·tenant·시간 범위에 미쳤는지** 복원해야 합니다.
 
-일반 위협 모델·취약점 검증·사고 대응 절차는 `cybersecurity`가 소유합니다. 이 문서는 cloud 고유의 상태와 evidence를 연결합니다.
+일반 위협 모델과 사고 대응 절차는 각각 [`cybersecurity`의 assets·trust boundaries·threat models](https://github.com/seungwoo7050/guides/blob/cybersecurity/docs/02-assets-trust-boundaries-and-threat-models.md)와 [incident response·recovery](https://github.com/seungwoo7050/guides/blob/cybersecurity/docs/14-incident-response-and-recovery.md)가 소유합니다. 이 문서는 account/project, control plane, workload identity, managed resource와 tenant별 evidence라는 cloud 고유 상태만 연결합니다.
 
 ## 1. Shared responsibility의 보안 의미
 
@@ -106,7 +106,7 @@ cloud workload는 다음 artifact를 신뢰합니다.
 - deploy authorization
 - rollback artifact
 
-일반 공급망 보안은 `cybersecurity`와 `web-infra`를 참조합니다.
+일반 공급망 보안은 [`cybersecurity`의 supply-chain·build trust](https://github.com/seungwoo7050/guides/blob/cybersecurity/docs/08-supply-chain-and-build-trust.md), 단일 서비스의 registry·release artifact 운영은 [`web-infra`](https://github.com/seungwoo7050/guides/blob/web-infra/docs/11-image-registry-and-release-artifacts.md)가 소유합니다. 여기서는 cloud runtime identity, function bundle·managed extension, deploy authorization과 control-plane audit 연결만 검토합니다.
 
 ## 7. Observability 계층
 

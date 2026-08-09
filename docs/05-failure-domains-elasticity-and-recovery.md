@@ -124,7 +124,7 @@ observe metric
 - circuit breaker
 - explicit overload response
 
-일반 원리는 `distributed-services`가 소유합니다. 여기서는 cloud scaling과 quota가 그 통제를 어떻게 구현하는지 봅니다.
+일반 원리는 [`distributed-services`의 backpressure·bulkhead·load shedding](https://github.com/seungwoo7050/guides/blob/distributed-services/docs/03-resilience-and-load/02-backpressure-bulkheads-and-load-shedding.md)이 소유합니다. 여기서는 provider autoscaling signal, account·region quota, warm-up delay와 소비자 비용이 그 통제를 어떻게 제한하는지 봅니다.
 
 ## 8. Recovery workflow
 

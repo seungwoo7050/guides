@@ -12,6 +12,8 @@ tenant
 
 B2B 제품에서는 한 회사나 workspace가 tenant일 수 있고, B2C에서는 가정·팀·계정 묶음이 tenant일 수 있습니다. tenant를 database schema와 동일시하면 안 됩니다. business·identity·data·runtime·billing 경계를 함께 봅니다.
 
+관계 스키마·키·제약과 transaction isolation 구현은 [`database-systems`의 ER·normalization·constraints](https://github.com/seungwoo7050/guides/blob/database-systems/docs/01-relational-semantics-and-design/03-er-normalization-and-constraints.md)와 [transactions·isolation·locks](https://github.com/seungwoo7050/guides/blob/database-systems/docs/03-transactions-and-recovery/01-transactions-isolation-and-locks.md)가 소유합니다. 이 문서는 그 구현을 재교육하지 않고 tenant context가 database뿐 아니라 cache·object·queue·job·analytics·support·export·deletion 전체에서 보존되는 cloud/SaaS 계약을 다룹니다.
+
 ## 1. Tenant 정의
 
 다음 질문에 답합니다.

@@ -154,7 +154,7 @@ VM·container·function runtime은 identity metadata 또는 credential endpoint�
 - outbound request가 임의 endpoint로 향할 수 있습니까?
 - credential 사용 event를 기록합니까?
 
-구체적인 SSRF와 공격 검증은 `cybersecurity`가 소유하고, 이 브랜치에서는 cloud identity의 상태와 blast radius를 다룹니다.
+구체적인 SSRF와 공격 검증은 [`cybersecurity`의 application boundary failures](https://github.com/seungwoo7050/guides/blob/cybersecurity/docs/06-application-boundary-failures.md)가 소유하고, 이 브랜치에서는 metadata로 얻은 cloud identity의 scope·lifetime·audit와 resource blast radius를 다룹니다.
 
 ## 8. Secret와 configuration
 

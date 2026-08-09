@@ -17,5 +17,5 @@
       "## Failure scenario 판정"
     ]
   },
-  "required_phrases": {"event-processing-plan.md": ["event_id", "duplicate", "timeout", "dead-letter", "tenant"]}
+  "required_phrases": {"event-processing-plan.md": ["SOURCE_AVAILABLE", "EFFECT_COMMITTED", "ACK_COMMITTED", "event_id", "duplicate", "timeout", "checkpoint", "failure destination", "tenant", "F04-01", "F04-08"]}
 }

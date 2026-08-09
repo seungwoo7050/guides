@@ -252,7 +252,7 @@ trial은 subscription 상태이자 abuse surface입니다.
 - data retention after trial
 - export right
 
-일반 보안과 abuse detection은 `cybersecurity`와 실제 product project에서 확장합니다.
+일반 공격 경로와 abuse 검증은 [`cybersecurity`의 attack surface와 paths](https://github.com/seungwoo7050/guides/blob/cybersecurity/docs/05-attack-surface-and-paths.md)와 실제 product project에서 확장합니다. 여기서는 trial이 cloud resource·quota·measured usage와 tenant deletion에 남기는 상태만 다룹니다.
 
 ## 11. Cost attribution
 
