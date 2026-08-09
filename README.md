@@ -28,7 +28,14 @@ make clean
 - `make clean`은 `.guide`와 가이드가 만든 cache만 제거하고 learner workspace는 보존한다.
 - `VERIFY_LOG`는 저장소 밖의 아직 존재하지 않는 절대 경로만 허용한다. 생략하면 충돌 없는 임시 로그를 만든다.
 
-학습 순서와 세 경로는 [`docs/00-roadmap.md`](docs/00-roadmap.md)에 있다.
+## 자료 지도
+
+- 학습 순서와 세 경로: [`docs/00-roadmap.md`](docs/00-roadmap.md)
+- 작은 실행 모델과 대응 실습: [`examples/README.md`](examples/README.md)
+- 정본 계약의 구현 근거: [`reference/contract-traceability.md`](reference/contract-traceability.md)
+- 두 로컬 초안의 보존·통합 결정과 교차 경로 확장: [`reference/draft-integration.md`](reference/draft-integration.md)
+- 최신 구현 검토용 공식 자료: [`reference/official-sources.md`](reference/official-sources.md)
+- 변경·라이선스·안전 규칙: [`CONTRIBUTING.md`](CONTRIBUTING.md), [`LICENSE.md`](LICENSE.md)
 
 ## 세 학습 경로
 

@@ -155,6 +155,20 @@ replay·reconciliation·quality·lineage·freshness
 → correction·replay·retention
 ```
 
+## 교차 경로 확장
+
+세 capstone을 각각 완료한 뒤에는 선택적으로 하나의 commerce 데이터 제품에서 주문 DB snapshot/CDC, 결제 file delivery와 환불 API를 함께 연결한다. 이 확장은 네 번째 capstone을 중복해 만드는 것이 아니다. 기존 batch capstone의 재실행·publish, stream capstone의 event-time correction, CDC capstone의 snapshot/log handoff를 **같은 grain·identity·source cutoff와 reconciliation**으로 묶는 검토다.
+
+교차 경로에서는 각 capstone의 기존 artifact를 재사용하고 다음 추가 근거만 남긴다.
+
+- DB·file·API가 어디까지 complete한지 나타내는 공통 capture manifest
+- batch daily revenue와 stream window가 사용하는 event·correction 의미의 일치
+- CDC current state, batch snapshot과 stream output의 같은 cutoff 기준 key·aggregate diff
+- 한 source 장애나 schema change가 세 경로와 consumer에 전파되는 failure trace
+- live·backfill·replay resource 충돌, cutover와 rollback의 단일 운영 판단
+
+두 초안의 보존·통합 결정과 이 확장의 단계별 evidence는 [`draft integration`](../reference/draft-integration.md)에 기록한다. 자동 구조 검사만으로 교차 경로 완료를 주장하지 않고 실제 fixture, 실행 결과와 사람 검토를 함께 남긴다.
+
 ## 연결과 후속 심화
 
 - 정본 데이터 엔지니어링 트랙은 `git → python → database-systems → data-engineering`의 선형 경로를 사용한다.
@@ -172,6 +186,7 @@ replay·reconciliation·quality·lineage·freshness
 | CDC·storage | snapshot·position·merge·compaction | [`CDC snapshot merge`](../exercises/04-ingestion-and-storage/01-cdc-snapshot-merge/README.md), [`compaction planner`](../exercises/04-ingestion-and-storage/02-compaction-planner/README.md) |
 | 운영 | interval·backfill·run state | [`backfill plan`](../exercises/05-orchestration-and-operations/01-backfill-plan/README.md), [`run ledger`](../exercises/05-orchestration-and-operations/03-run-ledger-backfill/README.md) |
 | 품질 | quarantine·reconciliation·freshness·lineage | [`quality and lineage`](../exercises/05-orchestration-and-operations/02-quality-and-lineage/README.md), [`quality reconciliation`](../exercises/05-orchestration-and-operations/04-quality-reconciliation/README.md) |
+| 작은 상태·비용 모델 | identity·partition·compaction·window·CDC·lineage | [`실행 예제 지도`](../examples/README.md) |
 | Capstone A | batch 데이터 제품 | [`batch capstone`](../exercises/06-capstones/01-batch-data-product/README.md) |
 | Capstone B | event-time pipeline | [`stream capstone`](../exercises/06-capstones/02-event-time-pipeline/README.md) |
 | Capstone C | CDC analytics platform | [`CDC capstone`](../exercises/06-capstones/03-cdc-analytics-platform/README.md) |

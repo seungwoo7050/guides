@@ -210,7 +210,8 @@ statistics가 truncated/absent인데 file을 잘못 skip하면 correctness 문�
 
 ## 연결 연습
 
-- [`examples/partition_cost.py`](../../examples/partition_cost.py)로 partition cardinality와 file count trade-off를 관찰한다.
+- [`examples/partition_cost.py`](../../examples/partition_cost.py)로 key 분포가 execution partition imbalance에 미치는 영향을 관찰한다.
+- [`examples/compaction_cost.py`](../../examples/compaction_cost.py)로 small-file compaction 전후 file/metadata request 감소와 rewrite byte 비용을 함께 비교한다.
 - batch capstone에서 output manifest에 file size, row count, min/max와 snapshot ID를 포함한다.
 
 ## 완료 기준

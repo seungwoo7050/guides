@@ -93,9 +93,32 @@ request(cursor=C, cutoff=T)
 
 Response를 받은 뒤 raw write 전에 cursor를 전진하면 omission이 생긴다. Raw write 뒤 cursor commit 전에 failure가 나면 replay duplicate가 생길 수 있으므로 idempotent raw identity가 필요하다. Rate limit, retry budget, response loss와 source-side retention을 run manifest에 기록한다.
 
+API가 현재 객체만 제공하면 hard delete, backdated update와 과거 correction을 cursor만으로 복원하지 못할 수 있다. Periodic full key inventory, overlapping lookback, webhook/audit feed 또는 CDC 중 하나를 결합하고, 찾지 못하는 사건은 consumer contract의 비보장 범위로 공개한다.
+
+### Push·webhook capture
+
+Producer가 webhook, upload endpoint나 broker로 밀어 넣는 경로도 수신 성공과 durable capture를 구분한다.
+
+- producer authentication과 identity
+- stable request/event ID와 conflicting payload 정책
+- payload size·schema·rate limit
+- `accepted`와 durable raw write의 정확한 응답 경계
+- duplicate retry, poison record와 secure quarantine
+- source가 다시 보낼 수 없을 때의 replay 또는 reconciliation 경로
+
+`HTTP 202`나 broker send 성공이 downstream publish 완료를 뜻하지 않는다. 어느 durable boundary 뒤 producer가 재전송을 멈춰도 되는지 명시한다.
+
+### Database snapshot extraction
+
+CDC가 아닌 주기적 snapshot query도 snapshot point와 chunk identity를 고정한다. 큰 table은 stable primary-key range로 나누고 각 chunk의 lower/upper bound, 같은 snapshot point, row count/checksum과 retry state를 manifest에 남긴다. `LIMIT/OFFSET`은 concurrent change에서 page가 이동하고 deep offset 비용이 커질 수 있다.
+
+긴 snapshot transaction과 큰 scan은 source vacuum·storage·lock·latency를 압박할 수 있다. replica 사용 여부, index-supported predicate, query timeout, connection/concurrency cap과 pause 조건을 source owner와 합의한다.
+
 ### Raw boundary와 source 보호
 
 Raw capture는 source payload, capture identity, observed time와 source position/cursor를 복구 가능한 범위에서 보존한다. 무제한 보존이나 전체 field 수집을 뜻하지 않는다. Source DB snapshot, API retry와 file redelivery가 production 부하·비용·권한 한계를 넘지 않도록 rate, concurrency, maximum lookback과 pause 조건을 둔다.
+
+Completeness는 transport 성공이 아니라 producer manifest count/bytes/checksum, source control total, key range, partition close marker, terminal cursor 또는 독립 reconciliation 중 해당 source가 제공하는 근거로 판단한다. 그런 근거가 없다면 best-effort capture임을 명시한다.
 
 ## consistent initial snapshot
 
