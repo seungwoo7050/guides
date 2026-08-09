@@ -1,0 +1,21 @@
+{
+  "all_paths_return": [
+    {"expected": true, "statement": {"kind": "If", "then": {"kind": "Return"}, "else": {"kind": "Return"}}},
+    {"expected": false, "statement": {"kind": "If", "then": {"kind": "Return"}}},
+    {"expected": true, "statement": {"kind": "Block", "statements": [{"kind": "Expression"}, {"kind": "Return"}]}}
+  ],
+  "definite_assignment": {
+    "predecessors": [["a", "b"], ["a", "c"]],
+    "expected": ["a"],
+    "known_bad_union": ["a", "b", "c"]
+  },
+  "type_rules": [
+    {"operator": "+", "left": "Int", "right": "Int", "expected": "Int"},
+    {"operator": "<", "left": "Int", "right": "Int", "expected": "Bool"},
+    {"operator": "&&", "left": "Bool", "right": "Bool", "expected": "Bool"}
+  ],
+  "invalid_type_rules": [
+    {"operator": "+", "left": "Bool", "right": "Int"},
+    {"operator": "&&", "left": "Int", "right": "Int"}
+  ]
+}

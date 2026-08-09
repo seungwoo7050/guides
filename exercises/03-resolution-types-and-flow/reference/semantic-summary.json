@@ -1,0 +1,24 @@
+{
+  "schema_version": 1,
+  "source": {"id": "semantic-shadowing.mica", "byte_length": 86},
+  "symbols": [
+    {"id": "s1", "name": "main", "kind": "function", "type": "fn() -> Int", "declaration": {"start": 3, "end": 7}},
+    {"id": "s2", "name": "x", "kind": "local", "type": "Int", "declaration": {"start": 22, "end": 23}},
+    {"id": "s3", "name": "x", "kind": "local", "type": "Bool", "declaration": {"start": 43, "end": 44}}
+  ],
+  "references": [
+    {"span": {"start": 32, "end": 33}, "name": "x", "symbol_id": "s2"},
+    {"span": {"start": 57, "end": 58}, "name": "x", "symbol_id": "s3"},
+    {"span": {"start": 74, "end": 75}, "name": "x", "symbol_id": "s2"}
+  ],
+  "node_types": [
+    {"node_id": 11, "type": "Int"},
+    {"node_id": 19, "type": "Bool"},
+    {"node_id": 27, "type": "Int"}
+  ],
+  "flow": {
+    "all_paths_return": true,
+    "definitely_assigned_at_join": ["s2"]
+  },
+  "diagnostics": []
+}

@@ -6,6 +6,21 @@ AST의 identifier text를 stable SymbolId에 연결하고, type rule와 control-
 
 ## 과제
 
+### 실행 가능한 시작과 비교 근거
+
+같은 누적 workspace에 resolver, type checker와 flow phase를 추가합니다.
+
+```sh
+python3 exercises/03-resolution-types-and-flow/check.py
+python3 exercises/08-mica-capstone/check_submission.py \
+  --workspace .workspaces/mica --stage check
+```
+
+- [`fixtures/semantic-cases.json`](fixtures/semantic-cases.json)은 scope shadowing, operator type과 all-path-return/definite-assignment 경계를 고정합니다.
+- [`reference/semantic-summary.json`](reference/semantic-summary.json)은 declaration/reference SymbolId, node type과 flow fact의 정규화된 공개 증거입니다.
+- [`examples/semantic-model`](../../examples/semantic-model/README.md)은 scope push/pop, 동일 scope duplicate, intersection merge를 독립적으로 관찰합니다.
+- 검사기는 scope leak와 union merge known-bad를 거부합니다. 이 검사는 type soundness의 증명이 아니며 rule coverage와 ErrorType suppression은 사람 검토가 필요합니다.
+
 ### 1. Scope와 symbol
 
 - top-level function signature collection

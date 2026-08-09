@@ -9,6 +9,8 @@ ROOT = Path(__file__).resolve().parents[1]
 EXAMPLES = [
     ROOT / "examples/diagnostic-renderer/render.py",
     ROOT / "examples/pratt-parser/pratt.py",
+    ROOT / "examples/semantic-model/semantic_model.py",
+    ROOT / "examples/runtime-semantics/runtime.py",
     ROOT / "examples/dataflow-fixed-point/dataflow.py",
     ROOT / "examples/bytecode-vm/vm.py",
 ]

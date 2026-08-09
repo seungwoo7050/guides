@@ -9,6 +9,8 @@ ROOT = Path(__file__).resolve().parents[1]
 LABS = [
     ROOT / "exercises/01-source-and-diagnostics/check.py",
     ROOT / "exercises/02-lexer-parser-and-ast/check.py",
+    ROOT / "exercises/03-resolution-types-and-flow/check.py",
+    ROOT / "exercises/04-interpreter-and-vm/check.py",
 ]
 
 

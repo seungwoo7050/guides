@@ -4,6 +4,19 @@
 
 Typed program의 동적 의미를 tree-walk interpreter로 구현하고, 선택적으로 동일한 의미를 bytecode VM으로 옮깁니다.
 
+## 실행 가능한 시작과 비교 근거
+
+```sh
+python3 exercises/04-interpreter-and-vm/check.py
+python3 exercises/08-mica-capstone/check_submission.py \
+  --workspace .workspaces/mica --stage run
+```
+
+- [`fixtures/runtime-cases.json`](fixtures/runtime-cases.json)은 정상값, short-circuit, checked i64와 step/call-depth 실패를 기술합니다.
+- [`reference/runtime-trace.json`](reference/runtime-trace.json)은 stdout, return과 stable runtime diagnostic code의 기대 결과입니다.
+- [`examples/runtime-semantics`](../../examples/runtime-semantics/README.md)은 host overflow나 exception에 기대지 않는 작은 oracle입니다.
+- 이 단계의 reference는 tree-walk 의미를 고정합니다. VM을 선택하면 같은 source에 대해 stdout·return·diagnostic을 별도로 differential 비교해야 합니다.
+
 ## 필수 과제: interpreter
 
 - tagged runtime value

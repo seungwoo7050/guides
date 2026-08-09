@@ -1,0 +1,12 @@
+{
+  "cases": [
+    {"name": "checked-add", "operation": "add", "args": [40, 2]},
+    {"name": "short-circuit", "operation": "and", "left": false, "right": true, "right_fault": true},
+    {"name": "division-by-zero", "operation": "div", "args": [7, 0]},
+    {"name": "addition-overflow", "operation": "add", "args": [9223372036854775807, 1]},
+    {"name": "min-div-overflow", "operation": "div", "args": [-9223372036854775808, -1]},
+    {"name": "min-negation-overflow", "operation": "neg", "args": [-9223372036854775808]},
+    {"name": "step-budget", "operation": "steps", "max_steps": 3, "ticks": 4},
+    {"name": "call-depth", "operation": "depth", "max_depth": 2, "enters": 3}
+  ]
+}
