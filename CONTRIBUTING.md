@@ -35,7 +35,7 @@
 ```bash
 make prepare
 make check
-VERIFY_LOG=/tmp/data-engineering-verify.log make verify
+make verify
 make clean
 
 git status --short

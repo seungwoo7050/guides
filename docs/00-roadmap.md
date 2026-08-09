@@ -34,8 +34,7 @@
 권장 기반:
 
 - [`distributed-services`](https://github.com/seungwoo7050/guides/tree/distributed-services): 중복 전달, 순서 역전, retry, Outbox와 재조정
-- [`computer-networks`](https://github.com/seungwoo7050/guides/tree/computer-networks): timeout·연결·partition·flow control을 분리하는 능력
-- [`web-infra`](https://github.com/seungwoo7050/guides/tree/web-infra): immutable artifact, secret, 관측, backup과 incident response
+- [`distributed-systems`](https://github.com/seungwoo7050/guides/tree/distributed-systems): 복제 로그·partition·순서 보장과 데이터 pipeline이 관찰하는 경계를 구분하는 능력
 
 선행 브랜치를 모두 완주할 필요는 없다. 아래 진단 질문에 답하지 못할 때 해당 문서로 이동한다.
 
@@ -67,10 +66,10 @@ replay·reconciliation·quality·lineage·freshness
 
 - 관계 모델, index, MVCC, WAL, query plan: [`database-systems`](https://github.com/seungwoo7050/guides/tree/database-systems)
 - Outbox, Saga, 서비스 명령의 결과 수렴: [`distributed-services`](https://github.com/seungwoo7050/guides/tree/distributed-services)
-- consensus, replicated log, quorum, sharding: `distributed-systems`
-- 모델 학습, 평가와 fine-tuning: `machine-learning`
-- workload cluster, multi-tenancy와 self-service platform: `platform-engineering`
-- 인증·권한·위협 모델·사고 대응의 일반 원리: `cybersecurity`
+- consensus, replicated log, quorum, sharding: [`distributed-systems`](https://github.com/seungwoo7050/guides/tree/distributed-systems)
+- 모델 학습, 평가와 fine-tuning: [`machine-learning`](https://github.com/seungwoo7050/guides/tree/machine-learning)
+- workload cluster, multi-tenancy와 self-service platform: [`platform-engineering`](https://github.com/seungwoo7050/guides/tree/platform-engineering)
+- 인증·권한·위협 모델·사고 대응의 일반 원리: [`cybersecurity`](https://github.com/seungwoo7050/guides/tree/cybersecurity)
 
 주제가 겹쳐도 질문이 다르다. 예를 들어 이 가이드의 CDC는 **분석 소비자가 source transaction과 delete를 어떤 record로 관찰하는가**를 다룬다. `database-systems`의 WAL은 DBMS가 crash 뒤 내부 상태를 어떻게 복구하는가를 다룬다.
 
@@ -156,6 +155,13 @@ replay·reconciliation·quality·lineage·freshness
 → correction·replay·retention
 ```
 
+## 연결과 후속 심화
+
+- 정본 데이터 엔지니어링 트랙은 `git → python → database-systems → data-engineering`의 선형 경로를 사용한다.
+- 게임 데이터·ML 트랙은 게임 사건의 의미를 정한 뒤 `database-systems → data-engineering → machine-learning`로 이어진다.
+- [`machine-learning`](https://github.com/seungwoo7050/guides/tree/machine-learning)은 이 가이드가 만든 dataset과 평가 입력을 소비하지만 모델 학습은 스스로 소유한다.
+- [`platform-engineering`](https://github.com/seungwoo7050/guides/tree/platform-engineering)은 여러 팀을 위한 provisioning·정책·self-service 실행 경로를 소유하며, 이 가이드의 일반적 후속 심화다.
+
 ## 문서와 연습 대응표
 
 | 구획 | 핵심 문서 | 구현·설계 연습 |
@@ -177,7 +183,7 @@ replay·reconciliation·quality·lineage·freshness
 ```bash
 make prepare
 make check
-VERIFY_LOG=/tmp/data-engineering-verify.log make verify
+make verify
 make clean
 ```
 

@@ -18,14 +18,14 @@
 ```bash
 make prepare
 make check
-VERIFY_LOG=/tmp/data-engineering-verify.log make verify
+make verify
 make clean
 ```
 
 - `make prepare`는 source를 바꾸지 않고 Python 환경과 저장소 fingerprint를 기록한다.
 - `make check`는 네트워크와 외부 서비스 없이 문서·예제·validator의 빠른 계약을 검사한다.
 - `make verify`는 외부 임시 복사본에서 reference가 통과하고 skeleton이 의도된 이유로 실패하는지, capstone 설계 계약과 source 불변성을 함께 검사한다.
-- `VERIFY_LOG`는 저장소 밖 절대 경로만 허용한다. 생략하면 `/tmp/guide-data-engineering-verify-*.log`를 사용한다.
+- `VERIFY_LOG`는 저장소 밖의 아직 존재하지 않는 절대 경로만 허용한다. 생략하면 충돌 없는 임시 로그를 만든다.
 
 학습 순서와 세 경로는 [`docs/00-roadmap.md`](docs/00-roadmap.md)에 있다.
 
@@ -59,16 +59,21 @@ make clean
 다음은 권장 기반이다.
 
 - [`distributed-services`](https://github.com/seungwoo7050/guides/tree/distributed-services): 중복 전달, 순서 역전, Outbox와 재조정
-- [`computer-networks`](https://github.com/seungwoo7050/guides/tree/computer-networks): 연결·timeout·partition을 계층별로 분리하는 능력
-- [`web-infra`](https://github.com/seungwoo7050/guides/tree/web-infra): artifact, secret, 관측, backup과 사고 대응
+- [`distributed-systems`](https://github.com/seungwoo7050/guides/tree/distributed-systems): source log·복제·partition·순서 보장의 시스템 경계를 구분하는 능력
 
 이 브랜치는 다음을 다시 소유하지 않는다.
 
-- DBMS 페이지·MVCC·WAL과 질의 실행기: `database-systems`
-- 서비스 업무 상태의 Outbox·Saga·보상: `distributed-services`
-- 합의·replicated log·sharding 알고리즘: `distributed-systems`
-- 모델 학습·평가·fine-tuning: `machine-learning`
-- Kubernetes와 다중 팀 self-service 플랫폼: `platform-engineering`
+- DBMS 페이지·MVCC·WAL과 질의 실행기: [`database-systems`](https://github.com/seungwoo7050/guides/tree/database-systems)
+- 서비스 업무 상태의 Outbox·Saga·보상: [`distributed-services`](https://github.com/seungwoo7050/guides/tree/distributed-services)
+- 합의·replicated log·sharding 알고리즘: [`distributed-systems`](https://github.com/seungwoo7050/guides/tree/distributed-systems)
+- 모델 학습·평가·fine-tuning: [`machine-learning`](https://github.com/seungwoo7050/guides/tree/machine-learning)
+- Kubernetes와 다중 팀 self-service 플랫폼: [`platform-engineering`](https://github.com/seungwoo7050/guides/tree/platform-engineering)
+
+## 연결과 다음 경로
+
+- 분석·학습 소비자에게 데이터 제품을 전달하는 경계는 [`machine-learning`](https://github.com/seungwoo7050/guides/tree/machine-learning)과 연결한다. 이 가이드는 model artifact를 만들지 않고 입력 dataset의 의미·판본·품질 근거까지만 책임진다.
+- 여러 팀에 pipeline 실행·관측·정책 경로를 제공하는 다음 심화는 [`platform-engineering`](https://github.com/seungwoo7050/guides/tree/platform-engineering)이다. 이 가이드에서는 개별 데이터 제품의 orchestration 계약까지만 구현한다.
+- 정본 업무 경로는 `git → python → database-systems → data-engineering`이며, 게임 데이터·ML 경로에서는 `database-systems → data-engineering → machine-learning` 순서로 연결된다.
 
 ## 작업 공간
 
@@ -93,4 +98,5 @@ Capstone은 완성 코드를 제공하지 않는다. 대신 입력·상태·실�
 - partition·columnar layout·compaction을 질의와 운영 비용의 trade-off로 설명한다.
 - backfill과 replay를 정상 운영 절차로 설계하고 source/sink 대사로 결과를 증명한다.
 - freshness·completeness·uniqueness·lineage와 incident 근거를 데이터 제품 계약에 포함한다.
-- 실제 데이터 플랫폼 또는 오픈소스 저장소에서 작은 connector, transform, validator, orchestration 변경에 기여한다.
+
+이 근거는 특정 상용 플랫폼의 운영 숙련이나 대규모 cluster의 성능을 자동으로 증명하지 않는다. 실제 제품에서는 해당 engine과 조직의 권한·비용·용량 제약을 추가로 검증해야 한다.
