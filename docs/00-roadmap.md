@@ -181,7 +181,14 @@ scripts/check_workspace.sh exercises/02-iaas-failure-domains
 
 복사 직후 검사는 `TODO`와 미완성 분량 때문에 실패합니다. 요구된 근거를 채운 뒤 검사에 통과하고, 그 다음 `reference/`와 비교합니다. reference는 유일한 정답이 아니라 빠진 책임과 실패를 발견하기 위한 검토 예시입니다.
 
-07은 코드 실습입니다. 먼저 tests를 읽고 `skeleton/cloud_model.py`를 수정하는 별도 workspace를 만들거나 복사본에서 작업합니다. 원본 skeleton은 루트 검증이 의도한 실패를 확인하므로 변경하지 않습니다.
+07은 코드 실습입니다. 먼저 tests와 공개 상태 계약을 읽고 안전한 wrapper가 skeleton 전용 workspace를 만들게 합니다. 원본 skeleton은 루트 검증이 정확한 실패 ID를 확인하므로 변경하지 않습니다.
+
+```sh
+scripts/new_workspace.sh exercises/07-local-cloud-model
+scripts/check_workspace.sh exercises/07-local-cloud-model
+```
+
+검사는 `.workspace/07-local-cloud-model/cloud_model.py`를 읽기만 하며, 구현·evidence를 만들거나 덮어쓰지 않습니다. 결정적 JSON evidence가 필요할 때만 07 README의 create-only `--report` 명령을 별도로 실행합니다.
 
 ## 실제 공급자 실험을 선택할 때
 

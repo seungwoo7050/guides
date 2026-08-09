@@ -30,11 +30,16 @@ scripts/check_workspace.sh projects/multitenant-document-processing-saas
 ## Local model profile
 
 ```sh
-CLOUD_MODEL_PROFILE=reference \
-python3 -m unittest discover -s exercises/07-local-cloud-model/tests -v
+python3 scripts/verify_cloud_model.py \
+  --implementation exercises/07-local-cloud-model/reference/cloud_model.py
 
-CLOUD_MODEL_PROFILE=skeleton \
-python3 -m unittest discover -s exercises/07-local-cloud-model/tests -v
+# 아래 starter는 정확히 contract.json의 8개 check에서 실패해야 합니다.
+python3 scripts/verify_cloud_model.py \
+  --implementation exercises/07-local-cloud-model/skeleton/cloud_model.py
+
+# 학습자 복사본은 wrapper로 생성·검사합니다. 기존 목적지는 덮어쓰지 않습니다.
+scripts/new_workspace.sh exercises/07-local-cloud-model
+scripts/check_workspace.sh exercises/07-local-cloud-model
 ```
 
 ## 정리

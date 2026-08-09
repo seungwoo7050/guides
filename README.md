@@ -172,6 +172,15 @@ scripts/new_workspace.sh projects/multitenant-document-processing-saas
 scripts/check_workspace.sh projects/multitenant-document-processing-saas
 ```
 
+07 코드 실습은 `template/` 대신 취약한 `skeleton/`에서 안전하게 시작하고 같은 공개 validator로 검사합니다.
+
+```sh
+scripts/new_workspace.sh exercises/07-local-cloud-model
+scripts/check_workspace.sh exercises/07-local-cloud-model
+```
+
+wrapper는 기존 workspace·symlink·저장소 밖 경로를 거부하며 학습자 구현을 덮어쓰지 않습니다.
+
 ## 실제 공급자 실험
 
 실제 AWS·Azure·Google Cloud 계정은 선택 사항입니다. 실행 전 반드시 [`cloud experiment safety`](reference/cloud-experiment-safety.md)를 읽고 다음을 갖춥니다.
