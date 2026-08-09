@@ -1,0 +1,7 @@
+target,scenario,cpu_baseline_mib,cpu_added_mib,cpu_peak_mib,gpu_baseline_mib,gpu_added_mib,gpu_peak_mib,transient_peak_mib,within_budget,degradation_or_decision,evidence
+desktop-mid,cold-entry,190,142,332,70,177,247,unknown,conditional-pass,"resident CPU/GPU는 예산 안이지만 transient와 cold-entry p95를 측정하기 전에는 최종 pass로 승격하지 않는다","asset-manifest 전체 transitive closure; memory-budgets desktop-mid"
+handheld-low,cold-entry,120,142,262,54,177,231,unknown,no,"full request를 차단하고 optional music/cosmetic을 지연한다; 그래도 critical GPU tier 교체가 필요하다","CPU 262>180; GPU 231>128"
+handheld-low,control-ready,120,44,164,54,101,155,unknown,no,"CPU는 통과하지만 GPU가 27 MiB 초과하므로 lower-tier critical texture/player resource 없이는 control-ready를 선언하지 않는다","scene closure 13/87 MiB + player closure 31/14 MiB"
+handheld-low,agent-ready,120,64,184,54,101,155,unknown,no,"navigation을 늦추고 agent를 idle fallback으로 유지한다; critical GPU 문제와 CPU 4 MiB 초과를 먼저 해결한다","control-ready closure + nav.arena 20/0 MiB"
+handheld-low,missing-cosmetic,120,136,256,54,101,155,unknown,no,"missing cosmetic과 전용 vfx를 skip하고 default presentation을 사용해도 현재 critical resident set은 예산을 넘는다","full closure minus cosmetic.player.gold and vfx.gold.trail"
+desktop-mid,cancel-at-40ms,190,unknown,unknown,70,unknown,unknown,unknown,unknown,"generation 7 request를 cancel하고 late completion을 폐기한 뒤 release fence 후 기준선 복귀를 측정한다","fixture에는 40 ms 시점 resident/transient 측정값이 없다"
