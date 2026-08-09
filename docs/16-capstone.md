@@ -235,7 +235,7 @@ local gateway
 중요한 점:
 
 - intentional weakness는 목록과 code owner가 명확합니다.
-- unintended vulnerability가 없는지 별도 review합니다.
+- 별도 review의 대상 범위, 발견한 unintended weakness와 검토하지 못한 경계를 기록합니다. 취약점의 부재를 증명했다고 표현하지 않습니다.
 - synthetic flag 외 data는 없습니다.
 - attacker와 verifier는 production credential을 가지지 않습니다.
 - corrected profile은 동일한 regression에서 차단됩니다.

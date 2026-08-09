@@ -162,7 +162,7 @@ monitoring period가 끝날 조건과 재개할 incident trigger를 둡니다.
 
 다음 축으로 조사합니다.
 
-- time: 최초 가능 시점부터 containment까지
+- time: last-known-good와 earliest-observed 사이의 미확인 범위부터 containment까지. 실제 최초 침해 시점은 근거 없이는 단정하지 않음
 - identity: user·service·CI·admin·key
 - asset: host·service·tenant·bucket·repository
 - data: read·write·delete 가능 범위

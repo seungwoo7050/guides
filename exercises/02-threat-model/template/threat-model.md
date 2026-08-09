@@ -6,9 +6,9 @@ TODO
 
 ## 자산
 
-| Asset | 보호할 상태 | 소유자 | 실패 결과 | 필요한 evidence |
-|---|---|---|---|---|
-| AST-001 | TODO | TODO | TODO | TODO |
+| Asset | 보호할 상태 | 업무·위험 owner | 상태 정본 owner | Enforcement owner | Evidence custodian | 실패 결과 |
+|---|---|---|---|---|---|---|
+| AST-001 | TODO | TODO | TODO | TODO | TODO | TODO |
 
 ## 행위자와 capability
 
@@ -45,3 +45,18 @@ TODO
 ## 가정과 미확인
 
 TODO
+
+## 정상·경계·대표 실패
+
+| 종류 | 초기 상태와 사건 | 기대 상태·불변식 | 관찰 evidence | 보장하지 않는 범위 |
+|---|---|---|---|---|
+| 정상 | TODO | TODO | TODO | TODO |
+| 경계 | TODO | TODO | TODO | TODO |
+| 실패 | TODO | TODO | TODO | TODO |
+
+## Edge 검증과 종단 간 한계
+
+- 직접 검증한 edge와 oracle: TODO
+- 문서·snapshot으로만 추론한 edge: TODO
+- 독립 edge 근거를 연결할 때 남는 시간·identity·version 가정: TODO
+- 이 모델이 증명하지 않는 종단 간 경로: TODO

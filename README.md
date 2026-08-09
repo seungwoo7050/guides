@@ -159,17 +159,26 @@ Python 3.10 이상과 POSIX 호환 셸만 필요합니다. 외부 package나 Doc
 ./verify.sh
 ```
 
-`prepare.sh`는 source를 바꾸지 않고 문서·fixture fingerprint와 Python 환경을 기록합니다. `verify.sh`는 다음을 확인합니다.
+`prepare.sh`는 tracked source를 바꾸지 않고 파일 mode·길이·내용을 포함한 fingerprint와 Python 환경을 ignored `.guide/` marker에 기록합니다. `verify.sh`는 다음을 확인합니다.
 
 1. 필수 문서와 실습 구조
 2. 내부 Markdown 링크
-3. JSON·JSONL fixture 형식
-4. Capstone 산출물 검사기의 자체 테스트
-5. 안전 정책과 필수 경계 문서의 존재
+3. JSON·JSONL 형식과 scenario ID·참조·timestamp·release 연결
+4. 기준 행동 통과, 취약 skeleton과 네 known-bad 변형의 거부
+5. Capstone verifier의 완성 fixture와 오류 코드별 known-bad meta-test
+6. 안전 정책과 필수 경계 문서의 존재
+
+기본 검증은 learner work를 `[SKIP]`과 이유를 남기고 건너뜁니다. 01~07과 Capstone의 생성된 `work/`까지 검사할 때만 다음 명시적 모드를 사용합니다.
+
+```sh
+CYBERSECURITY_VERIFY_WORK=1 ./verify.sh
+```
+
+각 검사의 `[RUN]`, `[PASS]`, `[FAIL]`, `[SKIP]`와 요약은 저장소 밖의 새 log에 남습니다. 사용자 지정 `VERIFY_LOG`도 저장소 밖의 아직 존재하지 않는 절대 경로만 허용합니다.
 
 실제 취약점의 발견이나 특정 제품의 보안성을 자동으로 보장하지 않습니다.
 
-검사 통과는 파일·링크·fixture와 기준 행동의 재현 근거일 뿐, 설명의 정확성이나 학습 경로의 충분성 또는 `stable`을 자동으로 증명하지 않습니다. 저자 외 사람이 문서·실습·Capstone의 정상·경계·대표 실패와 종료 근거를 검토해야 하며, 이 브랜치가 목표로 하는 상태는 **사람의 stable 검토 준비 완료**입니다.
+검사 통과는 파일·링크·fixture와 기준 행동의 재현 근거일 뿐, 설명의 정확성이나 학습 경로의 충분성 또는 `stable`을 자동으로 증명하지 않습니다. 저자 외 사람이 [사람 검토 가이드](reference/manual-review-guide.md)로 문서·실습·Capstone의 정상·경계·대표 실패와 종료 근거를 검토해야 하며, 이 브랜치가 목표로 하는 상태는 **사람의 stable 검토 준비 완료**입니다.
 
 ## 종료 기준
 

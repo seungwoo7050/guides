@@ -114,7 +114,7 @@ crash가 security vulnerability인지 별도 triage합니다. crash가 없다고
 
 property-based test는 example 대신 유지해야 할 속성을 검사합니다.
 
-- foreign tenant는 항상 deny
+- 명시적으로 승인된 support·delegation requirement가 없는 foreign tenant access는 deny
 - parse→serialize가 허용 schema를 보존
 - malformed token은 privilege를 만들지 않음
 - 같은 idempotency key의 retry는 유효한 business state transition을 최대 한 번만 만듦

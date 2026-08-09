@@ -31,7 +31,7 @@
 3. scope, Rules of Engagement, stop condition과 evidence handling을 포함한 평가 계획을 만듭니다.
 4. 자동 도구가 제시한 후보를 최소 재현과 독립 증거로 검증합니다.
 5. 애플리케이션·시스템·identity·secret·공급망의 약점을 하나의 attack path로 연결합니다.
-6. finding을 재현 조건, 영향, root cause, severity 근거와 remediation으로 보고합니다.
+6. finding을 검증 상태별 근거로 보고하고, confirmed 항목에는 인과적으로 지지된 root cause·severity와 적용되는 remediation을 연결합니다.
 7. 위협을 보안 requirement와 부정 테스트로 변환합니다.
 8. 패치 뒤 credential rotation, data cleanup, regression과 재검증 범위를 결정합니다.
 9. event schema와 detection hypothesis를 작성하고 alert의 false positive·false negative를 평가합니다.
@@ -163,9 +163,9 @@ requirement
 | 소유 범위 | 학습 결과와 개념 | 단계 실습·대표 실패 | Capstone 근거 |
 |---|---|---|---|
 | 위협 모델과 공격 표면 | 보호 상태·owner·경계·capability를 연결하고, [02장](02-assets-trust-boundaries-and-threat-models.md)과 [05장](05-attack-surface-and-paths.md)에서 edge별 전제·사건·증거를 작성함 | [01 범위와 증거](../exercises/01-scope-and-evidence/README.md), [02 위협 모델](../exercises/02-threat-model/README.md); 범위 밖 호출, network boundary를 trust boundary로 오인, 미검증 edge를 confirmed path로 표현하는 실패 | versioned scope, threat ID, attack-path edge와 검증 상태를 하나의 trace로 제출 |
-| 애플리케이션·시스템 취약점 조사 | 애플리케이션·시스템·identity·artifact 경계의 실패를 조사하고 [09장](09-vulnerability-validation-and-reporting.md)의 독립 근거로 후보 상태를 판정함 | [03 취약점 검증](../exercises/03-vulnerability-validation/README.md); scanner 후보를 즉시 confirmed로 선언하거나 version·configuration 불일치를 무시하는 실패 | candidate별 validation 상태, evidence, unknown, 영향과 canonical finding 관계를 제출 |
+| 애플리케이션·시스템 취약점 조사 | [06장](06-application-boundary-failures.md)의 애플리케이션, [07장](07-system-identity-and-secret-boundaries.md)의 system·identity, [08장](08-supply-chain-and-build-trust.md)의 artifact 경계 실패를 조사하고 [09장](09-vulnerability-validation-and-reporting.md)의 독립 근거로 후보 상태를 판정함 | [03 취약점 검증](../exercises/03-vulnerability-validation/README.md); scanner 후보를 즉시 confirmed로 선언하거나 version·configuration 불일치를 무시하는 실패 | candidate별 validation 상태, evidence, unknown, 영향과 canonical finding 관계를 제출 |
 | 권한 상승·자격 증명·내부 이동의 격리 실습 | [07장](07-system-identity-and-secret-boundaries.md)의 principal·delegation·credential scope를 합성 LedgerLab 행동으로 관찰함 | [격리 attack-path 실습](../exercises/07-isolated-attack-path/README.md); cross-owner report 허용, cross-job·expired·revoked credential 허용, prefix 경계 우회 | 취약 상태, 정상 접근, 동일 공격의 거절, 상태 불변성과 audit event를 같은 실행 근거로 제출 |
-| 패치·회귀 테스트·탐지·사고 복원 | [10~14장](10-security-requirements-and-design-invariants.md)의 requirement→test→patch→event→recovery 흐름과 release 검토를 연결함 | [04 요구사항](../exercises/04-security-requirements/README.md), [05 탐지](../exercises/05-detection-engineering/README.md), [06 사고 timeline](../exercises/06-incident-timeline/README.md), 격리 실습; `deny-all`, 정상 기능 회귀, 우회 경로, 탐지 누락과 신뢰하지 못한 복구 원본 | 최소 change set, 정상·경계·known-bad 회귀, deny event·alert, incident/recovery와 release decision을 연결 |
+| 패치·회귀 테스트·탐지·사고 복원 | [10장](10-security-requirements-and-design-invariants.md)의 requirement, [11장](11-security-testing-and-assurance.md)의 test·oracle, [12장](12-remediation-hardening-and-regression.md)의 patch·회귀, [13장](13-telemetry-detection-and-investigation.md)의 event·탐지와 [14장](14-incident-response-and-recovery.md)의 recovery를 release 검토에 연결함 | [04 요구사항](../exercises/04-security-requirements/README.md), [05 탐지](../exercises/05-detection-engineering/README.md), [06 사고 timeline](../exercises/06-incident-timeline/README.md), 격리 실습; `deny-all`, 정상 기능 회귀, 우회 경로, 탐지 누락과 신뢰하지 못한 복구 원본 | 최소 change set, 정상·경계·known-bad 회귀, deny event·alert, incident/recovery와 release decision을 연결 |
 
 카탈로그의 세 `exit_capabilities`도 문구를 바꾸지 않고 다음 근거로 판정합니다.
 
@@ -177,7 +177,7 @@ requirement
 
 ## 실습 지도
 
-실습은 문서와 구조화 데이터 중심입니다.
+01~06은 문서와 구조화 데이터 중심이고, 07은 같은 계약을 합성 행동으로 실행합니다.
 
 | 순서 | 실습 | 핵심 결과 |
 |---:|---|---|
@@ -252,15 +252,17 @@ requirement
 - Python version 확인
 - 필수 파일 존재 확인
 - source fingerprint 기록
-- 저장소 내부를 변경하지 않는 준비 marker 생성
+- tracked source와 분리된 ignored `.guide/` 준비 marker 생성
 
 `verify.sh`는 다음을 수행합니다.
 
 - Markdown 내부 링크 검사
 - 필수 chapter·exercise·reference 확인
 - JSON·JSONL fixture parse
-- Capstone verifier의 valid·invalid fixture 검사
-- 안전 정책에 필요한 필수 section 확인
+- scenario ID·참조·timestamp·중복 delivery와 manifest·deploy·rollback 연결 검사
+- 기준 행동 통과와 취약 skeleton·known-bad mutant 거부
+- Capstone verifier의 valid fixture와 원인 코드별 invalid fixture 검사
+- 기본 learner work `[SKIP]`, `CYBERSECURITY_VERIFY_WORK=1`에서만 01~07·Capstone 제출물 검사
 
 자동 검사는 실제 취약점, 실제 권한 경계, 배포 환경과 사람의 판단을 대신하지 않습니다.
 
@@ -279,12 +281,17 @@ requirement
 7. telemetry와 detection plan
 8. incident timeline과 recovery evidence
 9. residual risk와 release decision
+10. 취약 상태의 합성 attack proof와 실행 전후 state hash
+11. 구현 fingerprint, canonical skeleton 대비 patch diff와 최소성 근거
+12. 정상·경계·known-bad 회귀, corrected deny event와 detector positive·negative evidence
+13. cleanup 결과와 합성 profile이 보장하지 않는 범위
 
 그리고 다음 행동이 가능해야 합니다.
 
 - 기존 보안 issue의 재현 조건을 검토합니다.
 - 보안 테스트나 regression fixture를 추가합니다.
 - 작은 취약점의 root cause를 수정합니다.
+- 같은 actor·resource·action을 재실행해 수정 뒤 차단과 탐지를 확인합니다.
 - 로그·탐지·runbook의 누락을 보완합니다.
 - 자신이 확인하지 못한 범위와 추가 검토가 필요한 전문가 영역을 명시합니다.
 

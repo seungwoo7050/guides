@@ -2,7 +2,10 @@
 
 ## Incident 범위
 
-TODO
+- Last-known-good: TODO
+- Earliest-observed known-bad: TODO
+- 두 시점 사이의 미확인 구간과 실제 최초 침해 시각을 단정하지 못하는 이유: TODO
+- 확인·조사 중·제외 asset과 identity: TODO
 
 ## 현재 보안 상태
 
@@ -30,7 +33,9 @@ TODO
 
 ## Recovery와 검증
 
-TODO
+- credential·artifact·data별 독립 trust anchor: TODO
+- 정상 기능·보안 control 검증: TODO
+- 재수립하지 못한 신뢰와 남은 `UNKNOWN`: TODO
 
 ## Communication
 

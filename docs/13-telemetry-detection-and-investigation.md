@@ -64,7 +64,7 @@ request body, 불필요한 개인 데이터는 수집 전에 제거하고, pseud
 - admin·privileged action은 allow·deny 모두 기록
 - sensitive export·download는 allow 기록
 - 반복되는 low-risk read는 sampling 또는 aggregate
-- policy·credential·release 변경은 항상 기록
+- policy·credential·release 변경은 위험 기반 정책에서 원칙적으로 기록하고, 예외·retention·pipeline 실패 시의 차단 또는 보완 evidence를 정의
 - log configuration·deletion 시도는 별도 중요 event
 
 ## 4. identity chain

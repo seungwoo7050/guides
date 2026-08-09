@@ -1,7 +1,7 @@
 #!/usr/bin/env sh
 set -u
 
-ROOT=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
+ROOT=$(CDPATH='' cd -- "$(dirname -- "$0")" && pwd)
 cd "$ROOT" || exit 1
 
 MARKER=.guide/cybersecurity/prepared.json

@@ -32,7 +32,7 @@ python3 scripts/new_workspace.py exercise 06-incident-timeline
    - `ACTION`
    - `RESULT`
    - `UNKNOWN`
-3. 최초 known-bad, 마지막 known-good와 현재 조사 범위를 기록합니다.
+3. `earliest-observed known-bad`, `last-known-good`와 그 사이의 미확인 시간 구간, 현재 조사 범위를 기록합니다. 이를 실제 최초 침해 시각으로 단정하지 않습니다.
 4. containment 후보별 보존되는 evidence와 운영 영향을 비교합니다.
 5. credential, artifact와 data의 신뢰 회복 조건을 작성합니다.
 6. 복구 뒤 사용자 경로와 보안 통제를 어떻게 검증할지 작성합니다.
@@ -49,7 +49,7 @@ python3 scripts/new_workspace.py exercise 06-incident-timeline
 ## 제출 evidence
 
 - `work/incident-timeline.md`: source·confidence가 있는 정규화된 timeline과 discovery·decision 기록
-- known-good/known-bad 범위, 중복·지연 event의 처리와 unresolved unknown
+- last-known-good·earliest-observed known-bad 사이의 미확인 범위, 중복·지연 event의 처리와 unresolved unknown
 - containment 후보별 evidence 보존, 운영 영향, 가역성과 실제 결정 근거
 - credential·artifact·data별 trust 재수립 조건, 정상 기능·보안 통제 recovery evidence
 - communication 대상, 후속 owner, production에서 별도 승인이 필요한 검증 계획

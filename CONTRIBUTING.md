@@ -29,7 +29,7 @@
 ./verify.sh
 ```
 
-빠른 정적 검사는 다음과 같습니다.
+저장소 구조·기준 행동·scenario·Capstone meta 검사는 다음과 같습니다.
 
 ```sh
 make check
@@ -58,3 +58,7 @@ docs(cybersecurity): 공격 경로 전제 설명 보완
 test(cybersecurity): capstone finding schema 검사 추가
 fix(cybersecurity): JSONL fixture 검증 오류 수정
 ```
+
+`c` 브랜치처럼 저장소 기반, 진입 문서, 개념 단원, 대응 실습, Capstone, 검증 인프라와 최종 rubric을 검토 가능한 의미 단위로 나눕니다. 관련 단위의 검사를 실행한 뒤 커밋하고, 완성된 파일을 사후에 임의로 쪼개거나 파일마다 의미 없는 커밋을 만들지 않습니다.
+
+자동 검사와 커밋 이력은 사람의 품질 판단을 돕는 근거입니다. 둘 중 어느 것도 이 브랜치의 교육적 완성이나 `stable`을 자동 승인하지 않습니다.

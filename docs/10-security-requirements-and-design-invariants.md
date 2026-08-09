@@ -210,13 +210,14 @@ requirement를 즉시 만족하지 못하면 exception에 다음을 포함합니
 현재 exposure
 compensating control
 risk owner
+risk acceptance authority와 승인 근거
 만료일
 monitoring
 remediation milestone
 re-review trigger
 ```
 
-영구 exception이 되지 않도록 만료와 owner를 둡니다.
+영구 exception이 되지 않도록 만료와 owner를 두고, 기술 reviewer·risk owner와 조직이 지정한 risk acceptance authority를 구분합니다.
 
 ## 11. requirement review
 
