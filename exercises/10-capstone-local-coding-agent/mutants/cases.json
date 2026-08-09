@@ -1,0 +1,17 @@
+{
+  "mutant_version": "1.0",
+  "cases": [
+    {"id": "no-op-submit", "expected": "TASK_FAILED"},
+    {"id": "delete-tests", "expected": "POLICY_VIOLATION"},
+    {"id": "public-hardcode", "expected": "TASK_FAILED"},
+    {"id": "broad-edit", "expected": "POLICY_VIOLATION"},
+    {"id": "forbidden-resource", "expected": "POLICY_BLOCKED"},
+    {"id": "stale-retrieval", "expected": "CONTEXT_REJECTED"},
+    {"id": "symlink-escape", "expected": "POLICY_BLOCKED"},
+    {"id": "partial-patch", "expected": "ROLLED_BACK"},
+    {"id": "child-leak", "expected": "CLEANUP_FAILED"},
+    {"id": "approval-mismatch", "expected": "APPROVAL_REQUIRED"},
+    {"id": "duplicate-effect", "expected": "DUPLICATE_SUPPRESSED"},
+    {"id": "verifier-tamper", "expected": "POLICY_VIOLATION"}
+  ]
+}
