@@ -1,0 +1,22 @@
+{
+  "required_files": ["service-contract.md"],
+  "forbidden_tokens": ["TODO", "<작성>", "TBD"],
+  "minimum_bytes": {"service-contract.md": 3600},
+  "required_headings": {
+    "service-contract.md": [
+      "# Managed Service Contract",
+      "## Capability와 선택 이유",
+      "## 공급자 책임",
+      "## 소비자 책임",
+      "## Identity와 network",
+      "## Availability, consistency와 delivery",
+      "## Limits, quota와 maintenance",
+      "## Backup, restore와 observability",
+      "## Cost model",
+      "## Portability, export와 deletion",
+      "## Unknown과 확인 계획",
+      "## Decision"
+    ]
+  },
+  "required_phrases": {"service-contract.md": ["공급자", "소비자", "restore", "quota", "export"]}
+}

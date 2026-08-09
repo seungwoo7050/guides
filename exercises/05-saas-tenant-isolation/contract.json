@@ -1,0 +1,21 @@
+{
+  "required_files": ["tenant-isolation-review.md"],
+  "forbidden_tokens": ["TODO", "<작성>", "TBD"],
+  "minimum_bytes": {"tenant-isolation-review.md": 3600},
+  "required_headings": {
+    "tenant-isolation-review.md": [
+      "# SaaS Tenant Isolation Review",
+      "## Tenant 정의와 lifecycle",
+      "## Authentication과 tenant context",
+      "## Database와 object boundary",
+      "## Cache와 background job",
+      "## Analytics와 derived data",
+      "## Support와 operator access",
+      "## Entitlement와 quota",
+      "## Export와 deletion",
+      "## Negative tests와 evidence",
+      "## Decision"
+    ]
+  },
+  "required_phrases": {"tenant-isolation-review.md": ["tenant", "cache", "export", "deletion", "quota"]}
+}

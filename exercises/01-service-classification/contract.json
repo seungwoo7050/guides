@@ -1,0 +1,18 @@
+{
+  "required_files": ["assessment.md"],
+  "forbidden_tokens": ["TODO", "<작성>", "TBD"],
+  "minimum_bytes": {"assessment.md": 2400},
+  "required_headings": {
+    "assessment.md": [
+      "# 서비스 분류 평가",
+      "## 판정 기준",
+      "## 사례별 분류",
+      "## 책임 경계",
+      "## 실패와 증거",
+      "## 분류의 한계"
+    ]
+  },
+  "required_phrases": {
+    "assessment.md": ["IaaS", "PaaS", "SaaS", "FaaS", "공급자", "소비자"]
+  }
+}

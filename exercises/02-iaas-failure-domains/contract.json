@@ -1,0 +1,20 @@
+{
+  "required_files": ["architecture-review.md"],
+  "forbidden_tokens": ["TODO", "<작성>", "TBD"],
+  "minimum_bytes": {"architecture-review.md": 3800},
+  "required_headings": {
+    "architecture-review.md": [
+      "# IaaS Architecture Review",
+      "## Resource inventory와 owner",
+      "## State classification",
+      "## Network와 identity boundary",
+      "## Failure domain과 capacity",
+      "## Backup, restore와 rebuild",
+      "## Scaling, quota와 overload",
+      "## Failure injection과 evidence",
+      "## Cleanup 순서와 잔여 비용",
+      "## Release decision"
+    ]
+  },
+  "required_phrases": {"architecture-review.md": ["zone", "owner", "restore", "evidence", "cost"]}
+}

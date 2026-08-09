@@ -1,0 +1,21 @@
+{
+  "required_files": ["event-processing-plan.md"],
+  "forbidden_tokens": ["TODO", "<작성>", "TBD"],
+  "minimum_bytes": {"event-processing-plan.md": 3600},
+  "required_headings": {
+    "event-processing-plan.md": [
+      "# FaaS Event Processing Plan",
+      "## Event identity와 schema",
+      "## 상태 기계와 완료 지점",
+      "## Idempotency와 external effect",
+      "## Retry classification과 deadline",
+      "## Batch failure와 ordering",
+      "## Concurrency, tenant fairness와 quota",
+      "## Dead-letter와 replay",
+      "## Observability와 evidence",
+      "## Cost guard",
+      "## Failure scenario 판정"
+    ]
+  },
+  "required_phrases": {"event-processing-plan.md": ["event_id", "duplicate", "timeout", "dead-letter", "tenant"]}
+}

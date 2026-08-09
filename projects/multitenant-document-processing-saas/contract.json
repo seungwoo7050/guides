@@ -1,0 +1,33 @@
+{
+  "required_files": [
+    "01-responsibility-matrix.md",
+    "02-resource-and-state-inventory.md",
+    "03-identity-network-and-tenant-boundaries.md",
+    "04-failure-and-recovery-plan.md",
+    "05-event-and-idempotency-contract.md",
+    "06-cost-quota-and-metering.md",
+    "07-portability-exit-and-deletion.md",
+    "08-release-review.md"
+  ],
+  "forbidden_tokens": ["TODO", "<작성>", "TBD"],
+  "minimum_bytes": {
+    "01-responsibility-matrix.md": 900,
+    "02-resource-and-state-inventory.md": 900,
+    "03-identity-network-and-tenant-boundaries.md": 900,
+    "04-failure-and-recovery-plan.md": 900,
+    "05-event-and-idempotency-contract.md": 900,
+    "06-cost-quota-and-metering.md": 900,
+    "07-portability-exit-and-deletion.md": 900,
+    "08-release-review.md": 900
+  },
+  "required_headings": {
+    "01-responsibility-matrix.md": ["## Scope", "## Stage 1 — IaaS", "## Stage 4 — SaaS", "## Evidence와 한계", "## Open risks와 owner"],
+    "02-resource-and-state-inventory.md": ["## Scope", "## Stage 1 — IaaS", "## Stage 4 — SaaS", "## Evidence와 한계", "## Open risks와 owner"],
+    "03-identity-network-and-tenant-boundaries.md": ["## Scope", "## Stage 1 — IaaS", "## Stage 4 — SaaS", "## Evidence와 한계", "## Open risks와 owner"],
+    "04-failure-and-recovery-plan.md": ["## Scope", "## Stage 1 — IaaS", "## Stage 4 — SaaS", "## Evidence와 한계", "## Open risks와 owner"],
+    "05-event-and-idempotency-contract.md": ["## Scope", "## Stage 1 — IaaS", "## Stage 4 — SaaS", "## Evidence와 한계", "## Open risks와 owner"],
+    "06-cost-quota-and-metering.md": ["## Scope", "## Stage 1 — IaaS", "## Stage 4 — SaaS", "## Evidence와 한계", "## Open risks와 owner"],
+    "07-portability-exit-and-deletion.md": ["## Scope", "## Stage 1 — IaaS", "## Stage 4 — SaaS", "## Evidence와 한계", "## Open risks와 owner"],
+    "08-release-review.md": ["## Scope", "## Stage 1 — IaaS", "## Stage 4 — SaaS", "## Evidence와 한계", "## Open risks와 owner"]
+  }
+}

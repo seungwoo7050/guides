@@ -1,0 +1,21 @@
+{
+  "required_files": ["cost-and-exit-plan.md"],
+  "forbidden_tokens": ["TODO", "<작성>", "TBD"],
+  "minimum_bytes": {"cost-and-exit-plan.md": 3600},
+  "required_headings": {
+    "cost-and-exit-plan.md": [
+      "# Cost and Exit Plan",
+      "## Workload unit와 cost driver",
+      "## Fixed, variable와 step cost",
+      "## Allocation과 tenant attribution",
+      "## Budget, quota와 anomaly response",
+      "## Rightsizing과 resilience trade-off",
+      "## Cleanup plan",
+      "## Commitment decision",
+      "## Data export와 migration",
+      "## Source deletion과 evidence",
+      "## Decision과 review trigger"
+    ]
+  },
+  "required_phrases": {"cost-and-exit-plan.md": ["cost", "tenant", "budget", "export", "cleanup"]}
+}
