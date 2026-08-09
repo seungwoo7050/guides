@@ -21,11 +21,20 @@ from .types import (
 
 
 class Cluster:
-    def __init__(self, node_ids: list[str], election_timeouts: dict[str, int] | None = None) -> None:
+    def __init__(
+        self,
+        node_ids: list[str],
+        election_timeouts: dict[str, int] | None = None,
+        *,
+        run_id: str = "learner-run",
+    ) -> None:
         if len(node_ids) < 3:
             raise ValueError("capstone core requires at least three nodes")
         if len(set(node_ids)) != len(node_ids):
             raise ValueError("node ids must be unique")
+        if not run_id:
+            raise ValueError("run_id must be non-empty")
+        self.run_id = run_id
         self.node_ids = tuple(node_ids)
         self.storage = {node_id: MemoryStorage() for node_id in node_ids}
         election_timeouts = election_timeouts or {
@@ -67,7 +76,7 @@ class Cluster:
         state_after_hash = self._state_hash()
         self.trace.append({
             "schema_version": 1,
-            "run_id": "learner-run",
+            "run_id": self.run_id,
             "step": len(self.trace) + 1,
             "virtual_time": self.now,
             "event_id": f"e{len(self.trace) + 1}",
@@ -279,6 +288,16 @@ class Cluster:
 
     def summaries(self) -> dict[str, dict[str, Any]]:
         return self.state_snapshot()["nodes"]
+
+    def trace_document(self, scenario_id: str) -> dict[str, Any]:
+        if not scenario_id:
+            raise ValueError("scenario_id must be non-empty")
+        return {
+            "schema_version": 1,
+            "run_id": self.run_id,
+            "scenario_id": scenario_id,
+            "events": list(self.trace),
+        }
 
     def run_schedule(self, schedule: list[dict[str, Any]]) -> list[dict[str, Any]]:
         for item in schedule:

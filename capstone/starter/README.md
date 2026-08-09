@@ -56,7 +56,7 @@ node.create_snapshot(through_index) -> Snapshot
 ### Cluster
 
 ```python
-Cluster(node_ids, election_timeouts)
+Cluster(node_ids, election_timeouts, run_id="learner-run")
 cluster.tick(node_id)
 cluster.tick_all()
 cluster.deliver_next()
@@ -73,6 +73,7 @@ cluster.submit(node_id, request)
 cluster.drain_responses()
 cluster.state_snapshot()
 cluster.run_schedule(schedule)
+cluster.trace_document(scenario_id)
 cluster.leaders()
 cluster.trace
 ```
