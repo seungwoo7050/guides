@@ -4,15 +4,62 @@ Stage 06과 capstone의 build·install·signing·store 증거를 서로 다른 �
 
 이 package가 반환하는 `consistent`는 **입력한 evidence끼리 모순되지 않는다**는 뜻이다. 명령이 native build, signature trust, 실제 device 또는 store를 직접 검사했다는 뜻이 아니다.
 
+같은 package의 EAS profile validator는 [`../reference/eas.json`](../reference/eas.json)을 `unknown`에서 읽어 profile 상속과 공개 설정 불변식을 검사한다. `configurationValid=true`도 설정 모양만 맞는다는 뜻이다. 결과의 `guarantees`는 native build, artifact bytes, signing, install/launch, store, EAS Update와 stable 승인을 모두 `false`로 유지한다.
+
 ## 실행
 
 ```sh
 fnm exec --using=24.19.0 npm --prefix exercises/field-notes/release-contract run typecheck
 fnm exec --using=24.19.0 npm --prefix exercises/field-notes/release-contract test
 fnm exec --using=24.19.0 npm --prefix exercises/field-notes/release-contract run validate:fixtures
+fnm exec --using=24.19.0 npm --prefix exercises/field-notes/release-contract run validate:eas-profile
 ```
 
 fixture 값은 schema version 2의 정상·거부 행동만 확인하는 합성 데이터다. 파일명과 digest 모양이 맞아도 실제 artifact, 서명, 설치 또는 store evidence가 아니다.
+
+## EAS build profile 계약
+
+`reference/eas.json`은 공통 `base`에서 Node `24.19.0`을 상속하고 공개 profile을 정확히 세 개만 둔다.
+
+| profile | development client | distribution | Android 결과 계약 |
+|---|---:|---|---|
+| `development` | `true` | `internal` | development client/internal 설정이 만드는 설치용 APK |
+| `preview` | `false` 기본 | `internal` | 명시적 `android.buildType=apk` |
+| `production` | `false` 기본 | `store` 기본 | 명시적 APK override가 없는 EAS 기본 AAB |
+
+EAS 공식 문서상 development build는 developer tool을 포함하고 store 제출 대상이 아니다. Internal/preview build는 직접 설치 가능한 Android APK에 적합하고, production의 기본 Android 형식은 Play용 AAB다. AAB는 device에 직접 설치하는 파일이 아니다. 따라서 profile 이름이나 성공한 configuration validation만으로 세 artifact 역할을 서로 바꾸지 않는다.
+
+각 공개 profile의 `env`에는 비민감 `FIELD_NOTES_BUILD_PROFILE` label 하나만 둔다. secret/token/credential/API URL 이름, URL 또는 credential 모양의 값과 platform별 env override는 validator가 거부한다. 실제 secret이 나중에 필요하면 committed `eas.json`이 아니라 EAS environment의 적절한 visibility와 사람 검토를 사용해야 한다. client bundle에 들어가는 값은 secret이 될 수 없다.
+
+validator는 다음을 함께 거부한다.
+
+- `base` 이외의 추가 profile 또는 세 공개 profile 누락
+- 알 수 없는 `extends`, 순환 상속과 EAS 한도를 넘는 상속 깊이
+- root/Android/iOS에서 Node `24.19.0` pin을 덮어쓰는 profile
+- development client/store, preview development client/non-APK, production internal/APK 조합
+- `cli.requireCommit=true` 또는 `cli.appVersionSource=local` 누락
+- `channel`을 build 성공이나 remote update 준비처럼 선언하는 설정
+
+`fixtures/eas-known-wrong.json`은 위 허위 양성을 한 파일에 모은 합성 거부 fixture다. 이 파일은 EAS CLI에 전달할 profile 예시가 아니다.
+
+### local version source를 선택한 이유와 대가
+
+이 교육 reference는 `cli.appVersionSource=local`과 `cli.requireCommit=true`를 사용한다. version/build number의 정본을 reviewed repository source에 두어 release evidence의 commit과 사람이 비교할 수 있게 하려는 선택이다. `requireCommit`은 EAS CLI가 build 준비 시 git index가 깨끗한지 확인하게 한다. 이것만으로 업로드된 source, 실제 artifact 또는 store build가 그 commit과 같다는 사실을 증명하지는 않는다.
+
+Expo는 EAS CLI 12부터 developer-facing build version에는 `remote` source와 production `autoIncrement`를 권장한다. 이는 중복 `versionCode`/`buildNumber`로 인한 store 거부 위험을 줄이고 동시 build 운영에 유리하다. 반대로 local source는 번호를 app config/native source에서 사람이 조정해야 하고, CI 동시성·누락·중복을 자동 해결하지 않는다. 이 branch는 source evidence 학습을 위해 local을 택했으며 production 운영팀이 remote로 전환할 때는 version 정본, sync 절차와 evidence 수집 방식을 별도로 검토해야 한다. validator 통과는 다음 store version이 유일하다는 증거가 아니다.
+
+### EAS Update 비소유 범위
+
+이 단계는 EAS Build profile만 정의한다. `channel`을 두지 않고 EAS Update publish, branch/channel mapping, runtime compatibility, rollout 또는 remote delivery를 구현하거나 검사하지 않는다. build profile 검사가 통과해도 remote update 성공을 주장할 수 없다.
+
+공식 1차 근거:
+
+- [Configure EAS Build with eas.json](https://docs.expo.dev/build/eas-json/)
+- [App version management](https://docs.expo.dev/build-reference/app-versions/)
+- [Build APKs for Android Emulators and devices](https://docs.expo.dev/build-reference/apk/)
+- [Internal distribution](https://docs.expo.dev/build/internal-distribution/)
+- [Android build process](https://docs.expo.dev/build-reference/android-builds/)
+- [Environment variables in EAS](https://docs.expo.dev/eas/environment-variables/)
 
 ## 한 release candidate와 여러 artifact
 

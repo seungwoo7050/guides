@@ -1,0 +1,49 @@
+{
+  "cli": {
+    "requireCommit": false,
+    "appVersionSource": "remote"
+  },
+  "build": {
+    "base": {
+      "node": "24.19.0"
+    },
+    "development": {
+      "extends": "preview",
+      "developmentClient": false,
+      "distribution": "store",
+      "environment": "development",
+      "env": {
+        "PUSH_TOKEN": "sk-fixture-not-a-real-secret"
+      }
+    },
+    "preview": {
+      "extends": "development",
+      "distribution": "internal",
+      "environment": "preview",
+      "env": {
+        "FIELD_NOTES_BUILD_PROFILE": "preview"
+      },
+      "android": {
+        "buildType": "app-bundle"
+      }
+    },
+    "production": {
+      "extends": "base",
+      "developmentClient": true,
+      "distribution": "internal",
+      "environment": "production",
+      "channel": "production",
+      "env": {
+        "FIELD_NOTES_BUILD_PROFILE": "preview",
+        "API_URL": "https://api.example.invalid"
+      },
+      "android": {
+        "node": "20.0.0",
+        "buildType": "apk"
+      }
+    },
+    "staging": {
+      "extends": "base"
+    }
+  }
+}

@@ -1,4 +1,21 @@
 export { artifactRole, assessCrossPlatform, validateReleaseEvidence } from "./validate.ts";
+export {
+  parseAndValidateEasProfileJson,
+  validateEasProfileConfiguration,
+} from "./eas-profile-contract.ts";
+export type {
+  EasAndroidBuildType,
+  EasAndroidProfile,
+  EasBuildProfile,
+  EasDistribution,
+  EasPlatformProfile,
+  EasProfileContractAssessment,
+  EasProfileContractGuarantees,
+  EasProfileValidationResult,
+  PublicEasBuildProfile,
+  ResolvedEasProfileAssessment,
+  ValidatedEasConfiguration,
+} from "./eas-profile-types.ts";
 export type {
   ArtifactEvidence,
   ArtifactKind,
