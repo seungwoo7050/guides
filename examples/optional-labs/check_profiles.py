@@ -12,6 +12,7 @@ from gitops.reconcile import reconcile
 
 ROOT = Path(__file__).resolve().parent
 DIGEST = re.compile(r"^sha256:[0-9a-f]{64}$")
+IMAGE_DIGEST = re.compile(r"^.+@sha256:[0-9a-f]{64}$")
 OWNER = re.compile(r"^group:default/team-[a-z0-9-]+$")
 
 
@@ -76,7 +77,12 @@ def policy(case: dict[str, Any]) -> str:
     request = case["request"]
     if request.get("environmentClass") != "production":
         return "allow"
-    return "allow" if DIGEST.fullmatch(str(request.get("releaseDigest", ""))) else "deny"
+    release_valid = DIGEST.fullmatch(str(request.get("releaseDigest", ""))) is not None
+    workload_images = request.get("workloadImages", [])
+    images_valid = isinstance(workload_images, list) and all(
+        IMAGE_DIGEST.fullmatch(str(image)) is not None for image in workload_images
+    )
+    return "allow" if release_valid and images_valid else "deny"
 
 
 CHECKERS = {"iac": iac, "catalog": catalog, "gitops": gitops, "policy": policy}

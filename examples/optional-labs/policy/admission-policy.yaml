@@ -11,7 +11,7 @@ spec:
         operations: ["CREATE", "UPDATE"]
         resources: ["deployments"]
   validations:
-    - expression: "object.metadata.namespace != 'platform-lab' || object.spec.template.spec.containers.all(c, c.image.matches('^.+@sha256:[0-9a-f]{64}$'))"
+    - expression: "object.metadata.namespace != 'platform-lab' || (object.spec.template.spec.containers.all(c, c.image.matches('^.+@sha256:[0-9a-f]{64}$')) && (!has(object.spec.template.spec.initContainers) || object.spec.template.spec.initContainers.all(c, c.image.matches('^.+@sha256:[0-9a-f]{64}$'))))"
       message: "platform-lab workload image에는 immutable sha256 digest가 필요합니다."
 ---
 apiVersion: admissionregistration.k8s.io/v1

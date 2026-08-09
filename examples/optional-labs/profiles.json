@@ -9,7 +9,7 @@
       "expected": "in-sync"
     },
     {
-      "id": "out-of-band-drift",
+      "id": "modeled-out-of-band-drift",
       "configuration": {"externalId": "env/checkout-staging", "version": "v1"},
       "state": {"externalId": "env/checkout-staging", "version": "v1"},
       "actual": {"externalId": "env/checkout-staging", "version": "manual-v2"},
@@ -236,6 +236,18 @@
     {
       "id": "production-malformed-digest-denied",
       "request": {"environmentClass": "production", "releaseDigest": "sha256:not-a-digest"},
+      "expected": "deny"
+    },
+    {
+      "id": "production-init-tag-denied",
+      "request": {
+        "environmentClass": "production",
+        "releaseDigest": "sha256:0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
+        "workloadImages": [
+          "example.invalid/app@sha256:0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
+          "example.invalid/init:latest"
+        ]
+      },
       "expected": "deny"
     },
     {

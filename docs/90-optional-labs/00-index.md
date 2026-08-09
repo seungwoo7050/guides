@@ -33,7 +33,7 @@
 python3 examples/optional-labs/check_profiles.py
 ```
 
-이 검사는 configuration/state/actual drift, catalog owner, desired/live revision과 production digest policy의 공개 판정을 정상·known-bad fixture로 비교합니다. 실제 Kubernetes scheduling, provider state locking, Backstage ingestion, controller reconciliation 또는 admission enforcement는 증명하지 않습니다. 실제 profile을 생략했다면 `SKIP: <tool> unavailable`과 관찰하지 못한 경계를 evidence에 남깁니다.
+이 검사는 configuration/state/actual 관계를 모델링한 판정, catalog owner, desired/live revision과 production digest policy의 공개 판정을 정상·known-bad fixture로 비교합니다. 실제 Kubernetes scheduling, provider drift·state locking, Backstage ingestion, controller reconciliation 또는 admission enforcement는 증명하지 않습니다. 실제 profile을 생략했다면 `SKIP: <tool> unavailable`과 관찰하지 못한 경계를 evidence에 남깁니다.
 
 ## 공통 evidence
 

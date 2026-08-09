@@ -96,13 +96,21 @@ kubectl --context kind-platform-guide patch service checkout -n platform-lab --t
 kubectl --context kind-platform-guide get endpointslice -n platform-lab
 ```
 
-불가능한 CPU request를 새 revision에 적용해 `Pending`과 scheduler event를 관찰한 뒤 이전 revision으로 복구합니다.
+이 local cluster의 allocatable CPU보다 충분히 큰 request를 새 revision에 적용해 `Pending`과 `Insufficient cpu` scheduler event를 관찰한 뒤 이전 revision으로 복구합니다. `100000` CPU는 이 profile의 single kind node에서 충족할 수 없는 값이며, production 또는 shared cluster에서는 이 failure injection을 실행하지 않습니다.
 
 ```sh
 test "$(kubectl config current-context)" = kind-platform-guide
-kubectl --context kind-platform-guide patch deployment checkout -n platform-lab --type=strategic -p '{"spec":{"template":{"spec":{"containers":[{"name":"app","resources":{"requests":{"cpu":"1000","memory":"32Mi"},"limits":{"cpu":"1000","memory":"64Mi"}}}]}}}}'
-kubectl --context kind-platform-guide get pod -n platform-lab -o wide
-kubectl --context kind-platform-guide get events -n platform-lab --sort-by=.metadata.creationTimestamp
+kubectl --context kind-platform-guide patch deployment checkout -n platform-lab --type=strategic -p '{"spec":{"template":{"spec":{"containers":[{"name":"app","resources":{"requests":{"cpu":"100000","memory":"32Mi"},"limits":{"cpu":"100000","memory":"64Mi"}}}]}}}}'
+if kubectl --context kind-platform-guide rollout status deployment/checkout -n platform-lab --timeout=30s; then
+  printf '%s\n' 'UNEXPECTED_SUCCESS: oversized CPU request became available' >&2
+  exit 1
+else
+  rollout_status=$?
+fi
+test "$rollout_status" -ne 0
+POD_NAME="$(kubectl --context kind-platform-guide get pod -n platform-lab -l app=checkout --field-selector=status.phase=Pending -o jsonpath='{.items[0].metadata.name}')"
+test -n "$POD_NAME"
+kubectl --context kind-platform-guide describe pod "$POD_NAME" -n platform-lab | grep -F 'Insufficient cpu'
 kubectl --context kind-platform-guide rollout undo deployment/checkout -n platform-lab
 kubectl --context kind-platform-guide rollout status deployment/checkout -n platform-lab --timeout=120s
 ```
@@ -113,7 +121,9 @@ kubectl --context kind-platform-guide rollout status deployment/checkout -n plat
 kubectl --context kind-platform-guide get deploy,pod,svc -n platform-lab -o wide
 kubectl --context kind-platform-guide get deployment checkout -n platform-lab -o yaml
 kubectl --context kind-platform-guide get events -n platform-lab --sort-by=.metadata.creationTimestamp
-kubectl --context kind-platform-guide describe pod -n platform-lab POD_NAME
+POD_NAME="$(kubectl --context kind-platform-guide get pod -n platform-lab -l app=checkout --field-selector=status.phase=Running -o jsonpath='{.items[0].metadata.name}')"
+test -n "$POD_NAME"
+kubectl --context kind-platform-guide describe pod "$POD_NAME" -n platform-lab
 kubectl --context kind-platform-guide get endpointslice -n platform-lab
 ```
 

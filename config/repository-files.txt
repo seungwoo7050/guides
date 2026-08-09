@@ -58,6 +58,7 @@ examples/optional-labs/kind/workload.yaml
 examples/optional-labs/policy/admission-policy.yaml
 examples/optional-labs/policy/allowed-deployment.yaml
 examples/optional-labs/policy/denied-deployment.yaml
+examples/optional-labs/policy/init-tag-denied-deployment.yaml
 examples/optional-labs/policy/malformed-digest-deployment.yaml
 examples/optional-labs/profiles.json
 examples/platform-api/service-environment.example.json

@@ -29,10 +29,17 @@ git -C .workspace/gitops init
 git -C .workspace/gitops add -- desired.json
 git -C .workspace/gitops -c user.name=platform-guide -c user.email=platform-guide@example.invalid commit -m 'desired: checkout staging v1'
 python3 .workspace/gitops/reconcile.py .workspace/gitops/desired.json .workspace/gitops/live.json
-python3 .workspace/gitops/reconcile.py .workspace/gitops/desired.json .workspace/gitops/live-drift.json
+if python3 .workspace/gitops/reconcile.py .workspace/gitops/desired.json .workspace/gitops/live-drift.json; then
+  printf '%s\n' 'UNEXPECTED_SUCCESS: live drift was not detected' >&2
+  exit 1
+else
+  reconcile_status=$?
+fi
+test "$reconcile_status" -eq 1
+printf 'EXPECTED_RECONCILE exit=%s\n' "$reconcile_status"
 ```
 
-검사기는 `service`·`environment` target identity, non-empty revision과 정확한 `sha256:<64 lowercase hex>` digest를 먼저 검증합니다. 다른 target이나 malformed/missing digest는 비교 결과가 아니라 입력 오류이므로 exit `2`로 거부합니다. 첫 검사는 exit `0`과 `action=none`, 두 번째 검사는 exit `1`과 `action=reconcile`이어야 합니다. 같은 digest라도 revision이 다르면 reconcile 대상입니다. 두 번째 실패가 shell 실행을 중단하는 환경에서는 command 뒤 exit status를 별도로 기록합니다. 다음으로 live drift를 별도 evidence로 보존하고 desired state를 적용한 결과를 새 파일에 만듭니다.
+검사기는 `service`·`environment` target identity, non-empty revision과 정확한 `sha256:<64 lowercase hex>` digest를 먼저 검증합니다. 다른 target이나 malformed/missing digest는 비교 결과가 아니라 입력 오류이므로 exit `2`로 거부합니다. 첫 검사는 exit `0`과 `action=none`, 두 번째 검사는 exit `1`과 `action=reconcile`이어야 합니다. 같은 digest라도 revision이 다르면 reconcile 대상입니다. 위 `if` block은 expected exit `1`을 명시적으로 확인하므로 fail-fast shell에서도 다음 evidence 단계를 계속 실행할 수 있습니다. 다음으로 live drift를 별도 evidence로 보존하고 desired state를 적용한 결과를 새 파일에 만듭니다.
 
 ```sh
 cp .workspace/gitops/live-drift.json .workspace/gitops/evidence-live-drift.json

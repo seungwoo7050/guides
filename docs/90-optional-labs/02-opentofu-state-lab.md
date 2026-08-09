@@ -1,13 +1,13 @@
-# OpenTofu state와 drift 실습
+# OpenTofu configuration input·stale plan·state mapping 실습
 
-로컬 file resource 또는 폐기 가능한 sandbox provider를 사용해 configuration, state와 실제 resource의 차이를 관찰합니다. OpenTofu를 예로 들며 Terraform도 같은 핵심 경계를 관찰할 수 있습니다.
+이 profile은 built-in `terraform_data`와 workspace 파일만 사용해 configuration input, stale plan과 state mapping을 관찰합니다. OpenTofu를 예로 들며 Terraform도 같은 핵심 경계를 관찰할 수 있습니다. 실제 provider resource를 만들지 않으므로 out-of-band provider drift, remote backend locking과 import는 이 profile의 범위 밖입니다.
 
 ## 목표
 
 - configuration과 state가 같은 것이 아님을 확인합니다.
 - resource address와 외부 object identity를 구분합니다.
-- plan이 현재 refresh 결과에 의존한다는 사실을 봅니다.
-- out-of-band 변경과 drift를 탐지합니다.
+- plan이 생성 뒤 configuration input이 바뀌면 stale해질 수 있음을 봅니다.
+- configuration input 변경과 state mapping을 구분합니다.
 - state move/import/remove가 실제 resource 수명과 어떻게 다른지 확인합니다.
 
 ## 안전 기준
@@ -38,14 +38,14 @@ cd .workspace/iac-state
 
 `show-v1.json`은 generated evidence이며 저장소 source가 아닙니다. JSON 안의 `external_id`, desired version과 observed file hash가 state에 어떻게 기록됐는지 확인합니다.
 
-## Drift·stale plan·state migration
+## Configuration input·stale plan·state migration
 
-학습자 workspace의 관측 파일만 바꿔 configuration/state/actual의 차이를 만듭니다.
+`observed.txt`는 `filesha256()`로 읽히는 **configuration input**입니다. 이 파일을 바꾸는 것은 provider가 관리하는 실제 resource를 out-of-band로 바꾸는 일이 아닙니다. 따라서 아래 결과는 input change와 stale plan을 보이는 것이며, 실제 provider drift를 증명하지 않습니다.
 
 ```sh
 printf '%s\n' 'manual-v2' > observed.txt
-"$IAC" plan -out=drift.bin
-"$IAC" show drift.bin
+"$IAC" plan -out=input-change.bin
+"$IAC" show input-change.bin
 "$IAC" plan -out=stale.bin
 printf '%s\n' 'manual-v3' > observed.txt
 (
@@ -61,7 +61,7 @@ printf '%s\n' 'manual-v3' > observed.txt
 "$IAC" plan -detailed-exitcode
 ```
 
-`stale.bin`은 plan 뒤 입력 파일이 달라졌으므로 적용에 실패해야 합니다. Terraform 1.5.7의 built-in provider에서는 `Provider produced inconsistent final plan`과 nonzero exit가 관찰됩니다. 도구가 stale plan을 성공시킨다면 예상 밖 결과로 표시하고 다음 단계를 진행하지 않습니다. 실패를 확인한 뒤 fresh plan을 새로 만들고 적용하며, 마지막 `-detailed-exitcode`가 `0`인지 확인합니다. 이 결과와 state를 보고 plan freshness, 자동 되돌림 여부와 사람 승인 조건을 기록합니다. 다음으로 versioned configuration과 `moved` block을 사용해 address migration을 수행합니다.
+`stale.bin`은 plan 뒤 configuration input이 달라졌으므로 적용에 실패해야 합니다. Terraform 1.5.7의 built-in provider에서는 `Provider produced inconsistent final plan`과 nonzero exit가 관찰됩니다. 도구가 stale plan을 성공시킨다면 예상 밖 결과로 표시하고 다음 단계를 진행하지 않습니다. 실패를 확인한 뒤 fresh plan을 새로 만들고 적용하며, 마지막 `-detailed-exitcode`가 `0`인지 확인합니다. 이 결과와 state를 보고 plan freshness, 자동 되돌림 여부와 사람 승인 조건을 기록합니다. 다음으로 versioned configuration과 `moved` block을 사용해 address migration을 수행합니다.
 
 ```sh
 cp main-v2.tf.example main.tf
@@ -90,7 +90,7 @@ cp main-v2.tf.example main.tf
 - plan identity와 생성 시점
 - apply 결과
 - state resource address와 external ID
-- drift 전후 plan
+- input 변경 전후 plan
 - migration 명령과 backup
 - destroy/cleanup 결과
 
@@ -104,4 +104,4 @@ cd ../..
 test -d .workspace/iac-state
 ```
 
-실습 뒤 `.terraform`, `.tofu`, state, plan, backup과 관측 파일은 `.workspace/iac-state` 안에만 있어야 합니다. evidence를 보존한 뒤 학습자가 이 디렉터리를 명시적으로 삭제합니다. 도구가 없다면 `python3 examples/optional-labs/check_profiles.py`의 `iac/normal-state`와 `iac/out-of-band-drift`만 확인하고 실제 locking·plan freshness·state command를 관찰하지 못했다고 기록합니다.
+실습 뒤 `.terraform`, `.tofu`, state, plan, backup과 관측 파일은 `.workspace/iac-state` 안에만 있어야 합니다. evidence를 보존한 뒤 학습자가 이 디렉터리를 명시적으로 삭제합니다. 도구가 없다면 `python3 examples/optional-labs/check_profiles.py`의 `iac/normal-state`와 `iac/modeled-out-of-band-drift`만 확인하고, 이 결정적 모델과 실제 provider drift·locking·plan freshness·state command를 혼동하지 않았다고 기록합니다.

@@ -26,7 +26,7 @@ Local cluster에서 policy를 audit/warn/deny 단계로 적용하고, 정상 wor
 python3 examples/optional-labs/check_profiles.py
 ```
 
-`policy/production-digest-allowed`, `policy/production-tag-denied`, `policy/production-malformed-digest-denied`, `policy/staging-tag-out-of-scope`가 선언한 allow/deny와 일치해야 합니다. 이 검사는 JSON request에 대한 작은 판정이며 Kubernetes admission, CEL type checking, webhook timeout이나 기존 workload migration을 증명하지 않습니다.
+`policy/production-digest-allowed`, `policy/production-tag-denied`, `policy/production-malformed-digest-denied`, `policy/production-init-tag-denied`, `policy/staging-tag-out-of-scope`가 선언한 allow/deny와 일치해야 합니다. 이 검사는 JSON request에 대한 작은 판정이며 Kubernetes admission, CEL type checking, webhook timeout이나 기존 workload migration을 증명하지 않습니다.
 
 ## Kubernetes CEL profile
 
@@ -40,11 +40,23 @@ test -z "$(kubectl --context kind-platform-guide get validatingadmissionpolicy p
 test -z "$(kubectl --context kind-platform-guide get validatingadmissionpolicybinding platform-guide-image-digest --ignore-not-found -o name)"
 kubectl --context kind-platform-guide apply -f examples/optional-labs/policy/admission-policy.yaml
 kubectl --context kind-platform-guide apply --dry-run=server -f examples/optional-labs/policy/allowed-deployment.yaml
-kubectl --context kind-platform-guide apply --dry-run=server -f examples/optional-labs/policy/denied-deployment.yaml
-kubectl --context kind-platform-guide apply --dry-run=server -f examples/optional-labs/policy/malformed-digest-deployment.yaml
+expect_denied() {
+  fixture=$1
+  if kubectl --context kind-platform-guide apply --dry-run=server -f "$fixture"; then
+    printf 'UNEXPECTED_SUCCESS: %s was admitted\n' "$fixture" >&2
+    return 1
+  else
+    denied_status=$?
+  fi
+  test "$denied_status" -eq 1 || return 1
+  printf 'EXPECTED_DENIAL fixture=%s exit=%s\n' "$fixture" "$denied_status"
+}
+expect_denied examples/optional-labs/policy/denied-deployment.yaml
+expect_denied examples/optional-labs/policy/malformed-digest-deployment.yaml
+expect_denied examples/optional-labs/policy/init-tag-denied-deployment.yaml
 ```
 
-정상 fixture는 server dry-run에 통과하고 tag 및 malformed digest fixture는 `platform-lab workload image에는 immutable sha256 digest가 필요합니다.` 메시지로 거부돼야 합니다. `--dry-run=server`이므로 workload와 image pull은 생성하지 않습니다. 두 거부가 성공처럼 무시되지 않도록 각각의 exit status와 stderr를 evidence로 기록합니다.
+정상 fixture는 server dry-run에 통과하고 app container tag, malformed digest 및 init container tag fixture는 `platform-lab workload image에는 immutable sha256 digest가 필요합니다.` 메시지로 거부돼야 합니다. `--dry-run=server`이므로 workload와 image pull은 생성하지 않습니다. `expect_denied`는 각 expected denial의 exit `1`을 확인하므로 fail-fast shell에서도 모든 fixture의 stderr와 status를 evidence로 기록합니다.
 
 정책을 `Deny`로 적용하기 전 실제 조직에서는 `Audit`/`Warn` inventory, 대표 workload, owner, remediation, exception과 migration deadline이 필요합니다. 이 local fixture는 새 요청 세 개만 비교합니다.
 

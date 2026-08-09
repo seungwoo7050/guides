@@ -1,0 +1,17 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: denied-init-tag
+  namespace: platform-lab
+spec:
+  replicas: 1
+  selector: {matchLabels: {app: denied-init-tag}}
+  template:
+    metadata: {labels: {app: denied-init-tag}}
+    spec:
+      initContainers:
+        - name: setup
+          image: example.invalid/setup:latest
+      containers:
+        - name: app
+          image: example.invalid/app@sha256:0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
