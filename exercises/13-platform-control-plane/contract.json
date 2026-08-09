@@ -3,7 +3,7 @@
   "validator": "scripts/verify_platform_model.py",
   "contract_code": {
     "path": "exercises/13-platform-control-plane/tests/contract.py",
-    "sha256": "9d5cd111f0348df1f050d4e6f65ab6cfca678e927cbdd90ef4366250a19a3106"
+    "sha256": "74745009f55a5ff3eda89fe6edeb33b0ace7b038505e5a812af6ef4a6bd97909"
   },
   "identifiers": {
     "service_id": "svc-payments",

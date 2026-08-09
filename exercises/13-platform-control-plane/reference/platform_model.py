@@ -44,6 +44,24 @@ def _required(request: dict[str, Any], names: tuple[str, ...]) -> str | None:
     return None
 
 
+def _external_smoke(evidence: Any, generation: int) -> dict[str, Any] | None:
+    """Return smoke evidence bound to the current desired generation."""
+
+    if not isinstance(evidence, list):
+        return None
+    for item in evidence:
+        if (
+            isinstance(item, dict)
+            and item.get("kind") == "external-smoke"
+            and item.get("status") == "pass"
+            and isinstance(item.get("revision"), str)
+            and bool(item["revision"].strip())
+            and item.get("observed_generation") == generation
+        ):
+            return item
+    return None
+
+
 def request_environment(state: dict[str, Any], request: dict[str, Any]) -> dict[str, Any]:
     """Accept one tenant-scoped environment request or reject it atomically."""
 
@@ -113,6 +131,8 @@ def request_environment(state: dict[str, Any], request: dict[str, Any]) -> dict[
         "artifact_digest": request["artifact_digest"],
         "observed_artifact_digest": None,
         "profile_version": request["profile_version"],
+        "generation": 1,
+        "observed_generation": 0,
         "condition": "Progressing",
         "external_effects": [],
         "cleanup_required": False,
@@ -162,8 +182,18 @@ def reconcile(state: dict[str, Any], request: dict[str, Any]) -> dict[str, Any]:
     evidence = request.get("evidence")
     if not isinstance(evidence, list):
         evidence = []
-    if outcome == "ready" and not evidence:
-        return _result(original, status="Blocked", code="READY_EVIDENCE_REQUIRED")
+    current_environment = original["environments"][environment_id]
+    current_generation = current_environment.get("generation")
+    if outcome == "ready":
+        if (
+            not isinstance(current_generation, int)
+            or isinstance(current_generation, bool)
+            or current_generation < 1
+            or request.get("observed_generation") != current_generation
+        ):
+            return _result(original, status="Blocked", code="STALE_GENERATION")
+        if _external_smoke(evidence, current_generation) is None:
+            return _result(original, status="Blocked", code="READY_EVIDENCE_REQUIRED")
 
     updated = _clone(original)
     current_operation = updated["operations"][operation_id]
@@ -189,6 +219,7 @@ def reconcile(state: dict[str, Any], request: dict[str, Any]) -> dict[str, Any]:
     else:
         environment["condition"] = "Ready"
         environment["observed_artifact_digest"] = environment["artifact_digest"]
+        environment["observed_generation"] = environment["generation"]
         environment["cleanup_required"] = False
         environment["evidence"].extend(_clone(evidence))
         current_operation["status"] = "Ready"
@@ -274,8 +305,22 @@ def request_migration(state: dict[str, Any], request: dict[str, Any]) -> dict[st
     if any(not isinstance(wave, dict) or not wave.get("name") or not isinstance(wave.get("targets"), list) for wave in waves):
         return _result(original, status="Rejected", code="INVALID_WAVE")
 
-    updated = _clone(original)
     failed_wave = request.get("fail_wave")
+    abort_evidence = request.get("abort_evidence")
+    if failed_wave is not None and not (
+        isinstance(abort_evidence, dict)
+        and abort_evidence.get("kind") == "slo-regression"
+        and isinstance(abort_evidence.get("metric"), str)
+        and bool(abort_evidence["metric"].strip())
+        and isinstance(abort_evidence.get("observed"), (int, float))
+        and not isinstance(abort_evidence.get("observed"), bool)
+        and isinstance(abort_evidence.get("threshold"), (int, float))
+        and not isinstance(abort_evidence.get("threshold"), bool)
+        and abort_evidence.get("decision") == "abort"
+    ):
+        return _result(original, status="Rejected", code="MIGRATION_ABORT_EVIDENCE_REQUIRED")
+
+    updated = _clone(original)
     records: list[dict[str, Any]] = []
     aborted = False
     for wave in waves:
@@ -299,7 +344,7 @@ def request_migration(state: dict[str, Any], request: dict[str, Any]) -> dict[st
         "profile_to": request["profile_to"],
         "status": status,
         "waves": records,
-        "abort_evidence": request.get("abort_evidence") if aborted else None,
+        "abort_evidence": _clone(abort_evidence) if aborted else None,
     }
     updated.setdefault("migrations", {})[request["migration_id"]] = migration
     updated.setdefault("audit_events", []).append(

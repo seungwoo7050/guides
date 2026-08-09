@@ -75,6 +75,14 @@ class CapstoneValidatorTests(unittest.TestCase):
         self.assertEqual(result.returncode, 1)
         self.assertIn("CAPSTONE FAIL [E_UNFILLED]", result.stderr)
 
+    def test_copied_reference_cannot_claim_builtin_model_evidence(self) -> None:
+        with tempfile.TemporaryDirectory(prefix=".capstone-test-", dir=ROOT) as directory:
+            artifact = self.copied_reference(Path(directory))
+            result = run_validator(artifact)
+        self.assertEqual(result.returncode, 1, result.stdout + result.stderr)
+        self.assertIn("CAPSTONE FAIL [E_MODEL_ORIGIN]", result.stderr)
+        self.assertIn("learner-specific", result.stderr)
+
     def test_fenced_required_heading_is_rejected(self) -> None:
         with tempfile.TemporaryDirectory(prefix=".capstone-test-", dir=ROOT) as directory:
             artifact = self.copied_reference(Path(directory))

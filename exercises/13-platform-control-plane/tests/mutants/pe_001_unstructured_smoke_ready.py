@@ -1,4 +1,4 @@
-"""Defect: the controller invents evidence and publishes Ready."""
+"""Defect: incomplete smoke evidence is embellished by the controller."""
 
 from __future__ import annotations
 
@@ -11,17 +11,14 @@ _reference = export_reference(globals())
 
 def reconcile(state, request):
     changed = copy.deepcopy(request)
-    if changed.get("outcome") == "ready" and not changed.get("evidence"):
+    if changed.get("outcome") == "ready":
         operation = state.get("operations", {}).get(changed.get("operation_id"), {})
         environment = state.get("environments", {}).get(operation.get("environment_id"), {})
         generation = environment.get("generation")
-        changed["observed_generation"] = generation
-        changed["evidence"] = [
-            {
-                "kind": "external-smoke",
-                "status": "pass",
-                "revision": "invented-revision",
-                "observed_generation": generation,
-            }
-        ]
+        evidence = changed.get("evidence")
+        if isinstance(evidence, list):
+            for item in evidence:
+                if isinstance(item, dict) and item.get("kind") == "external-smoke":
+                    item.setdefault("revision", "invented-revision")
+                    item.setdefault("observed_generation", generation)
     return _reference.reconcile(state, changed)

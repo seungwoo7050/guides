@@ -100,15 +100,21 @@ class PlatformModelValidatorTests(unittest.TestCase):
 
     def test_single_defect_mutants_are_rejected(self) -> None:
         expected = {
+            "pe_001_stale_generation_ready.py": "PE-001",
+            "pe_001_unstructured_smoke_ready.py": "PE-001",
             "pe_002_idempotency_conflict.py": "PE-002",
             "pe_003_ready_without_evidence.py": "PE-003",
             "pe_003_hidden_partial_effect.py": "PE-003",
             "pe_004_global_queue_block.py": "PE-004",
             "pe_005_ignore_drift.py": "PE-005",
+            "pe_005_missing_drift_transition.py": "PE-005",
             "pe_006_unbounded_break_glass.py": "PE-006",
+            "pe_006_missing_break_glass_reason.py": "PE-006",
             "pe_007_static_credential_fallback.py": "PE-007",
             "pe_008_continue_after_failed_wave.py": "PE-008",
+            "pe_008_missing_abort_evidence.py": "PE-008",
             "pe_009_retirement_leak.py": "PE-009",
+            "pe_009_retirement_exception_leak.py": "PE-009",
             "pe_010_snapshot_alias.py": "PE-010",
         }
         with tempfile.TemporaryDirectory(prefix="platform-model-mutants-") as temporary:
@@ -137,6 +143,13 @@ class PlatformModelValidatorTests(unittest.TestCase):
                 self.assertIn(f"[{marker}]", result.stderr)
         network = invoke(FIXTURES / "network_import.py")
         self.assertIn("network access is disabled", network.stderr)
+
+    def test_learner_cannot_monkeypatch_the_executable_contract(self) -> None:
+        result = invoke(FIXTURES / "contract_monkeypatch.py")
+        self.assertEqual(1, result.returncode, result.stdout + result.stderr)
+        self.assertIn("PLATFORM MODEL FAIL", result.stdout)
+        self.assertNotIn("total=10 passed=10", result.stdout)
+        self.assertNotIn("forged", result.stdout)
 
     def test_report_is_deterministic_private_and_create_only(self) -> None:
         with tempfile.TemporaryDirectory(prefix="platform-model-reports-") as temporary:

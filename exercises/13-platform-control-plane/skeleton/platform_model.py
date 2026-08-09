@@ -21,6 +21,8 @@ def request_environment(state: dict[str, Any], request: dict[str, Any]) -> dict[
         "artifact_digest": request.get("artifact_digest"),
         "observed_artifact_digest": None,
         "profile_version": request.get("profile_version"),
+        "generation": 1,
+        "observed_generation": 0,
         "condition": "Progressing",
         "external_effects": [],
         "cleanup_required": False,
@@ -48,6 +50,7 @@ def reconcile(state: dict[str, Any], request: dict[str, Any]) -> dict[str, Any]:
     environment = updated["environments"][operation["environment_id"]]
     environment["condition"] = "Ready"
     environment["observed_artifact_digest"] = environment.get("artifact_digest")
+    environment["observed_generation"] = environment.get("generation")
     operation["status"] = "Ready"
     return _result(updated, status="Ready", code="READY")
 

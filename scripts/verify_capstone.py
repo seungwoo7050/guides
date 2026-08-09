@@ -19,6 +19,8 @@ from typing import Any, Iterable
 ROOT = Path(__file__).resolve().parents[1]
 PROJECT = ROOT / "projects/internal-developer-platform"
 CONTRACT_PATH = PROJECT / "contract.json"
+REFERENCE_ARTIFACT = PROJECT / "reference"
+REFERENCE_IMPLEMENTATION = ROOT / "exercises/13-platform-control-plane/reference/platform_model.py"
 MANIFEST_NAME = "evidence-manifest.json"
 HARNESS_EXIT = 2
 HEADING = re.compile(r"^#{1,6}\s+(.+?)\s*#*\s*$")
@@ -460,6 +462,16 @@ def validate_model(artifact: Path, manifest: dict[str, Any], contract: dict[str,
     if not isinstance(summary, dict) or summary.get("result") != "PASS" or summary.get("passed") != len(checks):
         raise CapstoneError("E_MODEL", "stored report summary is not a complete PASS")
 
+    uses_builtin_reference = (
+        implementation_path == REFERENCE_IMPLEMENTATION.resolve()
+        or implementation_hash == digest(REFERENCE_IMPLEMENTATION)
+    )
+    if artifact != REFERENCE_ARTIFACT.resolve() and uses_builtin_reference:
+        raise CapstoneError(
+            "E_MODEL_ORIGIN",
+            "a learner dossier must use learner-specific model implementation evidence, not the built-in reference",
+        )
+
     verifier = ROOT / "scripts/verify_platform_model.py"
     environment = os.environ.copy()
     for key in ("PYTHONHOME", "PYTHONPATH", "PYTHONSTARTUP", "PYTHONINSPECT"):
@@ -534,6 +546,12 @@ def validate_repository_contract(contract: dict[str, Any]) -> None:
         raise CapstoneError("E_CONTRACT", "capstone model contract is required", True)
     public_contract_path = root_file(str(model.get("contract_path", "")))
     contract_code_path = root_file(str(model.get("contract_code_path", "")))
+    if model.get("reference_artifact_path") != REFERENCE_ARTIFACT.relative_to(ROOT).as_posix():
+        raise CapstoneError("E_CONTRACT", "reference artifact path differs from the canonical reference", True)
+    if model.get("reference_implementation_path") != REFERENCE_IMPLEMENTATION.relative_to(ROOT).as_posix():
+        raise CapstoneError("E_CONTRACT", "reference implementation path differs from the canonical reference", True)
+    if digest(REFERENCE_IMPLEMENTATION) != model.get("reference_implementation_sha256"):
+        raise CapstoneError("E_CONTRACT", "reference implementation hash differs from capstone contract", True)
     if digest(public_contract_path) != model.get("contract_sha256"):
         raise CapstoneError("E_CONTRACT", "public model contract hash differs from capstone contract", True)
     if digest(contract_code_path) != model.get("contract_code_sha256"):

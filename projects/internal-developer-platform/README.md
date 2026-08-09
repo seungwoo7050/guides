@@ -84,7 +84,7 @@ python3 scripts/verify_capstone.py \
   .workspace/internal-developer-platform
 ```
 
-Capstone validator는 선언한 learner implementation hash를 확인하고 같은 공개 계약으로 새 report를 저장소 밖에서 다시 생성해 제출 report와 비교합니다. 따라서 reference 구현/report를 복사한 결과는 자신의 control-plane 구현 evidence를 대신하지 않습니다.
+Capstone validator는 선언한 learner implementation hash를 확인하고 같은 공개 계약으로 새 report를 저장소 밖에서 다시 생성해 제출 report와 비교합니다. canonical `reference/` 자체만 내장 reference 구현·report를 사용할 수 있습니다. 그 밖의 dossier는 내장 reference 경로 또는 그 파일과 같은 hash를 선언하면 거부되며, learner 경로의 구현과 그 구현에서 새로 생성한 report를 제출해야 합니다. 이 출처 검사는 학습자의 독창성이나 production 적합성을 자동 증명하지 않습니다.
 
 ## 누적 결과물
 

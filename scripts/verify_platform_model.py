@@ -8,6 +8,7 @@ import hashlib
 import importlib.util
 import json
 import os
+import signal
 import stat
 import subprocess
 import sys
@@ -133,7 +134,7 @@ def load_module(path: Path, name: str) -> Any:
     return module
 
 
-def install_worker_audit_guard() -> None:
+def install_learner_audit_guard() -> None:
     write_flags = os.O_WRONLY | os.O_RDWR | os.O_CREAT | os.O_TRUNC | os.O_APPEND
 
     def guard(event: str, args: tuple[Any, ...]) -> None:
@@ -152,17 +153,210 @@ def install_worker_audit_guard() -> None:
     sys.addaudithook(guard)
 
 
-def worker(implementation: str) -> int:
+def sanitized_environment() -> dict[str, str]:
+    environment = os.environ.copy()
+    for key in ("PYTHONHOME", "PYTHONPATH", "PYTHONSTARTUP", "PYTHONINSPECT"):
+        environment.pop(key, None)
+    environment["PYTHONDONTWRITEBYTECODE"] = "1"
+    environment["PYTHONNOUSERSITE"] = "1"
+    environment["PYTHONHASHSEED"] = "0"
+    return environment
+
+
+def protocol_error(code: str, message: str) -> dict[str, Any]:
+    return {"harness_error": {"code": code, "message": message}}
+
+
+def learner_worker(implementation: str) -> int:
+    """Serve learner API calls without loading executable checks in this process."""
+
+    protocol_input = sys.stdin
+    protocol_output = sys.stdout
+    encode = json.dumps
+    decode = json.loads
+
+    def send(payload: dict[str, Any]) -> bool:
+        try:
+            line = encode(payload, ensure_ascii=False, sort_keys=True, separators=(",", ":")) + "\n"
+            protocol_output.write(line)
+            protocol_output.flush()
+            return True
+        except Exception:
+            return False
+
     try:
-        validate_contract_metadata(load_json(CONTRACT_PATH))
-        contract_module = load_module(CONTRACT_CODE, "platform_public_contract")
-        install_worker_audit_guard()
+        install_learner_audit_guard()
         module = load_module(Path(implementation), "learner_platform_model")
         required = load_json(CONTRACT_PATH).get("implementation_api", [])
-        missing = [name for name in required if not callable(getattr(module, name, None))]
+        if not isinstance(required, list) or any(not isinstance(name, str) for name in required):
+            raise HarnessError("E_CONTRACT", "implementation_api must be a list of names")
+        available = [name for name in required if callable(getattr(module, name, None))]
+        if not send({"api": available}):
+            return 0
+    except HarnessError as error:
+        send(protocol_error(error.code, error.message))
+        return 0
+    except Exception as error:
+        send(protocol_error("E_IMPORT", f"{type(error).__name__}: {error}"))
+        return 0
+
+    for line in protocol_input:
+        request: Any = None
+        try:
+            request = decode(line, object_pairs_hook=strict_object, parse_constant=reject_constant)
+            if not isinstance(request, dict) or set(request) != {"id", "name", "args"}:
+                raise ValueError("call envelope must contain exactly id, name and args")
+            call_id = request["id"]
+            name = request["name"]
+            arguments = request["args"]
+            if not isinstance(call_id, int) or isinstance(call_id, bool) or call_id < 1:
+                raise ValueError("call id must be a positive integer")
+            if not isinstance(name, str) or name not in required:
+                raise ValueError("call name is outside implementation_api")
+            if not isinstance(arguments, list):
+                raise ValueError("call args must be an array")
+            function = getattr(module, name, None)
+            if not callable(function):
+                raise AttributeError(f"missing public API: {name}")
+            before = encode(arguments, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
+            value = function(*arguments)
+            after = encode(arguments, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
+            if after != before:
+                raise RuntimeError(f"{name} mutated its input arguments")
+            if not send({"id": call_id, "value": value}):
+                return 0
+        except Exception as error:
+            if not send(
+                {
+                    "id": request.get("id") if isinstance(request, dict) else None,
+                    "call_error": f"{type(error).__name__}: {error}",
+                }
+            ):
+                return 0
+    return 0
+
+
+class LearnerProxy:
+    """Expose learner callables over a process boundary to immutable checks."""
+
+    MAX_PROTOCOL_LINE = 1_000_000
+
+    def __init__(self, implementation: str, required: list[str]):
+        self.implementation = implementation
+        self.required = tuple(required)
+        self.next_id = 1
+        self.fatal: HarnessError | None = None
+        self.process = subprocess.Popen(
+            [sys.executable, str(Path(__file__).resolve()), "--_learner_worker", implementation],
+            cwd=ROOT,
+            env=sanitized_environment(),
+            text=True,
+            stdin=subprocess.PIPE,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            bufsize=1,
+        )
+        handshake = self._read_payload()
+        if isinstance(handshake.get("harness_error"), dict):
+            item = handshake["harness_error"]
+            raise HarnessError(str(item.get("code", "E_IMPORT")), str(item.get("message", "learner import failed")))
+        available = handshake.get("api")
+        if not isinstance(available, list) or any(not isinstance(name, str) for name in available):
+            raise HarnessError("E_LEARNER_PROTOCOL", "learner worker omitted API handshake")
+        missing = [name for name in required if name not in available]
         if missing:
             raise HarnessError("E_API", f"missing public API: {', '.join(missing)}")
-        checks = contract_module.run_contract(module)
+
+    def _read_payload(self) -> dict[str, Any]:
+        if self.process.stdout is None:
+            raise HarnessError("E_LEARNER_PROTOCOL", "learner worker stdout is unavailable")
+        line = self.process.stdout.readline(self.MAX_PROTOCOL_LINE + 1)
+        if not line or len(line) > self.MAX_PROTOCOL_LINE or not line.endswith("\n"):
+            raise HarnessError("E_LEARNER_PROTOCOL", "learner worker returned an invalid protocol line")
+        try:
+            payload = json.loads(line, object_pairs_hook=strict_object, parse_constant=reject_constant)
+        except (json.JSONDecodeError, ValueError) as error:
+            raise HarnessError("E_LEARNER_PROTOCOL", "learner worker returned invalid JSON") from error
+        if not isinstance(payload, dict):
+            raise HarnessError("E_LEARNER_PROTOCOL", "learner worker payload must be an object")
+        return payload
+
+    def _call(self, name: str, arguments: tuple[Any, ...]) -> Any:
+        if self.fatal is not None:
+            raise self.fatal
+        call_id = self.next_id
+        self.next_id += 1
+        request = json.dumps(
+            {"id": call_id, "name": name, "args": list(arguments)},
+            ensure_ascii=False,
+            sort_keys=True,
+            separators=(",", ":"),
+        )
+        try:
+            if self.process.stdin is None:
+                raise BrokenPipeError("learner worker stdin is unavailable")
+            self.process.stdin.write(request + "\n")
+            self.process.stdin.flush()
+            payload = self._read_payload()
+        except (OSError, BrokenPipeError) as error:
+            failure = HarnessError("E_LEARNER_PROTOCOL", f"learner worker communication failed: {error}")
+            self.fatal = failure
+            raise failure from error
+        if payload.get("id") != call_id:
+            failure = HarnessError("E_LEARNER_PROTOCOL", "learner worker response id differs from request")
+            self.fatal = failure
+            raise failure
+        if isinstance(payload.get("call_error"), str):
+            raise RuntimeError(payload["call_error"])
+        if set(payload) != {"id", "value"}:
+            failure = HarnessError("E_LEARNER_PROTOCOL", "learner worker response must contain id and value")
+            self.fatal = failure
+            raise failure
+        return payload["value"]
+
+    def __getattr__(self, name: str) -> Any:
+        if name not in self.required:
+            raise AttributeError(name)
+
+        def remote_call(*arguments: Any) -> Any:
+            try:
+                return self._call(name, arguments)
+            except HarnessError as error:
+                self.fatal = error
+                raise
+
+        return remote_call
+
+    def close(self) -> None:
+        if self.process.stdin is not None:
+            try:
+                self.process.stdin.close()
+            except OSError:
+                pass
+        try:
+            self.process.wait(timeout=1)
+        except subprocess.TimeoutExpired:
+            self.process.terminate()
+            try:
+                self.process.wait(timeout=1)
+            except subprocess.TimeoutExpired:
+                self.process.kill()
+                self.process.wait()
+
+
+def worker(implementation: str) -> int:
+    proxy: LearnerProxy | None = None
+    try:
+        contract = load_json(CONTRACT_PATH)
+        validate_contract_metadata(contract)
+        contract_module = load_module(CONTRACT_CODE, "platform_public_contract")
+        required = contract.get("implementation_api", [])
+        if not isinstance(required, list) or any(not isinstance(name, str) for name in required):
+            raise HarnessError("E_CONTRACT", "implementation_api must be a list of names")
+        proxy = LearnerProxy(implementation, required)
+        checks = contract_module.run_contract(proxy)
+        if proxy.fatal is not None:
+            raise proxy.fatal
         print(json.dumps({"checks": checks}, ensure_ascii=False, sort_keys=True, separators=(",", ":")))
         return 0
     except HarnessError as error:
@@ -185,31 +379,34 @@ def worker(implementation: str) -> int:
             )
         )
         return 0
+    finally:
+        if proxy is not None:
+            proxy.close()
 
 
 def invoke_worker(implementation: Path, timeout_seconds: int) -> list[dict[str, Any]]:
-    environment = os.environ.copy()
-    for key in ("PYTHONHOME", "PYTHONPATH", "PYTHONSTARTUP", "PYTHONINSPECT"):
-        environment.pop(key, None)
-    environment["PYTHONDONTWRITEBYTECODE"] = "1"
-    environment["PYTHONNOUSERSITE"] = "1"
-    environment["PYTHONHASHSEED"] = "0"
+    process = subprocess.Popen(
+        [sys.executable, str(Path(__file__).resolve()), "--_worker", str(implementation)],
+        cwd=ROOT,
+        env=sanitized_environment(),
+        text=True,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        start_new_session=True,
+    )
     try:
-        completed = subprocess.run(
-            [sys.executable, str(Path(__file__).resolve()), "--_worker", str(implementation)],
-            cwd=ROOT,
-            env=environment,
-            text=True,
-            capture_output=True,
-            check=False,
-            timeout=timeout_seconds,
-        )
+        stdout, stderr = process.communicate(timeout=timeout_seconds)
     except subprocess.TimeoutExpired as error:
+        try:
+            os.killpg(process.pid, signal.SIGKILL)
+        except (AttributeError, OSError):
+            process.kill()
+        process.communicate()
         raise HarnessError("E_TIMEOUT", f"implementation exceeded {timeout_seconds}s") from error
-    if completed.returncode != 0:
-        raise HarnessError("E_WORKER", f"worker exited {completed.returncode}")
+    if process.returncode != 0:
+        raise HarnessError("E_WORKER", f"worker exited {process.returncode}: {stderr.strip()}")
     try:
-        payload = json.loads(completed.stdout, object_pairs_hook=strict_object, parse_constant=reject_constant)
+        payload = json.loads(stdout, object_pairs_hook=strict_object, parse_constant=reject_constant)
     except (json.JSONDecodeError, ValueError) as error:
         raise HarnessError("E_WORKER", "worker did not return one JSON object") from error
     if not isinstance(payload, dict):
@@ -268,6 +465,8 @@ def make_report(implementation: Path, contract: dict[str, Any], checks: list[dic
         },
         "execution": {
             "child_process": True,
+            "contract_process_isolated_from_learner": True,
+            "learner_rpc_process": True,
             "timeout_seconds": int(contract.get("execution", {}).get("timeout_seconds", 5)),
             "network_required": False,
             "network_denied_by_python_audit": True,
@@ -325,7 +524,10 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--implementation")
     parser.add_argument("--report")
     parser.add_argument("--_worker", help=argparse.SUPPRESS)
+    parser.add_argument("--_learner_worker", help=argparse.SUPPRESS)
     arguments = parser.parse_args(argv)
+    if arguments._learner_worker:
+        return learner_worker(arguments._learner_worker)
     if arguments._worker:
         return worker(arguments._worker)
     if not arguments.implementation:
