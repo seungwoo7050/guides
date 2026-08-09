@@ -93,6 +93,22 @@ backfill과 incident 조사에 elevation이 필요하면 시간 제한, 승인, 
 - quarantine access를 production raw보다 느슨하게 두지 않는다.
 - lineage facet에 민감 value가 아니라 schema/identifier만 남긴다.
 
+## Secure quarantine와 repair evidence
+
+Quarantine은 오류 record를 편리하게 모아 둔 공개 debug 공간이 아니다. 원본과 같은 classification을 상속하고 별도 workload identity, 최소 권한, 접근 audit와 짧은 retention을 적용한다.
+
+Control metadata에는 raw payload 대신 가능한 범위에서 다음을 남긴다.
+
+- stable record/event ID와 protected source location
+- payload checksum, source snapshot/position과 observed time
+- quality rule ID·version, rejection reason과 severity
+- owner, disposition, exception expiry와 repair run ID
+- 접근·승인·재처리·삭제 actor와 시각
+
+원문 sample이 필요하면 redacted identifier와 제한된 secure sample store를 분리한다. 같은 ID의 conflicting payload는 어느 하나를 도착 순서로 승인하지 않고 conflict scope 전체를 보호된 quarantine에 유지한다.
+
+Repair는 quarantine row를 직접 수정해 정상으로 바꾸지 않는다. Corrected source 또는 승인된 transform으로 새 run을 만들고 quality·reconciliation·lineage를 다시 생성한다. Repair 완료 뒤에도 원 rejection과 승인 근거는 audit retention 동안 남기고, raw·quarantine·derived·backup의 삭제 전파를 별도로 증명한다.
+
 ## encryption과 key boundary
 
 - transport encryption
@@ -241,3 +257,4 @@ CDC capstone에서 data classification, field allowlist, retention과 deletion p
 - pipeline identity와 최소 권한을 data source/publish 경계로 분리한다.
 - retention·delete·legal hold를 snapshot과 lineage 운영에 연결한다.
 - 보안 주장을 access/audit/deletion evidence로 검증한다.
+- quarantine의 classification·접근·repair·retention과 삭제 전파를 run-level evidence로 남긴다.

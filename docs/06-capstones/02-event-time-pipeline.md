@@ -60,6 +60,19 @@ unique user 계산은 exact 또는 approximate 중 선택하되 보장과 오차
 
 템플릿은 [`exercises/06-capstones/02-event-time-pipeline`](../../exercises/06-capstones/02-event-time-pipeline/README.md)에 있다.
 
+## 누적 evidence 연결
+
+| 높이 | artifact에 남길 evidence |
+|---|---|
+| contract와 ownership | `event-contract.md`: event/entity identity, producer·operator·consumer owner, schema·time·correction·classification |
+| ingestion과 progress | `event-contract.md`: source partition/offset, observed time, replay·retention 범위와 malformed input boundary |
+| processing state | `window-policy.md`·`state-and-checkpoint.md`: window/watermark/trigger, dedup horizon, timer, checkpoint와 state schema |
+| delivery와 publish | `sink-contract.md`: stable result key/version, pane finality, checkpoint 전후 retry와 consumer update 규칙 |
+| orchestration과 recovery | `runbook.md`: job/run/attempt/output identity, backpressure propagation, retry storm, backlog recovery와 batch replay |
+| quality와 reconciliation | `quality-and-lateness.md`·`reconciliation.md`: sticky conflict quarantine, late/drop, key/window batch diff |
+| lineage·freshness·cost·access | `submission.json`·`runbook.md`: input/output/code/state/quality lineage, oldest-event age, source/pipeline delay와 unit cost |
+| evolution과 consumer cutover | `failure-matrix.md`·`runbook.md`: state/sink schema shadow restore, canary consumer, rollback/roll-forward와 deprecation |
+
 ## 필수 정책
 
 ### event time
@@ -110,6 +123,10 @@ unique user 계산은 exact 또는 approximate 중 선택하되 보장과 오차
 6. 한 partition이 idle하거나 지연돼 watermark를 막음
 7. sink가 10분간 느려져 backpressure 발생
 8. state schema를 변경한 새 version으로 restore
+9. 같은 event ID에 서로 다른 payload가 도착하고 이후 첫 payload가 다시 전송
+10. poison event retry가 한 partition을 막고 retry storm이 sink recovery를 방해
+11. recovery capacity가 live rate와 같아 backlog와 oldest-event age가 줄지 않음
+12. 새 result/state schema를 old consumer/checkpoint가 읽지 못함
 
 ## 품질과 관측
 
@@ -121,6 +138,8 @@ unique user 계산은 exact 또는 approximate 중 선택하되 보장과 오차
 - state size와 checkpoint duration
 - sink commit latency
 - batch replay와 window 결과 diff
+- source delay, pipeline delay와 oldest unprocessed event age
+- live/recovery rate, retry volume과 million-event당 처리 비용
 
 ## batch reconciliation
 
@@ -132,6 +151,19 @@ unique user 계산은 exact 또는 approximate 중 선택하되 보장과 오차
 - correction window 밖 data
 - batch와 stream이 다른 reference snapshot을 사용한 경우 — 이는 가능하면 제거해야 한다.
 
+같은 event ID나 같은 entity/version의 conflicting payload는 arrival order로 선택하지 않는다. 해당 identity를 sticky quarantine에 유지하고 conflict가 해결된 새 source/version으로만 repair한다.
+
+## 사람·runtime 검토 evidence
+
+Root validator는 artifact 구조만 검사한다. 선택 runtime에서 다음 증거를 별도로 남긴다.
+
+- arrival permutation, duplicate/conflict와 TTL 경계 fixture의 closed result digest
+- sink 성공/checkpoint 전 crash와 restore 뒤 source·state·sink 상태
+- idle/slow partition, poison event와 sink throttle에서 backpressure 경로와 backlog recovery 계산
+- batch replay와 stream `CLOSED` output의 key/window diff
+- state schema shadow restore, representative canary consumer와 rollback rehearsal
+- approximate algorithm, 실제 broker/processor를 사용하지 않은 경로와 외부 side effect의 비보장
+
 ## 완료 판정
 
 - arrival order를 바꿔도 closed 결과가 같다.
@@ -140,6 +172,7 @@ unique user 계산은 exact 또는 approximate 중 선택하되 보장과 오차
 - watermark 정체와 late distribution을 관찰할 수 있다.
 - state와 sink failure를 주입한 뒤 checkpoint에서 복구한다.
 - batch replay와 차이를 key/window별로 설명한다.
+- runtime failure evidence와 사람의 finality·recovery 검토 없이 자동 구조 검사만으로 완료를 주장하지 않는다.
 
 ## 범위 밖
 

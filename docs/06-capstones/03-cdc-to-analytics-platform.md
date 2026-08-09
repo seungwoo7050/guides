@@ -49,6 +49,19 @@ incident runbook
 
 템플릿은 [`exercises/06-capstones/03-cdc-analytics-platform`](../../exercises/06-capstones/03-cdc-analytics-platform/README.md)에 있다.
 
+## 누적 evidence 연결
+
+| 높이 | artifact에 남길 evidence |
+|---|---|
+| contract와 ownership | `source-contract.md`: source·producer·operator·consumer owner, key/transaction/schema/delete, SLO와 classification |
+| ingestion과 raw | `snapshot-stream-protocol.md`·`cdc-envelope.md`: snapshot boundary, log coverage, raw identity/retention과 least privilege |
+| processing state | `cdc-envelope.md`·`failure-matrix.md`: event ID, entity version, source position, transaction, checkpoint와 tombstone |
+| storage와 publish | `table-layout.md`: partition/spec/schema, compaction base snapshot, staging/catalog commit, orphan/retention 정책 |
+| orchestration과 backfill | `incident-runbook.md`: job/run/attempt/output identity, re-snapshot, shadow rebuild, live quota, pause/resume/rollback |
+| quality와 reconciliation | `quality-reconciliation.md`: hard/statistical rule, sticky quarantine, position·count·key·aggregate/detail diff |
+| lineage·freshness·cost·access | `security-retention.md`·`submission.json`: run/input/output/code/schema/quality provenance, lag/unit cost, access·deletion evidence |
+| evolution과 consumer cutover | `schema-change-plan.md`·`incident-runbook.md`: reader/writer matrix, dual/shadow table, canary, migration, deprecation와 cleanup |
+
 ## source 계약
 
 - tables와 primary keys
@@ -140,6 +153,9 @@ raw는 무제한 보존을 의미하지 않는다. classification과 retention�
 8. connector outage가 retention을 초과
 9. source schema change로 decoding 실패
 10. 개인정보 삭제 요청이 old snapshot과 derived aggregate에 영향
+11. 같은 source position/key에 서로 다른 payload 또는 transaction sequence가 도착
+12. quarantine repair 뒤 old snapshot·raw log·backup에 삭제 대상이 남음
+13. shadow table은 맞지만 old consumer가 새 enum/field 의미를 잘못 해석
 
 ## reconciliation
 
@@ -151,6 +167,8 @@ raw는 무제한 보존을 의미하지 않는다. classification과 retention�
 - consumer aggregate by date/currency
 - unmatched/duplicate/stale event
 - snapshot ID와 lineage
+- conflicting position/key의 sticky quarantine와 repair run
+- old/new table의 key·aggregate·sample diff와 consumer별 sign-off
 
 ## incident runbook
 
@@ -173,6 +191,32 @@ raw는 무제한 보존을 의미하지 않는다. classification과 retention�
 - reconciliation
 - cutover와 old state cleanup
 
+### schema와 consumer cutover
+
+- old/new connector·reader·table·consumer matrix
+- 같은 source cutoff에서 shadow current/aggregate rebuild
+- representative canary consumer와 expected diff 승인
+- consumer별 migration, deprecation deadline와 old read 차단
+- connector/state/table pointer rollback과 downstream roll-forward
+
+### deletion propagation
+
+- raw·quarantine·current·aggregate·snapshot·backup의 영향 identity
+- 최소 권한 repair run과 삭제 ledger
+- restore-time deletion 재적용
+- lineage 기반 completion evidence와 예외/hold 기록
+
+## 사람·runtime 검토 evidence
+
+Root validator는 artifact와 JSON 구조만 확인한다. 완료를 주장하려면 선택 runtime에서 다음을 별도로 남긴다.
+
+- snapshot/log gap·overlap, insert/update/delete/key change와 conflicting position fixture
+- sink/checkpoint/catalog/compaction failure 전후의 active snapshot과 orphan 목록
+- connector outage·retention 초과 뒤 rebootstrap과 source/current/aggregate reconciliation
+- schema shadow rebuild, representative canary consumer, rollback/roll-forward rehearsal
+- secure quarantine access와 old snapshot/derived/backup deletion propagation evidence
+- 실제 source DB·broker·table format을 사용하지 않은 local state-machine profile의 비보장
+
 ## 완료 판정
 
 - snapshot과 log 사이 gap/duplicate를 fixture로 검증한다.
@@ -181,6 +225,7 @@ raw는 무제한 보존을 의미하지 않는다. classification과 retention�
 - table snapshot commit과 compaction이 concurrent writer를 잃지 않는다.
 - source position, raw/current/aggregate snapshot과 code revision이 lineage로 연결된다.
 - retention 초과와 deletion을 runbook으로 복구·증명한다.
+- runtime·보안·consumer 증거와 사람 검토 없이 자동 구조 검사만으로 완료를 주장하지 않는다.
 
 ## 범위 밖
 
