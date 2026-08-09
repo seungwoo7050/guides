@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import { StyleSheet, Text, View } from "react-native";
 import { useAppRuntime } from "../src/application/AppRuntime";
 import { ActionButton } from "../src/components/ActionButton";
+import { ConflictResolutionCard } from "../src/components/ConflictResolutionCard";
 import { Screen } from "../src/components/Screen";
 import { StateNotice } from "../src/components/StateNotice";
 
@@ -79,10 +80,14 @@ export default function SyncRoute() {
       .catch((error: unknown) => setActionError(String(error)));
   };
 
-  const resolve = (conflictId: string, choice: "remote" | "local") => {
+  const resolve = (
+    conflictId: string,
+    choice: "remote" | "local" | "merge",
+    payload?: Parameters<typeof resolveConflict>[2],
+  ) => {
     setResolving(conflictId);
     setActionError(null);
-    void resolveConflict(conflictId, choice)
+    void resolveConflict(conflictId, choice, payload)
       .then(() => reload())
       .catch((error: unknown) => setActionError(String(error)))
       .finally(() => setResolving(null));
@@ -158,35 +163,12 @@ export default function SyncRoute() {
 
       <Text style={styles.section}>해결하지 않은 충돌 ({unresolved.length})</Text>
       {unresolved.map((conflict) => (
-        <View key={conflict.conflictId} style={styles.conflictCard}>
-          <Text style={styles.title}>{conflict.recordId}</Text>
-          <Text style={styles.value}>
-            local revision {conflict.local.localRevision} · remote v{conflict.remote?.version ?? "없음"}
-          </Text>
-          <Text style={styles.value}>
-            local: {conflict.local.payload?.title ?? "삭제"}
-          </Text>
-          <Text style={styles.value}>
-            remote: {conflict.remote?.payload?.title ?? "삭제 또는 없음"}
-          </Text>
-          <StateNotice
-            message="충돌 뒤 만든 최신 local edit도 허용됩니다. ‘local 다시 전송’은 현재 최신 local payload를 새 command ID로 만들고, ‘remote 수용’은 미시도 local command를 명시적으로 폐기합니다."
-            title="해결 선택의 영향"
-          />
-          <View style={styles.actions}>
-            <ActionButton
-              disabled={resolving !== null}
-              label="최신 local 다시 전송"
-              onPress={() => resolve(conflict.conflictId, "local")}
-            />
-            <ActionButton
-              disabled={resolving !== null}
-              label="remote 수용"
-              onPress={() => resolve(conflict.conflictId, "remote")}
-              variant="danger"
-            />
-          </View>
-        </View>
+        <ConflictResolutionCard
+          conflict={conflict}
+          disabled={resolving !== null}
+          key={conflict.conflictId}
+          onResolve={(choice, payload) => resolve(conflict.conflictId, choice, payload)}
+        />
       ))}
       <ActionButton
         label="기록 목록"
@@ -201,14 +183,6 @@ const styles = StyleSheet.create({
   actions: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
   list: { gap: 10 },
   card: { borderRadius: 14, backgroundColor: "#fffdf8", padding: 16, gap: 5 },
-  conflictCard: {
-    borderRadius: 14,
-    borderWidth: 1,
-    borderColor: "#d8897e",
-    backgroundColor: "#fff8f5",
-    padding: 16,
-    gap: 8,
-  },
   section: { marginTop: 6, color: "#173b33", fontSize: 18, fontWeight: "800" },
   title: { color: "#173b33", fontSize: 16, fontWeight: "800" },
   value: { color: "#36564e", fontSize: 14 },

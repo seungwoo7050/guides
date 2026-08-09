@@ -3,6 +3,7 @@ import Constants from "expo-constants";
 import { useEffect, useState } from "react";
 import { StyleSheet, Text, View } from "react-native";
 import { useAppRuntime } from "../src/application/AppRuntime";
+import { ActionButton } from "../src/components/ActionButton";
 import { Screen } from "../src/components/Screen";
 import { StateNotice } from "../src/components/StateNotice";
 
@@ -16,8 +17,16 @@ export default function SettingsRoute() {
     storageError,
     storageStatus,
     syncEndpoint,
+    backgroundRegistration,
+    registerBackgroundOpportunity,
+    unregisterBackgroundOpportunity,
+    notificationRegistration,
+    pendingNotificationAction,
+    registerNotifications,
+    retryPendingNotification,
   } = useAppRuntime();
   const [snapshot, setSnapshot] = useState<LocalDatabaseSnapshot | null>(null);
+  const [lifecycleAction, setLifecycleAction] = useState<string | null>(null);
 
   useEffect(() => {
     let active = true;
@@ -46,6 +55,23 @@ export default function SettingsRoute() {
         <Text selectable style={styles.value}>{syncEndpoint}</Text>
         <Text style={styles.label}>관찰한 app lifecycle</Text>
         <Text style={styles.value}>{appState}</Text>
+        <Text style={styles.label}>background task</Text>
+        <Text style={styles.value}>
+          {backgroundRegistration === null
+            ? "checking"
+            : `${backgroundRegistration.availability} · ${backgroundRegistration.registered ? "registered" : "not registered"}`}
+        </Text>
+        <Text style={styles.label}>notification registration</Text>
+        <Text style={styles.value}>
+          {notificationRegistration.kind}
+          {notificationRegistration.kind === "permission-denied"
+            ? ` · canAskAgain=${notificationRegistration.canAskAgain}`
+            : "reason" in notificationRegistration
+              ? ` · ${notificationRegistration.reason}`
+              : notificationRegistration.kind === "token-ready"
+                ? ` · ${notificationRegistration.permission}`
+                : ""}
+        </Text>
         <Text style={styles.label}>camera access</Text>
         <Text style={styles.value}>
           {capabilities === null ? "checking" : `${capabilities.camera.availability.kind} · ${capabilities.camera.permission.kind}`}
@@ -59,6 +85,53 @@ export default function SettingsRoute() {
           {capabilities === null ? "checking" : `${capabilities.location.availability.kind} · ${capabilities.location.permission.kind}`}
         </Text>
       </View>
+      <View style={styles.actions}>
+        <ActionButton
+          label="Android 알림 명시적으로 준비"
+          onPress={() => {
+            setLifecycleAction(null);
+            void registerNotifications()
+              .then((result) => setLifecycleAction(`notification: ${result.kind}`))
+              .catch(() => setLifecycleAction("notification: safe failure"));
+          }}
+        />
+        <ActionButton
+          label="background 실행 기회만 등록 (sync 비활성)"
+          onPress={() => {
+            setLifecycleAction(null);
+            void registerBackgroundOpportunity()
+              .then((result) => setLifecycleAction(
+                `background: ${result.registered ? "registered" : result.availability}`,
+              ))
+              .catch(() => setLifecycleAction("background: safe failure"));
+          }}
+          variant="secondary"
+        />
+        <ActionButton
+          label="background 실행 기회 등록 해제"
+          onPress={() => {
+            setLifecycleAction(null);
+            void unregisterBackgroundOpportunity()
+              .then(() => setLifecycleAction("background: unregistered"))
+              .catch(() => setLifecycleAction("background cleanup: safe failure"));
+          }}
+          variant="secondary"
+        />
+        {pendingNotificationAction ? (
+          <ActionButton
+            label="보류한 알림 경로 다시 적용"
+            onPress={() => {
+              void retryPendingNotification().catch(() => {
+                setLifecycleAction("notification retry: safe failure");
+              });
+            }}
+            variant="secondary"
+          />
+        ) : null}
+      </View>
+      {lifecycleAction !== null ? (
+        <StateNotice title="마지막 lifecycle action" message={lifecycleAction} />
+      ) : null}
       {storageError ? (
         <StateNotice kind="error" message={storageError} title="저장소 진단" />
       ) : null}
@@ -71,7 +144,7 @@ export default function SettingsRoute() {
         title="마지막 파일 정합성 검사"
       />
       <StateNotice
-        message="Camera, system picker, foreground one-shot location과 remote sync는 사용자 action에서만 실행합니다. app active 복귀는 capability/pending media만 다시 읽고 network·민감 action을 자동 실행하지 않습니다. Fetch transport는 configurable local/test endpoint뿐이며 background sync, background location과 production backend는 후속 범위입니다."
+        message="Camera, picker, foreground location, notification permission/token, background registration은 startup에서 요청하지 않습니다. 등록은 OS 기회 관찰일 뿐 sync 완료 증거가 아닙니다. token·payload는 표시하거나 기록하지 않으며 installation/backend mapping은 구현하지 않았습니다."
         title="기능 경계"
       />
     </Screen>
@@ -82,4 +155,5 @@ const styles = StyleSheet.create({
   card: { padding: 18, borderRadius: 16, backgroundColor: "#fffdf8", gap: 6 },
   label: { marginTop: 8, fontSize: 13, fontWeight: "800", color: "#5c716b" },
   value: { fontSize: 17, color: "#173b33" },
+  actions: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
 });
