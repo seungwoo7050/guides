@@ -268,6 +268,31 @@ def check_orientation() -> None:
     for branch in ("python", "git", "unix-systems"):
         if branch not in readme:
             fail(f"README 선행 경로가 불완전합니다: {branch}")
+    if "Python 3.12 이상" not in readme:
+        fail("README의 필수 runtime은 Python 3.12 이상이어야 합니다.")
+    prepare = (ROOT / "prepare.sh").read_text(encoding="utf-8")
+    verify = (ROOT / "verify.sh").read_text(encoding="utf-8")
+    for path, text in (("prepare.sh", prepare), ("verify.sh", verify)):
+        if "sys.version_info >= (3, 12)" not in text:
+            fail(f"{path}: Python 3.12 preflight가 없습니다.")
+
+    limitation_evidence = {
+        "README.md": ("live call은 선택 smoke", "실행하지 않은 live 경로를 성공으로 표시하지 않습니다"),
+        "docs/07-capstone.md": ("live call은 선택 smoke", "production 안전성을 자동으로 증명하지 않습니다"),
+        "exercises/10-capstone-local-coding-agent/README.md": (
+            "실제 provider live smoke는 선택",
+            "production 환경의 안전성을 자동으로 증명하지 않습니다",
+        ),
+        "reference/capstone-review-rubric.md": (
+            "실제 provider live smoke가 없다는 사실은 한계로 기록",
+            "production 안전성을 주장하지 않습니다",
+        ),
+    }
+    for relative, phrases in limitation_evidence.items():
+        text = (ROOT / relative).read_text(encoding="utf-8")
+        for phrase in phrases:
+            if phrase not in text:
+                fail(f"{relative}: 검증 한계 문구 누락: {phrase}")
 
 
 def _shell_commands(text: str) -> list[str]:

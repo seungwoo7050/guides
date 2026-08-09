@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import argparse
 import os
+import re
 import subprocess
 import sys
 from pathlib import Path
@@ -14,6 +15,12 @@ HERE = Path(__file__).resolve().parent
 CAPSTONE = HERE.parent
 ROOT = CAPSTONE.parents[1]
 STAGES = tuple(f"{number:02d}" for number in range(1, 11))
+INTENTIONAL_IMPORT_GAPS = {
+    "03": "ConflictingEvidence",
+    "04": "atomic_write_bytes",
+    "09": "materialize_task",
+    "10": "InjectedCrash",
+}
 
 
 def implementation_path(value: str) -> Path:
@@ -62,6 +69,19 @@ def emit(completed: subprocess.CompletedProcess[str]) -> None:
         print(completed.stderr, end="", file=sys.stderr)
 
 
+def discovered_test_count(completed: subprocess.CompletedProcess[str]) -> int:
+    summary = re.search(r"Ran (\d+) tests?\b", completed.stdout + completed.stderr)
+    return int(summary.group(1)) if summary is not None else 0
+
+
+def has_incomplete_contract_signal(stage: str, completed: subprocess.CompletedProcess[str]) -> bool:
+    combined = (completed.stdout + completed.stderr).lower()
+    if "notimplementederror" in combined or f"todo(stage-{stage}" in combined:
+        return True
+    missing = INTENTIONAL_IMPORT_GAPS.get(stage)
+    return missing is not None and f"cannot import name '{missing.lower()}'" in combined
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--implementation", required=True)
@@ -69,11 +89,18 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--expect-incomplete", action="store_true")
     args = parser.parse_args(argv)
 
+    if args.expect_incomplete and args.implementation != "starter":
+        parser.error("--expect-incomplete is reserved for the tracked starter")
+
     if args.implementation == "mutants":
         if args.expect_incomplete:
             parser.error("mutants cannot be combined with --expect-incomplete")
         completed = run_test("test_mutants.py", CAPSTONE / "reference")
         emit(completed)
+        count = discovered_test_count(completed)
+        if count == 0:
+            print("ERROR: mutant test discovery executed zero tests", file=sys.stderr)
+            return 1
         if completed.returncode == 0:
             print("MUTANTS OK: every known-bad behavior was rejected")
         return completed.returncode
@@ -92,13 +119,16 @@ def main(argv: list[str] | None = None) -> int:
     failures: list[str] = []
     for stage in stages:
         completed = run_test(f"test_stage_{stage}_*.py", implementation)
+        if discovered_test_count(completed) == 0:
+            emit(completed)
+            failures.append(f"stage {stage} discovered zero tests")
+            continue
         if args.expect_incomplete:
             if completed.returncode == 0:
                 emit(completed)
                 failures.append(f"stage {stage} unexpectedly passed")
             else:
-                combined = (completed.stdout + completed.stderr).lower()
-                if not any(marker in combined for marker in ("notimplemented", "todo(stage-", "incomplete", "failure", "error")):
+                if not has_incomplete_contract_signal(stage, completed):
                     emit(completed)
                     failures.append(f"stage {stage} failed without an incomplete-contract signal")
                 else:
@@ -107,7 +137,6 @@ def main(argv: list[str] | None = None) -> int:
             emit(completed)
             if completed.returncode != 0:
                 failures.append(f"stage {stage} failed")
-                break
 
     if failures:
         for failure in failures:

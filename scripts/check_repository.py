@@ -164,6 +164,9 @@ def main() -> None:
             except UnicodeDecodeError:
                 problems.append(f"symlink target을 해석할 수 없음: {relative}")
                 continue
+            if PurePosixPath(target).is_absolute():
+                problems.append(f"절대 symlink는 격리 복사에서 허용되지 않음: {relative} -> {target}")
+                continue
             resolved = (path.parent / target).resolve(strict=False)
             try:
                 resolved.relative_to(ROOT.resolve())

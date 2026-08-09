@@ -17,6 +17,8 @@ command -v make >/dev/null 2>&1 || {
   exit 1
 }
 
+PYTHONDONTWRITEBYTECODE=1 python3 -B -c 'import sys; raise SystemExit(0 if sys.version_info >= (3, 12) else "Python 3.12 or newer is required")'
+
 PYTHONDONTWRITEBYTECODE=1 python3 -B - "$ROOT" "${VERIFY_LOG:-}" <<'PY'
 from __future__ import annotations
 
@@ -193,7 +195,17 @@ def create_isolated_copy(source: dict[str, Any]) -> Path:
         if entry["type"] == "file":
             shutil.copy2(origin, destination, follow_symlinks=False)
         elif entry["type"] == "symlink":
-            os.symlink(os.readlink(origin), destination)
+            target = os.readlink(origin)
+            if os.path.isabs(target):
+                raise RuntimeError(
+                    f"source symlink must stay relative in the isolated copy: {relative} -> {target}"
+                )
+            resolved = (origin.parent / target).resolve(strict=False)
+            try:
+                resolved.relative_to(root)
+            except ValueError as exc:
+                raise RuntimeError(f"source symlink escapes the repository: {relative} -> {target}") from exc
+            os.symlink(target, destination)
         else:
             raise RuntimeError(f"unknown manifest entry type: {entry['type']}")
     return isolated
