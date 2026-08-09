@@ -1,0 +1,72 @@
+{
+  "guide_schema": "exercise-expected-v1",
+  "schema_version": 1,
+  "exercise_id": "01-model-and-time/03-failure-detector",
+  "semantic_checker": "failure-detector-v1",
+  "required_case_kinds": ["normal", "boundary", "failure"],
+  "cases": [
+    {
+      "id": "stable-heartbeats",
+      "kind": "normal",
+      "fixture": "observations.json",
+      "source_path": "/cases/0",
+      "reference_anchor": "stable-heartbeats",
+      "outcome": {
+        "final_status": "ALIVE",
+        "last_heartbeat_step": 6,
+        "suspicion_events": [],
+        "failure_fact_known": false
+      },
+      "human_evidence": [
+        "각 tick의 elapsed 값을 계산합니다.",
+        "heartbeat incarnation이 monitored incarnation과 일치함을 확인합니다."
+      ],
+      "limits": [
+        "정상 trace 하나는 detector completeness나 accuracy 전체를 증명하지 않습니다."
+      ]
+    },
+    {
+      "id": "delayed-heartbeat",
+      "kind": "boundary",
+      "fixture": "observations.json",
+      "source_path": "/cases/1",
+      "reference_anchor": "delayed-heartbeat",
+      "outcome": {
+        "final_status": "ALIVE",
+        "last_heartbeat_step": 6,
+        "suspicion_events": ["b2"],
+        "recovery_event": "b3",
+        "failure_fact_known": false
+      },
+      "human_evidence": [
+        "timeout 경계의 비교 연산을 명시합니다.",
+        "false suspicion이 safety violation과 같지 않은 이유를 설명합니다."
+      ],
+      "limits": [
+        "실제 clock drift와 scheduler pause 분포는 모델링하지 않습니다."
+      ]
+    },
+    {
+      "id": "timeout-as-proof",
+      "kind": "failure",
+      "fixture": "observations.json",
+      "source_path": "/cases/2",
+      "reference_anchor": "timeout-as-proof",
+      "outcome": {
+        "final_status": "ALIVE",
+        "last_heartbeat_step": 6,
+        "suspicion_events": ["f1", "f2"],
+        "first_contract_violation": "f3",
+        "violated_invariant": "suspicion-alone-cannot-authorize-irreversible-membership-loss",
+        "required_evidence": ["consensus-ordered-configuration", "quorum-rule", "removed-member-fencing"]
+      },
+      "human_evidence": [
+        "reversible suspicion action과 irreversible membership action을 구분합니다.",
+        "f4가 보여 주는 것과 보여 주지 못하는 것을 설명합니다."
+      ],
+      "limits": [
+        "fixture는 완전한 membership protocol이나 external resource fencing을 실행하지 않습니다."
+      ]
+    }
+  ]
+}

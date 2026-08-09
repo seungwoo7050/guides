@@ -1,0 +1,54 @@
+{
+  "schema_version": 1,
+  "detector": {
+    "timeout_ticks": 5,
+    "timeout_rule": "suspect when current_step - last_heartbeat_step >= timeout_ticks",
+    "valid_heartbeat": "sender incarnation must equal the monitored incarnation"
+  },
+  "cases": [
+    {
+      "id": "stable-heartbeats",
+      "initial": {
+        "member": "A",
+        "incarnation": 1,
+        "last_heartbeat_step": 0,
+        "status": "ALIVE"
+      },
+      "events": [
+        {"id": "n1", "step": 2, "kind": "heartbeat", "member": "A", "incarnation": 1},
+        {"id": "n2", "step": 6, "kind": "heartbeat", "member": "A", "incarnation": 1},
+        {"id": "n3", "step": 10, "kind": "tick", "member": "A"}
+      ]
+    },
+    {
+      "id": "delayed-heartbeat",
+      "initial": {
+        "member": "A",
+        "incarnation": 1,
+        "last_heartbeat_step": 0,
+        "status": "ALIVE"
+      },
+      "events": [
+        {"id": "b1", "step": 4, "kind": "tick", "member": "A"},
+        {"id": "b2", "step": 5, "kind": "tick", "member": "A"},
+        {"id": "b3", "step": 6, "kind": "heartbeat", "member": "A", "incarnation": 1}
+      ]
+    },
+    {
+      "id": "timeout-as-proof",
+      "initial": {
+        "member": "A",
+        "incarnation": 1,
+        "last_heartbeat_step": 0,
+        "status": "ALIVE",
+        "configuration": ["A", "B", "C"]
+      },
+      "events": [
+        {"id": "f1", "step": 5, "kind": "tick", "member": "A"},
+        {"id": "f2", "step": 5, "kind": "mark_suspect", "member": "A", "reason": "heartbeat-timeout"},
+        {"id": "f3", "step": 5, "kind": "irreversible_remove", "member": "A", "evidence": ["heartbeat-timeout"]},
+        {"id": "f4", "step": 6, "kind": "heartbeat", "member": "A", "incarnation": 1}
+      ]
+    }
+  ]
+}

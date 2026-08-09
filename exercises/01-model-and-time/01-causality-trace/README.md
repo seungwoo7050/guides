@@ -73,3 +73,11 @@ clock.py
 - Lamport clock은 causal edge의 증가를 보존합니다.
 - 선택한 concurrent pair는 vector가 서로 지배하지 않습니다.
 - consistent cut는 포함 event의 causal predecessor를 모두 포함합니다.
+
+## 기대 결과와 검토
+
+- [해설](reference.md)은 clock 표, direct edge, concurrent pair와 cut 수정 근거를 제공합니다.
+- [기계 판정값](expected.json)은 같은 결과를 semantic checker가 다시 계산할 때 사용합니다.
+- 저장소 루트에서 다음 명령으로 fixture와 기대값의 정합성을 검사합니다.
+
+    python3 scripts/check_exercises.py exercises/01-model-and-time/01-causality-trace

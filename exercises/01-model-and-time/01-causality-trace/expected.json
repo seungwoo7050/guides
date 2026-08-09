@@ -1,0 +1,98 @@
+{
+  "guide_schema": "exercise-expected-v1",
+  "schema_version": 1,
+  "exercise_id": "01-model-and-time/01-causality-trace",
+  "semantic_checker": "causality-v1",
+  "required_case_kinds": ["normal", "boundary", "failure"],
+  "cases": [
+    {
+      "id": "clock-and-order",
+      "kind": "normal",
+      "fixture": "trace.json",
+      "source_path": "/events",
+      "reference_anchor": "clock-and-order",
+      "outcome": {
+        "event_clocks": {
+          "a1": {"lamport": 1, "vector": {"A": 1, "B": 0, "C": 0}},
+          "a2": {"lamport": 2, "vector": {"A": 2, "B": 0, "C": 0}},
+          "b1": {"lamport": 1, "vector": {"A": 0, "B": 1, "C": 0}},
+          "c1": {"lamport": 1, "vector": {"A": 0, "B": 0, "C": 1}},
+          "b2": {"lamport": 3, "vector": {"A": 2, "B": 2, "C": 0}},
+          "b3": {"lamport": 4, "vector": {"A": 2, "B": 3, "C": 0}},
+          "a3": {"lamport": 3, "vector": {"A": 3, "B": 0, "C": 0}},
+          "c2": {"lamport": 5, "vector": {"A": 2, "B": 3, "C": 2}},
+          "c3": {"lamport": 6, "vector": {"A": 2, "B": 3, "C": 3}},
+          "a4": {"lamport": 7, "vector": {"A": 4, "B": 3, "C": 3}}
+        },
+        "direct_edges": [
+          ["a1", "a2"],
+          ["a2", "a3"],
+          ["a3", "a4"],
+          ["b1", "b2"],
+          ["b2", "b3"],
+          ["c1", "c2"],
+          ["c2", "c3"],
+          ["a2", "b2"],
+          ["b3", "c2"],
+          ["c3", "a4"]
+        ],
+        "concurrent_pairs": [
+          ["a1", "b1"],
+          ["a1", "c1"],
+          ["a2", "b1"],
+          ["a3", "b2"],
+          ["a3", "b3"]
+        ]
+      },
+      "human_evidence": [
+        "각 concurrent pair에 대해 양방향 causal path가 모두 없음을 설명합니다.",
+        "receive clock이 어떤 send timestamp와 local state를 병합했는지 표시합니다."
+      ],
+      "limits": [
+        "fixture에 기록되지 않은 application dependency는 계산하지 못합니다.",
+        "수집된 event 배열이 각 process와 send-before-receive의 유효한 linear extension이라고 가정합니다."
+      ]
+    },
+    {
+      "id": "cut-1",
+      "kind": "boundary",
+      "fixture": "trace.json",
+      "source_path": "/candidate_cuts/cut-1",
+      "reference_anchor": "cut-1",
+      "outcome": {
+        "consistent": true,
+        "missing_predecessors": [],
+        "minimal_repairs": []
+      },
+      "human_evidence": [
+        "process별 선택 event가 local prefix임을 표로 보입니다.",
+        "포함된 receive의 send가 모두 포함됐음을 보입니다."
+      ],
+      "limits": [
+        "이 유한 trace의 cut 판정이며 runtime snapshot protocol 전체를 검증하지 않습니다."
+      ]
+    },
+    {
+      "id": "cut-2",
+      "kind": "failure",
+      "fixture": "trace.json",
+      "source_path": "/candidate_cuts/cut-2",
+      "reference_anchor": "cut-2",
+      "outcome": {
+        "consistent": false,
+        "missing_predecessors": [["b3", "c2"]],
+        "minimal_repairs": [
+          {"action": "add", "events": ["b3"]},
+          {"action": "remove", "events": ["c2"]}
+        ]
+      },
+      "human_evidence": [
+        "첫 위반 causal edge b3→c2를 표시합니다.",
+        "추가와 제거 두 최소 수정이 각각 consistent cut를 만드는지 다시 확인합니다."
+      ],
+      "limits": [
+        "최소 수정은 event 수 기준이며 업무 의미의 최적 복구를 뜻하지 않습니다."
+      ]
+    }
+  ]
+}

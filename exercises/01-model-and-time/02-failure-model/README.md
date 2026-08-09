@@ -44,3 +44,11 @@
 - 각 scenario의 durable·network 가정을 명시합니다.
 - safety 위반과 progress 실패를 구분합니다.
 - 더 강한 보장을 위해 필요한 protocol state를 제안합니다.
+
+## 기대 결과와 검토
+
+- [해설](reference.md)은 scenario별 관찰, 가능한 상태, 최초 안전성 위험과 필요한 evidence를 제공합니다.
+- [기계 판정값](expected.json)은 fixture scenario와 분류가 어긋나지 않는지 검사합니다.
+- 저장소 루트에서 다음 명령을 실행합니다.
+
+    python3 scripts/check_exercises.py exercises/01-model-and-time/02-failure-model

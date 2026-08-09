@@ -1,0 +1,95 @@
+{
+  "guide_schema": "exercise-expected-v1",
+  "schema_version": 1,
+  "exercise_id": "01-model-and-time/02-failure-model",
+  "semantic_checker": "failure-model-v1",
+  "required_case_kinds": ["boundary", "failure"],
+  "cases": [
+    {
+      "id": "slow-or-crashed",
+      "kind": "boundary",
+      "fixture": "scenarios.json",
+      "source_path": "/scenarios/0",
+      "reference_anchor": "slow-or-crashed",
+      "outcome": {
+        "classification": "suspicion-only",
+        "possible_states": ["leader-crash", "message-delay", "one-way-partition", "process-pause"],
+        "failure_fact_known": false,
+        "safety": "term-vote-quorum-must-not-depend-on-timeout-truth",
+        "liveness": "may-delay-without-stable-majority-and-delivery",
+        "required_evidence": ["bidirectional-link-observation", "process-incarnation", "term-and-quorum-contact"],
+        "required_fix": ["treat-timeout-as-suspicion", "preserve-quorum-safety"]
+      },
+      "human_evidence": [
+        "관찰과 가능한 실제 상태를 별도 열로 작성합니다.",
+        "election 진행 조건과 safety 조건을 분리합니다."
+      ],
+      "limits": [
+        "fixture만으로 crash와 delay 중 하나를 확정할 수 없습니다."
+      ]
+    },
+    {
+      "id": "vote-before-persist",
+      "kind": "failure",
+      "fixture": "scenarios.json",
+      "source_path": "/scenarios/1",
+      "reference_anchor": "vote-before-persist",
+      "outcome": {
+        "classification": "unsafe-durable-promise",
+        "first_bad_event": "A sends granted=true",
+        "violated_invariants": ["vote-safety", "election-safety-precondition"],
+        "required_evidence": ["durable-term-and-vote", "storage-completion-before-response"],
+        "required_fix": ["persist-current-term-and-voted-for-before-grant"]
+      },
+      "human_evidence": [
+        "두 번째 vote가 가능한 crash-recovery state를 표로 보입니다.",
+        "저장 완료와 response 관찰 순서를 명시합니다."
+      ],
+      "limits": [
+        "fixture는 storage atomicity와 torn write를 별도로 모델링하지 않습니다."
+      ]
+    },
+    {
+      "id": "partitioned-register",
+      "kind": "failure",
+      "fixture": "scenarios.json",
+      "source_path": "/scenarios/2",
+      "reference_anchor": "partitioned-register",
+      "outcome": {
+        "classification": "availability-consistency-conflict",
+        "simultaneous_requirements_possible": false,
+        "choices": ["reject-or-wait-on-one-side", "weaken-consistency-and-preserve-conflicts"],
+        "required_evidence": ["client-invocation-completion-history", "partition-direction", "response-contract"],
+        "required_fix": ["choose-partition-policy-per-api"]
+      },
+      "human_evidence": [
+        "양쪽 성공을 가정한 최소 client history의 모순을 제시합니다.",
+        "선택한 API 응답과 consistency 이름을 연결합니다."
+      ],
+      "limits": [
+        "CAP 경계만 다루며 평상시 latency나 전체 uptime을 판정하지 않습니다."
+      ]
+    },
+    {
+      "id": "crash-recovery-log",
+      "kind": "failure",
+      "fixture": "scenarios.json",
+      "source_path": "/scenarios/3",
+      "reference_anchor": "crash-recovery-log",
+      "outcome": {
+        "classification": "durability-contract-violation",
+        "lost_entry": "e9",
+        "violated_invariants": ["acknowledged-entry-survives-restart"],
+        "required_evidence": ["ack-durability-definition", "flush-completion", "restart-log-boundary"],
+        "required_fix": ["durable-append-before-ack", "validate-recovered-log"]
+      },
+      "human_evidence": [
+        "C의 ack가 memory 수신인지 durable 저장인지 계약을 고정합니다.",
+        "나머지 quorum 상태를 추가해 client-visible 영향을 판정합니다."
+      ],
+      "limits": [
+        "다른 replica 상태가 없어 e9의 global commit 여부는 판정할 수 없습니다."
+      ]
+    }
+  ]
+}
