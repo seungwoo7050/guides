@@ -1,0 +1,22 @@
+{
+  "schema_version": 1,
+  "expressions": [
+    {
+      "source": "1 + 2 * 3",
+      "projection": ["+", 1, ["*", 2, 3]]
+    },
+    {
+      "source": "(1 + 2) * 3",
+      "projection": ["*", ["+", 1, 2], 3]
+    },
+    {
+      "source": "8 - 3 - 2",
+      "projection": ["-", ["-", 8, 3], 2]
+    },
+    {
+      "source": "-(1 + 2)",
+      "projection": ["neg", ["+", 1, 2]]
+    }
+  ],
+  "invalid": ["1 +", "(1 + 2", "1 @ 2"]
+}

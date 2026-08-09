@@ -27,6 +27,18 @@ REQUIRED = [
     "exercises/08-mica-capstone/fixtures/manifest.json",
     "exercises/08-mica-capstone/skeleton/src/mica/__main__.py",
     "exercises/08-mica-capstone/check_submission.py",
+    "exercises/01-source-and-diagnostics/check.py",
+    "exercises/01-source-and-diagnostics/fixtures/source-cases.json",
+    "exercises/01-source-and-diagnostics/reference/unicode-diagnostic.json",
+    "exercises/02-lexer-parser-and-ast/check.py",
+    "exercises/02-lexer-parser-and-ast/fixtures/expressions.json",
+    "exercises/02-lexer-parser-and-ast/reference/token-trace.json",
+    "exercises/02-lexer-parser-and-ast/reference/ast-projection.json",
+    "exercises/08-mica-capstone/skeleton/src/mica/token.py",
+    "exercises/08-mica-capstone/skeleton/src/mica/lexer.py",
+    "exercises/08-mica-capstone/skeleton/src/mica/syntax.py",
+    "exercises/08-mica-capstone/skeleton/src/mica/parser.py",
+    "scripts/run_labs.py",
     "reference/sources.md",
     "reference/project-entry-map.md",
 ]
@@ -75,7 +87,7 @@ def main() -> int:
     if license_path.is_file() and license_path.stat().st_size < 10_000:
         failures.append("CC-BY-4.0.txt가 canonical legal text보다 지나치게 짧음")
 
-    for relative in ("prepare.sh", "verify.sh", "scripts/new-workspace.sh", "exercises/08-mica-capstone/check_submission.py"):
+    for relative in ("prepare.sh", "verify.sh", "scripts/new-workspace.sh", "scripts/run_labs.py", "exercises/08-mica-capstone/check_submission.py"):
         path = ROOT / relative
         if path.exists() and not (path.stat().st_mode & 0o111):
             failures.append(f"실행 권한 없음: {relative}")

@@ -1,13 +1,14 @@
 PYTHON ?= python3
 WORKSPACE ?= .workspaces/mica
 
-.PHONY: help prepare check verify structure links docs capstone examples capstone-start workspace clean purge-workspace
+.PHONY: help prepare check verify structure links docs capstone examples labs capstone-start workspace clean purge-workspace
 
 help:
 	@printf '%s\n' \
 	  'make prepare         환경과 source fingerprint 준비' \
 	  'make check           문서·명세·예제 빠른 검사' \
 	  'make verify          임시 복사본에서 전체 검증' \
+	  'make labs            단계 실습 reference evidence 검사' \
 	  'make workspace       Mica skeleton workspace 생성' \
 	  'make capstone-start  skeleton의 의도된 초기 실패 확인' \
 	  'make clean           준비 marker와 생성 cache 제거(workspace 보존)' \
@@ -31,7 +32,10 @@ capstone:
 examples:
 	$(PYTHON) scripts/run_examples.py
 
-check: structure links docs capstone examples
+labs:
+	$(PYTHON) scripts/run_labs.py
+
+check: structure links docs capstone examples labs
 
 verify:
 	./verify.sh

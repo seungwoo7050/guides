@@ -6,6 +6,21 @@ Mica source를 token과 AST로 바꾸고 precedence·recovery·source span 계�
 
 ## 과제
 
+### 실행 가능한 시작과 비교 근거
+
+Exercise 01에서 만든 같은 workspace의 `token.py`, `lexer.py`, `syntax.py`, `parser.py`를 완성합니다.
+
+```sh
+python3 exercises/02-lexer-parser-and-ast/check.py
+python3 exercises/08-mica-capstone/check_submission.py \
+  --workspace .workspaces/mica --stage lex
+```
+
+- [`fixtures/expressions.json`](fixtures/expressions.json)은 precedence·left associativity·prefix와 대표 실패를 고정합니다.
+- [`reference/token-trace.json`](reference/token-trace.json)은 lexeme가 source byte slice와 일치하는지 비교하는 trace입니다.
+- [`reference/ast-projection.json`](reference/ast-projection.json)은 host address와 무관한 normalized tree 비교 예입니다.
+- 이 reference는 전체 Mica parser 답안이 아니며 다른 내부 AST도 공개 projection과 invariant가 같으면 허용합니다.
+
 ### 1. Token table
 
 각 token에 다음을 적습니다.
@@ -87,3 +102,5 @@ Recovery 뒤 parser가 같은 token에서 반복 실패하지 않아야 합니�
 ## 완료 기준
 
 모든 AST node span이 source 범위 안에 있고, precedence fixture가 명세대로 구조화되며, 잘못된 입력이 diagnostic을 남기고 제한 시간 안에 EOF 또는 synchronization 지점으로 진행합니다.
+
+사람 검토에서는 recovery 뒤 후속 function을 보존한 trace, error budget 종료 조건과 CST/trivia를 AST에서 분리한 이유를 제출합니다.

@@ -1,0 +1,26 @@
+{
+  "schema_version": 1,
+  "cases": [
+    {
+      "name": "ascii-lf",
+      "text": "a\n",
+      "byte_length": 2,
+      "codepoint_boundaries": [0, 1, 2],
+      "line_starts": [0, 2]
+    },
+    {
+      "name": "hangul-lf",
+      "text": "가\n",
+      "byte_length": 4,
+      "codepoint_boundaries": [0, 3, 4],
+      "line_starts": [0, 4]
+    },
+    {
+      "name": "emoji-crlf-tab",
+      "text": "🙂\r\nx\t",
+      "byte_length": 8,
+      "codepoint_boundaries": [0, 4, 5, 6, 7, 8],
+      "line_starts": [0, 6]
+    }
+  ]
+}

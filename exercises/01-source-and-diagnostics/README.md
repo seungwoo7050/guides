@@ -6,6 +6,19 @@ Source text를 단순 문자열이 아니라 version이 있는 snapshot으로 �
 
 ## 과제
 
+### 실행 가능한 시작과 비교 근거
+
+하나의 누적 workspace를 만든 뒤 `source.py`와 `diagnostic.py`부터 완성합니다.
+
+```sh
+make workspace WORKSPACE=.workspaces/mica
+python3 exercises/01-source-and-diagnostics/check.py
+```
+
+- [`fixtures/source-cases.json`](fixtures/source-cases.json)은 ASCII·한글·non-BMP·LF·CRLF·tab의 byte length, code-point boundary와 line start를 고정합니다.
+- [`reference/unicode-diagnostic.json`](reference/unicode-diagnostic.json)은 source identity가 일치하는 UTF-8 byte span의 기대 결과입니다.
+- 검사기는 emoji 안쪽 byte를 character column로 오인하는 known-bad를 거부하지만, 학습자 renderer의 시각적 품질 전체를 판정하지 않습니다.
+
 ### 1. SourceSnapshot
 
 다음을 구현하거나 설계합니다.
@@ -95,3 +108,5 @@ Message text보다 code와 span을 test합니다.
 ## 완료 기준
 
 같은 snapshot과 diagnostic을 반복 처리하면 byte-for-byte 같은 JSON이 나오고, 모든 primary/secondary span이 source 범위 안에 있으며 Unicode case에서 caret가 의도한 token을 가리킵니다.
+
+사람 검토에서는 CRLF를 한 line break로 다루는 이유, core byte span과 LSP position을 분리하는 이유, stale version을 조용히 표시하지 않는 복구 정책을 설명합니다.

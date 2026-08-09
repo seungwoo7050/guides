@@ -1,0 +1,13 @@
+{
+  "schema_version": 1,
+  "source_id": "expression",
+  "source": "1 + 2 * 3",
+  "tokens": [
+    {"kind": "INT", "lexeme": "1", "channel": "syntax", "span": {"source_id": "expression", "start": 0, "end": 1}},
+    {"kind": "PLUS", "lexeme": "+", "channel": "syntax", "span": {"source_id": "expression", "start": 2, "end": 3}},
+    {"kind": "INT", "lexeme": "2", "channel": "syntax", "span": {"source_id": "expression", "start": 4, "end": 5}},
+    {"kind": "STAR", "lexeme": "*", "channel": "syntax", "span": {"source_id": "expression", "start": 6, "end": 7}},
+    {"kind": "INT", "lexeme": "3", "channel": "syntax", "span": {"source_id": "expression", "start": 8, "end": 9}},
+    {"kind": "EOF", "lexeme": "", "channel": "syntax", "span": {"source_id": "expression", "start": 9, "end": 9}}
+  ]
+}

@@ -12,8 +12,8 @@ PYTHONPATH=src python3 -m mica check ../fixtures/valid/literal-main.mica --json
 
 ```text
 source.py / diagnostic.py
-→ token.py / lexer.py
-→ syntax.py / parser.py
+→ token.py / lexer.py              # explicit starter boundary
+→ syntax.py / parser.py            # explicit normalized-AST boundary
 → symbol.py / resolver.py
 → types.py / typecheck.py / flow.py
 → interpreter.py
@@ -21,3 +21,5 @@ source.py / diagnostic.py
 ```
 
 `SourceText`, `Span`, `Diagnostic`의 public field를 바꾸면 JSON adapter와 fixture를 함께 갱신합니다. Host traceback을 사용자 오류로 사용하지 않습니다.
+
+앞 단계의 module을 복사해 새 과제를 시작하지 않습니다. 하나의 workspace에서 구현을 누적하고, Exercise 01–02의 `check.py`와 `reference/` artifact로 byte span·token slice·AST projection을 먼저 비교한 뒤 capstone runner를 사용합니다.

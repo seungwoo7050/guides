@@ -1,0 +1,23 @@
+{
+  "schema_version": 1,
+  "source": {
+    "id": "emoji-crlf-tab",
+    "version": 1,
+    "byte_length": 8
+  },
+  "diagnostic": {
+    "code": "MICA1001",
+    "severity": "error",
+    "phase": "lex",
+    "message": "sample diagnostic at the emoji",
+    "primary": {
+      "source_id": "emoji-crlf-tab",
+      "start": 0,
+      "end": 4
+    },
+    "secondary": [],
+    "notes": [
+      "byte span [0, 4) covers one non-BMP code point"
+    ]
+  }
+}
