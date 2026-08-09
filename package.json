@@ -19,6 +19,7 @@
   },
   "workspaces": [
     "exercises/field-notes/fault-server",
+    "exercises/field-notes/lifecycle-engine",
     "exercises/field-notes/shared",
     "exercises/field-notes/skeleton",
     "exercises/field-notes/reference",
@@ -30,6 +31,7 @@
     "test:stage02": "npm run test:stage02 --workspace=@field-notes/reference",
     "test:stage03": "npm run test:stage03 --workspace=@field-notes/reference",
     "test:stage04": "npm run test:stage04 --workspace=@field-notes/reference && npm test --workspace=@field-notes/fault-server && npm test --workspace=@field-notes/sync-engine",
+    "test:stage05": "npm run test:stage05 --workspace=@field-notes/reference && npm test --workspace=@field-notes/lifecycle-engine",
     "test:stage01:skeleton": "npm run test:stage01 --workspace=@field-notes/skeleton",
     "bundle:android": "npm run bundle:android --workspace=@field-notes/reference",
     "bundle:ios": "npm run bundle:ios --workspace=@field-notes/reference",
@@ -38,6 +40,7 @@
     "check:stage01": "npm run typecheck && npm run test:stage01",
     "check:stage02": "npm run typecheck && npm run test:stage01 && npm run test:stage02",
     "check:stage03": "npm run typecheck && npm run test:stage01 && npm run test:stage02 && npm run test:stage03",
-    "check:stage04": "npm run typecheck && npm run test:stage01 && npm run test:stage02 && npm run test:stage03 && npm run test:stage04"
+    "check:stage04": "npm run typecheck && npm run test:stage01 && npm run test:stage02 && npm run test:stage03 && npm run test:stage04",
+    "check:stage05": "npm run check:stage04 && npm run test:stage05"
   }
 }

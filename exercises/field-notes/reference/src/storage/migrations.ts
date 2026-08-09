@@ -2,7 +2,7 @@ import { FIELD_RECORD_FIXTURES } from "@field-notes/shared";
 import type { SQLiteDatabase } from "expo-sqlite";
 import { CorruptLocalDataError } from "./localMutation";
 
-export const CURRENT_SCHEMA_VERSION = 5;
+export const CURRENT_SCHEMA_VERSION = 6;
 
 export const CREATE_V1_SCHEMA_SQL = `
 CREATE TABLE records (
@@ -212,6 +212,58 @@ CREATE INDEX sync_checkpoints_command_idx
   ON sync_checkpoints(command_id, sequence);
 `;
 
+/**
+ * v6 turns the Stage 01 processed-intent marker into a leased notification
+ * response ledger. Only bounded identities and outcome codes are stored; raw
+ * notification content is deliberately absent from this schema.
+ */
+export const MIGRATE_V5_TO_V6_SQL = `
+ALTER TABLE processed_intents RENAME TO processed_intents_v5;
+CREATE TABLE processed_intents (
+  message_id TEXT PRIMARY KEY NOT NULL,
+  state TEXT NOT NULL CHECK (state IN ('claimed', 'completed', 'terminal')),
+  claim_token TEXT,
+  claim_owner TEXT,
+  lease_expires_at INTEGER,
+  completed_at INTEGER,
+  terminal_code TEXT,
+  CHECK (
+    (state = 'claimed' AND claim_token IS NOT NULL AND claim_owner IS NOT NULL
+      AND lease_expires_at IS NOT NULL AND completed_at IS NULL
+      AND terminal_code IS NULL)
+    OR
+    (state = 'completed' AND claim_token IS NULL AND claim_owner IS NULL
+      AND lease_expires_at IS NULL AND completed_at IS NOT NULL
+      AND terminal_code IS NULL)
+    OR
+    (state = 'terminal' AND claim_token IS NULL AND claim_owner IS NULL
+      AND lease_expires_at IS NULL AND completed_at IS NOT NULL
+      AND terminal_code IS NOT NULL)
+  )
+);
+INSERT INTO processed_intents (
+  message_id, state, completed_at
+)
+SELECT
+  intent_key,
+  'completed',
+  CASE
+    WHEN strftime('%s', processed_at) IS NULL THEN 0
+    ELSE CAST(strftime('%s', processed_at) AS INTEGER) * 1000
+  END
+FROM processed_intents_v5;
+DROP TABLE processed_intents_v5;
+CREATE INDEX processed_intents_lease_idx
+  ON processed_intents(state, lease_expires_at);
+
+CREATE TABLE lifecycle_settings (
+  setting_key TEXT PRIMARY KEY NOT NULL,
+  setting_value TEXT NOT NULL
+);
+INSERT INTO lifecycle_settings (setting_key, setting_value)
+VALUES ('automatic_sync_enabled', '0');
+`;
+
 export type LegacyV1FixtureRecord = {
   id: string;
   title: string;
@@ -269,6 +321,10 @@ async function applyStep(txn: MigrationTxn, fromVersion: number): Promise<void> 
     await txn.execAsync(MIGRATE_V4_TO_V5_SQL);
     return;
   }
+  if (fromVersion === 5) {
+    await txn.execAsync(MIGRATE_V5_TO_V6_SQL);
+    return;
+  }
   throw new CorruptLocalDataError(
     "schema",
     `no forward migration from version ${fromVersion}`,
@@ -283,20 +339,25 @@ export async function migrateSQLiteDatabase(
   db: SQLiteDatabase,
   options: MigrationOptions,
 ): Promise<void> {
+  await db.execAsync("PRAGMA busy_timeout = 5000;");
   await db.execAsync("PRAGMA journal_mode = WAL; PRAGMA foreign_keys = ON;");
-  const row = await db.getFirstAsync<{ user_version: number }>("PRAGMA user_version");
-  let version = row?.user_version ?? 0;
-  if (version > CURRENT_SCHEMA_VERSION) {
-    throw new CorruptLocalDataError(
-      "schema",
-      `database version ${version} is newer than supported ${CURRENT_SCHEMA_VERSION}`,
-    );
-  }
-
-  while (version < CURRENT_SCHEMA_VERSION) {
-    const fromVersion = version;
-    const toVersion = version + 1;
+  while (true) {
+    let applied = false;
     await db.withExclusiveTransactionAsync(async (txn) => {
+      // A foreground and headless connection may race. Version ownership is
+      // decided only after this connection holds the write transaction.
+      const row = await txn.getFirstAsync<{ user_version: number }>(
+        "PRAGMA user_version",
+      );
+      const fromVersion = row?.user_version ?? 0;
+      if (fromVersion > CURRENT_SCHEMA_VERSION) {
+        throw new CorruptLocalDataError(
+          "schema",
+          `database version ${fromVersion} is newer than supported ${CURRENT_SCHEMA_VERSION}`,
+        );
+      }
+      if (fromVersion === CURRENT_SCHEMA_VERSION) return;
+      const toVersion = fromVersion + 1;
       await applyStep(txn, fromVersion);
       await options.beforeVersionCommit?.(fromVersion, toVersion);
       await txn.runAsync(
@@ -305,7 +366,8 @@ export async function migrateSQLiteDatabase(
         [fromVersion, toVersion, options.now()],
       );
       await txn.execAsync(`PRAGMA user_version = ${toVersion}`);
+      applied = true;
     });
-    version = toVersion;
+    if (!applied) return;
   }
 }

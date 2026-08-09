@@ -184,10 +184,13 @@ class FakeNotificationResponseApi
   readonly calls: string[] = [];
   last: TestNotificationResponse | null = null;
   clearFails = false;
+  listenerFails = false;
+  coldReadFails = false;
   #listener: ((value: TestNotificationResponse) => void) | null = null;
 
   getLastNotificationResponse(): TestNotificationResponse | null {
     this.calls.push("get-last");
+    if (this.coldReadFails) throw new Error("SECRET_PAYLOAD_COLD_FAILURE");
     return this.last;
   }
 
@@ -195,6 +198,7 @@ class FakeNotificationResponseApi
     listener: (response: TestNotificationResponse) => void,
   ): { remove(): void } {
     this.calls.push("listen");
+    if (this.listenerFails) throw new Error("SECRET_PAYLOAD_LISTENER_FAILURE");
     this.#listener = listener;
     return {
       remove: () => {
@@ -215,6 +219,32 @@ class FakeNotificationResponseApi
     this.#listener?.(value);
   }
 }
+
+test("listener and cold-read source failures are public, redacted and retryable", async () => {
+  const listenerApi = new FakeNotificationResponseApi();
+  listenerApi.listenerFails = true;
+  const listenerSource = new SerializedExpoNotificationResponseSource({
+    api: listenerApi,
+    keyOf: expoNotificationResponseKey,
+    handler: { handle: async () => ({ kind: "acknowledged" }) },
+  });
+  assert.deepEqual(await listenerSource.start(), {
+    kind: "source-error",
+    stage: "listener-registration",
+  });
+
+  const coldApi = new FakeNotificationResponseApi();
+  coldApi.coldReadFails = true;
+  const coldSource = new SerializedExpoNotificationResponseSource({
+    api: coldApi,
+    keyOf: expoNotificationResponseKey,
+    handler: { handle: async () => ({ kind: "acknowledged" }) },
+  });
+  const coldResult = await coldSource.start();
+  assert.deepEqual(coldResult, { kind: "source-error", stage: "cold-read" });
+  assert.deepEqual(coldApi.calls, ["listen", "get-last", "remove-listener"]);
+  assert.equal(JSON.stringify([coldResult, coldApi.calls]).includes("SECRET_PAYLOAD"), false);
+});
 
 function deferred(): { promise: Promise<void>; resolve(): void } {
   let resolve!: () => void;
@@ -339,6 +369,35 @@ test("retryable durable disposition does not clear the native response", async (
   });
   assert.equal(api.calls.includes("clear-last"), false);
   assert.equal(api.last, value);
+});
+
+test("explicit retry processes a retained response once and clears after acknowledgement", async () => {
+  const api = new FakeNotificationResponseApi();
+  const value = response("explicit-retry-1");
+  api.last = value;
+  let attempt = 0;
+  const source = new SerializedExpoNotificationResponseSource({
+    api,
+    keyOf: expoNotificationResponseKey,
+    handler: {
+      handle: async () => {
+        attempt += 1;
+        return attempt === 1
+          ? { kind: "retryable", code: "navigation-failed" }
+          : { kind: "acknowledged" };
+      },
+    },
+  });
+  assert.equal((await source.enqueue("cold", value)).kind, "retryable");
+  assert.equal(api.last, value);
+  assert.deepEqual(await source.enqueue("warm", value), {
+    kind: "acknowledged",
+    origin: "warm",
+    responseLabel: "response#1",
+    clear: "cleared",
+  });
+  assert.equal(attempt, 2);
+  assert.equal(api.calls.filter((call) => call === "clear-last").length, 1);
 });
 
 test("clear failure replays through a messageId-idempotent durable handler", async () => {

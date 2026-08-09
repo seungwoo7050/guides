@@ -21,7 +21,18 @@ function bindings(values: unknown[]): Array<string | number | bigint | Uint8Arra
 
 /** Node 24 adapter for exercising the production SQL path in deterministic Jest tests. */
 export class NodeSQLiteDatabase {
-  readonly #database = new DatabaseSync(":memory:");
+  static #memorySequence = 0;
+  static readonly #transactionTails = new Map<string, Promise<void>>();
+  readonly #database: DatabaseSync;
+  readonly #lockKey: string;
+
+  public constructor(filename = ":memory:") {
+    this.#database = new DatabaseSync(filename);
+    NodeSQLiteDatabase.#memorySequence += 1;
+    this.#lockKey = filename === ":memory:"
+      ? `memory:${NodeSQLiteDatabase.#memorySequence}`
+      : filename;
+  }
 
   public async execAsync(source: string): Promise<void> {
     this.#database.exec(source);
@@ -53,13 +64,27 @@ export class NodeSQLiteDatabase {
   public async withExclusiveTransactionAsync(
     task: (transaction: SQLiteDatabase) => Promise<void>,
   ): Promise<void> {
-    this.#database.exec("BEGIN IMMEDIATE");
+    const previous = NodeSQLiteDatabase.#transactionTails.get(this.#lockKey) ?? Promise.resolve();
+    let release!: () => void;
+    const current = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    NodeSQLiteDatabase.#transactionTails.set(this.#lockKey, current);
+    await previous;
     try {
-      await task(this.asExpoDatabase());
-      this.#database.exec("COMMIT");
-    } catch (error) {
-      this.#database.exec("ROLLBACK");
-      throw error;
+      this.#database.exec("BEGIN IMMEDIATE");
+      try {
+        await task(this.asExpoDatabase());
+        this.#database.exec("COMMIT");
+      } catch (error) {
+        this.#database.exec("ROLLBACK");
+        throw error;
+      }
+    } finally {
+      release();
+      if (NodeSQLiteDatabase.#transactionTails.get(this.#lockKey) === current) {
+        NodeSQLiteDatabase.#transactionTails.delete(this.#lockKey);
+      }
     }
   }
 

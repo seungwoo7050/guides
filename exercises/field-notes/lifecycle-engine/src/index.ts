@@ -35,6 +35,7 @@ export type {
   NotificationPermissionState,
   NotificationPrepareResult,
   ProcessedIntentClaim,
+  ProcessedIntentCompletion,
   PushTokenResult,
   RecordReadinessState,
   SyncExecution,

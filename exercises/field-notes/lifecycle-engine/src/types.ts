@@ -13,7 +13,7 @@ export type BoundedWorkerObservation = {
   workerId: string;
   claimed: number;
   checkpoints: readonly unknown[];
-  stopped: "budget" | "idle" | "aborted" | "checkpoint-failed";
+  stopped: "budget" | "idle" | "aborted" | "checkpoint-failed" | "auth-blocked";
   checkpointError?: string;
 };
 
@@ -89,6 +89,10 @@ export type ProcessedIntentClaim = {
   expiresAt: number;
 };
 
+export type ProcessedIntentCompletion =
+  | { kind: "completed" }
+  | { kind: "terminal"; code: string };
+
 export type NotificationPrepareResult =
   | {
       kind: "prepared";
@@ -110,6 +114,8 @@ export type NotificationPrepareResult =
         | "record-missing";
       parseReason?: Exclude<NotificationParseResult, { kind: "valid" }>["reason"];
       safeNavigation?: NotificationNavigationIntent;
+      /** Present when terminal evidence must wait for fallback navigation. */
+      claim?: ProcessedIntentClaim;
     };
 
 export type NotificationPermissionState =

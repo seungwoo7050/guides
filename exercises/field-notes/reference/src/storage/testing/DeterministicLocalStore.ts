@@ -172,7 +172,12 @@ export class DeterministicLocalStore
           });
         }
         draft.legacyRecords = [];
-      } else if (fromVersion !== 2 && fromVersion !== 3 && fromVersion !== 4) {
+      } else if (
+        fromVersion !== 2 &&
+        fromVersion !== 3 &&
+        fromVersion !== 4 &&
+        fromVersion !== 5
+      ) {
         throw new Error(`no migration from ${fromVersion}`);
       }
       this.consumeFault(`migration-to-${toVersion}`);

@@ -576,7 +576,7 @@ describe("Stage 04 v4 to v5 migration", () => {
     expect(await sync.getCommand("legacy-pending-command")).toMatchObject({
       state: { kind: "pending" },
     });
-    expect((await repository.snapshot()).schemaVersion).toBe(5);
+    expect((await repository.snapshot()).schemaVersion).toBe(6);
     database.close();
   });
 });

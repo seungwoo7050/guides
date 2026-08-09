@@ -80,15 +80,23 @@ export class NotificationIntentCoordinator {
   }
 
   async acknowledge(claim: ProcessedIntentClaim): Promise<void> {
-    await this.#claims.complete(claim);
+    await this.#claims.complete(claim, { kind: "completed" });
+  }
+
+  /** Releases an unapplied navigation so a later explicit user action can retry. */
+  async defer(claim: ProcessedIntentClaim): Promise<void> {
+    await this.#claims.release(claim);
+  }
+
+  async reject(claim: ProcessedIntentClaim, code: string): Promise<void> {
+    await this.#claims.complete(claim, { kind: "terminal", code });
   }
 
   async #rejectClaimed(
     claim: ProcessedIntentClaim,
     result: Extract<NotificationPrepareResult, { kind: "rejected" }>,
   ): Promise<NotificationPrepareResult> {
-    await this.#claims.complete(claim);
-    return result;
+    return { ...result, claim };
   }
 
   async #resolveClaimed(

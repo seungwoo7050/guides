@@ -136,11 +136,20 @@ test("resolved conflict rejects stale payload and uses only a safe current-state
   const clock = new DeterministicClock();
   const lifecycle = coordinator({ repository, claims, clock });
 
-  assert.deepEqual(await lifecycle.prepare(CONFLICT_MESSAGE), {
+  const stale = await lifecycle.prepare(CONFLICT_MESSAGE);
+  assert.deepEqual(
+    stale.kind === "rejected"
+      ? { ...stale, claim: stale.claim === undefined ? undefined : "claimed" }
+      : stale,
+    {
     kind: "rejected",
     reason: "stale",
     safeNavigation: { kind: "open-record", recordId: "record-1" },
+    claim: "claimed",
   });
+  if (stale.kind === "rejected" && stale.claim !== undefined) {
+    await lifecycle.reject(stale.claim, stale.reason);
+  }
   assert.equal(claims.state("message-1"), "processed");
   assert.deepEqual(await lifecycle.prepare(CONFLICT_MESSAGE), {
     kind: "rejected",
@@ -157,10 +166,16 @@ test("deleted records and previous-account messages never open protected targets
   const clock = new DeterministicClock();
   const lifecycle = coordinator({ repository, claims, clock });
 
-  assert.deepEqual(await lifecycle.prepare(CONFLICT_MESSAGE), {
+  const deleted = await lifecycle.prepare(CONFLICT_MESSAGE);
+  assert.deepEqual(
+    deleted.kind === "rejected"
+      ? { ...deleted, claim: deleted.claim === undefined ? undefined : "claimed" }
+      : deleted,
+    {
     kind: "rejected",
     reason: "record-deleted",
     safeNavigation: { kind: "open-records" },
+    claim: "claimed",
   });
 
   const previousAccount = {
@@ -204,17 +219,21 @@ test("deleted account, malformed and stale sync notification are rejected", asyn
     reason: "malformed",
     parseReason: "unexpected-field",
   });
-  assert.deepEqual(
-    await lifecycle.prepare({
+  const staleSync = await lifecycle.prepare({
       schemaVersion: 1,
       messageId: "sync-message",
       accountId: "account-1",
       intent: { kind: "sync-blocked" },
-    }),
+    });
+  assert.deepEqual(
+    staleSync.kind === "rejected"
+      ? { ...staleSync, claim: staleSync.claim === undefined ? undefined : "claimed" }
+      : staleSync,
     {
       kind: "rejected",
       reason: "stale",
       safeNavigation: { kind: "open-records" },
+      claim: "claimed",
     },
   );
 });

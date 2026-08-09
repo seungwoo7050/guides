@@ -977,8 +977,9 @@ export class SQLiteFieldNotesRepository
       db.getAllAsync<SyncCheckpointRow>(
         "SELECT sequence, command_id, lease_token, outcome FROM sync_checkpoints ORDER BY sequence",
       ),
-      db.getAllAsync<{ intent_key: string }>(
-        "SELECT intent_key FROM processed_intents ORDER BY intent_key",
+      db.getAllAsync<{ message_id: string }>(
+        `SELECT message_id FROM processed_intents
+         WHERE state IN ('completed', 'terminal') ORDER BY message_id`,
       ),
       db.getAllAsync<{ from_version: number; to_version: number }>(
         "SELECT from_version, to_version FROM schema_migrations ORDER BY to_version",
@@ -999,7 +1000,7 @@ export class SQLiteFieldNotesRepository
       attachments: attachments.map(rowToAttachment),
       outbox: decodedOutbox,
       conflicts,
-      processedIntentKeys: processed.map((row) => row.intent_key),
+      processedIntentKeys: processed.map((row) => row.message_id),
       migrationHistory: history.map((row) => ({
         fromVersion: row.from_version,
         toVersion: row.to_version,

@@ -7,6 +7,7 @@ import type {
   LifecycleSyncTrigger,
   NotificationPermissionState,
   ProcessedIntentClaim,
+  ProcessedIntentCompletion,
   PushTokenResult,
   RecordReadinessState,
 } from "./types.ts";
@@ -56,7 +57,10 @@ export interface ProcessedIntentClaimPort {
     now: number;
     leaseDurationMs: number;
   }): Promise<ProcessedIntentClaimResult>;
-  complete(claim: ProcessedIntentClaim): Promise<void>;
+  complete(
+    claim: ProcessedIntentClaim,
+    outcome?: ProcessedIntentCompletion,
+  ): Promise<void>;
   release(claim: ProcessedIntentClaim): Promise<void>;
 }
 
