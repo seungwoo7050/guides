@@ -19,9 +19,11 @@ if (files.length === 0) {
       valid.push(result.evidence);
       console.log(
         `RELEASE EVIDENCE OK file=${file} platform=${result.evidence.application.platform} ` +
-          `artifact_role=${result.artifactRole} install=${result.installationVerified} ` +
-          `physical_device=${result.physicalDeviceVerified} ` +
-          `store_bytes=${result.storeDeliveredBytesVerified}`,
+          `artifact_set_complete=${result.artifactSet.releaseCandidateArtifactSetComplete} ` +
+          `install_evidence_consistent=${result.installationEvidenceConsistent} ` +
+          `physical_device_evidence_consistent=${result.physicalDeviceEvidenceConsistent} ` +
+          `store_delivery_review=${result.storeDeliveryReviewState} ` +
+          `signing=${JSON.stringify(result.signingSummary)}`,
       );
     } catch (error) {
       console.error(`RELEASE EVIDENCE ERROR file=${file} reason=${String(error)}`);
@@ -34,6 +36,6 @@ if (files.length === 0) {
     if (assessment.errors.length > 0) process.exitCode = 1;
   }
   console.log(
-    "LIMIT: schema validation does not perform native build, signing, install, device, store review, or stable approval",
+    "LIMIT: schema consistency does not perform native build/signature trust/install/device/store checks, prove credential ownership or store-delivered bytes, or grant stable approval",
   );
 }

@@ -1,5 +1,5 @@
 {
-  "schemaVersion": 1,
+  "schemaVersion": 2,
   "source": {
     "commit": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
     "treeSha256": "1111111111111111111111111111111111111111111111111111111111111111",
@@ -16,28 +16,50 @@
     "profile": "preview",
     "tool": "EAS fixture — not an actual build",
     "generatedConfigSha256": "3333333333333333333333333333333333333333333333333333333333333333",
-    "nativeBoundaryReviewRef": "reference/native-project-reading.md"
+    "nativeBoundaryReviewRef": "reference/native-project-reading.md",
+    "runtimeFingerprintOrPolicy": "runtime-fixture-policy-v1"
   },
-  "artifact": {
-    "kind": "android-aab",
-    "fileName": "field-notes-preview.aab",
-    "byteSize": 123456,
-    "sha256": "4444444444444444444444444444444444444444444444444444444444444444"
-  },
-  "signing": {
-    "status": "not-run",
-    "reason": "fixture에는 실제 signing credential이 없다",
-    "requiredEvidence": "apksigner 또는 build service의 redacted certificate identity"
-  },
+  "artifacts": [
+    {
+      "ref": "android-publishing-aab",
+      "kind": "android-aab",
+      "identity": "local-bytes",
+      "fileName": "field-notes-preview.aab",
+      "byteSize": 123456,
+      "sha256": "4444444444444444444444444444444444444444444444444444444444444444"
+    },
+    {
+      "ref": "android-install-apk",
+      "kind": "android-apk",
+      "identity": "local-bytes",
+      "fileName": "field-notes-preview.apk",
+      "byteSize": 123457,
+      "sha256": "4545454545454545454545454545454545454545454545454545454545454545"
+    }
+  ],
+  "signing": [
+    {
+      "status": "not-run",
+      "artifactRef": "android-publishing-aab",
+      "reason": "fixture에는 실제 signing credential이 없다",
+      "requiredEvidence": "bundle 서명의 redacted certificate identity와 artifact digest"
+    },
+    {
+      "status": "not-run",
+      "artifactRef": "android-install-apk",
+      "reason": "fixture에는 실제 signing credential이 없다",
+      "requiredEvidence": "apksigner의 redacted certificate identity와 artifact digest"
+    }
+  ],
   "installation": {
     "status": "not-run",
-    "reason": "AAB는 기기에 직접 설치하는 artifact가 아니다",
-    "requiredEvidence": "같은 source의 APK 또는 Play-generated split install smoke"
+    "reason": "fixture는 실제 Android 기기나 emulator에서 실행되지 않았다",
+    "requiredEvidence": "APK 또는 Play-generated split의 install, launch, runtime 관찰"
   },
   "store": {
     "status": "not-run",
     "reason": "fixture는 store project에 접근하지 않는다",
-    "requiredEvidence": "track, upload identity, review와 rollout evidence"
+    "requiredEvidence": "AAB artifact ref, Play build/track, 전달 split과 설치 evidence"
   },
   "limitations": [
     "fixture digest는 실제 artifact나 store가 재서명해 전달한 bytes를 증명하지 않는다"

@@ -1,5 +1,5 @@
 {
-  "schemaVersion": 1,
+  "schemaVersion": 2,
   "source": {
     "commit": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
     "treeSha256": "1111111111111111111111111111111111111111111111111111111111111111",
@@ -16,34 +16,63 @@
     "profile": "preview",
     "tool": "Xcode fixture — not an actual build",
     "generatedConfigSha256": "5555555555555555555555555555555555555555555555555555555555555555",
-    "nativeBoundaryReviewRef": "reference/native-project-reading.md"
+    "nativeBoundaryReviewRef": "reference/native-project-reading.md",
+    "runtimeFingerprintOrPolicy": "runtime-fixture-policy-v1"
   },
-  "artifact": {
-    "kind": "ios-ipa",
-    "fileName": "field-notes-preview.ipa",
-    "byteSize": 234567,
-    "sha256": "6666666666666666666666666666666666666666666666666666666666666666"
-  },
-  "signing": {
-    "status": "verified",
-    "method": "fixture assertion only",
-    "observedAt": "2026-08-09T01:00:00.000Z",
-    "evidenceRef": "device/ios-signing-fixture.md"
-  },
+  "artifacts": [
+    {
+      "ref": "ios-archive",
+      "kind": "ios-xcarchive",
+      "identity": "local-bytes",
+      "fileName": "FieldNotes-preview.xcarchive",
+      "byteSize": 234566,
+      "sha256": "5656565656565656565656565656565656565656565656565656565656565656"
+    },
+    {
+      "ref": "ios-install-ipa",
+      "kind": "ios-ipa",
+      "identity": "local-bytes",
+      "fileName": "field-notes-preview.ipa",
+      "byteSize": 234567,
+      "sha256": "6666666666666666666666666666666666666666666666666666666666666666"
+    }
+  ],
+  "signing": [
+    {
+      "status": "claimed",
+      "artifactRef": "ios-archive",
+      "redactedIdentity": "Apple Development: redacted fixture",
+      "method": "fixture assertion only",
+      "observedAt": "2026-08-09T01:00:00.000Z",
+      "evidenceRef": "device/ios-archive-signing-fixture.md"
+    },
+    {
+      "status": "claimed",
+      "artifactRef": "ios-install-ipa",
+      "redactedIdentity": "Apple Development: redacted fixture",
+      "method": "fixture assertion only",
+      "observedAt": "2026-08-09T01:00:00.000Z",
+      "evidenceRef": "device/ios-ipa-signing-fixture.md"
+    }
+  ],
   "installation": {
     "status": "verified",
+    "artifactRef": "ios-install-ipa",
     "deviceClass": "physical",
     "deviceIdentityRedacted": "ios/redacted-fixture",
     "installedApplicationId": "dev.openai.guides.fieldnotes.reference",
     "installedVersion": "1.0.0",
     "installedBuildNumber": "42",
+    "observedRuntimeVersion": "runtime-fixture",
+    "observedRuntimeFingerprintOrPolicy": "runtime-fixture-policy-v1",
+    "launchResult": "passed",
     "observedAt": "2026-08-09T01:05:00.000Z",
     "evidenceRef": "device/ios-install-fixture.md"
   },
   "store": {
     "status": "not-run",
     "reason": "fixture는 TestFlight/App Store에 업로드하지 않는다",
-    "requiredEvidence": "upload build identity, processing, tester install 또는 review evidence"
+    "requiredEvidence": "upload artifact ref, store build identity, processing과 tester install evidence"
   },
   "limitations": [
     "값은 validator 행동을 검사하는 합성 fixture이며 실제 기기·서명 evidence가 아니다"
