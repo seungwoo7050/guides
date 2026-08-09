@@ -153,3 +153,50 @@ workspace/
 2. map file에서 보이는 free RAM이 실제 worst-case 여유와 같지 않은 이유는 무엇입니까?
 3. bootloader가 vector를 다른 offset에서 찾는다면 application image에 어떤 계약이 필요합니까?
 4. release artifact에 어떤 파일을 함께 보존해야 현장 주소를 symbolization할 수 있습니까?
+
+## 저장소에 포함된 결정론적 경로
+
+cross compiler나 board가 없어도 audit 계약을 실행할 수 있도록
+[`fixtures/firmware-image.json`](fixtures/firmware-image.json)에 축소된 linker/map
+manifest를 제공합니다. 이 manifest는 section의 VMA/LMA, vector와 entry, application
+slot, SRAM과 runtime reservation을 고정합니다. 다음 세 fixture는 정상 manifest의
+복사본에 한 가지 결함만 주입합니다.
+
+- [`image-overflow.json`](fixtures/image-overflow.json): loadable image와 trailer가
+  primary slot을 넘습니다.
+- [`vector-mismatch.json`](fixtures/vector-mismatch.json): vector가 application slot
+  시작 주소와 다릅니다.
+- [`ram-overflow.json`](fixtures/ram-overflow.json): static RAM과 runtime reservation의
+  합이 SRAM을 넘습니다.
+
+[`starter/submission.json`](starter/submission.json)을 작업 공간으로 복사해 section,
+reset path, 전체 flash/RAM budget과 failure 판정을 채웁니다. checker는 manifest에서
+기대값을 독립 계산하며 제출 파일의 문구나 key 존재만으로 합격시키지 않습니다.
+
+```sh
+python3 exercises/01-image-and-memory-audit/check.py \
+  --submission exercises/01-image-and-memory-audit/starter/submission.json
+```
+
+완성 뒤 같은 명령의 exit status가 `0`이어야 합니다. 출력 자동 처리가 필요하면
+`--json`을 추가합니다. checker exit status는 다음과 같습니다.
+
+- `0`: 모든 공개 행동과 budget 검사가 통과했습니다.
+- `1`: 읽을 수 있는 제출이지만 한 개 이상의 계약이 틀리거나 빠졌습니다.
+- `2`: CLI, 파일, JSON 또는 checker fixture 자체를 평가할 수 없습니다.
+
+가이드 유지보수자는 다음 극성을 확인합니다.
+
+```sh
+python3 exercises/01-image-and-memory-audit/check.py \
+  --submission exercises/01-image-and-memory-audit/reference/submission.json
+python3 exercises/01-image-and-memory-audit/check.py \
+  --submission exercises/01-image-and-memory-audit/known-wrong/size-only.json
+```
+
+첫 명령은 통과하고 두 번째 명령과 다른 `known-wrong/` 제출은 실패해야 합니다.
+
+이 fixture는 실제 ELF binary나 vendor linker를 대체하지 않습니다. static manifest
+audit은 runtime stack high-water mark, target timing, flash controller behavior와
+electrical 조건을 증명하지 않습니다. 실제 project에서는 같은 필드를 exact ELF,
+map, linker script, boot partition와 toolchain 출력에 다시 연결해야 합니다.

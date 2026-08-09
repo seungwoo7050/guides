@@ -1,0 +1,105 @@
+{
+  "fixture_version": 1,
+  "profile": {
+    "name": "field-node-cortex-m",
+    "architecture": "Arm Cortex-M33",
+    "board": "training-board-rev-a",
+    "toolchain": "arm-none-eabi-gcc 14.2",
+    "source_revision": "training-sensor-node@9f42e1c",
+    "build_id": "field-node-2026.08.1+9f42e1c"
+  },
+  "memory_regions": {
+    "BOOTLOADER": {
+      "origin": "0x08000000",
+      "length": "0x00004000",
+      "owner": "bootloader"
+    },
+    "PRIMARY_SLOT": {
+      "origin": "0x08004000",
+      "length": "0x0001c000",
+      "owner": "application image"
+    },
+    "SECONDARY_SLOT": {
+      "origin": "0x08020000",
+      "length": "0x0001c000",
+      "owner": "update candidate"
+    },
+    "PERSISTENT": {
+      "origin": "0x0803c000",
+      "length": "0x00004000",
+      "owner": "settings and crash evidence"
+    },
+    "SRAM": {
+      "origin": "0x20000000",
+      "length": "0x00010000",
+      "owner": "application runtime"
+    }
+  },
+  "image": {
+    "entry_symbol": "Reset_Handler",
+    "entry_address": "0x08004101",
+    "vector": {
+      "vma": "0x08004000",
+      "initial_sp": "0x20010000",
+      "reset_handler": "0x08004101"
+    },
+    "trailer_bytes": "0x00000200",
+    "sections": [
+      {
+        "name": ".isr_vector",
+        "vma": "0x08004000",
+        "lma": "0x08004000",
+        "size": "0x00000100",
+        "loadable": true,
+        "initialization": "CPU and bootloader vector lookup"
+      },
+      {
+        "name": ".text",
+        "vma": "0x08004100",
+        "lma": "0x08004100",
+        "size": "0x00006000",
+        "loadable": true,
+        "initialization": "execute in place"
+      },
+      {
+        "name": ".rodata",
+        "vma": "0x0800a100",
+        "lma": "0x0800a100",
+        "size": "0x00001000",
+        "loadable": true,
+        "initialization": "execute/read in place"
+      },
+      {
+        "name": ".data",
+        "vma": "0x20000000",
+        "lma": "0x0800b100",
+        "size": "0x00000800",
+        "loadable": true,
+        "initialization": "startup copies LMA to VMA"
+      },
+      {
+        "name": ".bss",
+        "vma": "0x20000800",
+        "lma": null,
+        "size": "0x00001800",
+        "loadable": false,
+        "initialization": "startup zero fill"
+      },
+      {
+        "name": ".noinit",
+        "vma": "0x20002000",
+        "lma": null,
+        "size": "0x00000400",
+        "loadable": false,
+        "initialization": "validate before retained use"
+      }
+    ]
+  },
+  "runtime_reservations": {
+    "main_and_interrupt_stack": "0x00002000",
+    "heap_or_pools": "0x00001000",
+    "dma_pool": "0x00000800",
+    "rtos_objects": "0x00000600",
+    "guard_and_margin": "0x00000200"
+  }
+}

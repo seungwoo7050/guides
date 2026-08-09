@@ -1,0 +1,38 @@
+{
+  "capacity": 2,
+  "events": [
+    {
+      "op": "ENABLE"
+    },
+    {
+      "op": "RAISE",
+      "sample": 23,
+      "timestamp": 200,
+      "raw_status": 3
+    },
+    {
+      "op": "ISR",
+      "clear_mask": 1
+    },
+    {
+      "op": "WORK"
+    },
+    {
+      "op": "ISR",
+      "clear_mask": 2
+    }
+  ],
+  "expected": {
+    "status_register": 0,
+    "w1c_writes": [
+      1,
+      2
+    ],
+    "uncleared": 1,
+    "spurious": 1,
+    "acknowledged": 1,
+    "handled_samples": [
+      23
+    ]
+  }
+}

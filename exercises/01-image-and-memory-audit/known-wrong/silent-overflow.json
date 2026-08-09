@@ -1,0 +1,31 @@
+{
+  "source_revision": "training-sensor-node@9f42e1c",
+  "build_id": "field-node-2026.08.1+9f42e1c",
+  "artifact_sha256": "unknown",
+  "entry": {
+    "vector_vma": "0x08004000",
+    "initial_sp": "0x20010000",
+    "entry_symbol": "Reset_Handler",
+    "entry_address": "0x08004101"
+  },
+  "sections": [],
+  "reset": {},
+  "budgets": {
+    "flash": {
+      "slot_origin": "0x08004000",
+      "slot_size": "0x0001c000",
+      "used": "0x00007b00",
+      "free": "0x00014500"
+    },
+    "ram": {}
+  },
+  "failure_expectations": {
+    "image-overflow.json": "OK",
+    "vector-mismatch.json": "VECTOR_ADDRESS_MISMATCH",
+    "ram-overflow.json": "OK"
+  },
+  "limitations": [
+    "runtime stack watermark is not measured",
+    "target timing and electrical behavior are not measured"
+  ]
+}

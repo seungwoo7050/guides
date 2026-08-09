@@ -1,0 +1,10 @@
+{
+  "name": "runtime-reservations-overflow-sram",
+  "base": "firmware-image.json",
+  "patch": {
+    "runtime_reservations": {
+      "main_and_interrupt_stack": "0x0000d000"
+    }
+  },
+  "expected_error": "RAM_BUDGET_OVERFLOW"
+}

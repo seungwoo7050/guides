@@ -161,3 +161,47 @@ workspace/
 2. `event_pending = true`가 count를 보존하지 못하는 경우는 언제입니까?
 3. queue overflow를 application fault로 올릴 조건과 단순 drop으로 처리할 조건을 비교해 보세요.
 4. GPIO pulse 측정이 ISR-to-worker latency를 어떤 오차로 관찰합니까?
+
+## 실행 가능한 starter와 checker
+
+[`examples/interrupt-event-model/starter/model.py`](../../examples/interrupt-event-model/starter/model.py)는
+정상 event의 형태만 제공하며 W1C, bounded queue, generation과 reset 정책은 의도적으로
+미완성입니다. 파일을 작업 공간으로 복사해 `run_fixture(data)`가 `(result, trace)`를
+반환하도록 완성합니다. 고정 fixture는 다음 행동을 독립적으로 검사합니다.
+
+- status snapshot과 W1C full/partial clear
+- ISR 전 두 event와 hardware pending bound
+- 느린 worker 앞 burst와 newest-drop counter
+- disabled/spurious/stale generation
+- reset 뒤 volatile queue 정리와 진단 generation/counter 정책
+- event의 `generation`, `sequence`, `timestamp`, `raw_status`, `sample`
+
+저장소 루트에서 실행합니다.
+
+```sh
+python3 exercises/02-interrupt-event-path/check.py \
+  --submission examples/interrupt-event-model/starter/model.py
+```
+
+완성 제출은 exit `0`, 읽을 수 있지만 계약이 틀린 제출은 `1`, CLI·import·fixture를
+평가할 수 없는 경우는 `2`입니다. machine-readable 결과에는 `--json`을 추가합니다.
+
+유지보수 극성은 다음처럼 확인합니다.
+
+```sh
+python3 exercises/02-interrupt-event-path/check.py \
+  --submission examples/interrupt-event-model/reference/model.py
+python3 exercises/02-interrupt-event-path/check.py \
+  --submission examples/interrupt-event-model/known-wrong/no-w1c.py
+python3 exercises/02-interrupt-event-path/check.py \
+  --submission examples/interrupt-event-model/known-wrong/unbounded-queue.py
+python3 exercises/02-interrupt-event-path/check.py \
+  --submission examples/interrupt-event-model/known-wrong/no-generation.py
+```
+
+reference만 통과해야 합니다. checker는 같은 fixture를 두 번 실행해 결정성을 비교하고,
+모든 trace에서 pending/worker queue가 capacity를 넘지 않는지도 검사합니다.
+
+이 host model은 실제 interrupt masking, nesting, execution time, memory ordering과
+peripheral register의 정확한 side effect를 증명하지 않습니다. target 결과를 주장할
+때는 SoC 문서, raw status, logic trace와 instrumentation 조건을 별도 evidence로 남깁니다.

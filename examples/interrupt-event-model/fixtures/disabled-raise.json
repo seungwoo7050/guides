@@ -1,0 +1,23 @@
+{
+  "capacity": 2,
+  "events": [
+    {
+      "op": "RAISE",
+      "sample": 7,
+      "timestamp": 1
+    },
+    {
+      "op": "ENABLE"
+    },
+    {
+      "op": "WORK"
+    }
+  ],
+  "expected": {
+    "raised_while_disabled": 1,
+    "handled_samples": [],
+    "pending": [],
+    "queue": [],
+    "idle_work": 1
+  }
+}

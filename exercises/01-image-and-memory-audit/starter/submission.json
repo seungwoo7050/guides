@@ -1,0 +1,20 @@
+{
+  "source_revision": "training-sensor-node@9f42e1c",
+  "build_id": "field-node-2026.08.1+9f42e1c",
+  "artifact_sha256": "replace-with-fixture-sha256",
+  "entry": {
+    "entry_symbol": "Reset_Handler"
+  },
+  "sections": [],
+  "reset": {},
+  "budgets": {
+    "flash": {
+      "used": "0x00007900"
+    },
+    "ram": {
+      "static": "0x00002000"
+    }
+  },
+  "failure_expectations": {},
+  "limitations": []
+}

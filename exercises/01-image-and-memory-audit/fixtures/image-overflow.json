@@ -1,0 +1,15 @@
+{
+  "name": "image-slot-overflow",
+  "base": "firmware-image.json",
+  "patch": {
+    "image": {
+      "sections": {
+        ".data": {
+          "lma": "0x0801f900",
+          "size": "0x00001000"
+        }
+      }
+    }
+  },
+  "expected_error": "IMAGE_SLOT_OVERFLOW"
+}

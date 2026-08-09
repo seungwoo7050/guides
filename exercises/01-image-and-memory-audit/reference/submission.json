@@ -1,0 +1,90 @@
+{
+  "source_revision": "training-sensor-node@9f42e1c",
+  "build_id": "field-node-2026.08.1+9f42e1c",
+  "artifact_sha256": "71142b31dbb1f1ca5201d9301a12ce4f992e698a800ff0718e3d87891b3b8357",
+  "entry": {
+    "vector_vma": "0x08004000",
+    "initial_sp": "0x20010000",
+    "entry_symbol": "Reset_Handler",
+    "entry_address": "0x08004101"
+  },
+  "sections": [
+    {
+      "name": ".isr_vector",
+      "vma": "0x08004000",
+      "lma": "0x08004000",
+      "size": "0x00000100",
+      "initialization": "CPU and bootloader vector lookup"
+    },
+    {
+      "name": ".text",
+      "vma": "0x08004100",
+      "lma": "0x08004100",
+      "size": "0x00006000",
+      "initialization": "execute in place"
+    },
+    {
+      "name": ".rodata",
+      "vma": "0x0800a100",
+      "lma": "0x0800a100",
+      "size": "0x00001000",
+      "initialization": "execute/read in place"
+    },
+    {
+      "name": ".data",
+      "vma": "0x20000000",
+      "lma": "0x0800b100",
+      "size": "0x00000800",
+      "initialization": "startup copies LMA to VMA"
+    },
+    {
+      "name": ".bss",
+      "vma": "0x20000800",
+      "lma": null,
+      "size": "0x00001800",
+      "initialization": "startup zero fill"
+    },
+    {
+      "name": ".noinit",
+      "vma": "0x20002000",
+      "lma": null,
+      "size": "0x00000400",
+      "initialization": "validate before retained use"
+    }
+  ],
+  "reset": {
+    "data_copy": {
+      "source": "0x0800b100",
+      "destination": "0x20000000",
+      "size": "0x00000800"
+    },
+    "bss_zero": {
+      "start": "0x20000800",
+      "end": "0x20002000"
+    }
+  },
+  "budgets": {
+    "flash": {
+      "slot_origin": "0x08004000",
+      "slot_size": "0x0001c000",
+      "used": "0x00007b00",
+      "free": "0x00014500"
+    },
+    "ram": {
+      "region_size": "0x00010000",
+      "static": "0x00002400",
+      "runtime_reserved": "0x00004000",
+      "total": "0x00006400",
+      "free": "0x00009c00"
+    }
+  },
+  "failure_expectations": {
+    "image-overflow.json": "IMAGE_SLOT_OVERFLOW",
+    "vector-mismatch.json": "VECTOR_ADDRESS_MISMATCH",
+    "ram-overflow.json": "RAM_BUDGET_OVERFLOW"
+  },
+  "limitations": [
+    "Static section and reservation accounting does not prove a runtime stack high-water mark.",
+    "This manifest does not prove target timing or electrical behavior."
+  ]
+}

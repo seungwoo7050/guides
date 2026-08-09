@@ -1,0 +1,18 @@
+{
+  "name": "vector-outside-application-slot",
+  "base": "firmware-image.json",
+  "patch": {
+    "image": {
+      "vector": {
+        "vma": "0x08000000"
+      },
+      "sections": {
+        ".isr_vector": {
+          "vma": "0x08000000",
+          "lma": "0x08000000"
+        }
+      }
+    }
+  },
+  "expected_error": "VECTOR_ADDRESS_MISMATCH"
+}
