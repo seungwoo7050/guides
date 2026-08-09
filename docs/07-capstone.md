@@ -2,7 +2,7 @@
 
 ## 목표
 
-처음 보는 로컬 저장소에서 문제를 조사하고, 여러 파일을 수정하고, build·test를 실행하고, 실패 뒤 재계획하며, 최종 diff와 검증 근거를 제출하는 코딩 에이전트를 설계하고 구현합니다.
+처음 보는 로컬 저장소에서 문제를 조사하고, 여러 파일을 수정하고, build·test를 실행하고, 실패 뒤 재계획하며, 최종 diff와 검증 근거를 제출하는 코딩 에이전트를 설계하고 구현합니다. 코딩 작업이 주 profile이지만 model adapter, authorization-before-retrieval, tool gateway, durable state, policy와 evaluator contract는 도메인 중립적으로 유지합니다.
 
 이 Capstone은 한 파일의 정해진 field를 한 번 바꾸는 과제가 아닙니다. 최소 하나의 과제에서 다음 전체 흐름이 실제로 일어나야 합니다.
 
@@ -20,7 +20,7 @@ repository discovery
 → diff·evidence report
 ```
 
-실제 구현은 필수가 아니지만, 구현하지 않는 경우에도 모든 하위 시스템의 입력·출력·상태·실패·판정 조건을 설계 문서로 완성해야 합니다.
+실제 구현과 실행 근거는 필수입니다. 설계 문서나 빈 template만으로는 `도구를 사용하는 에이전트를 구현한다`는 종료 능력을 만족하지 않습니다. 추적된 reference는 공개 계약의 한 구현 예이고 starter는 같은 계약의 단계별 미완성 경계를 드러냅니다.
 
 ## 사용자 인터페이스
 
@@ -33,7 +33,7 @@ coding-agent run \
   "refresh token 경쟁 상태를 재현하고 수정하며 관련 검사를 실행하라"
 ```
 
-선택 명령:
+필수 session 제어 명령 또는 동등한 machine-readable 인터페이스:
 
 ```sh
 coding-agent inspect --repo ./fixture-project
@@ -48,7 +48,7 @@ interactive mode와 machine-readable headless mode를 구분합니다.
 
 ## Capstone 구현 프로필
 
-### 필수 프로필: local interactive
+### 필수 프로필: durable local coding agent
 
 - 한 사용자
 - 한 repository
@@ -57,15 +57,17 @@ interactive mode와 machine-readable headless mode를 구분합니다.
 - bounded command 실행
 - Git status/diff
 - 사용자 질문·승인·cancel
+- model request·tool call·비용·실행 시간 budget
+- checkpoint·resume와 crash injection
+- effect ledger와 reconciliation
 - external verifier
 
-### 선택 프로필: durable local
+### 선택 확장: hosted or background
 
-- checkpoint와 resume
 - background session
 - session 목록
-- crash injection
-- effect ledger
+- hosted API·UI
+- remote sandbox
 
 ### 비범위
 
@@ -111,11 +113,11 @@ CANCELLED
 
 ### 2. Model adapter
 
-최소 두 adapter를 설계합니다.
+최소 두 adapter를 같은 runtime contract로 구현합니다.
 
 ```text
 ScriptedModelAdapter  결정적 runtime·failure 검사
-RealModelAdapter      실제 provider 또는 local model 연결
+RealModelAdapter      provider-compatible HTTP·stream·structured-output protocol
 ```
 
 공통 contract:
@@ -125,6 +127,8 @@ RealModelAdapter      실제 provider 또는 local model 연결
 - usage
 - refusal·invalid output·timeout·cancel
 - model identity와 request receipt
+
+필수 자동 검증은 network와 유료 credential 없이 scripted fixture와 loopback provider stub으로 수행합니다. `RealModelAdapter` 구현은 실제 request·stream·structured action 계약을 만족해야 하지만 public network의 live call은 선택 smoke입니다. live call을 실행하지 않았거나 provider 품질이 변동한 상태를 필수 검증 성공으로 과장하지 않습니다.
 
 ### 3. Repository snapshot과 explorer
 
@@ -139,6 +143,10 @@ RealModelAdapter      실제 provider 또는 local model 연결
 ### 4. Context manager
 
 - authority·task·source·execution evidence 분리
+- retrieval 전에 principal·resource·scope 권한 적용
+- repository·reference corpus의 versioned retrieval
+- source path·revision·digest citation
+- unauthorized source의 후보·summary·trace 유입 차단
 - context budget
 - stale source invalidation
 - compaction
@@ -213,7 +221,8 @@ remote operation은 제외합니다.
 - edit-test-repair iteration
 - failure taxonomy
 - repeated failure detection
-- budget과 stop condition
+- model request 수·token/비용·tool call·wall-clock·output budget
+- budget exhaustion과 stop condition
 
 ### 10. Policy, approval와 sandbox
 
@@ -230,6 +239,8 @@ remote operation은 제외합니다.
 - model/tool/process/patch receipt
 - context manifest
 - checkpoint·resume
+- cancel·crash 뒤 effect reconciliation
+- 각 budget의 initial·consumed·remaining·terminal reason
 - raw artifact와 redacted display
 - runtime/model/tool/policy version
 
@@ -244,7 +255,7 @@ remote operation은 제외합니다.
 
 ## Capstone 과제 집합
 
-최소 다섯 종류를 설계하고 그중 세 종류 이상을 구현·평가합니다.
+최소 다섯 종류를 fixture로 구현·평가합니다. 과제 B의 다중 파일 변경, 첫 patch가 실패하는 repair 과제, 과제 F의 악성 입력, 과제 G의 crash/resume은 반드시 포함합니다.
 
 ### 과제 A. 단일 모듈 bug
 
@@ -332,6 +343,8 @@ patch 적용 직후 또는 test 실행 중 runtime을 종료합니다.
 - 중복 patch/command 방지
 - session evidence 보존
 
+모든 과제는 같은 권한 인지 retrieval contract를 사용합니다. 허가된 source는 origin·revision·digest와 함께 citation되고, hidden verifier·secret·권한 밖 reference는 검색 후보와 trace에 나타나지 않아야 합니다.
+
 ## 필수 설계 산출물
 
 ```text
@@ -354,6 +367,23 @@ incident-runbook.md
 ```
 
 템플릿은 [`exercises/10-capstone-local-coding-agent`](../exercises/10-capstone-local-coding-agent/README.md)과 `reference/`에 있습니다.
+
+starter를 안전한 학습 workspace로 복사합니다.
+
+```sh
+python3 scripts/new_workspace.py --destination .workspace/local-coding-agent
+```
+
+reference 전체와 학습자 단계를 검사하는 canonical 명령은 다음과 같습니다.
+
+```sh
+python3 exercises/10-capstone-local-coding-agent/tests/run.py \
+  --implementation reference --stage all
+python3 exercises/10-capstone-local-coding-agent/tests/run.py \
+  --implementation .workspace/local-coding-agent --stage 01
+```
+
+workspace 생성기는 기존 destination이나 symlink를 덮어쓰지 않습니다. 학습자 구현은 workspace 안의 test 복사본이 아니라 추적된 canonical test와 fixture로 검사합니다.
 
 ## 단계별 구현 순서
 
@@ -434,9 +464,9 @@ related suite
 - 미실행 gate와 잔여 위험을 보고합니다.
 - 모델의 완료 선언과 verifier 결과가 분리됩니다.
 
-### Stage 6. 실제 모델 adapter
+### Stage 6. Provider-compatible model adapter
 
-scripted scenario를 모두 통과한 뒤 real model을 연결합니다.
+scripted scenario를 모두 통과한 뒤 같은 HTTP·stream·structured-output wire contract를 구현합니다. 필수 검사는 loopback provider stub을 사용하고, 실제 provider live smoke는 별도 선택 실행입니다.
 
 완료 조건:
 
@@ -446,19 +476,22 @@ scripted scenario를 모두 통과한 뒤 real model을 연결합니다.
 
 ### Stage 7. Durable session
 
-선택이지만 Codex/Claude Code형 장기 실행에 중요합니다.
+필수 종료 단계입니다. 다음 항목을 문서가 아니라 crash·cancel·budget fixture로 실행합니다.
 
 - checkpoint
 - crash injection
 - resume
 - user interruption
 - cancellation cleanup
+- model·tool·비용·wall-clock budget exhaustion
+- STARTED/UNKNOWN effect reconciliation
 
 ## 평가 행렬
 
 | 항목 | 필수 판정 |
 |---|---|
 | 저장소 조사 | 관련 source·test·command를 근거와 함께 발견 |
+| RAG 경계 | authorization-before-retrieval, source revision·digest citation, denied source 비노출 |
 | 변경 정확성 | behavior와 regression verifier 통과 |
 | 변경 범위 | unrelated·forbidden file 변경 없음 |
 | 반복 능력 | 첫 patch 실패 뒤 evidence 기반 repair 수행 |
@@ -466,6 +499,7 @@ scripted scenario를 모두 통과한 뒤 real model을 연결합니다.
 | Git | initial user change 보존, final diff 정확 |
 | 안전 | prompt injection·path escape·secret·network 차단 |
 | 장기 상태 | crash/resume 뒤 effect 중복 없음 |
+| 예산 | model·tool·비용·시간 한도 초과 뒤 새 effect 0건, terminal receipt 존재 |
 | 평가 무결성 | verifier·answer·test tampering 없음 |
 | 사용자 통제 | 질문·승인·cancel·final review 가능 |
 | 근거 | command, test, diff, assumption과 risk 제공 |
@@ -481,7 +515,8 @@ scripted scenario를 모두 통과한 뒤 real model을 연결합니다.
 4. malicious repository instruction 차단
 5. command timeout과 process cleanup
 6. crash 후 resume
-7. verifier가 허위 완료를 거절
+7. model/tool/비용/시간 budget 소진과 안전한 종료
+8. verifier가 허위 완료를 거절
 ```
 
 ## 완료 기준
@@ -490,11 +525,16 @@ scripted scenario를 모두 통과한 뒤 real model을 연결합니다.
 
 - 에이전트가 사전 지정된 한 file만 바꾸는 script가 아닙니다.
 - 저장소 구조와 실행 명령을 조사합니다.
+- retrieval 전에 source 권한을 적용하고 선택 근거를 revision·digest citation으로 남깁니다.
 - 관련 근거를 바탕으로 plan을 만들고 여러 파일을 수정할 수 있습니다.
 - build·test를 실제로 실행하고 실패를 분류합니다.
 - 실패 뒤 context와 plan을 갱신해 다시 수정합니다.
 - 사용자는 effect를 승인·중단하고 final diff를 검토할 수 있습니다.
+- cancel·crash 뒤 재개해도 file·process·Git effect가 중복되지 않습니다.
+- model request·tool call·비용·실행 시간 budget을 강제하고 초과 뒤 새 effect를 만들지 않습니다.
 - sandbox와 policy가 model prompt 밖에서 권한을 강제합니다.
-- scripted adapter와 real adapter가 같은 runtime contract를 사용합니다.
+- scripted adapter와 provider-compatible adapter가 같은 runtime contract를 사용합니다.
 - external verifier가 결과와 정책을 독립적으로 판정합니다.
 - trace와 artifact만으로 작업 경로와 잔여 위험을 복원할 수 있습니다.
+
+이 증거 묶음으로 카탈로그의 종료 능력인 `도구를 사용하는 에이전트를 구현한다`, `외부 verifier로 성공을 판정한다`, `권한·네트워크·비용·실행 시간을 제한한다`를 각각 판정합니다. reference 통과는 특정 실제 provider의 품질, 모든 OS sandbox 또는 production 안전성을 자동으로 증명하지 않습니다.

@@ -2,7 +2,7 @@
 
 ## 목표
 
-이 과정의 목표는 모델 API를 호출하는 애플리케이션이 아니라 **소프트웨어 개발 작업을 수행하는 에이전트 런타임**을 직접 설계하는 것입니다.
+이 과정의 목표는 모델 API를 호출하는 애플리케이션이 아니라 **소프트웨어 개발 작업을 수행하는 에이전트 런타임**을 직접 설계하고 구현하는 것입니다. 코딩 에이전트가 필수 Capstone이지만 model adapter, 권한 인지 retrieval, tool gateway, durable session, policy와 evaluator의 계약은 특정 업무 도메인에 종속되지 않게 유지합니다.
 
 완료한 에이전트는 최소한 다음 질문에 코드와 기록으로 답해야 합니다.
 
@@ -32,24 +32,32 @@
 
 ```text
 python
-+ git
-+ unix-systems
++ web-app
 ```
 
-이 과정은 Python 문법, Git 명령 입문, process·signal·file descriptor를 다시 설명하지 않습니다. 필요한 결과는 다음과 같습니다.
+이는 `main` 카탈로그의 `requires`를 그대로 반영합니다. 이 과정은 Python 문법과 일반 웹 개발을 다시 설명하지 않습니다. 필요한 결과는 다음과 같습니다.
 
 - Python으로 typed data model, CLI, 파일·subprocess·취소·테스트를 구현합니다.
+- HTTP 요청·응답, API schema, 인증과 권한 경계를 구분합니다.
+
+코딩 에이전트 프로필에는 다음 구현 역량도 필요합니다.
+
 - Git의 HEAD·index·working tree·branch·worktree·diff·복구를 구분합니다.
 - 경로·권한·프로세스·signal·stdout/stderr·exit status를 관찰합니다.
+
+부족하면 `git`과 `unix-systems`에서 보완하되 카탈로그의 필수 관계를 바꾸지는 않습니다.
 
 ### 권장
 
 ```text
 distributed-services
 cybersecurity
+machine-learning
 ```
 
-장기 session과 외부 효과를 깊게 구현하려면 `UNKNOWN`, idempotency, retry budget을 이해하는 편이 좋습니다. 저장소와 command가 공격 입력일 수 있으므로 위협 모델과 최소 권한도 중요합니다.
+장기 session과 외부 효과에는 `UNKNOWN`, idempotency와 retry budget이 필요합니다. 저장소와 command가 공격 입력일 수 있으므로 위협 모델과 최소 권한이 중요하며, model·dataset·evaluation 주장을 구분하려면 machine-learning의 평가 기반이 유용합니다.
+
+완료 뒤에는 `data-engineering`, `platform-engineering`, `web-infra`에 연결되며, 조직 공용 runtime과 정책·sandbox 운영은 `platform-engineering`으로 이어집니다.
 
 ## 학습 단계
 
@@ -66,7 +74,7 @@ cybersecurity
 
 ### Part 2. 저장소 이해
 
-코딩 에이전트의 검색은 일반 RAG가 아닙니다. 현재 Git 상태, 프로젝트 지시, 코드 구조, build·test 경로와 실제 변경 영향을 함께 조사합니다.
+코딩 에이전트의 검색은 vector 유사도만으로 끝나는 RAG가 아닙니다. 현재 Git 상태, 프로젝트 지시, 코드 구조, build·test 경로와 실제 변경 영향을 함께 조사합니다. retrieval 전에 principal의 source 권한을 적용하고, 선택한 source의 origin·revision·digest·scope를 context와 최종 citation까지 보존합니다. 권한 없는 항목은 검색 결과나 요약에 들어간 뒤 가리는 것이 아니라 후보 생성 전에 제외합니다.
 
 | 문서 | 종료 능력 |
 |---|---|
@@ -74,7 +82,7 @@ cybersecurity
 | [지시 발견과 우선순위](02-repository-understanding/02-instruction-discovery-and-precedence.md) | system·user·repository·directory 지시를 출처와 범위별로 해석합니다. |
 | [파일 검색, symbol과 의존 근거](02-repository-understanding/03-file-search-symbols-and-dependency-evidence.md) | 파일명·text·symbol·reference·history를 단계적으로 사용합니다. |
 | [환경, build와 test 발견](02-repository-understanding/04-environment-build-and-test-discovery.md) | 임의 설치 전에 manifest·script·CI에서 실행 계약을 복원합니다. |
-| [Context 선택과 갱신](02-repository-understanding/05-context-selection-and-refresh.md) | 읽은 파일과 변경된 파일 사이의 provenance와 staleness를 관리합니다. |
+| [Context 선택과 갱신](02-repository-understanding/05-context-selection-and-refresh.md) | 권한을 먼저 적용한 retrieval과 source provenance·citation·staleness를 관리합니다. |
 
 ### Part 3. 도구와 실행
 
@@ -128,25 +136,25 @@ cybersecurity
 
 마지막에 [로컬 코딩 에이전트 Capstone](07-capstone.md)을 설계하고 구현합니다.
 
-## 최소 경로
+## 필수 구현 경로
 
-가장 작은 usable coding agent를 목표로 할 때는 다음 순서로 읽습니다.
+가장 작은 완료 가능한 coding agent도 durable state, cancel과 budget을 생략하지 않습니다. 다음 순서로 읽고 대응 실습을 구현합니다.
 
 ```text
 01-runtime-foundations 전체
 → 02-repository-understanding 전체
 → 03-tools-and-execution 전체
-→ 04-coding-loop 01~05
-→ 05-safety-and-authority 01~03
-→ 06-evaluation-and-operations 01~02
-→ Capstone의 단일 session 프로필
+→ 04-coding-loop 전체
+→ 05-safety-and-authority 전체
+→ 06-evaluation-and-operations 전체
+→ Capstone의 durable local 프로필
 ```
 
-이 경로의 결과는 한 저장소에서 read·search·edit·command·test를 수행하는 대화형 로컬 CLI입니다.
+이 경로의 결과는 한 저장소에서 read·search·edit·command·test를 수행하고, budget·cancel·crash 뒤에도 효과를 중복하지 않으며, 외부 verifier로 완료를 판정하는 로컬 CLI입니다.
 
-## 지속 실행 경로
+## 지속 실행 심화 경로
 
-수십 분 이상 걸리는 작업과 재개가 필요하면 다음을 추가합니다.
+다음 단원은 필수 구현 경로에 이미 포함됩니다. 수십 분 이상 걸리는 작업이나 schema migration을 더 깊게 검토할 때 다시 묶어 읽습니다.
 
 ```text
 04-coding-loop/06-durable-sessions-checkpoint-and-resume
@@ -181,9 +189,29 @@ cybersecurity
 | 9 | [Evaluation harness](../exercises/09-evaluation-harness/README.md) |
 | 10 | [로컬 코딩 에이전트 Capstone](../exercises/10-capstone-local-coding-agent/README.md) |
 
+## 소유 범위에서 종료 근거까지
+
+첫 열은 `main` 카탈로그의 `owns`를 그대로 사용합니다. 자동 검사는 공개 행동과 trace를 판정하고, 사람은 설계 근거·권한 적합성·검증 한계를 함께 검토합니다.
+
+| 소유 범위 | 개념 설명 | 단계 실습·대표 실패 | Capstone·판정 근거 |
+|---|---|---|---|
+| 모델 API와 구조화된 출력 | [Model adapter](01-runtime-foundations/02-model-adapter-and-interaction-protocol.md), [tool action](03-tools-and-execution/01-tool-registry-and-structured-actions.md) | [01 Model adapter](../exercises/01-model-adapter/README.md); 잘린 JSON, unknown tool, 중복·late event, cancel 경쟁 | scripted/local provider fixture에서 schema-valid action만 gateway에 도달하고 invalid stream은 실행 전에 거절된 trace |
+| RAG와 출처·권한 경계 | [지시 precedence](02-repository-understanding/02-instruction-discovery-and-precedence.md), [검색 근거](02-repository-understanding/03-file-search-symbols-and-dependency-evidence.md), [context 선택](02-repository-understanding/05-context-selection-and-refresh.md) | [02 discovery](../exercises/02-repository-discovery/README.md), [03 context](../exercises/03-context-selector/README.md), [07 permission](../exercises/07-permissions-and-sandbox/README.md); unauthorized source, stale index, 출처를 잃은 summary | 허가된 corpus만 검색되고 path·revision·digest citation이 context와 final evidence에 유지되며 권한 없는 source가 trace에도 노출되지 않음 |
+| 도구 호출과 agent loop | [tool registry](03-tools-and-execution/01-tool-registry-and-structured-actions.md), [edit-test-repair](04-coding-loop/03-edit-test-repair-loop.md), [실패 재계획](04-coding-loop/04-failure-classification-and-replanning.md) | [04 patch](../exercises/04-filesystem-and-patch/README.md), [05 process](../exercises/05-process-runner/README.md), [06 repair](../exercises/06-edit-test-repair/README.md); stale patch, child leak, 같은 실패 반복 | 다중 파일 변경, 실제 command, 첫 실패 뒤 다른 근거·action으로 repair하고 final verifier가 같은 revision을 판정한 trace |
+| checkpoint·resume·취소·budget | [context budget](01-runtime-foundations/04-context-budget-compaction-and-memory.md), [사용자 제어](04-coding-loop/05-user-interaction-approval-and-interruption.md), [durable session](04-coding-loop/06-durable-sessions-checkpoint-and-resume.md) | [05 process](../exercises/05-process-runner/README.md), [08 checkpoint](../exercises/08-checkpoint-resume/README.md); patch/command 전후 crash, cancel 경쟁, model·tool·시간·비용 budget 소진 | crash/resume 뒤 효과 1회, cancel 뒤 descendant·credential 정리, 모든 budget 초과가 terminal reason과 receipt로 남음 |
+| sandbox·identity·평가·trace | [권한 모델](05-safety-and-authority/02-permission-model-and-delegated-authority.md), [sandbox](05-safety-and-authority/03-sandbox-network-secrets-and-dependencies.md), [평가](06-evaluation-and-operations/01-coding-task-fixtures-and-verifiers.md), [trace](06-evaluation-and-operations/03-traces-replay-cost-and-quality-metrics.md) | [07 permission](../exercises/07-permissions-and-sandbox/README.md), [09 evaluation](../exercises/09-evaluation-harness/README.md); prompt injection, path/network/secret escape, verifier tampering | task-scoped principal과 policy decision, forbidden effect 0건, known-bad 거부, model·tool·policy·evaluator identity가 연결된 trace |
+
+카탈로그의 `exit_capabilities`는 다음 증거로 판정합니다.
+
+| 종료 능력 | 필수 구현 증거 |
+|---|---|
+| 도구를 사용하는 에이전트를 구현한다 | starter를 완성한 CLI가 discovery, authorized retrieval, tool call, 다중 파일 edit, command, repair와 durable resume을 실제 fixture에서 수행 |
+| 외부 verifier로 성공을 판정한다 | agent 환경과 분리된 verifier가 reference/learner patch의 behavior·regression·policy를 판정하고 no-op·hardcoding·test tampering을 거부 |
+| 권한·네트워크·비용·실행 시간을 제한한다 | task-scoped grant, network deny, model/tool/cost/time budget과 cancel cleanup을 실행 trace와 부정 불변식으로 증명 |
+
 ## 완료 기준
 
-다음 산출물을 직접 작성하고 구현할 수 있으면 프로젝트 진입 기준선을 충족합니다.
+다음 산출물을 직접 작성하고 구현하며 canonical 검사를 통과해야 프로젝트 진입 기준선을 충족합니다. 문서나 빈 template만 제출하는 프로필은 완료로 인정하지 않습니다.
 
 - runtime component와 trust boundary를 보여 주는 architecture 문서
 - model event·tool action·session state 계약
@@ -193,7 +221,9 @@ cybersecurity
 - permission matrix, sandbox profile과 approval UX
 - checkpoint·resume·effect ledger 설계
 - fixture repository와 external verifier를 가진 평가 harness
-- 실제 모델 adapter 하나와 scripted adapter 하나
+- provider-compatible adapter 하나와 scripted adapter 하나(loopback 검증 필수, live smoke 선택)
 - 대화형 로컬 coding-agent CLI
+- crash/resume·cancel·budget exhaustion 실행 근거
+- 권한 인지 retrieval의 source citation과 denied-source 부정 근거
 
-Capstone이 한 종류의 버그만 해결해도 괜찮습니다. 다만 처음부터 정해진 한 파일을 한 번 바꾸는 방식이 아니라 **조사·다중 파일 변경·명령 실행·실패 해석·재수정**의 전체 루프를 보여야 합니다.
+한 번의 agent run은 한 과제를 해결하지만, 완료 평가 집합은 다중 파일 변경·첫 실패 뒤 repair·악성 입력·crash/resume을 포함한 최소 다섯 fixture를 모두 판정합니다. 어느 과제도 처음부터 정해진 한 파일을 한 번 바꾸는 script가 아니라 **조사·다중 파일 변경·명령 실행·실패 해석·재수정**의 전체 루프를 보여야 합니다.

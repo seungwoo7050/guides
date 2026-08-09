@@ -2,19 +2,19 @@
 
 이 가이드는 모델이나 기존 에이전트를 호출해 업무 기능을 붙이는 애플리케이션을 만들지 않습니다. 목표는 **처음 보는 저장소를 조사하고, 코드를 수정하고, 명령과 테스트를 실행하고, 실패를 해석해 다시 작업하는 코딩 에이전트 자체**를 설계하고 구현하는 것입니다.
 
-최종 결과물의 기준은 Codex나 Claude Code와 같은 제품의 모든 기능을 복제하는 것이 아닙니다. 대신 그러한 도구를 가능하게 하는 핵심 하위 시스템을 직접 소유합니다.
+최종 결과물의 기준은 Codex나 Claude Code와 같은 제품의 모든 기능을 복제하는 것이 아닙니다. 대신 그러한 도구를 가능하게 하는 핵심 하위 시스템을 직접 소유합니다. 코딩 에이전트가 이 가이드의 주 구현 프로필이지만, 모델·검색·도구·상태·정책·평가 사이의 핵심 runtime 계약은 특정 작업 도메인에 종속되지 않습니다. 같은 계약을 데이터 작업, 플랫폼 자동화나 운영 도구에 적용할 때도 권한과 성공 판정은 별도로 다시 정의해야 합니다.
 
 ```text
 대화형 CLI와 session
 + model adapter
 + repository explorer
-+ context manager
++ 권한 인지 retrieval/RAG와 context manager
 + file·search·edit tools
 + sandboxed process runner
 + Git/worktree adapter
 + edit-test-repair loop
 + permission·approval·sandbox
-+ checkpoint·resume
++ budget·cancel·checkpoint·resume
 + trace와 external verifier
 ```
 
@@ -45,40 +45,60 @@
 
 MCP, 원격 GitHub 작업, IDE 통합, multi-agent, cloud runner는 핵심 런타임을 완성한 뒤 선택적으로 확장합니다.
 
+## 카탈로그 계약과 경계
+
+`main` 카탈로그에서 이 브랜치는 `field-entry`이며 다음 관계를 가집니다.
+
+- 필수 선행: [`python`](https://github.com/seungwoo7050/guides/tree/python), [`web-app`](https://github.com/seungwoo7050/guides/tree/web-app)
+- 권장 선행: [`distributed-services`](https://github.com/seungwoo7050/guides/tree/distributed-services), [`cybersecurity`](https://github.com/seungwoo7050/guides/tree/cybersecurity), [`machine-learning`](https://github.com/seungwoo7050/guides/tree/machine-learning)
+- 연결 분야: [`data-engineering`](https://github.com/seungwoo7050/guides/tree/data-engineering), [`platform-engineering`](https://github.com/seungwoo7050/guides/tree/platform-engineering), [`web-infra`](https://github.com/seungwoo7050/guides/tree/web-infra)
+- 후속 경로: [`platform-engineering`](https://github.com/seungwoo7050/guides/tree/platform-engineering)
+
+이 브랜치가 소유하는 범위는 다음 다섯 가지입니다.
+
+1. 모델 API와 구조화된 출력
+2. RAG와 출처·권한 경계
+3. 도구 호출과 agent loop
+4. checkpoint·resume·취소·budget
+5. sandbox·identity·평가·trace
+
+모델 학습 원리 전체, 일반 웹 개발 재교육, 사이버보안 전체, 대규모 플랫폼 운영 전체는 이 브랜치가 소유하지 않습니다. 코딩 에이전트 구현에 필요한 접점만 적용하고 일반 원리는 해당 선행·연결 브랜치로 돌려보냅니다.
+
 ## 선행 지식
 
 ### 필수
 
 - [`python`](https://github.com/seungwoo7050/guides/tree/python): 타입 경계, JSON, 파일, subprocess, 취소와 테스트
-- [`git`](https://github.com/seungwoo7050/guides/tree/git): 기준점, diff, branch, worktree, reset·restore·revert
-- [`unix-systems`](https://github.com/seungwoo7050/guides/tree/unix-systems): 경로, 권한, 프로세스, signal, file descriptor와 상태 관찰
+- [`web-app`](https://github.com/seungwoo7050/guides/tree/web-app): HTTP, API, 인증·권한과 실행 경계를 구분하는 능력
 
 첫 구현 언어는 Python을 권장하지만 설계 계약은 Rust·TypeScript·Go 등의 구현에도 적용할 수 있습니다.
+
+코딩 에이전트 프로필은 Git 기준점·diff·worktree와 POSIX 경로·권한·프로세스·signal을 실제로 사용합니다. 이 능력이 부족하면 [`git`](https://github.com/seungwoo7050/guides/tree/git)과 [`unix-systems`](https://github.com/seungwoo7050/guides/tree/unix-systems)를 먼저 보완하되, 두 브랜치를 카탈로그의 필수 관계로 새로 해석하지 않습니다.
 
 ### 권장
 
 - [`distributed-services`](https://github.com/seungwoo7050/guides/tree/distributed-services): timeout, `UNKNOWN`, 멱등성, 외부 효과와 재조정
 - [`cybersecurity`](https://github.com/seungwoo7050/guides/tree/cybersecurity): 위협 모델, 최소 권한, 공격 경로, 탐지와 사고 증거
+- [`machine-learning`](https://github.com/seungwoo7050/guides/tree/machine-learning): 모델 평가, 데이터 누출과 품질 주장 경계를 구분하는 능력
 
-### 선택적 확장
+### 다음 적용 경로
 
-- [`web-app`](https://github.com/seungwoo7050/guides/tree/web-app): hosted UI·API 또는 원격 session service를 만들 때
-- [`computer-networks`](https://github.com/seungwoo7050/guides/tree/computer-networks): network tool과 원격 sandbox를 다룰 때
-- [`machine-learning`](https://github.com/seungwoo7050/guides/tree/machine-learning): 모델 품질·fine-tuning·학습 데이터 문제까지 확장할 때
-- [`platform-engineering`](https://github.com/seungwoo7050/guides/tree/platform-engineering): 조직 공용 coding-agent runtime을 제공할 때
+- `data-engineering`: 권한이 있는 데이터 source와 실행 근거를 가진 작업 agent
+- `web-infra`: 배포·복구 tool을 제한된 authority와 외부 verifier로 실행하는 운영 agent
+- `platform-engineering`: 여러 팀에 sandbox, identity, 정책, trace와 평가 runtime을 제공하는 후속 전문화
 
-## 문서 중심 구성
+## 실행 중심 구성
 
-이 버전은 에이전트 구현보다 **설계 문서와 학습 계약**에 중점을 둡니다. 실습과 Capstone에는 정답 코드나 skeleton을 제공하지 않습니다. 대신 다음을 고정합니다.
+문서는 구현 전에 책임과 실패 모델을 고정하지만, 문서 작성만으로 이 가이드를 완료할 수 없습니다. 실습과 Capstone은 추적된 `starter`, 공개 행동을 보여 주는 `reference`, 결정적 fixture와 canonical test를 함께 제공합니다.
 
 - 구현할 하위 시스템과 책임
 - 입력·출력·상태·불변식
 - 정상·경계·실패 시나리오
 - 완료 판정과 외부 verifier
-- 선택 가능한 구현 프로필
+- 실행 가능한 starter/reference와 known-bad 반례
 - 실제 프로젝트로 확장할 다음 단계
 
-학습자는 문서 계약을 바탕으로 구현 언어와 모델 공급자를 선택합니다. 공개 검증은 코드 정답이 아니라 문서 구조, 링크와 설계 과제의 필수 항목을 확인합니다.
+학습자는 starter를 별도 workspace로 복사해 단계별로 구현합니다. 필수 검증은 network와 유료 model API 없이 `ScriptedModelAdapter`와 로컬 provider fixture로 실행됩니다. 실제 provider adapter의 protocol 구현은 필수지만 실제 credential을 사용하는 live call은 선택 smoke이며, 실행하지 않은 live 경로를 성공으로 표시하지 않습니다.
 
 ## 읽기 순서
 
@@ -137,7 +157,17 @@ MCP, 원격 GitHub 작업, IDE 통합, multi-agent, cloud runner는 핵심 런�
 
 ## 실습과 Capstone
 
-[`exercises/README.md`](exercises/README.md)에는 구현 순서가 있습니다. 각 실습은 코드가 아니라 **설계 명세와 검증 계획**을 작성하는 과제입니다.
+[`exercises/README.md`](exercises/README.md)에는 누적 구현 순서와 canonical 검사 명령이 있습니다. 설계 산출물은 실제 공개 행동·불변식·실패 근거와 함께 제출합니다.
+
+```sh
+python3 scripts/new_workspace.py --destination .workspace/local-coding-agent
+python3 exercises/10-capstone-local-coding-agent/tests/run.py \
+  --implementation reference --stage all
+python3 exercises/10-capstone-local-coding-agent/tests/run.py \
+  --implementation .workspace/local-coding-agent --stage 01
+```
+
+첫 명령은 기존 destination이나 symlink를 덮어쓰지 않습니다. reference와 학습자 workspace는 같은 추적 test·fixture로 검사합니다.
 
 최종 Capstone은 다음 인터페이스를 가진 로컬 CLI를 목표로 합니다.
 
@@ -160,7 +190,7 @@ coding-agent run \
 
 ## 준비와 검증
 
-문서 구조 검증에는 Python 3.10 이상만 필요합니다.
+필수 offline 구현·문서 검증에는 Python 3.10 이상과 POSIX 호환 셸이 필요하며 public network, API key와 유료 model 호출은 필요하지 않습니다.
 
 ```sh
 ./prepare.sh
@@ -171,13 +201,21 @@ coding-agent run \
 
 - 필수 문서와 실습 설계의 존재
 - Markdown 내부 링크
-- 실습별 필수 설계 절
-- Capstone의 필수 하위 시스템과 평가 항목
+- reference의 전체 단계와 외부 verifier
+- starter가 공개된 미완성 경계에서 거부되는지
+- known-bad 구현·patch와 권한 우회가 의도한 이유로 거부되는지
+- Capstone의 durable session, cancel, budget, sandbox와 평가 항목
 - 준비 이후 추적 소스가 바뀌지 않았는지
 
 ## 종료 능력
 
-다음 질문에 설계와 구현으로 답할 수 있으면 가이드의 목표를 달성한 것입니다.
+카탈로그가 선언한 종료 능력은 다음 세 가지이며, 문서가 아니라 구현과 실행 근거로 판정합니다.
+
+1. 도구를 사용하는 에이전트를 구현한다.
+2. 외부 verifier로 성공을 판정한다.
+3. 권한·네트워크·비용·실행 시간을 제한한다.
+
+다음 질문은 위 세 능력의 사람 검토를 돕습니다.
 
 - 모델과 에이전트 runtime의 책임을 분리했는가?
 - 저장소와 Git 상태를 변경 전에 snapshot으로 고정했는가?
@@ -185,6 +223,7 @@ coding-agent run \
 - 모델이 자유 문자열로 파일·shell·Git 권한을 직접 행사하지 못하는가?
 - 여러 파일 변경과 명령 실행을 되돌리고 재현할 수 있는가?
 - 테스트 실패를 코드·테스트·환경·명령·기존 실패로 분류하는가?
+- RAG source 권한을 retrieval 전에 적용하고 origin·revision·digest citation을 보존하는가?
 - context가 바뀌었을 때 낡은 근거를 폐기하거나 갱신하는가?
 - 중단·취소·crash 뒤 이미 수행한 효과를 중복하지 않고 재개하는가?
 - 모델의 완료 선언과 실제 성공 판정을 분리했는가?

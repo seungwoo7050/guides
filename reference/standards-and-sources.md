@@ -2,7 +2,7 @@
 
 검토일: 2026-08-10
 
-이 문서는 코딩 에이전트 runtime을 설계할 때 확인할 공식 문서와 1차 자료의 시작점입니다. 특정 제품의 현재 UI나 내부 구현을 그대로 복제하는 것이 목표는 아닙니다. 실제 구현 시 사용하는 version과 revision을 고정하고 최신 security note를 다시 확인합니다.
+이 문서는 에이전트 runtime을 설계할 때 확인할 공식 문서와 1차 자료의 시작점입니다. 코딩 에이전트가 이 가이드의 주 구현 프로필이지만 model·RAG·tool·durable state·policy·evaluation 원칙은 특정 작업 도메인이나 제품 UI에 종속시키지 않습니다. 실제 구현 시 사용하는 version과 revision을 고정하고 최신 security note를 다시 확인합니다.
 
 ## 실제 코딩 에이전트의 기능 경계
 
@@ -41,6 +41,15 @@
 
 MCP를 사용해도 tool server trust, path·command policy, sandbox, approval, effect ledger와 verifier는 별도로 필요합니다.
 
+## 모델 API, RAG와 provenance
+
+- [HTTP Semantics, RFC 9110](https://www.rfc-editor.org/rfc/rfc9110): provider-compatible adapter의 request·response·status·retry 경계를 해석하는 1차 표준
+- [Retrieval-Augmented Generation for Knowledge-Intensive NLP Tasks](https://arxiv.org/abs/2005.11401): retrieval과 generation을 결합한 RAG 원 논문의 출발점
+- [W3C PROV Overview](https://www.w3.org/TR/prov-overview/): source·entity·activity·agent provenance를 표현하는 표준 지도
+- [NIST SP 800-162, Guide to Attribute Based Access Control](https://doi.org/10.6028/NIST.SP.800-162): principal·resource·environment attribute로 retrieval·tool 권한을 판정하는 기반
+
+RAG reference는 retrieval 뒤 민감한 결과를 display에서 가리는 방식이 아니라 **authorization-before-retrieval**을 사용합니다. 허가된 결과도 origin·scope·revision·digest를 context와 citation에 보존하고, stale·conflicting source와 no-evidence를 서로 다른 상태로 남깁니다. 이 가이드의 로컬 repository 검색은 RAG의 구체 적용이며 일반 vector database나 embedding 모델 전체를 다시 가르치지 않습니다.
+
 ## AI와 agent 보안
 
 - [NIST AI Risk Management Framework](https://www.nist.gov/itl/ai-risk-management-framework): AI 위험의 govern·map·measure·manage 구조
@@ -68,4 +77,7 @@ experimental schema는 그대로 영구 저장 형식으로 고정하지 않고 
 - mutable `latest` 문서만 기록하지 않고 구현 manifest에 실제 version과 revision을 고정합니다.
 - benchmark 점수를 실제 사용자 생산성이나 안전성 전체로 해석하지 않습니다.
 - protocol·framework가 해결하지 않는 permission, sandbox, effect와 verifier 경계를 직접 문서화합니다.
+- 필수 model adapter 검증은 scripted scenario와 loopback provider fixture로 offline 재현하고, 실제 API key·public network·유료 call을 요구하지 않습니다.
+- live provider smoke를 실행하지 않았으면 명시적으로 미실행으로 남기며, loopback 통과를 provider 품질이나 production availability의 증거로 과장하지 않습니다.
+- retrieval source의 license·권한·version과 citation digest를 evaluation artifact에 기록합니다.
 - 외부 오픈소스에 기여할 때 해당 repository의 현재 architecture와 contribution policy를 다시 조사합니다.
