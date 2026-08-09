@@ -2,6 +2,10 @@ import type { Clock, RecordPayload } from "@field-notes/shared";
 import { SerializedForegroundPipeline } from "../src/application/SerializedForegroundPipeline";
 import { DeviceFeatureCoordinator } from "../src/device/DeviceFeatureCoordinator";
 import {
+  ExpoImagePickerCameraAdapter,
+  type ExpoImagePickerApi,
+} from "../src/device/ExpoImagePickerAdapters";
+import {
   DeterministicCameraAdapter,
   DeterministicLocationAdapter,
   DeterministicPendingMediaAdapter,
@@ -169,6 +173,53 @@ describe("Stage 03 media lifecycle", () => {
     expect(await coordinator.capturePhoto("forest-edge")).toEqual({ kind: "cancelled" });
     expect((await store.snapshot()).externalMediaOperations.map((operation) => operation.state))
       .toEqual(["interrupted", "cancelled"]);
+  });
+
+  it("terminalizes an Expo camera second-query failure instead of leaving the durable slot busy", async () => {
+    const store = new DeterministicLocalStore();
+    await store.ready();
+    const ids = sequentialIds();
+    const files = new DeterministicFileStore(ids);
+    const clock = new MutableClock();
+    let query = 0;
+    let failSecondQuery = true;
+    const granted = {
+      status: "granted",
+      granted: true,
+      canAskAgain: true,
+      expires: "never",
+    } as const;
+    const api = {
+      getCameraPermissionsAsync: async () => {
+        query += 1;
+        if (failSecondQuery && query === 2) throw new Error("permission bridge lost");
+        return granted;
+      },
+      requestCameraPermissionsAsync: async () => granted,
+      launchCameraAsync: async () => ({ canceled: true, assets: null }),
+      launchImageLibraryAsync: async () => ({ canceled: true, assets: null }),
+      getPendingResultAsync: async () => null,
+    } as unknown as ExpoImagePickerApi;
+    const coordinator = new DeviceFeatureCoordinator(
+      new ExpoImagePickerCameraAdapter(api, "android"),
+      new DeterministicPhotoPickerAdapter(),
+      new DeterministicLocationAdapter(),
+      new DeterministicPendingMediaAdapter(),
+      store,
+      files,
+      clock,
+      ids,
+    );
+
+    expect(await coordinator.capturePhoto("forest-edge")).toEqual(
+      expect.objectContaining({ kind: "failed", code: "permission-revoked" }),
+    );
+    expect((await store.snapshot()).externalMediaOperations.at(-1)).toMatchObject({
+      state: "failed",
+      failureReason: "permission-revoked",
+    });
+    failSecondQuery = false;
+    expect(await coordinator.capturePhoto("forest-edge")).toEqual({ kind: "cancelled" });
   });
 
   it("cleans partial staging and commits no metadata when provider copy fails", async () => {
