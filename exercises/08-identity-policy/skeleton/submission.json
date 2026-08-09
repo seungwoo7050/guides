@@ -1,4 +1,161 @@
 {
   "status": "incomplete",
-  "instructions": "TODO: Identity·secret·policy와 공급망의 계약을 문서와 자신의 환경에 맞게 완성하세요."
+  "identities": [
+    {
+      "type": "TODO: type를 자신의 근거로 완성하세요.",
+      "attestation": "TODO: attestation를 자신의 근거로 완성하세요.",
+      "scope": "TODO: scope를 자신의 근거로 완성하세요.",
+      "ttl": "TODO: ttl를 자신의 근거로 완성하세요.",
+      "revocation": "TODO: revocation를 자신의 근거로 완성하세요."
+    },
+    {
+      "type": "TODO: type를 자신의 근거로 완성하세요.",
+      "attestation": "TODO: attestation를 자신의 근거로 완성하세요.",
+      "scope": "TODO: scope를 자신의 근거로 완성하세요.",
+      "ttl": "TODO: ttl를 자신의 근거로 완성하세요.",
+      "revocation": "TODO: revocation를 자신의 근거로 완성하세요."
+    },
+    {
+      "type": "TODO: type를 자신의 근거로 완성하세요.",
+      "attestation": "TODO: attestation를 자신의 근거로 완성하세요.",
+      "scope": "TODO: scope를 자신의 근거로 완성하세요.",
+      "ttl": "TODO: ttl를 자신의 근거로 완성하세요.",
+      "revocation": "TODO: revocation를 자신의 근거로 완성하세요."
+    }
+  ],
+  "secretLifecycle": {
+    "sourceOwner": "TODO: sourceOwner를 자신의 근거로 완성하세요.",
+    "reference": "TODO: reference를 자신의 근거로 완성하세요.",
+    "materialization": "TODO: materialization를 자신의 근거로 완성하세요.",
+    "rotation": [
+      "TODO: 0를 자신의 근거로 완성하세요.",
+      "TODO: 1를 자신의 근거로 완성하세요.",
+      "TODO: 2를 자신의 근거로 완성하세요.",
+      "TODO: 3를 자신의 근거로 완성하세요.",
+      "TODO: 4를 자신의 근거로 완성하세요.",
+      "TODO: 5를 자신의 근거로 완성하세요."
+    ],
+    "revocation": "TODO: revocation를 자신의 근거로 완성하세요.",
+    "logging": "TODO: logging를 자신의 근거로 완성하세요."
+  },
+  "policyStages": [
+    {
+      "stage": "TODO: stage를 자신의 근거로 완성하세요.",
+      "input": "TODO: input를 자신의 근거로 완성하세요.",
+      "decision": "TODO: decision를 자신의 근거로 완성하세요.",
+      "feedback": "TODO: feedback를 자신의 근거로 완성하세요."
+    },
+    {
+      "stage": "TODO: stage를 자신의 근거로 완성하세요.",
+      "input": "TODO: input를 자신의 근거로 완성하세요.",
+      "decision": "TODO: decision를 자신의 근거로 완성하세요.",
+      "feedback": "TODO: feedback를 자신의 근거로 완성하세요."
+    },
+    {
+      "stage": "TODO: stage를 자신의 근거로 완성하세요.",
+      "input": "TODO: input를 자신의 근거로 완성하세요.",
+      "decision": "TODO: decision를 자신의 근거로 완성하세요.",
+      "feedback": "TODO: feedback를 자신의 근거로 완성하세요."
+    },
+    {
+      "stage": "TODO: stage를 자신의 근거로 완성하세요.",
+      "input": "TODO: input를 자신의 근거로 완성하세요.",
+      "decision": "TODO: decision를 자신의 근거로 완성하세요.",
+      "feedback": "TODO: feedback를 자신의 근거로 완성하세요."
+    }
+  ],
+  "exception": {
+    "fields": [
+      "TODO: 0를 자신의 근거로 완성하세요.",
+      "TODO: 1를 자신의 근거로 완성하세요.",
+      "TODO: 2를 자신의 근거로 완성하세요.",
+      "TODO: 3를 자신의 근거로 완성하세요.",
+      "TODO: 4를 자신의 근거로 완성하세요.",
+      "TODO: 5를 자신의 근거로 완성하세요."
+    ],
+    "expiryRule": "TODO: expiryRule를 자신의 근거로 완성하세요.",
+    "visibility": "TODO: visibility를 자신의 근거로 완성하세요."
+  },
+  "breakGlass": {
+    "trigger": "TODO: trigger를 자신의 근거로 완성하세요.",
+    "scope": "TODO: scope를 자신의 근거로 완성하세요.",
+    "audit": "TODO: audit를 자신의 근거로 완성하세요.",
+    "closeCondition": "TODO: closeCondition를 자신의 근거로 완성하세요."
+  },
+  "trustChain": [
+    {
+      "stage": "TODO: stage를 자신의 근거로 완성하세요.",
+      "subject": "TODO: subject를 자신의 근거로 완성하세요.",
+      "artifactOrState": "TODO: artifactOrState를 자신의 근거로 완성하세요.",
+      "verification": "TODO: verification를 자신의 근거로 완성하세요."
+    },
+    {
+      "stage": "TODO: stage를 자신의 근거로 완성하세요.",
+      "subject": "TODO: subject를 자신의 근거로 완성하세요.",
+      "artifactOrState": "TODO: artifactOrState를 자신의 근거로 완성하세요.",
+      "verification": "TODO: verification를 자신의 근거로 완성하세요."
+    },
+    {
+      "stage": "TODO: stage를 자신의 근거로 완성하세요.",
+      "subject": "TODO: subject를 자신의 근거로 완성하세요.",
+      "artifactOrState": "TODO: artifactOrState를 자신의 근거로 완성하세요.",
+      "verification": "TODO: verification를 자신의 근거로 완성하세요."
+    },
+    {
+      "stage": "TODO: stage를 자신의 근거로 완성하세요.",
+      "subject": "TODO: subject를 자신의 근거로 완성하세요.",
+      "artifactOrState": "TODO: artifactOrState를 자신의 근거로 완성하세요.",
+      "verification": "TODO: verification를 자신의 근거로 완성하세요."
+    },
+    {
+      "stage": "TODO: stage를 자신의 근거로 완성하세요.",
+      "subject": "TODO: subject를 자신의 근거로 완성하세요.",
+      "artifactOrState": "TODO: artifactOrState를 자신의 근거로 완성하세요.",
+      "verification": "TODO: verification를 자신의 근거로 완성하세요."
+    }
+  ],
+  "auditEvents": [
+    {
+      "event": "TODO: event를 자신의 근거로 완성하세요.",
+      "identity": "TODO: identity를 자신의 근거로 완성하세요.",
+      "redaction": "TODO: redaction를 자신의 근거로 완성하세요.",
+      "retentionOwner": "TODO: retentionOwner를 자신의 근거로 완성하세요."
+    },
+    {
+      "event": "TODO: event를 자신의 근거로 완성하세요.",
+      "identity": "TODO: identity를 자신의 근거로 완성하세요.",
+      "redaction": "TODO: redaction를 자신의 근거로 완성하세요.",
+      "retentionOwner": "TODO: retentionOwner를 자신의 근거로 완성하세요."
+    },
+    {
+      "event": "TODO: event를 자신의 근거로 완성하세요.",
+      "identity": "TODO: identity를 자신의 근거로 완성하세요.",
+      "redaction": "TODO: redaction를 자신의 근거로 완성하세요.",
+      "retentionOwner": "TODO: retentionOwner를 자신의 근거로 완성하세요."
+    },
+    {
+      "event": "TODO: event를 자신의 근거로 완성하세요.",
+      "identity": "TODO: identity를 자신의 근거로 완성하세요.",
+      "redaction": "TODO: redaction를 자신의 근거로 완성하세요.",
+      "retentionOwner": "TODO: retentionOwner를 자신의 근거로 완성하세요."
+    },
+    {
+      "event": "TODO: event를 자신의 근거로 완성하세요.",
+      "identity": "TODO: identity를 자신의 근거로 완성하세요.",
+      "redaction": "TODO: redaction를 자신의 근거로 완성하세요.",
+      "retentionOwner": "TODO: retentionOwner를 자신의 근거로 완성하세요."
+    }
+  ],
+  "containment": {
+    "trigger": "TODO: trigger를 자신의 근거로 완성하세요.",
+    "actions": [
+      "TODO: 0를 자신의 근거로 완성하세요.",
+      "TODO: 1를 자신의 근거로 완성하세요.",
+      "TODO: 2를 자신의 근거로 완성하세요.",
+      "TODO: 3를 자신의 근거로 완성하세요.",
+      "TODO: 4를 자신의 근거로 완성하세요.",
+      "TODO: 5를 자신의 근거로 완성하세요."
+    ],
+    "recoveryEvidence": "TODO: recoveryEvidence를 자신의 근거로 완성하세요."
+  }
 }

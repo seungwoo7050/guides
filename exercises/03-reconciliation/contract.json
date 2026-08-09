@@ -1,5 +1,5 @@
 {
-  "contractVersion": 1,
+  "schemaVersion": 2,
   "title": "Reconciliation design",
   "requiredPaths": [
     "/status",
@@ -60,6 +60,10 @@
       "Ready",
       "Blocked",
       "Degraded"
+    ],
+    "/finalization/steps": [
+      "revoke credential",
+      "orphan scan"
     ]
   },
   "allowedValues": {
@@ -68,6 +72,56 @@
     ]
   },
   "matches": {},
+  "valueTypes": {
+    "/status": "string",
+    "/resourceModel": "object",
+    "/conditionTypes": "array",
+    "/reconcileSteps": "array",
+    "/failureClasses": "array",
+    "/failureClasses/*/retryable": "boolean",
+    "/fieldOwnership": "array",
+    "/finalization": "object",
+    "/evidence": "array"
+  },
+  "arrayContainsObjects": {
+    "/failureClasses": [
+      {
+        "class": "transient-dependency",
+        "retryable": true,
+        "condition": "Progressing"
+      },
+      {
+        "class": "invalid-input",
+        "retryable": false,
+        "condition": "Blocked"
+      },
+      {
+        "class": "invariant-violation",
+        "retryable": false,
+        "condition": "Degraded"
+      }
+    ]
+  },
+  "conditionalRequirements": [
+    {
+      "if": {
+        "path": "/status",
+        "equals": "complete"
+      },
+      "then": {
+        "requiredPaths": [
+          "/finalization/steps",
+          "/finalization/terminalCondition"
+        ],
+        "nonEmptyPaths": [
+          "/finalization/terminalCondition"
+        ],
+        "valueTypes": {
+          "/finalization/steps": "array"
+        }
+      }
+    }
+  ],
   "forbiddenSubstrings": [
     "TODO",
     "TBD",

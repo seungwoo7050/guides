@@ -1,5 +1,5 @@
 {
-  "contractVersion": 1,
+  "schemaVersion": 2,
   "title": "Platform migration plan",
   "requiredPaths": [
     "/status",
@@ -76,6 +76,66 @@
     ]
   },
   "matches": {},
+  "valueTypes": {
+    "/status": "string",
+    "/change": "object",
+    "/inventory": "object",
+    "/compatibility": "array",
+    "/preflight": "array",
+    "/waves": "array",
+    "/abortCriteria": "array",
+    "/rollback": "object",
+    "/deprecation": "object",
+    "/metrics": "array"
+  },
+  "arrayContainsObjects": {
+    "/compatibility": [
+      {
+        "dimension": "stored status"
+      },
+      {
+        "dimension": "identity"
+      }
+    ],
+    "/waves": [
+      {
+        "name": "platform-fixtures"
+      },
+      {
+        "name": "production-canary"
+      }
+    ],
+    "/abortCriteria": [
+      {
+        "signal": "unknown state conversion"
+      }
+    ]
+  },
+  "pathComparisons": [
+    {
+      "left": "/change/sourceVersion",
+      "op": "ne",
+      "right": "/change/targetVersion"
+    }
+  ],
+  "conditionalRequirements": [
+    {
+      "if": {
+        "path": "/status",
+        "equals": "complete"
+      },
+      "then": {
+        "requiredPaths": [
+          "/rollback/procedure",
+          "/rollback/forwardRepair"
+        ],
+        "nonEmptyPaths": [
+          "/rollback/procedure",
+          "/rollback/forwardRepair"
+        ]
+      }
+    }
+  ],
   "forbiddenSubstrings": [
     "TODO",
     "TBD",

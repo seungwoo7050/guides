@@ -1,4 +1,213 @@
 {
   "status": "incomplete",
-  "instructions": "TODO: Internal Developer Platform 통합 설계의 계약을 문서와 자신의 환경에 맞게 완성하세요."
+  "product": {
+    "name": "TODO: name를 자신의 근거로 완성하세요.",
+    "problem": "TODO: problem를 자신의 근거로 완성하세요.",
+    "users": [
+      "TODO: 0를 자신의 근거로 완성하세요.",
+      "TODO: 1를 자신의 근거로 완성하세요.",
+      "TODO: 2를 자신의 근거로 완성하세요."
+    ],
+    "outcome": "TODO: outcome를 자신의 근거로 완성하세요.",
+    "nonGoals": [
+      "TODO: 0를 자신의 근거로 완성하세요.",
+      "TODO: 1를 자신의 근거로 완성하세요."
+    ]
+  },
+  "resources": [
+    {
+      "kind": "TODO: kind를 자신의 근거로 완성하세요.",
+      "owner": "TODO: owner를 자신의 근거로 완성하세요.",
+      "desiredSource": "TODO: desiredSource를 자신의 근거로 완성하세요.",
+      "statusOwner": "TODO: statusOwner를 자신의 근거로 완성하세요.",
+      "deletePolicy": "TODO: deletePolicy를 자신의 근거로 완성하세요."
+    },
+    {
+      "kind": "TODO: kind를 자신의 근거로 완성하세요.",
+      "owner": "TODO: owner를 자신의 근거로 완성하세요.",
+      "desiredSource": "TODO: desiredSource를 자신의 근거로 완성하세요.",
+      "statusOwner": "TODO: statusOwner를 자신의 근거로 완성하세요.",
+      "deletePolicy": "TODO: deletePolicy를 자신의 근거로 완성하세요."
+    },
+    {
+      "kind": "TODO: kind를 자신의 근거로 완성하세요.",
+      "owner": "TODO: owner를 자신의 근거로 완성하세요.",
+      "desiredSource": "TODO: desiredSource를 자신의 근거로 완성하세요.",
+      "statusOwner": "TODO: statusOwner를 자신의 근거로 완성하세요.",
+      "deletePolicy": "TODO: deletePolicy를 자신의 근거로 완성하세요."
+    },
+    {
+      "kind": "TODO: kind를 자신의 근거로 완성하세요.",
+      "owner": "TODO: owner를 자신의 근거로 완성하세요.",
+      "desiredSource": "TODO: desiredSource를 자신의 근거로 완성하세요.",
+      "statusOwner": "TODO: statusOwner를 자신의 근거로 완성하세요.",
+      "deletePolicy": "TODO: deletePolicy를 자신의 근거로 완성하세요."
+    },
+    {
+      "kind": "TODO: kind를 자신의 근거로 완성하세요.",
+      "owner": "TODO: owner를 자신의 근거로 완성하세요.",
+      "desiredSource": "TODO: desiredSource를 자신의 근거로 완성하세요.",
+      "statusOwner": "TODO: statusOwner를 자신의 근거로 완성하세요.",
+      "deletePolicy": "TODO: deletePolicy를 자신의 근거로 완성하세요."
+    },
+    {
+      "kind": "TODO: kind를 자신의 근거로 완성하세요.",
+      "owner": "TODO: owner를 자신의 근거로 완성하세요.",
+      "desiredSource": "TODO: desiredSource를 자신의 근거로 완성하세요.",
+      "statusOwner": "TODO: statusOwner를 자신의 근거로 완성하세요.",
+      "deletePolicy": "TODO: deletePolicy를 자신의 근거로 완성하세요."
+    }
+  ],
+  "controlPlane": {
+    "flow": [
+      "TODO: 0를 자신의 근거로 완성하세요.",
+      "TODO: 1를 자신의 근거로 완성하세요.",
+      "TODO: 2를 자신의 근거로 완성하세요.",
+      "TODO: 3를 자신의 근거로 완성하세요.",
+      "TODO: 4를 자신의 근거로 완성하세요.",
+      "TODO: 5를 자신의 근거로 완성하세요.",
+      "TODO: 6를 자신의 근거로 완성하세요."
+    ],
+    "idempotency": "TODO: idempotency를 자신의 근거로 완성하세요.",
+    "readyEvidence": "TODO: readyEvidence를 자신의 근거로 완성하세요.",
+    "failureIsolation": "TODO: failureIsolation를 자신의 근거로 완성하세요."
+  },
+  "delivery": {
+    "artifactIdentity": "TODO: artifactIdentity를 자신의 근거로 완성하세요.",
+    "promotion": "TODO: promotion를 자신의 근거로 완성하세요.",
+    "gitops": "TODO: gitops를 자신의 근거로 완성하세요.",
+    "rollback": "TODO: rollback를 자신의 근거로 완성하세요."
+  },
+  "runtimeAndTenancy": {
+    "profile": "TODO: profile를 자신의 근거로 완성하세요.",
+    "tenantProfiles": [
+      "TODO: 0를 자신의 근거로 완성하세요.",
+      "TODO: 1를 자신의 근거로 완성하세요.",
+      "TODO: 2를 자신의 근거로 완성하세요."
+    ],
+    "fairness": "TODO: fairness를 자신의 근거로 완성하세요.",
+    "data": "TODO: data를 자신의 근거로 완성하세요."
+  },
+  "security": {
+    "trustBoundary": "TODO: trustBoundary를 자신의 근거로 완성하세요.",
+    "secret": "TODO: secret를 자신의 근거로 완성하세요.",
+    "policy": "TODO: policy를 자신의 근거로 완성하세요.",
+    "exception": "TODO: exception를 자신의 근거로 완성하세요.",
+    "containment": "TODO: containment를 자신의 근거로 완성하세요."
+  },
+  "operations": {
+    "journeySlo": "TODO: journeySlo를 자신의 근거로 완성하세요.",
+    "capacity": "TODO: capacity를 자신의 근거로 완성하세요.",
+    "cost": "TODO: cost를 자신의 근거로 완성하세요.",
+    "support": "TODO: support를 자신의 근거로 완성하세요.",
+    "upgrade": "TODO: upgrade를 자신의 근거로 완성하세요."
+  },
+  "scenarios": [
+    {
+      "name": "TODO: name를 자신의 근거로 완성하세요.",
+      "initialState": "TODO: initialState를 자신의 근거로 완성하세요.",
+      "event": "TODO: event를 자신의 근거로 완성하세요.",
+      "expectedState": "TODO: expectedState를 자신의 근거로 완성하세요.",
+      "evidence": "TODO: evidence를 자신의 근거로 완성하세요.",
+      "owner": "TODO: owner를 자신의 근거로 완성하세요."
+    },
+    {
+      "name": "TODO: name를 자신의 근거로 완성하세요.",
+      "initialState": "TODO: initialState를 자신의 근거로 완성하세요.",
+      "event": "TODO: event를 자신의 근거로 완성하세요.",
+      "expectedState": "TODO: expectedState를 자신의 근거로 완성하세요.",
+      "evidence": "TODO: evidence를 자신의 근거로 완성하세요.",
+      "owner": "TODO: owner를 자신의 근거로 완성하세요."
+    },
+    {
+      "name": "TODO: name를 자신의 근거로 완성하세요.",
+      "initialState": "TODO: initialState를 자신의 근거로 완성하세요.",
+      "event": "TODO: event를 자신의 근거로 완성하세요.",
+      "expectedState": "TODO: expectedState를 자신의 근거로 완성하세요.",
+      "evidence": "TODO: evidence를 자신의 근거로 완성하세요.",
+      "owner": "TODO: owner를 자신의 근거로 완성하세요."
+    },
+    {
+      "name": "TODO: name를 자신의 근거로 완성하세요.",
+      "initialState": "TODO: initialState를 자신의 근거로 완성하세요.",
+      "event": "TODO: event를 자신의 근거로 완성하세요.",
+      "expectedState": "TODO: expectedState를 자신의 근거로 완성하세요.",
+      "evidence": "TODO: evidence를 자신의 근거로 완성하세요.",
+      "owner": "TODO: owner를 자신의 근거로 완성하세요."
+    },
+    {
+      "name": "TODO: name를 자신의 근거로 완성하세요.",
+      "initialState": "TODO: initialState를 자신의 근거로 완성하세요.",
+      "event": "TODO: event를 자신의 근거로 완성하세요.",
+      "expectedState": "TODO: expectedState를 자신의 근거로 완성하세요.",
+      "evidence": "TODO: evidence를 자신의 근거로 완성하세요.",
+      "owner": "TODO: owner를 자신의 근거로 완성하세요."
+    },
+    {
+      "name": "TODO: name를 자신의 근거로 완성하세요.",
+      "initialState": "TODO: initialState를 자신의 근거로 완성하세요.",
+      "event": "TODO: event를 자신의 근거로 완성하세요.",
+      "expectedState": "TODO: expectedState를 자신의 근거로 완성하세요.",
+      "evidence": "TODO: evidence를 자신의 근거로 완성하세요.",
+      "owner": "TODO: owner를 자신의 근거로 완성하세요."
+    },
+    {
+      "name": "TODO: name를 자신의 근거로 완성하세요.",
+      "initialState": "TODO: initialState를 자신의 근거로 완성하세요.",
+      "event": "TODO: event를 자신의 근거로 완성하세요.",
+      "expectedState": "TODO: expectedState를 자신의 근거로 완성하세요.",
+      "evidence": "TODO: evidence를 자신의 근거로 완성하세요.",
+      "owner": "TODO: owner를 자신의 근거로 완성하세요."
+    },
+    {
+      "name": "TODO: name를 자신의 근거로 완성하세요.",
+      "initialState": "TODO: initialState를 자신의 근거로 완성하세요.",
+      "event": "TODO: event를 자신의 근거로 완성하세요.",
+      "expectedState": "TODO: expectedState를 자신의 근거로 완성하세요.",
+      "evidence": "TODO: evidence를 자신의 근거로 완성하세요.",
+      "owner": "TODO: owner를 자신의 근거로 완성하세요."
+    }
+  ],
+  "uncheckedClaims": [
+    {
+      "claim": "TODO: claim를 자신의 근거로 완성하세요.",
+      "whyUnchecked": "TODO: whyUnchecked를 자신의 근거로 완성하세요.",
+      "nextValidation": "TODO: nextValidation를 자신의 근거로 완성하세요."
+    },
+    {
+      "claim": "TODO: claim를 자신의 근거로 완성하세요.",
+      "whyUnchecked": "TODO: whyUnchecked를 자신의 근거로 완성하세요.",
+      "nextValidation": "TODO: nextValidation를 자신의 근거로 완성하세요."
+    },
+    {
+      "claim": "TODO: claim를 자신의 근거로 완성하세요.",
+      "whyUnchecked": "TODO: whyUnchecked를 자신의 근거로 완성하세요.",
+      "nextValidation": "TODO: nextValidation를 자신의 근거로 완성하세요."
+    }
+  ],
+  "projectTransition": {
+    "firstContribution": "TODO: firstContribution를 자신의 근거로 완성하세요.",
+    "steps": [
+      {
+        "step": "TODO: step를 자신의 근거로 완성하세요.",
+        "artifact": "TODO: artifact를 자신의 근거로 완성하세요.",
+        "completion": "TODO: completion를 자신의 근거로 완성하세요."
+      },
+      {
+        "step": "TODO: step를 자신의 근거로 완성하세요.",
+        "artifact": "TODO: artifact를 자신의 근거로 완성하세요.",
+        "completion": "TODO: completion를 자신의 근거로 완성하세요."
+      },
+      {
+        "step": "TODO: step를 자신의 근거로 완성하세요.",
+        "artifact": "TODO: artifact를 자신의 근거로 완성하세요.",
+        "completion": "TODO: completion를 자신의 근거로 완성하세요."
+      },
+      {
+        "step": "TODO: step를 자신의 근거로 완성하세요.",
+        "artifact": "TODO: artifact를 자신의 근거로 완성하세요.",
+        "completion": "TODO: completion를 자신의 근거로 완성하세요."
+      }
+    ]
+  }
 }

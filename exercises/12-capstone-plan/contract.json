@@ -1,5 +1,5 @@
 {
-  "contractVersion": 1,
+  "schemaVersion": 2,
   "title": "Platform capstone plan",
   "requiredPaths": [
     "/status",
@@ -67,6 +67,93 @@
     ]
   },
   "matches": {},
+  "valueTypes": {
+    "/status": "string",
+    "/product": "object",
+    "/resources": "array",
+    "/controlPlane": "object",
+    "/delivery": "object",
+    "/runtimeAndTenancy": "object",
+    "/security": "object",
+    "/operations": "object",
+    "/scenarios": "array",
+    "/uncheckedClaims": "array",
+    "/projectTransition": "object"
+  },
+  "arrayContainsObjects": {
+    "/resources": [
+      {
+        "kind": "ServiceEnvironment"
+      },
+      {
+        "kind": "Release"
+      },
+      {
+        "kind": "CapabilityBinding"
+      },
+      {
+        "kind": "Migration"
+      },
+      {
+        "kind": "PolicyException"
+      }
+    ],
+    "/scenarios": [
+      {
+        "name": "normal-create"
+      },
+      {
+        "name": "duplicate-timeout"
+      },
+      {
+        "name": "partial-provision"
+      },
+      {
+        "name": "gitops-drift"
+      },
+      {
+        "name": "tenant-exhaustion"
+      },
+      {
+        "name": "credential-policy-failure"
+      },
+      {
+        "name": "profile-upgrade"
+      },
+      {
+        "name": "service-retirement"
+      }
+    ]
+  },
+  "pathComparisons": [
+    {
+      "left": "/product/problem",
+      "op": "ne",
+      "right": "/product/outcome"
+    }
+  ],
+  "conditionalRequirements": [
+    {
+      "if": {
+        "path": "/status",
+        "equals": "complete"
+      },
+      "then": {
+        "requiredPaths": [
+          "/controlPlane/idempotency",
+          "/controlPlane/failureIsolation",
+          "/projectTransition/steps"
+        ],
+        "nonEmptyPaths": [
+          "/controlPlane/idempotency",
+          "/controlPlane/failureIsolation"
+        ],
+        "valueTypes": {
+          "/projectTransition/steps": "array"
+        }
+      }
+    }
+  ],
   "forbiddenSubstrings": [
     "TODO",
     "TBD",

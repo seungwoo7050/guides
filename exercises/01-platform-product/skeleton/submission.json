@@ -1,4 +1,118 @@
 {
   "status": "incomplete",
-  "instructions": "TODO: 플랫폼 제품 문제 정의의 계약을 문서와 자신의 환경에 맞게 완성하세요."
+  "product": {
+    "name": "TODO: name를 자신의 근거로 완성하세요.",
+    "owner": "TODO: owner를 자신의 근거로 완성하세요.",
+    "problemStatement": "TODO: problemStatement를 자신의 근거로 완성하세요."
+  },
+  "users": [
+    {
+      "id": "TODO: id를 자신의 근거로 완성하세요.",
+      "role": "TODO: role를 자신의 근거로 완성하세요.",
+      "job": "TODO: job를 자신의 근거로 완성하세요.",
+      "pain": "TODO: pain를 자신의 근거로 완성하세요."
+    },
+    {
+      "id": "TODO: id를 자신의 근거로 완성하세요.",
+      "role": "TODO: role를 자신의 근거로 완성하세요.",
+      "job": "TODO: job를 자신의 근거로 완성하세요.",
+      "pain": "TODO: pain를 자신의 근거로 완성하세요."
+    },
+    {
+      "id": "TODO: id를 자신의 근거로 완성하세요.",
+      "role": "TODO: role를 자신의 근거로 완성하세요.",
+      "job": "TODO: job를 자신의 근거로 완성하세요.",
+      "pain": "TODO: pain를 자신의 근거로 완성하세요."
+    }
+  ],
+  "currentJourney": [
+    {
+      "step": "TODO: step를 자신의 근거로 완성하세요.",
+      "owner": "TODO: owner를 자신의 근거로 완성하세요.",
+      "waitOrFailure": "TODO: waitOrFailure를 자신의 근거로 완성하세요.",
+      "evidence": "TODO: evidence를 자신의 근거로 완성하세요."
+    },
+    {
+      "step": "TODO: step를 자신의 근거로 완성하세요.",
+      "owner": "TODO: owner를 자신의 근거로 완성하세요.",
+      "waitOrFailure": "TODO: waitOrFailure를 자신의 근거로 완성하세요.",
+      "evidence": "TODO: evidence를 자신의 근거로 완성하세요."
+    },
+    {
+      "step": "TODO: step를 자신의 근거로 완성하세요.",
+      "owner": "TODO: owner를 자신의 근거로 완성하세요.",
+      "waitOrFailure": "TODO: waitOrFailure를 자신의 근거로 완성하세요.",
+      "evidence": "TODO: evidence를 자신의 근거로 완성하세요."
+    },
+    {
+      "step": "TODO: step를 자신의 근거로 완성하세요.",
+      "owner": "TODO: owner를 자신의 근거로 완성하세요.",
+      "waitOrFailure": "TODO: waitOrFailure를 자신의 근거로 완성하세요.",
+      "evidence": "TODO: evidence를 자신의 근거로 완성하세요."
+    },
+    {
+      "step": "TODO: step를 자신의 근거로 완성하세요.",
+      "owner": "TODO: owner를 자신의 근거로 완성하세요.",
+      "waitOrFailure": "TODO: waitOrFailure를 자신의 근거로 완성하세요.",
+      "evidence": "TODO: evidence를 자신의 근거로 완성하세요."
+    }
+  ],
+  "evidence": [
+    {
+      "type": "TODO: type를 자신의 근거로 완성하세요.",
+      "source": "TODO: source를 자신의 근거로 완성하세요.",
+      "finding": "TODO: finding를 자신의 근거로 완성하세요."
+    },
+    {
+      "type": "TODO: type를 자신의 근거로 완성하세요.",
+      "source": "TODO: source를 자신의 근거로 완성하세요.",
+      "finding": "TODO: finding를 자신의 근거로 완성하세요."
+    },
+    {
+      "type": "TODO: type를 자신의 근거로 완성하세요.",
+      "source": "TODO: source를 자신의 근거로 완성하세요.",
+      "finding": "TODO: finding를 자신의 근거로 완성하세요."
+    }
+  ],
+  "outcomes": [
+    {
+      "name": "TODO: name를 자신의 근거로 완성하세요.",
+      "measure": "TODO: measure를 자신의 근거로 완성하세요.",
+      "target": "TODO: target를 자신의 근거로 완성하세요.",
+      "guardrail": "TODO: guardrail를 자신의 근거로 완성하세요."
+    },
+    {
+      "name": "TODO: name를 자신의 근거로 완성하세요.",
+      "measure": "TODO: measure를 자신의 근거로 완성하세요.",
+      "target": "TODO: target를 자신의 근거로 완성하세요.",
+      "guardrail": "TODO: guardrail를 자신의 근거로 완성하세요."
+    }
+  ],
+  "firstCapability": {
+    "name": "TODO: name를 자신의 근거로 완성하세요.",
+    "scope": "TODO: scope를 자신의 근거로 완성하세요.",
+    "exitEvidence": "TODO: exitEvidence를 자신의 근거로 완성하세요."
+  },
+  "nonGoals": [
+    {
+      "item": "TODO: item를 자신의 근거로 완성하세요.",
+      "reason": "TODO: reason를 자신의 근거로 완성하세요."
+    },
+    {
+      "item": "TODO: item를 자신의 근거로 완성하세요.",
+      "reason": "TODO: reason를 자신의 근거로 완성하세요."
+    }
+  ],
+  "risks": [
+    {
+      "risk": "TODO: risk를 자신의 근거로 완성하세요.",
+      "owner": "TODO: owner를 자신의 근거로 완성하세요.",
+      "mitigation": "TODO: mitigation를 자신의 근거로 완성하세요."
+    },
+    {
+      "risk": "TODO: risk를 자신의 근거로 완성하세요.",
+      "owner": "TODO: owner를 자신의 근거로 완성하세요.",
+      "mitigation": "TODO: mitigation를 자신의 근거로 완성하세요."
+    }
+  ]
 }

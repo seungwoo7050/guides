@@ -1,4 +1,172 @@
 {
   "status": "incomplete",
-  "instructions": "TODO: 플랫폼 upgrade·migration·deprecation의 계약을 문서와 자신의 환경에 맞게 완성하세요."
+  "change": {
+    "component": "TODO: component를 자신의 근거로 완성하세요.",
+    "sourceVersion": "TODO: sourceVersion를 자신의 근거로 완성하세요.",
+    "targetVersion": "TODO: targetVersion를 자신의 근거로 완성하세요.",
+    "semanticDifference": "TODO: semanticDifference를 자신의 근거로 완성하세요.",
+    "reason": "TODO: reason를 자신의 근거로 완성하세요."
+  },
+  "inventory": {
+    "source": "TODO: source를 자신의 근거로 완성하세요.",
+    "categories": [
+      {
+        "item": "TODO: item를 자신의 근거로 완성하세요.",
+        "owner": "TODO: owner를 자신의 근거로 완성하세요.",
+        "query": "TODO: query를 자신의 근거로 완성하세요."
+      },
+      {
+        "item": "TODO: item를 자신의 근거로 완성하세요.",
+        "owner": "TODO: owner를 자신의 근거로 완성하세요.",
+        "query": "TODO: query를 자신의 근거로 완성하세요."
+      },
+      {
+        "item": "TODO: item를 자신의 근거로 완성하세요.",
+        "owner": "TODO: owner를 자신의 근거로 완성하세요.",
+        "query": "TODO: query를 자신의 근거로 완성하세요."
+      },
+      {
+        "item": "TODO: item를 자신의 근거로 완성하세요.",
+        "owner": "TODO: owner를 자신의 근거로 완성하세요.",
+        "query": "TODO: query를 자신의 근거로 완성하세요."
+      },
+      {
+        "item": "TODO: item를 자신의 근거로 완성하세요.",
+        "owner": "TODO: owner를 자신의 근거로 완성하세요.",
+        "query": "TODO: query를 자신의 근거로 완성하세요."
+      }
+    ]
+  },
+  "compatibility": [
+    {
+      "dimension": "TODO: dimension를 자신의 근거로 완성하세요.",
+      "supported": "TODO: supported를 자신의 근거로 완성하세요.",
+      "evidence": "TODO: evidence를 자신의 근거로 완성하세요."
+    },
+    {
+      "dimension": "TODO: dimension를 자신의 근거로 완성하세요.",
+      "supported": "TODO: supported를 자신의 근거로 완성하세요.",
+      "evidence": "TODO: evidence를 자신의 근거로 완성하세요."
+    },
+    {
+      "dimension": "TODO: dimension를 자신의 근거로 완성하세요.",
+      "supported": "TODO: supported를 자신의 근거로 완성하세요.",
+      "evidence": "TODO: evidence를 자신의 근거로 완성하세요."
+    },
+    {
+      "dimension": "TODO: dimension를 자신의 근거로 완성하세요.",
+      "supported": "TODO: supported를 자신의 근거로 완성하세요.",
+      "evidence": "TODO: evidence를 자신의 근거로 완성하세요."
+    },
+    {
+      "dimension": "TODO: dimension를 자신의 근거로 완성하세요.",
+      "supported": "TODO: supported를 자신의 근거로 완성하세요.",
+      "evidence": "TODO: evidence를 자신의 근거로 완성하세요."
+    }
+  ],
+  "preflight": [
+    {
+      "check": "TODO: check를 자신의 근거로 완성하세요.",
+      "blockReason": "TODO: blockReason를 자신의 근거로 완성하세요.",
+      "owner": "TODO: owner를 자신의 근거로 완성하세요."
+    },
+    {
+      "check": "TODO: check를 자신의 근거로 완성하세요.",
+      "blockReason": "TODO: blockReason를 자신의 근거로 완성하세요.",
+      "owner": "TODO: owner를 자신의 근거로 완성하세요."
+    },
+    {
+      "check": "TODO: check를 자신의 근거로 완성하세요.",
+      "blockReason": "TODO: blockReason를 자신의 근거로 완성하세요.",
+      "owner": "TODO: owner를 자신의 근거로 완성하세요."
+    },
+    {
+      "check": "TODO: check를 자신의 근거로 완성하세요.",
+      "blockReason": "TODO: blockReason를 자신의 근거로 완성하세요.",
+      "owner": "TODO: owner를 자신의 근거로 완성하세요."
+    },
+    {
+      "check": "TODO: check를 자신의 근거로 완성하세요.",
+      "blockReason": "TODO: blockReason를 자신의 근거로 완성하세요.",
+      "owner": "TODO: owner를 자신의 근거로 완성하세요."
+    }
+  ],
+  "waves": [
+    {
+      "name": "TODO: name를 자신의 근거로 완성하세요.",
+      "targets": "TODO: targets를 자신의 근거로 완성하세요.",
+      "entry": "TODO: entry를 자신의 근거로 완성하세요.",
+      "exit": "TODO: exit를 자신의 근거로 완성하세요."
+    },
+    {
+      "name": "TODO: name를 자신의 근거로 완성하세요.",
+      "targets": "TODO: targets를 자신의 근거로 완성하세요.",
+      "entry": "TODO: entry를 자신의 근거로 완성하세요.",
+      "exit": "TODO: exit를 자신의 근거로 완성하세요."
+    },
+    {
+      "name": "TODO: name를 자신의 근거로 완성하세요.",
+      "targets": "TODO: targets를 자신의 근거로 완성하세요.",
+      "entry": "TODO: entry를 자신의 근거로 완성하세요.",
+      "exit": "TODO: exit를 자신의 근거로 완성하세요."
+    },
+    {
+      "name": "TODO: name를 자신의 근거로 완성하세요.",
+      "targets": "TODO: targets를 자신의 근거로 완성하세요.",
+      "entry": "TODO: entry를 자신의 근거로 완성하세요.",
+      "exit": "TODO: exit를 자신의 근거로 완성하세요."
+    }
+  ],
+  "abortCriteria": [
+    {
+      "signal": "TODO: signal를 자신의 근거로 완성하세요.",
+      "threshold": "TODO: threshold를 자신의 근거로 완성하세요.",
+      "action": "TODO: action를 자신의 근거로 완성하세요."
+    },
+    {
+      "signal": "TODO: signal를 자신의 근거로 완성하세요.",
+      "threshold": "TODO: threshold를 자신의 근거로 완성하세요.",
+      "action": "TODO: action를 자신의 근거로 완성하세요."
+    },
+    {
+      "signal": "TODO: signal를 자신의 근거로 완성하세요.",
+      "threshold": "TODO: threshold를 자신의 근거로 완성하세요.",
+      "action": "TODO: action를 자신의 근거로 완성하세요."
+    }
+  ],
+  "rollback": {
+    "boundary": "TODO: boundary를 자신의 근거로 완성하세요.",
+    "target": "TODO: target를 자신의 근거로 완성하세요.",
+    "procedure": "TODO: procedure를 자신의 근거로 완성하세요.",
+    "forwardRepair": "TODO: forwardRepair를 자신의 근거로 완성하세요."
+  },
+  "deprecation": {
+    "newUseStop": "TODO: newUseStop를 자신의 근거로 완성하세요.",
+    "deadline": "TODO: deadline를 자신의 근거로 완성하세요.",
+    "support": "TODO: support를 자신의 근거로 완성하세요.",
+    "exception": "TODO: exception를 자신의 근거로 완성하세요.",
+    "completionEvidence": "TODO: completionEvidence를 자신의 근거로 완성하세요."
+  },
+  "metrics": [
+    {
+      "name": "TODO: name를 자신의 근거로 완성하세요.",
+      "meaning": "TODO: meaning를 자신의 근거로 완성하세요.",
+      "owner": "TODO: owner를 자신의 근거로 완성하세요."
+    },
+    {
+      "name": "TODO: name를 자신의 근거로 완성하세요.",
+      "meaning": "TODO: meaning를 자신의 근거로 완성하세요.",
+      "owner": "TODO: owner를 자신의 근거로 완성하세요."
+    },
+    {
+      "name": "TODO: name를 자신의 근거로 완성하세요.",
+      "meaning": "TODO: meaning를 자신의 근거로 완성하세요.",
+      "owner": "TODO: owner를 자신의 근거로 완성하세요."
+    },
+    {
+      "name": "TODO: name를 자신의 근거로 완성하세요.",
+      "meaning": "TODO: meaning를 자신의 근거로 완성하세요.",
+      "owner": "TODO: owner를 자신의 근거로 완성하세요."
+    }
+  ]
 }

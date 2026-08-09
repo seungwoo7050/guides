@@ -1,5 +1,5 @@
 {
-  "contractVersion": 1,
+  "schemaVersion": 2,
   "title": "Identity policy and supply-chain contract",
   "requiredPaths": [
     "/status",
@@ -66,6 +66,80 @@
     ]
   },
   "matches": {},
+  "valueTypes": {
+    "/status": "string",
+    "/identities": "array",
+    "/secretLifecycle": "object",
+    "/policyStages": "array",
+    "/exception": "object",
+    "/breakGlass": "object",
+    "/trustChain": "array",
+    "/auditEvents": "array",
+    "/containment": "object"
+  },
+  "arrayContainsObjects": {
+    "/identities": [
+      {
+        "type": "human"
+      },
+      {
+        "type": "workload"
+      },
+      {
+        "type": "automation",
+        "ttl": "job/operation lifetime"
+      }
+    ],
+    "/policyStages": [
+      {
+        "stage": "local/PR"
+      },
+      {
+        "stage": "build"
+      },
+      {
+        "stage": "platform API"
+      },
+      {
+        "stage": "admission/runtime"
+      }
+    ],
+    "/trustChain": [
+      {
+        "stage": "source"
+      },
+      {
+        "stage": "builder"
+      },
+      {
+        "stage": "artifact"
+      },
+      {
+        "stage": "promotion"
+      },
+      {
+        "stage": "runtime"
+      }
+    ]
+  },
+  "conditionalRequirements": [
+    {
+      "if": {
+        "path": "/status",
+        "equals": "complete"
+      },
+      "then": {
+        "requiredPaths": [
+          "/exception/expiryRule",
+          "/breakGlass/closeCondition"
+        ],
+        "nonEmptyPaths": [
+          "/exception/expiryRule",
+          "/breakGlass/closeCondition"
+        ]
+      }
+    }
+  ],
   "forbiddenSubstrings": [
     "TODO",
     "TBD",

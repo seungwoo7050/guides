@@ -1,0 +1,125 @@
+{
+  "status": "complete",
+  "artifactChain": [
+    {
+      "stage": "source",
+      "identity": "protected commit SHA",
+      "evidence": "repository + review"
+    },
+    {
+      "stage": "build",
+      "identity": "trusted workflow execution",
+      "evidence": "builder identity + definition version"
+    },
+    {
+      "stage": "artifact",
+      "identity": "OCI digest",
+      "evidence": "immutable registry object"
+    },
+    {
+      "stage": "verification",
+      "identity": "release candidate ID",
+      "evidence": "tests + SBOM + provenance + policy"
+    },
+    {
+      "stage": "deployment",
+      "identity": "environment release ID",
+      "evidence": "desired commit + observed digest + smoke"
+    }
+  ],
+  "identities": [
+    {
+      "role": "pull-request-validation",
+      "scope": "read source and publish non-promotable report",
+      "credential": "ephemeral read-only; no production secret"
+    },
+    {
+      "role": "trusted-build",
+      "scope": "publish artifact/evidence to one repository",
+      "credential": "environment-scoped workload identity"
+    },
+    {
+      "role": "deployment-controller",
+      "scope": "apply approved digest to named environments",
+      "credential": "environment-scoped workload identity"
+    }
+  ],
+  "promotionGates": [
+    {
+      "environment": "preview",
+      "requirements": [
+        "valid artifact",
+        "basic policy",
+        "smoke"
+      ],
+      "failureAction": "mark candidate failed and clean TTL environment"
+    },
+    {
+      "environment": "staging",
+      "requirements": [
+        "preview result",
+        "integration tests",
+        "migration compatibility"
+      ],
+      "failureAction": "stop promotion; retain evidence"
+    },
+    {
+      "environment": "production",
+      "requirements": [
+        "staging observation",
+        "risk policy",
+        "rollback target",
+        "approval when required"
+      ],
+      "failureAction": "do not change desired production revision"
+    }
+  ],
+  "gitops": {
+    "desiredSource": "protected environment repository path and commit",
+    "observedRevision": "controller status + live release digest",
+    "fieldOwnership": "Git owns release/config; runtime controllers own status/defaulted runtime fields",
+    "partialSuccess": "cluster-specific condition and wave status"
+  },
+  "driftPolicies": [
+    {
+      "type": "runtime-status",
+      "action": "ignore in desired diff",
+      "owner": "runtime controller"
+    },
+    {
+      "type": "admission-default",
+      "action": "normalize or render expected value",
+      "owner": "profile/policy owner"
+    },
+    {
+      "type": "unauthorized-manual",
+      "action": "revert and audit actor",
+      "owner": "runtime security"
+    },
+    {
+      "type": "emergency-change",
+      "action": "pause conflict, commit or remove change before expiry",
+      "owner": "incident commander"
+    }
+  ],
+  "prune": {
+    "guard": "preview deletion list, protected stateful resources, retention condition and environment approval",
+    "renameRule": "detect delete/create semantics before apply",
+    "evidence": "desired removal, live deletion/retention and orphan scan"
+  },
+  "breakGlass": {
+    "trigger": "normal change path unavailable during user impact",
+    "scope": "one resource/action with short-lived identity",
+    "audit": "before/after, actor, approval and incident ID",
+    "closeCondition": "desired state updated or temporary change removed, controller resumed and credential revoked"
+  },
+  "rollback": {
+    "decisionRule": "use rollback only if old artifact/config/state remain compatible; otherwise verified roll-forward",
+    "target": "previous environment release record",
+    "checks": [
+      "database/event compatibility",
+      "credential/config compatibility",
+      "smoke and SLI"
+    ]
+  }
+}

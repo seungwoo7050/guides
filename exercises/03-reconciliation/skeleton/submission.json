@@ -1,4 +1,127 @@
 {
   "status": "incomplete",
-  "instructions": "TODO: Reconciliation 상태 기계의 계약을 문서와 자신의 환경에 맞게 완성하세요."
+  "resourceModel": {
+    "desiredSource": "TODO: desiredSource를 자신의 근거로 완성하세요.",
+    "observedSource": "TODO: observedSource를 자신의 근거로 완성하세요.",
+    "generationRule": "TODO: generationRule를 자신의 근거로 완성하세요."
+  },
+  "conditionTypes": [
+    "TODO: 0를 자신의 근거로 완성하세요.",
+    "TODO: 1를 자신의 근거로 완성하세요.",
+    "TODO: 2를 자신의 근거로 완성하세요.",
+    "TODO: 3를 자신의 근거로 완성하세요."
+  ],
+  "reconcileSteps": [
+    {
+      "name": "TODO: name를 자신의 근거로 완성하세요.",
+      "input": "TODO: input를 자신의 근거로 완성하세요.",
+      "idempotency": "TODO: idempotency를 자신의 근거로 완성하세요.",
+      "evidence": "TODO: evidence를 자신의 근거로 완성하세요.",
+      "onFailure": "TODO: onFailure를 자신의 근거로 완성하세요."
+    },
+    {
+      "name": "TODO: name를 자신의 근거로 완성하세요.",
+      "input": "TODO: input를 자신의 근거로 완성하세요.",
+      "idempotency": "TODO: idempotency를 자신의 근거로 완성하세요.",
+      "evidence": "TODO: evidence를 자신의 근거로 완성하세요.",
+      "onFailure": "TODO: onFailure를 자신의 근거로 완성하세요."
+    },
+    {
+      "name": "TODO: name를 자신의 근거로 완성하세요.",
+      "input": "TODO: input를 자신의 근거로 완성하세요.",
+      "idempotency": "TODO: idempotency를 자신의 근거로 완성하세요.",
+      "evidence": "TODO: evidence를 자신의 근거로 완성하세요.",
+      "onFailure": "TODO: onFailure를 자신의 근거로 완성하세요."
+    },
+    {
+      "name": "TODO: name를 자신의 근거로 완성하세요.",
+      "input": "TODO: input를 자신의 근거로 완성하세요.",
+      "idempotency": "TODO: idempotency를 자신의 근거로 완성하세요.",
+      "evidence": "TODO: evidence를 자신의 근거로 완성하세요.",
+      "onFailure": "TODO: onFailure를 자신의 근거로 완성하세요."
+    },
+    {
+      "name": "TODO: name를 자신의 근거로 완성하세요.",
+      "input": "TODO: input를 자신의 근거로 완성하세요.",
+      "idempotency": "TODO: idempotency를 자신의 근거로 완성하세요.",
+      "evidence": "TODO: evidence를 자신의 근거로 완성하세요.",
+      "onFailure": "TODO: onFailure를 자신의 근거로 완성하세요."
+    }
+  ],
+  "failureClasses": [
+    {
+      "class": "TODO: class를 자신의 근거로 완성하세요.",
+      "retryable": false,
+      "condition": "TODO: condition를 자신의 근거로 완성하세요.",
+      "action": "TODO: action를 자신의 근거로 완성하세요."
+    },
+    {
+      "class": "TODO: class를 자신의 근거로 완성하세요.",
+      "retryable": false,
+      "condition": "TODO: condition를 자신의 근거로 완성하세요.",
+      "action": "TODO: action를 자신의 근거로 완성하세요."
+    },
+    {
+      "class": "TODO: class를 자신의 근거로 완성하세요.",
+      "retryable": false,
+      "condition": "TODO: condition를 자신의 근거로 완성하세요.",
+      "action": "TODO: action를 자신의 근거로 완성하세요."
+    },
+    {
+      "class": "TODO: class를 자신의 근거로 완성하세요.",
+      "retryable": false,
+      "condition": "TODO: condition를 자신의 근거로 완성하세요.",
+      "action": "TODO: action를 자신의 근거로 완성하세요."
+    }
+  ],
+  "fieldOwnership": [
+    {
+      "field": "TODO: field를 자신의 근거로 완성하세요.",
+      "writer": "TODO: writer를 자신의 근거로 완성하세요.",
+      "conflictPolicy": "TODO: conflictPolicy를 자신의 근거로 완성하세요."
+    },
+    {
+      "field": "TODO: field를 자신의 근거로 완성하세요.",
+      "writer": "TODO: writer를 자신의 근거로 완성하세요.",
+      "conflictPolicy": "TODO: conflictPolicy를 자신의 근거로 완성하세요."
+    },
+    {
+      "field": "TODO: field를 자신의 근거로 완성하세요.",
+      "writer": "TODO: writer를 자신의 근거로 완성하세요.",
+      "conflictPolicy": "TODO: conflictPolicy를 자신의 근거로 완성하세요."
+    }
+  ],
+  "finalization": {
+    "steps": [
+      "TODO: 0를 자신의 근거로 완성하세요.",
+      "TODO: 1를 자신의 근거로 완성하세요.",
+      "TODO: 2를 자신의 근거로 완성하세요.",
+      "TODO: 3를 자신의 근거로 완성하세요.",
+      "TODO: 4를 자신의 근거로 완성하세요.",
+      "TODO: 5를 자신의 근거로 완성하세요."
+    ],
+    "terminalCondition": "TODO: terminalCondition를 자신의 근거로 완성하세요."
+  },
+  "evidence": [
+    {
+      "signal": "TODO: signal를 자신의 근거로 완성하세요.",
+      "identity": "TODO: identity를 자신의 근거로 완성하세요.",
+      "purpose": "TODO: purpose를 자신의 근거로 완성하세요."
+    },
+    {
+      "signal": "TODO: signal를 자신의 근거로 완성하세요.",
+      "identity": "TODO: identity를 자신의 근거로 완성하세요.",
+      "purpose": "TODO: purpose를 자신의 근거로 완성하세요."
+    },
+    {
+      "signal": "TODO: signal를 자신의 근거로 완성하세요.",
+      "identity": "TODO: identity를 자신의 근거로 완성하세요.",
+      "purpose": "TODO: purpose를 자신의 근거로 완성하세요."
+    },
+    {
+      "signal": "TODO: signal를 자신의 근거로 완성하세요.",
+      "identity": "TODO: identity를 자신의 근거로 완성하세요.",
+      "purpose": "TODO: purpose를 자신의 근거로 완성하세요."
+    }
+  ]
 }

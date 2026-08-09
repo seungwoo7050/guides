@@ -1,4 +1,157 @@
 {
   "status": "incomplete",
-  "instructions": "TODO: Self-service API와 golden path의 계약을 문서와 자신의 환경에 맞게 완성하세요."
+  "api": {
+    "version": "TODO: version를 자신의 근거로 완성하세요.",
+    "resourceIdentity": "TODO: resourceIdentity를 자신의 근거로 완성하세요.",
+    "acceptance": "TODO: acceptance를 자신의 근거로 완성하세요.",
+    "statusUrl": "TODO: statusUrl를 자신의 근거로 완성하세요.",
+    "idempotency": "TODO: idempotency를 자신의 근거로 완성하세요.",
+    "deletePolicies": [
+      "TODO: 0를 자신의 근거로 완성하세요.",
+      "TODO: 1를 자신의 근거로 완성하세요.",
+      "TODO: 2를 자신의 근거로 완성하세요.",
+      "TODO: 3를 자신의 근거로 완성하세요."
+    ]
+  },
+  "conditionTypes": [
+    "TODO: 0를 자신의 근거로 완성하세요.",
+    "TODO: 1를 자신의 근거로 완성하세요.",
+    "TODO: 2를 자신의 근거로 완성하세요.",
+    "TODO: 3를 자신의 근거로 완성하세요."
+  ],
+  "errors": [
+    {
+      "code": "TODO: code를 자신의 근거로 완성하세요.",
+      "retryable": false,
+      "owner": "TODO: owner를 자신의 근거로 완성하세요.",
+      "remediation": "TODO: remediation를 자신의 근거로 완성하세요."
+    },
+    {
+      "code": "TODO: code를 자신의 근거로 완성하세요.",
+      "retryable": false,
+      "owner": "TODO: owner를 자신의 근거로 완성하세요.",
+      "remediation": "TODO: remediation를 자신의 근거로 완성하세요."
+    },
+    {
+      "code": "TODO: code를 자신의 근거로 완성하세요.",
+      "retryable": false,
+      "owner": "TODO: owner를 자신의 근거로 완성하세요.",
+      "remediation": "TODO: remediation를 자신의 근거로 완성하세요."
+    },
+    {
+      "code": "TODO: code를 자신의 근거로 완성하세요.",
+      "retryable": false,
+      "owner": "TODO: owner를 자신의 근거로 완성하세요.",
+      "remediation": "TODO: remediation를 자신의 근거로 완성하세요."
+    },
+    {
+      "code": "TODO: code를 자신의 근거로 완성하세요.",
+      "retryable": false,
+      "owner": "TODO: owner를 자신의 근거로 완성하세요.",
+      "remediation": "TODO: remediation를 자신의 근거로 완성하세요."
+    }
+  ],
+  "catalog": {
+    "metadataSource": "TODO: metadataSource를 자신의 근거로 완성하세요.",
+    "runtimeSource": "TODO: runtimeSource를 자신의 근거로 완성하세요.",
+    "fields": [
+      "TODO: 0를 자신의 근거로 완성하세요.",
+      "TODO: 1를 자신의 근거로 완성하세요.",
+      "TODO: 2를 자신의 근거로 완성하세요.",
+      "TODO: 3를 자신의 근거로 완성하세요.",
+      "TODO: 4를 자신의 근거로 완성하세요.",
+      "TODO: 5를 자신의 근거로 완성하세요.",
+      "TODO: 6를 자신의 근거로 완성하세요.",
+      "TODO: 7를 자신의 근거로 완성하세요."
+    ],
+    "freshness": "TODO: freshness를 자신의 근거로 완성하세요."
+  },
+  "profile": {
+    "name": "TODO: name를 자신의 근거로 완성하세요.",
+    "version": "TODO: version를 자신의 근거로 완성하세요.",
+    "contains": [
+      "TODO: 0를 자신의 근거로 완성하세요.",
+      "TODO: 1를 자신의 근거로 완성하세요.",
+      "TODO: 2를 자신의 근거로 완성하세요.",
+      "TODO: 3를 자신의 근거로 완성하세요.",
+      "TODO: 4를 자신의 근거로 완성하세요.",
+      "TODO: 5를 자신의 근거로 완성하세요."
+    ],
+    "update": "TODO: update를 자신의 근거로 완성하세요."
+  },
+  "lifecycle": [
+    {
+      "stage": "TODO: stage를 자신의 근거로 완성하세요.",
+      "success": "TODO: success를 자신의 근거로 완성하세요.",
+      "failure": "TODO: failure를 자신의 근거로 완성하세요.",
+      "evidence": "TODO: evidence를 자신의 근거로 완성하세요."
+    },
+    {
+      "stage": "TODO: stage를 자신의 근거로 완성하세요.",
+      "success": "TODO: success를 자신의 근거로 완성하세요.",
+      "failure": "TODO: failure를 자신의 근거로 완성하세요.",
+      "evidence": "TODO: evidence를 자신의 근거로 완성하세요."
+    },
+    {
+      "stage": "TODO: stage를 자신의 근거로 완성하세요.",
+      "success": "TODO: success를 자신의 근거로 완성하세요.",
+      "failure": "TODO: failure를 자신의 근거로 완성하세요.",
+      "evidence": "TODO: evidence를 자신의 근거로 완성하세요."
+    },
+    {
+      "stage": "TODO: stage를 자신의 근거로 완성하세요.",
+      "success": "TODO: success를 자신의 근거로 완성하세요.",
+      "failure": "TODO: failure를 자신의 근거로 완성하세요.",
+      "evidence": "TODO: evidence를 자신의 근거로 완성하세요."
+    },
+    {
+      "stage": "TODO: stage를 자신의 근거로 완성하세요.",
+      "success": "TODO: success를 자신의 근거로 완성하세요.",
+      "failure": "TODO: failure를 자신의 근거로 완성하세요.",
+      "evidence": "TODO: evidence를 자신의 근거로 완성하세요."
+    },
+    {
+      "stage": "TODO: stage를 자신의 근거로 완성하세요.",
+      "success": "TODO: success를 자신의 근거로 완성하세요.",
+      "failure": "TODO: failure를 자신의 근거로 완성하세요.",
+      "evidence": "TODO: evidence를 자신의 근거로 완성하세요."
+    },
+    {
+      "stage": "TODO: stage를 자신의 근거로 완성하세요.",
+      "success": "TODO: success를 자신의 근거로 완성하세요.",
+      "failure": "TODO: failure를 자신의 근거로 완성하세요.",
+      "evidence": "TODO: evidence를 자신의 근거로 완성하세요."
+    },
+    {
+      "stage": "TODO: stage를 자신의 근거로 완성하세요.",
+      "success": "TODO: success를 자신의 근거로 완성하세요.",
+      "failure": "TODO: failure를 자신의 근거로 완성하세요.",
+      "evidence": "TODO: evidence를 자신의 근거로 완성하세요."
+    }
+  ],
+  "escapeHatch": {
+    "levels": [
+      "TODO: 0를 자신의 근거로 완성하세요.",
+      "TODO: 1를 자신의 근거로 완성하세요.",
+      "TODO: 2를 자신의 근거로 완성하세요.",
+      "TODO: 3를 자신의 근거로 완성하세요."
+    ],
+    "requires": [
+      "TODO: 0를 자신의 근거로 완성하세요.",
+      "TODO: 1를 자신의 근거로 완성하세요.",
+      "TODO: 2를 자신의 근거로 완성하세요.",
+      "TODO: 3를 자신의 근거로 완성하세요."
+    ],
+    "expiryRule": "TODO: expiryRule를 자신의 근거로 완성하세요."
+  },
+  "automationPaths": [
+    {
+      "client": "TODO: client를 자신의 근거로 완성하세요.",
+      "contract": "TODO: contract를 자신의 근거로 완성하세요."
+    },
+    {
+      "client": "TODO: client를 자신의 근거로 완성하세요.",
+      "contract": "TODO: contract를 자신의 근거로 완성하세요."
+    }
+  ]
 }

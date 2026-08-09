@@ -1,4 +1,118 @@
 {
   "status": "incomplete",
-  "instructions": "TODO: IaC state·drift·migration 계약의 계약을 문서와 자신의 환경에 맞게 완성하세요."
+  "stateUnits": [
+    {
+      "id": "TODO: id를 자신의 근거로 완성하세요.",
+      "owner": "TODO: owner를 자신의 근거로 완성하세요.",
+      "scope": "TODO: scope를 자신의 근거로 완성하세요.",
+      "blastRadius": "TODO: blastRadius를 자신의 근거로 완성하세요."
+    },
+    {
+      "id": "TODO: id를 자신의 근거로 완성하세요.",
+      "owner": "TODO: owner를 자신의 근거로 완성하세요.",
+      "scope": "TODO: scope를 자신의 근거로 완성하세요.",
+      "blastRadius": "TODO: blastRadius를 자신의 근거로 완성하세요."
+    },
+    {
+      "id": "TODO: id를 자신의 근거로 완성하세요.",
+      "owner": "TODO: owner를 자신의 근거로 완성하세요.",
+      "scope": "TODO: scope를 자신의 근거로 완성하세요.",
+      "blastRadius": "TODO: blastRadius를 자신의 근거로 완성하세요."
+    }
+  ],
+  "resourceMappings": [
+    {
+      "address": "TODO: address를 자신의 근거로 완성하세요.",
+      "externalIdentity": "TODO: externalIdentity를 자신의 근거로 완성하세요.",
+      "writer": "TODO: writer를 자신의 근거로 완성하세요.",
+      "importOrAdopt": "TODO: importOrAdopt를 자신의 근거로 완성하세요."
+    },
+    {
+      "address": "TODO: address를 자신의 근거로 완성하세요.",
+      "externalIdentity": "TODO: externalIdentity를 자신의 근거로 완성하세요.",
+      "writer": "TODO: writer를 자신의 근거로 완성하세요.",
+      "importOrAdopt": "TODO: importOrAdopt를 자신의 근거로 완성하세요."
+    },
+    {
+      "address": "TODO: address를 자신의 근거로 완성하세요.",
+      "externalIdentity": "TODO: externalIdentity를 자신의 근거로 완성하세요.",
+      "writer": "TODO: writer를 자신의 근거로 완성하세요.",
+      "importOrAdopt": "TODO: importOrAdopt를 자신의 근거로 완성하세요."
+    }
+  ],
+  "lockingAndSecurity": {
+    "backend": "TODO: backend를 자신의 근거로 완성하세요.",
+    "lockRule": "TODO: lockRule를 자신의 근거로 완성하세요.",
+    "sensitiveData": "TODO: sensitiveData를 자신의 근거로 완성하세요.",
+    "backup": "TODO: backup를 자신의 근거로 완성하세요.",
+    "restoreEvidence": "TODO: restoreEvidence를 자신의 근거로 완성하세요."
+  },
+  "planApply": {
+    "planIdentity": "TODO: planIdentity를 자신의 근거로 완성하세요.",
+    "approval": "TODO: approval를 자신의 근거로 완성하세요.",
+    "stalePlanRule": "TODO: stalePlanRule를 자신의 근거로 완성하세요.",
+    "partialFailure": "TODO: partialFailure를 자신의 근거로 완성하세요."
+  },
+  "driftPolicy": [
+    {
+      "type": "TODO: type를 자신의 근거로 완성하세요.",
+      "detect": "TODO: detect를 자신의 근거로 완성하세요.",
+      "action": "TODO: action를 자신의 근거로 완성하세요.",
+      "owner": "TODO: owner를 자신의 근거로 완성하세요."
+    },
+    {
+      "type": "TODO: type를 자신의 근거로 완성하세요.",
+      "detect": "TODO: detect를 자신의 근거로 완성하세요.",
+      "action": "TODO: action를 자신의 근거로 완성하세요.",
+      "owner": "TODO: owner를 자신의 근거로 완성하세요."
+    },
+    {
+      "type": "TODO: type를 자신의 근거로 완성하세요.",
+      "detect": "TODO: detect를 자신의 근거로 완성하세요.",
+      "action": "TODO: action를 자신의 근거로 완성하세요.",
+      "owner": "TODO: owner를 자신의 근거로 완성하세요."
+    },
+    {
+      "type": "TODO: type를 자신의 근거로 완성하세요.",
+      "detect": "TODO: detect를 자신의 근거로 완성하세요.",
+      "action": "TODO: action를 자신의 근거로 완성하세요.",
+      "owner": "TODO: owner를 자신의 근거로 완성하세요."
+    }
+  ],
+  "migration": {
+    "change": "TODO: change를 자신의 근거로 완성하세요.",
+    "steps": [
+      {
+        "step": "TODO: step를 자신의 근거로 완성하세요.",
+        "precondition": "TODO: precondition를 자신의 근거로 완성하세요.",
+        "evidence": "TODO: evidence를 자신의 근거로 완성하세요."
+      },
+      {
+        "step": "TODO: step를 자신의 근거로 완성하세요.",
+        "precondition": "TODO: precondition를 자신의 근거로 완성하세요.",
+        "evidence": "TODO: evidence를 자신의 근거로 완성하세요."
+      },
+      {
+        "step": "TODO: step를 자신의 근거로 완성하세요.",
+        "precondition": "TODO: precondition를 자신의 근거로 완성하세요.",
+        "evidence": "TODO: evidence를 자신의 근거로 완성하세요."
+      },
+      {
+        "step": "TODO: step를 자신의 근거로 완성하세요.",
+        "precondition": "TODO: precondition를 자신의 근거로 완성하세요.",
+        "evidence": "TODO: evidence를 자신의 근거로 완성하세요."
+      }
+    ],
+    "rollbackBoundary": "TODO: rollbackBoundary를 자신의 근거로 완성하세요."
+  },
+  "destroy": {
+    "guards": [
+      "TODO: 0를 자신의 근거로 완성하세요.",
+      "TODO: 1를 자신의 근거로 완성하세요.",
+      "TODO: 2를 자신의 근거로 완성하세요.",
+      "TODO: 3를 자신의 근거로 완성하세요."
+    ],
+    "stateRemoveMeaning": "TODO: stateRemoveMeaning를 자신의 근거로 완성하세요.",
+    "completionEvidence": "TODO: completionEvidence를 자신의 근거로 완성하세요."
+  }
 }

@@ -1,5 +1,5 @@
 {
-  "contractVersion": 1,
+  "schemaVersion": 2,
   "title": "Platform capability contract",
   "requiredPaths": [
     "/status",
@@ -65,6 +65,50 @@
     ]
   },
   "matches": {},
+  "valueTypes": {
+    "/status": "string",
+    "/capability": "object",
+    "/request": "object",
+    "/conditionTypes": "array",
+    "/conditions": "array",
+    "/ownership": "array",
+    "/externalEffects": "array",
+    "/deletion": "object",
+    "/escapeHatch": "object",
+    "/support": "object"
+  },
+  "arrayContainsObjects": {
+    "/conditions": [
+      {
+        "type": "Ready",
+        "failureOwner": "none"
+      },
+      {
+        "type": "Blocked",
+        "failureOwner": "request or policy owner"
+      }
+    ]
+  },
+  "conditionalRequirements": [
+    {
+      "if": {
+        "path": "/status",
+        "equals": "complete"
+      },
+      "then": {
+        "requiredPaths": [
+          "/conditionTypes",
+          "/deletion/finalCondition"
+        ],
+        "nonEmptyPaths": [
+          "/deletion/finalCondition"
+        ],
+        "valueTypes": {
+          "/conditionTypes": "array"
+        }
+      }
+    }
+  ],
   "forbiddenSubstrings": [
     "TODO",
     "TBD",

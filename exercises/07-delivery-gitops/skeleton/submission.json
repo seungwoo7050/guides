@@ -1,4 +1,125 @@
 {
   "status": "incomplete",
-  "instructions": "TODO: Artifact promotion과 GitOps의 계약을 문서와 자신의 환경에 맞게 완성하세요."
+  "artifactChain": [
+    {
+      "stage": "TODO: stage를 자신의 근거로 완성하세요.",
+      "identity": "TODO: identity를 자신의 근거로 완성하세요.",
+      "evidence": "TODO: evidence를 자신의 근거로 완성하세요."
+    },
+    {
+      "stage": "TODO: stage를 자신의 근거로 완성하세요.",
+      "identity": "TODO: identity를 자신의 근거로 완성하세요.",
+      "evidence": "TODO: evidence를 자신의 근거로 완성하세요."
+    },
+    {
+      "stage": "TODO: stage를 자신의 근거로 완성하세요.",
+      "identity": "TODO: identity를 자신의 근거로 완성하세요.",
+      "evidence": "TODO: evidence를 자신의 근거로 완성하세요."
+    },
+    {
+      "stage": "TODO: stage를 자신의 근거로 완성하세요.",
+      "identity": "TODO: identity를 자신의 근거로 완성하세요.",
+      "evidence": "TODO: evidence를 자신의 근거로 완성하세요."
+    },
+    {
+      "stage": "TODO: stage를 자신의 근거로 완성하세요.",
+      "identity": "TODO: identity를 자신의 근거로 완성하세요.",
+      "evidence": "TODO: evidence를 자신의 근거로 완성하세요."
+    }
+  ],
+  "identities": [
+    {
+      "role": "TODO: role를 자신의 근거로 완성하세요.",
+      "scope": "TODO: scope를 자신의 근거로 완성하세요.",
+      "credential": "TODO: credential를 자신의 근거로 완성하세요."
+    },
+    {
+      "role": "TODO: role를 자신의 근거로 완성하세요.",
+      "scope": "TODO: scope를 자신의 근거로 완성하세요.",
+      "credential": "TODO: credential를 자신의 근거로 완성하세요."
+    },
+    {
+      "role": "TODO: role를 자신의 근거로 완성하세요.",
+      "scope": "TODO: scope를 자신의 근거로 완성하세요.",
+      "credential": "TODO: credential를 자신의 근거로 완성하세요."
+    }
+  ],
+  "promotionGates": [
+    {
+      "environment": "TODO: environment를 자신의 근거로 완성하세요.",
+      "requirements": [
+        "TODO: 0를 자신의 근거로 완성하세요.",
+        "TODO: 1를 자신의 근거로 완성하세요.",
+        "TODO: 2를 자신의 근거로 완성하세요."
+      ],
+      "failureAction": "TODO: failureAction를 자신의 근거로 완성하세요."
+    },
+    {
+      "environment": "TODO: environment를 자신의 근거로 완성하세요.",
+      "requirements": [
+        "TODO: 0를 자신의 근거로 완성하세요.",
+        "TODO: 1를 자신의 근거로 완성하세요.",
+        "TODO: 2를 자신의 근거로 완성하세요."
+      ],
+      "failureAction": "TODO: failureAction를 자신의 근거로 완성하세요."
+    },
+    {
+      "environment": "TODO: environment를 자신의 근거로 완성하세요.",
+      "requirements": [
+        "TODO: 0를 자신의 근거로 완성하세요.",
+        "TODO: 1를 자신의 근거로 완성하세요.",
+        "TODO: 2를 자신의 근거로 완성하세요.",
+        "TODO: 3를 자신의 근거로 완성하세요."
+      ],
+      "failureAction": "TODO: failureAction를 자신의 근거로 완성하세요."
+    }
+  ],
+  "gitops": {
+    "desiredSource": "TODO: desiredSource를 자신의 근거로 완성하세요.",
+    "observedRevision": "TODO: observedRevision를 자신의 근거로 완성하세요.",
+    "fieldOwnership": "TODO: fieldOwnership를 자신의 근거로 완성하세요.",
+    "partialSuccess": "TODO: partialSuccess를 자신의 근거로 완성하세요."
+  },
+  "driftPolicies": [
+    {
+      "type": "TODO: type를 자신의 근거로 완성하세요.",
+      "action": "TODO: action를 자신의 근거로 완성하세요.",
+      "owner": "TODO: owner를 자신의 근거로 완성하세요."
+    },
+    {
+      "type": "TODO: type를 자신의 근거로 완성하세요.",
+      "action": "TODO: action를 자신의 근거로 완성하세요.",
+      "owner": "TODO: owner를 자신의 근거로 완성하세요."
+    },
+    {
+      "type": "TODO: type를 자신의 근거로 완성하세요.",
+      "action": "TODO: action를 자신의 근거로 완성하세요.",
+      "owner": "TODO: owner를 자신의 근거로 완성하세요."
+    },
+    {
+      "type": "TODO: type를 자신의 근거로 완성하세요.",
+      "action": "TODO: action를 자신의 근거로 완성하세요.",
+      "owner": "TODO: owner를 자신의 근거로 완성하세요."
+    }
+  ],
+  "prune": {
+    "guard": "TODO: guard를 자신의 근거로 완성하세요.",
+    "renameRule": "TODO: renameRule를 자신의 근거로 완성하세요.",
+    "evidence": "TODO: evidence를 자신의 근거로 완성하세요."
+  },
+  "breakGlass": {
+    "trigger": "TODO: trigger를 자신의 근거로 완성하세요.",
+    "scope": "TODO: scope를 자신의 근거로 완성하세요.",
+    "audit": "TODO: audit를 자신의 근거로 완성하세요.",
+    "closeCondition": "TODO: closeCondition를 자신의 근거로 완성하세요."
+  },
+  "rollback": {
+    "decisionRule": "TODO: decisionRule를 자신의 근거로 완성하세요.",
+    "target": "TODO: target를 자신의 근거로 완성하세요.",
+    "checks": [
+      "TODO: 0를 자신의 근거로 완성하세요.",
+      "TODO: 1를 자신의 근거로 완성하세요.",
+      "TODO: 2를 자신의 근거로 완성하세요."
+    ]
+  }
 }

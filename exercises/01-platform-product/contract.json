@@ -1,5 +1,5 @@
 {
-  "contractVersion": 1,
+  "schemaVersion": 2,
   "title": "Platform product brief",
   "requiredPaths": [
     "/status",
@@ -72,6 +72,55 @@
     ]
   },
   "matches": {},
+  "valueTypes": {
+    "/status": "string",
+    "/product": "object",
+    "/users": "array",
+    "/currentJourney": "array",
+    "/evidence": "array",
+    "/outcomes": "array",
+    "/firstCapability": "object",
+    "/nonGoals": "array",
+    "/risks": "array",
+    "/users/*/id": "string",
+    "/outcomes/*/guardrail": "string"
+  },
+  "arrayContainsObjects": {
+    "/users": [
+      {
+        "role": "application developer"
+      },
+      {
+        "role": "platform operator"
+      }
+    ]
+  },
+  "pathComparisons": [
+    {
+      "left": "/product/name",
+      "op": "ne",
+      "right": "/product/owner"
+    }
+  ],
+  "conditionalRequirements": [
+    {
+      "if": {
+        "path": "/status",
+        "equals": "complete"
+      },
+      "then": {
+        "requiredPaths": [
+          "/firstCapability/scope"
+        ],
+        "nonEmptyPaths": [
+          "/firstCapability/scope"
+        ],
+        "valueTypes": {
+          "/firstCapability/scope": "string"
+        }
+      }
+    }
+  ],
   "forbiddenSubstrings": [
     "TODO",
     "TBD",

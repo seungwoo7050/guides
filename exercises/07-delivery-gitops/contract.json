@@ -1,5 +1,5 @@
 {
-  "contractVersion": 1,
+  "schemaVersion": 2,
   "title": "Delivery and GitOps contract",
   "requiredPaths": [
     "/status",
@@ -60,6 +60,74 @@
     ]
   },
   "matches": {},
+  "valueTypes": {
+    "/status": "string",
+    "/artifactChain": "array",
+    "/identities": "array",
+    "/promotionGates": "array",
+    "/gitops": "object",
+    "/driftPolicies": "array",
+    "/prune": "object",
+    "/breakGlass": "object",
+    "/rollback": "object"
+  },
+  "arrayContainsObjects": {
+    "/artifactChain": [
+      {
+        "stage": "artifact",
+        "identity": "OCI digest"
+      },
+      {
+        "stage": "deployment",
+        "evidence": "desired commit + observed digest + smoke"
+      }
+    ],
+    "/identities": [
+      {
+        "role": "pull-request-validation",
+        "credential": "ephemeral read-only; no production secret"
+      },
+      {
+        "role": "trusted-build",
+        "credential": "short-lived builder identity"
+      },
+      {
+        "role": "deployment-controller",
+        "credential": "environment-scoped workload identity"
+      }
+    ],
+    "/promotionGates": [
+      {
+        "environment": "production",
+        "failureAction": "do not change desired production revision"
+      }
+    ]
+  },
+  "pathComparisons": [
+    {
+      "left": "/gitops/desiredSource",
+      "op": "ne",
+      "right": "/gitops/observedRevision"
+    }
+  ],
+  "conditionalRequirements": [
+    {
+      "if": {
+        "path": "/status",
+        "equals": "complete"
+      },
+      "then": {
+        "requiredPaths": [
+          "/breakGlass/closeCondition",
+          "/rollback/decisionRule"
+        ],
+        "nonEmptyPaths": [
+          "/breakGlass/closeCondition",
+          "/rollback/decisionRule"
+        ]
+      }
+    }
+  ],
   "forbiddenSubstrings": [
     "TODO",
     "TBD",

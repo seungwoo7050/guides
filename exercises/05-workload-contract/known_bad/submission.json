@@ -1,0 +1,136 @@
+{
+  "status": "complete",
+  "workload": {
+    "name": "checkout",
+    "kind": "Deployment",
+    "profile": "stateless-http/3.2.0",
+    "owner": "team-checkout",
+    "replicas": 3
+  },
+  "health": {
+    "startup": "dependencies and local initialization completed within 90 seconds",
+    "readyMeaning": "process is running",
+    "liveness": "process event loop is not permanently stuck; transient dependency failure does not restart it",
+    "termination": "stop new traffic, drain requests for 30 seconds, close resources and exit"
+  },
+  "resources": {
+    "requests": {
+      "cpu": "250m",
+      "memory": "256Mi"
+    },
+    "limits": {
+      "memory": "512Mi"
+    },
+    "requestRationale": "p95 observed usage plus rollout and zone-failure headroom; CPU remains burstable",
+    "oomBehavior": "one instance restart must not violate service SLO; repeated OOM blocks promotion"
+  },
+  "network": {
+    "defaultPolicy": "default deny ingress and egress with explicit flows",
+    "allowedFlows": [
+      {
+        "direction": "ingress",
+        "peer": "internal gateway",
+        "purpose": "HTTP requests"
+      },
+      {
+        "direction": "egress",
+        "peer": "checkout database endpoint",
+        "purpose": "transaction data"
+      },
+      {
+        "direction": "egress",
+        "peer": "telemetry collector",
+        "purpose": "trace/metric/log export"
+      }
+    ],
+    "dns": "platform DNS only",
+    "publicEgress": "denied unless reviewed capability is attached"
+  },
+  "storage": {
+    "type": "stateless workload; no persistent volume",
+    "temporary": "bounded ephemeral cache; safe to lose",
+    "dataOwner": "managed database capability",
+    "retention": "defined by database binding, not Pod lifecycle"
+  },
+  "scheduling": {
+    "topology": "spread replicas across zones and nodes when capacity allows",
+    "taints": "standard production nodes only",
+    "priority": "production-standard below platform-system",
+    "capacityFailure": "Unschedulable condition identifies resource/topology reason and runtime-platform owner"
+  },
+  "disruption": {
+    "maxUnavailable": 1,
+    "rollout": "new replica Ready before old replica removal within surge budget",
+    "recoveryEvidence": "Ready replicas, request SLI and zone distribution recover",
+    "scenarios": [
+      {
+        "event": "single Pod deletion",
+        "expectedBehavior": "controller restores replica without user-visible error budget burn",
+        "evidence": "owner reference and readiness timeline"
+      },
+      {
+        "event": "node drain",
+        "expectedBehavior": "PDB allows bounded eviction and capacity schedules replacement",
+        "evidence": "eviction/scheduling events"
+      },
+      {
+        "event": "zone loss",
+        "expectedBehavior": "remaining capacity maintains minimum replicas or declared degradation",
+        "evidence": "topology and service SLI"
+      }
+    ]
+  },
+  "conditions": [
+    {
+      "type": "Configured",
+      "signal": "rendered profile and policy accepted",
+      "owner": "platform runtime",
+      "action": "fix profile/policy if false"
+    },
+    {
+      "type": "Scheduled",
+      "signal": "required replicas assigned to nodes",
+      "owner": "runtime platform",
+      "action": "inspect capacity/constraints"
+    },
+    {
+      "type": "Available",
+      "signal": "minimum Ready replicas",
+      "owner": "application and platform boundary",
+      "action": "inspect readiness/runtime"
+    },
+    {
+      "type": "Observed",
+      "signal": "external smoke and current release digest",
+      "owner": "delivery platform",
+      "action": "block promotion if false"
+    }
+  ],
+  "ownership": [
+    {
+      "boundary": "application process and health endpoint",
+      "applicationTeam": "implements truthful health and termination",
+      "platformTeam": "defines probe transport/default budget"
+    },
+    {
+      "boundary": "resource sizing",
+      "applicationTeam": "provides measured workload profile",
+      "platformTeam": "sets safe defaults, quota and capacity"
+    },
+    {
+      "boundary": "network flow",
+      "applicationTeam": "declares dependencies",
+      "platformTeam": "enforces policy and shared gateway"
+    },
+    {
+      "boundary": "scheduling",
+      "applicationTeam": "declares workload constraints",
+      "platformTeam": "provides capacity and supported topology"
+    },
+    {
+      "boundary": "runtime incident",
+      "applicationTeam": "owns code/data behavior",
+      "platformTeam": "owns cluster/profile/control plane"
+    }
+  ]
+}

@@ -1,4 +1,128 @@
 {
   "status": "incomplete",
-  "instructions": "TODO: 플랫폼 계약과 책임 경계의 계약을 문서와 자신의 환경에 맞게 완성하세요."
+  "capability": {
+    "name": "TODO: name를 자신의 근거로 완성하세요.",
+    "version": "TODO: version를 자신의 근거로 완성하세요.",
+    "owner": "TODO: owner를 자신의 근거로 완성하세요.",
+    "supportTier": "TODO: supportTier를 자신의 근거로 완성하세요."
+  },
+  "request": {
+    "resourceIdentity": "TODO: resourceIdentity를 자신의 근거로 완성하세요.",
+    "idempotency": "TODO: idempotency를 자신의 근거로 완성하세요.",
+    "validation": [
+      "TODO: 0를 자신의 근거로 완성하세요.",
+      "TODO: 1를 자신의 근거로 완성하세요.",
+      "TODO: 2를 자신의 근거로 완성하세요."
+    ],
+    "approval": "TODO: approval를 자신의 근거로 완성하세요."
+  },
+  "conditionTypes": [
+    "TODO: 0를 자신의 근거로 완성하세요.",
+    "TODO: 1를 자신의 근거로 완성하세요.",
+    "TODO: 2를 자신의 근거로 완성하세요.",
+    "TODO: 3를 자신의 근거로 완성하세요."
+  ],
+  "conditions": [
+    {
+      "type": "TODO: type를 자신의 근거로 완성하세요.",
+      "meaning": "TODO: meaning를 자신의 근거로 완성하세요.",
+      "userAction": "TODO: userAction를 자신의 근거로 완성하세요.",
+      "failureOwner": "TODO: failureOwner를 자신의 근거로 완성하세요."
+    },
+    {
+      "type": "TODO: type를 자신의 근거로 완성하세요.",
+      "meaning": "TODO: meaning를 자신의 근거로 완성하세요.",
+      "userAction": "TODO: userAction를 자신의 근거로 완성하세요.",
+      "failureOwner": "TODO: failureOwner를 자신의 근거로 완성하세요."
+    },
+    {
+      "type": "TODO: type를 자신의 근거로 완성하세요.",
+      "meaning": "TODO: meaning를 자신의 근거로 완성하세요.",
+      "userAction": "TODO: userAction를 자신의 근거로 완성하세요.",
+      "failureOwner": "TODO: failureOwner를 자신의 근거로 완성하세요."
+    },
+    {
+      "type": "TODO: type를 자신의 근거로 완성하세요.",
+      "meaning": "TODO: meaning를 자신의 근거로 완성하세요.",
+      "userAction": "TODO: userAction를 자신의 근거로 완성하세요.",
+      "failureOwner": "TODO: failureOwner를 자신의 근거로 완성하세요."
+    }
+  ],
+  "ownership": [
+    {
+      "boundary": "TODO: boundary를 자신의 근거로 완성하세요.",
+      "writer": "TODO: writer를 자신의 근거로 완성하세요.",
+      "reader": "TODO: reader를 자신의 근거로 완성하세요.",
+      "failureOwner": "TODO: failureOwner를 자신의 근거로 완성하세요."
+    },
+    {
+      "boundary": "TODO: boundary를 자신의 근거로 완성하세요.",
+      "writer": "TODO: writer를 자신의 근거로 완성하세요.",
+      "reader": "TODO: reader를 자신의 근거로 완성하세요.",
+      "failureOwner": "TODO: failureOwner를 자신의 근거로 완성하세요."
+    },
+    {
+      "boundary": "TODO: boundary를 자신의 근거로 완성하세요.",
+      "writer": "TODO: writer를 자신의 근거로 완성하세요.",
+      "reader": "TODO: reader를 자신의 근거로 완성하세요.",
+      "failureOwner": "TODO: failureOwner를 자신의 근거로 완성하세요."
+    },
+    {
+      "boundary": "TODO: boundary를 자신의 근거로 완성하세요.",
+      "writer": "TODO: writer를 자신의 근거로 완성하세요.",
+      "reader": "TODO: reader를 자신의 근거로 완성하세요.",
+      "failureOwner": "TODO: failureOwner를 자신의 근거로 완성하세요."
+    }
+  ],
+  "externalEffects": [
+    {
+      "effect": "TODO: effect를 자신의 근거로 완성하세요.",
+      "writer": "TODO: writer를 자신의 근거로 완성하세요.",
+      "externalIdentity": "TODO: externalIdentity를 자신의 근거로 완성하세요.",
+      "retryRule": "TODO: retryRule를 자신의 근거로 완성하세요.",
+      "cleanup": "TODO: cleanup를 자신의 근거로 완성하세요."
+    },
+    {
+      "effect": "TODO: effect를 자신의 근거로 완성하세요.",
+      "writer": "TODO: writer를 자신의 근거로 완성하세요.",
+      "externalIdentity": "TODO: externalIdentity를 자신의 근거로 완성하세요.",
+      "retryRule": "TODO: retryRule를 자신의 근거로 완성하세요.",
+      "cleanup": "TODO: cleanup를 자신의 근거로 완성하세요."
+    },
+    {
+      "effect": "TODO: effect를 자신의 근거로 완성하세요.",
+      "writer": "TODO: writer를 자신의 근거로 완성하세요.",
+      "externalIdentity": "TODO: externalIdentity를 자신의 근거로 완성하세요.",
+      "retryRule": "TODO: retryRule를 자신의 근거로 완성하세요.",
+      "cleanup": "TODO: cleanup를 자신의 근거로 완성하세요."
+    }
+  ],
+  "deletion": {
+    "policyOptions": [
+      "TODO: 0를 자신의 근거로 완성하세요.",
+      "TODO: 1를 자신의 근거로 완성하세요.",
+      "TODO: 2를 자신의 근거로 완성하세요.",
+      "TODO: 3를 자신의 근거로 완성하세요."
+    ],
+    "finalCondition": "TODO: finalCondition를 자신의 근거로 완성하세요."
+  },
+  "escapeHatch": {
+    "scope": "TODO: scope를 자신의 근거로 완성하세요.",
+    "requires": [
+      "TODO: 0를 자신의 근거로 완성하세요.",
+      "TODO: 1를 자신의 근거로 완성하세요.",
+      "TODO: 2를 자신의 근거로 완성하세요.",
+      "TODO: 3를 자신의 근거로 완성하세요."
+    ],
+    "returnPath": "TODO: returnPath를 자신의 근거로 완성하세요."
+  },
+  "support": {
+    "hours": "TODO: hours를 자신의 근거로 완성하세요.",
+    "escalation": "TODO: escalation를 자신의 근거로 완성하세요.",
+    "evidence": [
+      "TODO: 0를 자신의 근거로 완성하세요.",
+      "TODO: 1를 자신의 근거로 완성하세요.",
+      "TODO: 2를 자신의 근거로 완성하세요."
+    ]
+  }
 }

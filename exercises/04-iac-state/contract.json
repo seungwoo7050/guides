@@ -1,5 +1,5 @@
 {
-  "contractVersion": 1,
+  "schemaVersion": 2,
   "title": "IaC state contract",
   "requiredPaths": [
     "/status",
@@ -55,13 +55,62 @@
     "/resourceMappings": "address",
     "/driftPolicy": "type"
   },
-  "containsValues": {},
+  "containsValues": {
+    "/destroy/guards": [
+      "explicit environment/resource selector",
+      "retention policy"
+    ]
+  },
   "allowedValues": {
     "/status": [
       "complete"
     ]
   },
-  "matches": {},
+  "matches": {
+    "/planApply/stalePlanRule": "(?is).*rejects.*(source|state|policy).*"
+  },
+  "valueTypes": {
+    "/status": "string",
+    "/stateUnits": "array",
+    "/resourceMappings": "array",
+    "/lockingAndSecurity": "object",
+    "/planApply": "object",
+    "/driftPolicy": "array",
+    "/migration": "object",
+    "/destroy": "object"
+  },
+  "arrayContainsObjects": {
+    "/driftPolicy": [
+      {
+        "type": "authorized-emergency"
+      },
+      {
+        "type": "external-controller",
+        "action": "remove duplicate writer or split field ownership"
+      }
+    ]
+  },
+  "conditionalRequirements": [
+    {
+      "if": {
+        "path": "/status",
+        "equals": "complete"
+      },
+      "then": {
+        "requiredPaths": [
+          "/lockingAndSecurity/restoreEvidence",
+          "/destroy/completionEvidence"
+        ],
+        "nonEmptyPaths": [
+          "/lockingAndSecurity/restoreEvidence",
+          "/destroy/completionEvidence"
+        ],
+        "valueTypes": {
+          "/migration/steps": "array"
+        }
+      }
+    }
+  ],
   "forbiddenSubstrings": [
     "TODO",
     "TBD",

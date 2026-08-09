@@ -1,4 +1,136 @@
 {
   "status": "incomplete",
-  "instructions": "TODO: Kubernetes workload 계약의 계약을 문서와 자신의 환경에 맞게 완성하세요."
+  "workload": {
+    "name": "TODO: name를 자신의 근거로 완성하세요.",
+    "kind": "TODO: kind를 자신의 근거로 완성하세요.",
+    "profile": "TODO: profile를 자신의 근거로 완성하세요.",
+    "owner": "TODO: owner를 자신의 근거로 완성하세요.",
+    "replicas": 0
+  },
+  "health": {
+    "startup": "TODO: startup를 자신의 근거로 완성하세요.",
+    "readyMeaning": "TODO: readyMeaning를 자신의 근거로 완성하세요.",
+    "liveness": "TODO: liveness를 자신의 근거로 완성하세요.",
+    "termination": "TODO: termination를 자신의 근거로 완성하세요."
+  },
+  "resources": {
+    "requests": {
+      "cpu": "TODO: cpu를 자신의 근거로 완성하세요.",
+      "memory": "TODO: memory를 자신의 근거로 완성하세요."
+    },
+    "limits": {
+      "memory": "TODO: memory를 자신의 근거로 완성하세요."
+    },
+    "requestRationale": "TODO: requestRationale를 자신의 근거로 완성하세요.",
+    "oomBehavior": "TODO: oomBehavior를 자신의 근거로 완성하세요."
+  },
+  "network": {
+    "defaultPolicy": "TODO: defaultPolicy를 자신의 근거로 완성하세요.",
+    "allowedFlows": [
+      {
+        "direction": "TODO: direction를 자신의 근거로 완성하세요.",
+        "peer": "TODO: peer를 자신의 근거로 완성하세요.",
+        "purpose": "TODO: purpose를 자신의 근거로 완성하세요."
+      },
+      {
+        "direction": "TODO: direction를 자신의 근거로 완성하세요.",
+        "peer": "TODO: peer를 자신의 근거로 완성하세요.",
+        "purpose": "TODO: purpose를 자신의 근거로 완성하세요."
+      },
+      {
+        "direction": "TODO: direction를 자신의 근거로 완성하세요.",
+        "peer": "TODO: peer를 자신의 근거로 완성하세요.",
+        "purpose": "TODO: purpose를 자신의 근거로 완성하세요."
+      }
+    ],
+    "dns": "TODO: dns를 자신의 근거로 완성하세요.",
+    "publicEgress": "TODO: publicEgress를 자신의 근거로 완성하세요."
+  },
+  "storage": {
+    "type": "TODO: type를 자신의 근거로 완성하세요.",
+    "temporary": "TODO: temporary를 자신의 근거로 완성하세요.",
+    "dataOwner": "TODO: dataOwner를 자신의 근거로 완성하세요.",
+    "retention": "TODO: retention를 자신의 근거로 완성하세요."
+  },
+  "scheduling": {
+    "topology": "TODO: topology를 자신의 근거로 완성하세요.",
+    "taints": "TODO: taints를 자신의 근거로 완성하세요.",
+    "priority": "TODO: priority를 자신의 근거로 완성하세요.",
+    "capacityFailure": "TODO: capacityFailure를 자신의 근거로 완성하세요."
+  },
+  "disruption": {
+    "maxUnavailable": 0,
+    "rollout": "TODO: rollout를 자신의 근거로 완성하세요.",
+    "recoveryEvidence": "TODO: recoveryEvidence를 자신의 근거로 완성하세요.",
+    "scenarios": [
+      {
+        "event": "TODO: event를 자신의 근거로 완성하세요.",
+        "expectedBehavior": "TODO: expectedBehavior를 자신의 근거로 완성하세요.",
+        "evidence": "TODO: evidence를 자신의 근거로 완성하세요."
+      },
+      {
+        "event": "TODO: event를 자신의 근거로 완성하세요.",
+        "expectedBehavior": "TODO: expectedBehavior를 자신의 근거로 완성하세요.",
+        "evidence": "TODO: evidence를 자신의 근거로 완성하세요."
+      },
+      {
+        "event": "TODO: event를 자신의 근거로 완성하세요.",
+        "expectedBehavior": "TODO: expectedBehavior를 자신의 근거로 완성하세요.",
+        "evidence": "TODO: evidence를 자신의 근거로 완성하세요."
+      }
+    ]
+  },
+  "conditions": [
+    {
+      "type": "TODO: type를 자신의 근거로 완성하세요.",
+      "signal": "TODO: signal를 자신의 근거로 완성하세요.",
+      "owner": "TODO: owner를 자신의 근거로 완성하세요.",
+      "action": "TODO: action를 자신의 근거로 완성하세요."
+    },
+    {
+      "type": "TODO: type를 자신의 근거로 완성하세요.",
+      "signal": "TODO: signal를 자신의 근거로 완성하세요.",
+      "owner": "TODO: owner를 자신의 근거로 완성하세요.",
+      "action": "TODO: action를 자신의 근거로 완성하세요."
+    },
+    {
+      "type": "TODO: type를 자신의 근거로 완성하세요.",
+      "signal": "TODO: signal를 자신의 근거로 완성하세요.",
+      "owner": "TODO: owner를 자신의 근거로 완성하세요.",
+      "action": "TODO: action를 자신의 근거로 완성하세요."
+    },
+    {
+      "type": "TODO: type를 자신의 근거로 완성하세요.",
+      "signal": "TODO: signal를 자신의 근거로 완성하세요.",
+      "owner": "TODO: owner를 자신의 근거로 완성하세요.",
+      "action": "TODO: action를 자신의 근거로 완성하세요."
+    }
+  ],
+  "ownership": [
+    {
+      "boundary": "TODO: boundary를 자신의 근거로 완성하세요.",
+      "applicationTeam": "TODO: applicationTeam를 자신의 근거로 완성하세요.",
+      "platformTeam": "TODO: platformTeam를 자신의 근거로 완성하세요."
+    },
+    {
+      "boundary": "TODO: boundary를 자신의 근거로 완성하세요.",
+      "applicationTeam": "TODO: applicationTeam를 자신의 근거로 완성하세요.",
+      "platformTeam": "TODO: platformTeam를 자신의 근거로 완성하세요."
+    },
+    {
+      "boundary": "TODO: boundary를 자신의 근거로 완성하세요.",
+      "applicationTeam": "TODO: applicationTeam를 자신의 근거로 완성하세요.",
+      "platformTeam": "TODO: platformTeam를 자신의 근거로 완성하세요."
+    },
+    {
+      "boundary": "TODO: boundary를 자신의 근거로 완성하세요.",
+      "applicationTeam": "TODO: applicationTeam를 자신의 근거로 완성하세요.",
+      "platformTeam": "TODO: platformTeam를 자신의 근거로 완성하세요."
+    },
+    {
+      "boundary": "TODO: boundary를 자신의 근거로 완성하세요.",
+      "applicationTeam": "TODO: applicationTeam를 자신의 근거로 완성하세요.",
+      "platformTeam": "TODO: platformTeam를 자신의 근거로 완성하세요."
+    }
+  ]
 }

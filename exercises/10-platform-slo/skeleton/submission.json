@@ -1,4 +1,135 @@
 {
   "status": "incomplete",
-  "instructions": "TODO: Platform SLO·capacity·support의 계약을 문서와 자신의 환경에 맞게 완성하세요."
+  "journeys": [
+    {
+      "name": "TODO: name를 자신의 근거로 완성하세요.",
+      "start": "TODO: start를 자신의 근거로 완성하세요.",
+      "success": "TODO: success를 자신의 근거로 완성하세요.",
+      "sli": "TODO: sli를 자신의 근거로 완성하세요.",
+      "target": "TODO: target를 자신의 근거로 완성하세요.",
+      "owner": "TODO: owner를 자신의 근거로 완성하세요."
+    },
+    {
+      "name": "TODO: name를 자신의 근거로 완성하세요.",
+      "start": "TODO: start를 자신의 근거로 완성하세요.",
+      "success": "TODO: success를 자신의 근거로 완성하세요.",
+      "sli": "TODO: sli를 자신의 근거로 완성하세요.",
+      "target": "TODO: target를 자신의 근거로 완성하세요.",
+      "owner": "TODO: owner를 자신의 근거로 완성하세요."
+    }
+  ],
+  "failureTaxonomy": [
+    {
+      "class": "TODO: class를 자신의 근거로 완성하세요.",
+      "sloFailure": false,
+      "owner": "TODO: owner를 자신의 근거로 완성하세요.",
+      "action": "TODO: action를 자신의 근거로 완성하세요."
+    },
+    {
+      "class": "TODO: class를 자신의 근거로 완성하세요.",
+      "sloFailure": false,
+      "owner": "TODO: owner를 자신의 근거로 완성하세요.",
+      "action": "TODO: action를 자신의 근거로 완성하세요."
+    },
+    {
+      "class": "TODO: class를 자신의 근거로 완성하세요.",
+      "sloFailure": false,
+      "owner": "TODO: owner를 자신의 근거로 완성하세요.",
+      "action": "TODO: action를 자신의 근거로 완성하세요."
+    },
+    {
+      "class": "TODO: class를 자신의 근거로 완성하세요.",
+      "sloFailure": false,
+      "owner": "TODO: owner를 자신의 근거로 완성하세요.",
+      "action": "TODO: action를 자신의 근거로 완성하세요."
+    },
+    {
+      "class": "TODO: class를 자신의 근거로 완성하세요.",
+      "sloFailure": false,
+      "owner": "TODO: owner를 자신의 근거로 완성하세요.",
+      "action": "TODO: action를 자신의 근거로 완성하세요."
+    }
+  ],
+  "correlation": {
+    "requestIdentity": "TODO: requestIdentity를 자신의 근거로 완성하세요.",
+    "operationIdentity": "TODO: operationIdentity를 자신의 근거로 완성하세요.",
+    "resourceIdentity": "TODO: resourceIdentity를 자신의 근거로 완성하세요.",
+    "releaseIdentity": "TODO: releaseIdentity를 자신의 근거로 완성하세요.",
+    "signals": [
+      "TODO: 0를 자신의 근거로 완성하세요.",
+      "TODO: 1를 자신의 근거로 완성하세요.",
+      "TODO: 2를 자신의 근거로 완성하세요.",
+      "TODO: 3를 자신의 근거로 완성하세요."
+    ]
+  },
+  "alerts": [
+    {
+      "name": "TODO: name를 자신의 근거로 완성하세요.",
+      "condition": "TODO: condition를 자신의 근거로 완성하세요.",
+      "action": "TODO: action를 자신의 근거로 완성하세요.",
+      "runbook": "TODO: runbook를 자신의 근거로 완성하세요."
+    },
+    {
+      "name": "TODO: name를 자신의 근거로 완성하세요.",
+      "condition": "TODO: condition를 자신의 근거로 완성하세요.",
+      "action": "TODO: action를 자신의 근거로 완성하세요.",
+      "runbook": "TODO: runbook를 자신의 근거로 완성하세요."
+    }
+  ],
+  "errorBudgetActions": {
+    "healthy": "TODO: healthy를 자신의 근거로 완성하세요.",
+    "fastBurn": "TODO: fastBurn를 자신의 근거로 완성하세요.",
+    "exhausted": "TODO: exhausted를 자신의 근거로 완성하세요."
+  },
+  "capacity": {
+    "units": [
+      "TODO: 0를 자신의 근거로 완성하세요.",
+      "TODO: 1를 자신의 근거로 완성하세요.",
+      "TODO: 2를 자신의 근거로 완성하세요.",
+      "TODO: 3를 자신의 근거로 완성하세요.",
+      "TODO: 4를 자신의 근거로 완성하세요.",
+      "TODO: 5를 자신의 근거로 완성하세요."
+    ],
+    "headroomRule": "TODO: headroomRule를 자신의 근거로 완성하세요.",
+    "admission": "TODO: admission를 자신의 근거로 완성하세요.",
+    "evidence": "TODO: evidence를 자신의 근거로 완성하세요."
+  },
+  "supportTiers": [
+    {
+      "name": "TODO: name를 자신의 근거로 완성하세요.",
+      "scope": "TODO: scope를 자신의 근거로 완성하세요.",
+      "hours": "TODO: hours를 자신의 근거로 완성하세요.",
+      "escalation": "TODO: escalation를 자신의 근거로 완성하세요."
+    },
+    {
+      "name": "TODO: name를 자신의 근거로 완성하세요.",
+      "scope": "TODO: scope를 자신의 근거로 완성하세요.",
+      "hours": "TODO: hours를 자신의 근거로 완성하세요.",
+      "escalation": "TODO: escalation를 자신의 근거로 완성하세요."
+    },
+    {
+      "name": "TODO: name를 자신의 근거로 완성하세요.",
+      "scope": "TODO: scope를 자신의 근거로 완성하세요.",
+      "hours": "TODO: hours를 자신의 근거로 완성하세요.",
+      "escalation": "TODO: escalation를 자신의 근거로 완성하세요."
+    }
+  ],
+  "cost": {
+    "direct": [
+      "TODO: 0를 자신의 근거로 완성하세요."
+    ],
+    "shared": [
+      "TODO: 0를 자신의 근거로 완성하세요.",
+      "TODO: 1를 자신의 근거로 완성하세요.",
+      "TODO: 2를 자신의 근거로 완성하세요.",
+      "TODO: 3를 자신의 근거로 완성하세요."
+    ],
+    "showback": "TODO: showback를 자신의 근거로 완성하세요.",
+    "guardrail": "TODO: guardrail를 자신의 근거로 완성하세요."
+  },
+  "communication": {
+    "userImpact": "TODO: userImpact를 자신의 근거로 완성하세요.",
+    "updates": "TODO: updates를 자신의 근거로 완성하세요.",
+    "recovery": "TODO: recovery를 자신의 근거로 완성하세요."
+  }
 }

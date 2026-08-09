@@ -1,5 +1,5 @@
 {
-  "contractVersion": 1,
+  "schemaVersion": 2,
   "title": "Self-service golden path",
   "requiredPaths": [
     "/status",
@@ -63,6 +63,60 @@
     ]
   },
   "matches": {},
+  "valueTypes": {
+    "/status": "string",
+    "/api": "object",
+    "/conditionTypes": "array",
+    "/errors": "array",
+    "/errors/*/retryable": "boolean",
+    "/catalog": "object",
+    "/profile": "object",
+    "/lifecycle": "array",
+    "/escapeHatch": "object",
+    "/automationPaths": "array"
+  },
+  "arrayContainsObjects": {
+    "/errors": [
+      {
+        "code": "INVALID_PROFILE",
+        "retryable": false
+      },
+      {
+        "code": "DEPENDENCY_TIMEOUT",
+        "retryable": true
+      },
+      {
+        "code": "CONTROLLER_INVARIANT",
+        "retryable": false
+      }
+    ],
+    "/lifecycle": [
+      {
+        "stage": "Retire"
+      }
+    ]
+  },
+  "conditionalRequirements": [
+    {
+      "if": {
+        "path": "/status",
+        "equals": "complete"
+      },
+      "then": {
+        "requiredPaths": [
+          "/api/idempotency",
+          "/profile/update"
+        ],
+        "nonEmptyPaths": [
+          "/api/idempotency",
+          "/profile/update"
+        ],
+        "valueTypes": {
+          "/automationPaths": "array"
+        }
+      }
+    }
+  ],
   "forbiddenSubstrings": [
     "TODO",
     "TBD",

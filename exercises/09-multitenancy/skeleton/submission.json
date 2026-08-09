@@ -1,4 +1,170 @@
 {
   "status": "incomplete",
-  "instructions": "TODO: Multi-tenancy와 자원 공정성의 계약을 문서와 자신의 환경에 맞게 완성하세요."
+  "tenantDefinition": {
+    "unit": "TODO: unit를 자신의 근거로 완성하세요.",
+    "securityMeaning": "TODO: securityMeaning를 자신의 근거로 완성하세요.",
+    "costMeaning": "TODO: costMeaning를 자신의 근거로 완성하세요."
+  },
+  "profiles": [
+    {
+      "name": "TODO: name를 자신의 근거로 완성하세요.",
+      "trust": "TODO: trust를 자신의 근거로 완성하세요.",
+      "boundaries": [
+        "TODO: 0를 자신의 근거로 완성하세요.",
+        "TODO: 1를 자신의 근거로 완성하세요.",
+        "TODO: 2를 자신의 근거로 완성하세요.",
+        "TODO: 3를 자신의 근거로 완성하세요."
+      ],
+      "support": "TODO: support를 자신의 근거로 완성하세요.",
+      "costTradeoff": "TODO: costTradeoff를 자신의 근거로 완성하세요."
+    },
+    {
+      "name": "TODO: name를 자신의 근거로 완성하세요.",
+      "trust": "TODO: trust를 자신의 근거로 완성하세요.",
+      "boundaries": [
+        "TODO: 0를 자신의 근거로 완성하세요.",
+        "TODO: 1를 자신의 근거로 완성하세요.",
+        "TODO: 2를 자신의 근거로 완성하세요.",
+        "TODO: 3를 자신의 근거로 완성하세요."
+      ],
+      "support": "TODO: support를 자신의 근거로 완성하세요.",
+      "costTradeoff": "TODO: costTradeoff를 자신의 근거로 완성하세요."
+    },
+    {
+      "name": "TODO: name를 자신의 근거로 완성하세요.",
+      "trust": "TODO: trust를 자신의 근거로 완성하세요.",
+      "boundaries": [
+        "TODO: 0를 자신의 근거로 완성하세요.",
+        "TODO: 1를 자신의 근거로 완성하세요.",
+        "TODO: 2를 자신의 근거로 완성하세요."
+      ],
+      "support": "TODO: support를 자신의 근거로 완성하세요.",
+      "costTradeoff": "TODO: costTradeoff를 자신의 근거로 완성하세요."
+    }
+  ],
+  "isolationAxes": [
+    {
+      "axis": "TODO: axis를 자신의 근거로 완성하세요.",
+      "shared": "TODO: shared를 자신의 근거로 완성하세요.",
+      "isolated": "TODO: isolated를 자신의 근거로 완성하세요.",
+      "evidence": "TODO: evidence를 자신의 근거로 완성하세요."
+    },
+    {
+      "axis": "TODO: axis를 자신의 근거로 완성하세요.",
+      "shared": "TODO: shared를 자신의 근거로 완성하세요.",
+      "isolated": "TODO: isolated를 자신의 근거로 완성하세요.",
+      "evidence": "TODO: evidence를 자신의 근거로 완성하세요."
+    },
+    {
+      "axis": "TODO: axis를 자신의 근거로 완성하세요.",
+      "shared": "TODO: shared를 자신의 근거로 완성하세요.",
+      "isolated": "TODO: isolated를 자신의 근거로 완성하세요.",
+      "evidence": "TODO: evidence를 자신의 근거로 완성하세요."
+    },
+    {
+      "axis": "TODO: axis를 자신의 근거로 완성하세요.",
+      "shared": "TODO: shared를 자신의 근거로 완성하세요.",
+      "isolated": "TODO: isolated를 자신의 근거로 완성하세요.",
+      "evidence": "TODO: evidence를 자신의 근거로 완성하세요."
+    },
+    {
+      "axis": "TODO: axis를 자신의 근거로 완성하세요.",
+      "shared": "TODO: shared를 자신의 근거로 완성하세요.",
+      "isolated": "TODO: isolated를 자신의 근거로 완성하세요.",
+      "evidence": "TODO: evidence를 자신의 근거로 완성하세요."
+    },
+    {
+      "axis": "TODO: axis를 자신의 근거로 완성하세요.",
+      "shared": "TODO: shared를 자신의 근거로 완성하세요.",
+      "isolated": "TODO: isolated를 자신의 근거로 완성하세요.",
+      "evidence": "TODO: evidence를 자신의 근거로 완성하세요."
+    }
+  ],
+  "quotas": {
+    "types": [
+      {
+        "resource": "TODO: resource를 자신의 근거로 완성하세요.",
+        "limit": "TODO: limit를 자신의 근거로 완성하세요.",
+        "owner": "TODO: owner를 자신의 근거로 완성하세요."
+      },
+      {
+        "resource": "TODO: resource를 자신의 근거로 완성하세요.",
+        "limit": "TODO: limit를 자신의 근거로 완성하세요.",
+        "owner": "TODO: owner를 자신의 근거로 완성하세요."
+      },
+      {
+        "resource": "TODO: resource를 자신의 근거로 완성하세요.",
+        "limit": "TODO: limit를 자신의 근거로 완성하세요.",
+        "owner": "TODO: owner를 자신의 근거로 완성하세요."
+      },
+      {
+        "resource": "TODO: resource를 자신의 근거로 완성하세요.",
+        "limit": "TODO: limit를 자신의 근거로 완성하세요.",
+        "owner": "TODO: owner를 자신의 근거로 완성하세요."
+      },
+      {
+        "resource": "TODO: resource를 자신의 근거로 완성하세요.",
+        "limit": "TODO: limit를 자신의 근거로 완성하세요.",
+        "owner": "TODO: owner를 자신의 근거로 완성하세요."
+      }
+    ],
+    "increasePath": "TODO: increasePath를 자신의 근거로 완성하세요.",
+    "capacityMeaning": "TODO: capacityMeaning를 자신의 근거로 완성하세요."
+  },
+  "fairness": {
+    "perTenant": "TODO: perTenant를 자신의 근거로 완성하세요.",
+    "priorities": [
+      "TODO: 0를 자신의 근거로 완성하세요.",
+      "TODO: 1를 자신의 근거로 완성하세요.",
+      "TODO: 2를 자신의 근거로 완성하세요.",
+      "TODO: 3를 자신의 근거로 완성하세요."
+    ],
+    "systemReserve": "TODO: systemReserve를 자신의 근거로 완성하세요.",
+    "overloadAction": "TODO: overloadAction를 자신의 근거로 완성하세요."
+  },
+  "telemetry": {
+    "queryIsolation": "TODO: queryIsolation를 자신의 근거로 완성하세요.",
+    "redaction": "TODO: redaction를 자신의 근거로 완성하세요.",
+    "cardinality": "TODO: cardinality를 자신의 근거로 완성하세요."
+  },
+  "cost": {
+    "direct": [
+      "TODO: 0를 자신의 근거로 완성하세요.",
+      "TODO: 1를 자신의 근거로 완성하세요.",
+      "TODO: 2를 자신의 근거로 완성하세요.",
+      "TODO: 3를 자신의 근거로 완성하세요."
+    ],
+    "shared": [
+      "TODO: 0를 자신의 근거로 완성하세요.",
+      "TODO: 1를 자신의 근거로 완성하세요.",
+      "TODO: 2를 자신의 근거로 완성하세요.",
+      "TODO: 3를 자신의 근거로 완성하세요."
+    ],
+    "model": "TODO: model를 자신의 근거로 완성하세요."
+  },
+  "lifecycle": {
+    "stages": [
+      {
+        "stage": "TODO: stage를 자신의 근거로 완성하세요.",
+        "owner": "TODO: owner를 자신의 근거로 완성하세요.",
+        "condition": "TODO: condition를 자신의 근거로 완성하세요."
+      },
+      {
+        "stage": "TODO: stage를 자신의 근거로 완성하세요.",
+        "owner": "TODO: owner를 자신의 근거로 완성하세요.",
+        "condition": "TODO: condition를 자신의 근거로 완성하세요."
+      },
+      {
+        "stage": "TODO: stage를 자신의 근거로 완성하세요.",
+        "owner": "TODO: owner를 자신의 근거로 완성하세요.",
+        "condition": "TODO: condition를 자신의 근거로 완성하세요."
+      },
+      {
+        "stage": "TODO: stage를 자신의 근거로 완성하세요.",
+        "owner": "TODO: owner를 자신의 근거로 완성하세요.",
+        "condition": "TODO: condition를 자신의 근거로 완성하세요."
+      }
+    ],
+    "retirementEvidence": "TODO: retirementEvidence를 자신의 근거로 완성하세요."
+  }
 }

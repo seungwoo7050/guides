@@ -1,0 +1,127 @@
+{
+  "status": "complete",
+  "resourceModel": {
+    "desiredSource": "versioned ServiceEnvironment spec",
+    "observedSource": "cloud operation, Git commit and Kubernetes status adapters",
+    "generationRule": "spec meaning change increments generation; controller writes observedGeneration only after evaluation"
+  },
+  "conditionTypes": [
+    "Progressing",
+    "Ready",
+    "Blocked",
+    "Degraded"
+  ],
+  "reconcileSteps": [
+    {
+      "name": "validate",
+      "input": "spec + owner + profile schema",
+      "idempotency": "pure validation by generation",
+      "evidence": "validation decision ID",
+      "onFailure": "Blocked with stable code"
+    },
+    {
+      "name": "authorize",
+      "input": "identity + spec + policy version",
+      "idempotency": "same decision input hash",
+      "evidence": "policy decision ID",
+      "onFailure": "Blocked; no external effect"
+    },
+    {
+      "name": "provision-data",
+      "input": "resource UID + data profile",
+      "idempotency": "provider idempotency key and stored external ID",
+      "evidence": "provider operation/resource ID",
+      "onFailure": "retry or terminal by provider code"
+    },
+    {
+      "name": "write-runtime-desired",
+      "input": "release + runtime profile",
+      "idempotency": "deterministic repository path and release ID",
+      "evidence": "Git commit",
+      "onFailure": "retry with same release ID"
+    },
+    {
+      "name": "observe-ready",
+      "input": "current generation and runtime object",
+      "idempotency": "read-only observation",
+      "evidence": "Ready condition + external smoke",
+      "onFailure": "Progressing until budget, then Degraded/Blocked"
+    }
+  ],
+  "failureClasses": [
+    {
+      "class": "transient-dependency",
+      "retryable": false,
+      "condition": "Progressing",
+      "action": "bounded exponential backoff"
+    },
+    {
+      "class": "invalid-input",
+      "retryable": false,
+      "condition": "Blocked",
+      "action": "user changes spec"
+    },
+    {
+      "class": "policy-deny",
+      "retryable": false,
+      "condition": "Blocked",
+      "action": "remediation or reviewed exception"
+    },
+    {
+      "class": "invariant-violation",
+      "retryable": false,
+      "condition": "Degraded",
+      "action": "isolate resource and page capability owner"
+    }
+  ],
+  "fieldOwnership": [
+    {
+      "field": "spec",
+      "writer": "platform API user through validation",
+      "conflictPolicy": "resource version conflict"
+    },
+    {
+      "field": "status.conditions",
+      "writer": "platform controller",
+      "conflictPolicy": "condition type owner only"
+    },
+    {
+      "field": "runtime desired path",
+      "writer": "GitOps writer adapter",
+      "conflictPolicy": "manual edits rejected or break-glass"
+    }
+  ],
+  "finalization": {
+    "steps": [
+      "stop new work",
+      "apply retention",
+      "delete runtime",
+      "revoke credential",
+      "delete/retain data",
+      "orphan scan"
+    ],
+    "terminalCondition": "finalizer removed only after all external effects are accounted for and audit is written"
+  },
+  "evidence": [
+    {
+      "signal": "condition history",
+      "identity": "resource UID + generation",
+      "purpose": "user progress and terminal state"
+    },
+    {
+      "signal": "operation trace",
+      "identity": "operation ID",
+      "purpose": "dependency latency and failure path"
+    },
+    {
+      "signal": "external resource map",
+      "identity": "resource UID",
+      "purpose": "adoption, retry and cleanup"
+    },
+    {
+      "signal": "audit event",
+      "identity": "request/policy actor",
+      "purpose": "who changed desired state and why"
+    }
+  ]
+}

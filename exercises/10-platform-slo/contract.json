@@ -1,5 +1,5 @@
 {
-  "contractVersion": 1,
+  "schemaVersion": 2,
   "title": "Platform journey SLO",
   "requiredPaths": [
     "/status",
@@ -67,6 +67,63 @@
     ]
   },
   "matches": {},
+  "valueTypes": {
+    "/status": "string",
+    "/journeys": "array",
+    "/failureTaxonomy": "array",
+    "/failureTaxonomy/*/sloFailure": "boolean",
+    "/correlation": "object",
+    "/alerts": "array",
+    "/errorBudgetActions": "object",
+    "/capacity": "object",
+    "/supportTiers": "array",
+    "/cost": "object",
+    "/communication": "object"
+  },
+  "arrayContainsObjects": {
+    "/journeys": [
+      {
+        "name": "preview-environment-ready"
+      },
+      {
+        "name": "production-release-observed"
+      }
+    ],
+    "/failureTaxonomy": [
+      {
+        "class": "platform-defect",
+        "sloFailure": true
+      },
+      {
+        "class": "invalid-input",
+        "sloFailure": false
+      },
+      {
+        "class": "policy-deny",
+        "sloFailure": false
+      }
+    ]
+  },
+  "conditionalRequirements": [
+    {
+      "if": {
+        "path": "/status",
+        "equals": "complete"
+      },
+      "then": {
+        "requiredPaths": [
+          "/errorBudgetActions/healthy",
+          "/errorBudgetActions/fastBurn",
+          "/errorBudgetActions/exhausted"
+        ],
+        "nonEmptyPaths": [
+          "/errorBudgetActions/healthy",
+          "/errorBudgetActions/fastBurn",
+          "/errorBudgetActions/exhausted"
+        ]
+      }
+    }
+  ],
   "forbiddenSubstrings": [
     "TODO",
     "TBD",

@@ -1,5 +1,5 @@
 {
-  "contractVersion": 1,
+  "schemaVersion": 2,
   "title": "Multi-tenancy contract",
   "requiredPaths": [
     "/status",
@@ -57,13 +57,84 @@
     "/quotas/types": "resource",
     "/lifecycle/stages": "stage"
   },
-  "containsValues": {},
+  "containsValues": {
+    "/fairness/priorities": [
+      "platform-system",
+      "production",
+      "preview"
+    ]
+  },
   "allowedValues": {
     "/status": [
       "complete"
     ]
   },
   "matches": {},
+  "valueTypes": {
+    "/status": "string",
+    "/tenantDefinition": "object",
+    "/profiles": "array",
+    "/isolationAxes": "array",
+    "/quotas": "object",
+    "/fairness": "object",
+    "/telemetry": "object",
+    "/cost": "object",
+    "/lifecycle": "object"
+  },
+  "arrayContainsObjects": {
+    "/profiles": [
+      {
+        "name": "development-shared"
+      },
+      {
+        "name": "production-standard"
+      },
+      {
+        "name": "high-isolation"
+      }
+    ],
+    "/isolationAxes": [
+      {
+        "axis": "identity"
+      },
+      {
+        "axis": "network"
+      },
+      {
+        "axis": "storage"
+      },
+      {
+        "axis": "telemetry"
+      },
+      {
+        "axis": "control-plane"
+      }
+    ],
+    "/quotas/types": [
+      {
+        "resource": "controller concurrency",
+        "limit": "per tenant work queue"
+      }
+    ]
+  },
+  "conditionalRequirements": [
+    {
+      "if": {
+        "path": "/status",
+        "equals": "complete"
+      },
+      "then": {
+        "requiredPaths": [
+          "/fairness/overloadAction",
+          "/lifecycle/retirementEvidence"
+        ],
+        "nonEmptyPaths": [
+          "/fairness/overloadAction",
+          "/lifecycle/retirementEvidence"
+        ]
+      }
+    }
+  ],
   "forbiddenSubstrings": [
     "TODO",
     "TBD",

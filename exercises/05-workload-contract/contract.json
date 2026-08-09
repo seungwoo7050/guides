@@ -1,5 +1,5 @@
 {
-  "contractVersion": 1,
+  "schemaVersion": 2,
   "title": "Kubernetes workload contract",
   "requiredPaths": [
     "/status",
@@ -62,7 +62,65 @@
       "complete"
     ]
   },
-  "matches": {},
+  "matches": {
+    "/health/readyMeaning": "(?is).*(accept|request|traffic).*"
+  },
+  "valueTypes": {
+    "/status": "string",
+    "/workload": "object",
+    "/workload/replicas": "integer",
+    "/health": "object",
+    "/resources": "object",
+    "/network": "object",
+    "/storage": "object",
+    "/scheduling": "object",
+    "/disruption": "object",
+    "/disruption/maxUnavailable": "integer",
+    "/conditions": "array",
+    "/ownership": "array"
+  },
+  "arrayContainsObjects": {
+    "/network/allowedFlows": [
+      {
+        "direction": "ingress"
+      },
+      {
+        "direction": "egress"
+      }
+    ],
+    "/disruption/scenarios": [
+      {
+        "event": "single Pod deletion"
+      },
+      {
+        "event": "node drain"
+      },
+      {
+        "event": "zone loss"
+      }
+    ]
+  },
+  "conditionalRequirements": [
+    {
+      "if": {
+        "path": "/workload/kind",
+        "equals": "Deployment"
+      },
+      "then": {
+        "requiredPaths": [
+          "/workload/replicas",
+          "/disruption/maxUnavailable"
+        ],
+        "nonEmptyPaths": [
+          "/disruption/recoveryEvidence"
+        ],
+        "valueTypes": {
+          "/workload/replicas": "integer",
+          "/disruption/maxUnavailable": "integer"
+        }
+      }
+    }
+  ],
   "forbiddenSubstrings": [
     "TODO",
     "TBD",

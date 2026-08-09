@@ -1,0 +1,118 @@
+{
+  "status": "complete",
+  "stateUnits": [
+    {
+      "id": "network-production",
+      "owner": "network-platform",
+      "scope": "production account regional network",
+      "blastRadius": "all production clusters in one region"
+    },
+    {
+      "id": "cluster-production-a",
+      "owner": "runtime-platform",
+      "scope": "one cluster and core add-ons",
+      "blastRadius": "workloads in production-a"
+    },
+    {
+      "id": "tenant-checkout-data",
+      "owner": "data-platform",
+      "scope": "checkout managed database resources",
+      "blastRadius": "checkout environments only"
+    }
+  ],
+  "resourceMappings": [
+    {
+      "address": "module.cluster.provider_cluster.main",
+      "externalIdentity": "provider cluster ID",
+      "writer": "cluster IaC pipeline",
+      "importOrAdopt": "approved import after ownership check"
+    },
+    {
+      "address": "module.network.provider_network.main",
+      "externalIdentity": "network ID",
+      "writer": "network IaC pipeline",
+      "importOrAdopt": "never auto-adopt by name"
+    },
+    {
+      "address": "module.database[\"checkout\"].provider_database.main",
+      "externalIdentity": "database ID",
+      "writer": "data capability controller",
+      "importOrAdopt": "resource UID annotation and state import plan"
+    }
+  ],
+  "lockingAndSecurity": {
+    "backend": "remote encrypted backend per state unit",
+    "lockRule": "one apply writer; lock timeout does not force-unlock without operation evidence",
+    "sensitiveData": "state access is privileged and values are not printed to CI logs",
+    "backup": "versioned backend snapshots",
+    "restoreEvidence": "quarterly sandbox restore and plan with expected no-op or reviewed drift"
+  },
+  "planApply": {
+    "planIdentity": "configuration revision + state serial + provider/plugin lock + variable set",
+    "approval": "review semantic resource changes and replacement/delete separately",
+    "stalePlanRule": "approved plan may apply after source changes",
+    "partialFailure": "refresh external operation and state before retry"
+  },
+  "driftPolicy": [
+    {
+      "type": "authorized-emergency",
+      "detect": "scheduled plan + audit event",
+      "action": "codify or revert before expiry",
+      "owner": "incident/change owner"
+    },
+    {
+      "type": "provider-default",
+      "detect": "refresh-only plan",
+      "action": "ignore explicit field or adopt declared value",
+      "owner": "module owner"
+    },
+    {
+      "type": "unauthorized-change",
+      "detect": "continuous drift + cloud audit",
+      "action": "contain actor, assess and reconcile",
+      "owner": "security/runtime"
+    },
+    {
+      "type": "external-controller",
+      "detect": "repeating diff and managed writer evidence",
+      "action": "remove duplicate writer or split field ownership",
+      "owner": "platform architecture"
+    }
+  ],
+  "migration": {
+    "change": "split tenant data resources from cluster state",
+    "steps": [
+      {
+        "step": "backup state and inventory external IDs",
+        "precondition": "no active apply",
+        "evidence": "snapshot + inventory"
+      },
+      {
+        "step": "declare target addresses",
+        "precondition": "module versions pinned",
+        "evidence": "target plan"
+      },
+      {
+        "step": "move/import mappings",
+        "precondition": "source/target locks held",
+        "evidence": "state list and serial"
+      },
+      {
+        "step": "no-op plans and failure drill",
+        "precondition": "all mappings present",
+        "evidence": "reviewed plans"
+      }
+    ],
+    "rollbackBoundary": "before target state writes new provider-managed attributes; otherwise forward repair from snapshots"
+  },
+  "destroy": {
+    "guards": [
+      "explicit environment/resource selector",
+      "retention policy",
+      "dependency and data check",
+      "plan approval"
+    ],
+    "stateRemoveMeaning": "stops management only and does not delete external resource",
+    "completionEvidence": "external API absence or retained ID, credential revoke, cost/orphan scan and final state"
+  }
+}
