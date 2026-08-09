@@ -9,12 +9,12 @@
 | 명령 | 생성·변경 가능한 상태 | 만들지 않는 것 |
 |---|---|---|
 | `make prepare` | `.guide/distributed-systems/prepared.json` | package 설치, network 요청, 추적 source 변경 |
-| `make check` | Python cache가 생길 수 있음 | host network·process·disk fault |
-| `make verify` | 저장소 밖 `VERIFY_LOG`, Python cache가 생길 수 있음 | Docker·VM·cloud resource, learner solution 채점 |
+| `make check` | stdout 검사 결과; bytecode는 비활성화 | host network·process·disk fault |
+| `make verify` | 저장소 밖 `VERIFY_LOG`, 저장소 밖 임시 copy·Python cache | Docker·VM·cloud resource, learner solution 채점 |
 | `./scripts/new-capstone-workspace.sh` | 기본값 `.workspace/replicated-kv` | 기존 target 덮어쓰기 |
-| `make clean` | `.guide/`, 저장소 아래 `__pycache__`, `*.pyc`, `*.pyo` 제거 | `.workspace/` learner source 제거 |
+| `make clean` | `.guide/distributed-systems/` 제거 | `.workspace/` learner source 또는 다른 cache 제거 |
 
-`make clean`은 learner source를 보존하지만 `.workspace/` 안의 Python cache도 정리할 수 있습니다. cache를 제출 evidence로 사용하지 않습니다.
+`make clean`은 learner source와 그 안의 cache를 모두 건드리지 않습니다. cache를 제출 evidence로 사용하지 않으며, 필요하면 정확한 경로를 확인한 뒤 사람이 별도로 정리합니다.
 
 ## 작업 공간 보존
 
@@ -80,7 +80,7 @@ find .workspace -maxdepth 2 -type d -print 2>/dev/null
 
 - 추적 source가 바뀌었다면 자동 정리로 되돌리지 말고 diff와 변경 주체를 먼저 확인합니다.
 - 준비 marker만 다시 만들려면 `make prepare`를 재실행합니다.
-- cache만 정리하려면 `make clean`을 사용합니다.
+- 준비 marker만 정리하려면 `make clean`을 사용합니다. Python cache는 이 명령의 소유 범위가 아닙니다.
 - learner workspace를 삭제해야 한다면 target과 backup을 사람이 확인한 뒤 별도 작업으로 수행합니다. 이 저장소의 자동 정리 명령은 learner workspace 삭제를 맡지 않습니다.
 
 ## 자동 검증의 한계

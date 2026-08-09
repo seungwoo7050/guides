@@ -76,7 +76,7 @@ VERIFY_LOG=/tmp/guide-distributed-systems-verify.log make verify
 - `make prepare`는 외부 의존성을 설치하지 않고 `.guide/distributed-systems/prepared.json`에 Python 판본과 source fingerprint를 기록합니다.
 - `make check`는 문서·링크·JSON fixture·Python 예제·canonical starter 계약을 빠르게 검사합니다.
 - `make verify`는 준비 fingerprint까지 확인하며 로그는 저장소 밖 절대 경로에 기록합니다.
-- `make clean`은 `.guide/`와 저장소 아래 Python cache를 제거하지만 `.workspace/`의 학습자 source는 삭제하지 않습니다.
+- `make clean`은 이 가이드가 소유한 `.guide/distributed-systems/`만 제거하며 `.workspace/`와 다른 cache를 순회하지 않습니다. 정식 검사 경로는 bytecode 생성을 끄고 외부 cache를 사용합니다.
 
 capstone 작업 공간은 기존 대상을 덮어쓰지 않는 helper로 만듭니다.
 
@@ -86,7 +86,7 @@ CAPSTONE_ROOT="$PWD/.workspace/replicated-kv" \
   python3 -m unittest discover -s capstone/tests -v
 ```
 
-처음 복사한 starter는 storage 같은 이미 제공된 계약은 통과할 수 있지만 `Node.tick`, `Node.receive`, `Node.submit`의 핵심 transition이 미완성이므로 관련 검사는 실패해야 정상입니다. `CAPSTONE_ROOT`를 생략하면 canonical `capstone/starter`를 검사하므로 학습자 구현 검사가 아닙니다.
+처음 복사한 starter는 storage 같은 이미 제공된 계약은 통과할 수 있지만 `Node.tick`, `Node.receive`, `Node.submit`의 핵심 transition이 미완성이므로 관련 검사는 실패해야 정상입니다. `CAPSTONE_ROOT`를 생략하면 canonical `capstone/starter`를 검사하므로 학습자 구현 검사가 아닙니다. 구현·7개 run·counterexample dossier를 채운 뒤에는 `python3 scripts/check-capstone-workspace.py .workspace/replicated-kv`를 실행합니다.
 
 root `make verify`는 **가이드 배포본의 무결성**을 확인합니다. public capstone test도 초기 milestone의 공개 계약만 보여 주며 완성된 protocol의 safety·liveness를 모두 판정하지 않습니다. 최종 완료에는 추가 fault schedule, history checker와 [완료 근거 루브릭](reference/completion-evidence-rubric.md)의 dossier가 필요합니다.
 

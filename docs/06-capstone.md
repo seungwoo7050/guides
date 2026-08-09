@@ -251,14 +251,9 @@ Failure schedule:
 - command result
 - leader redirect 또는 NOT_LEADER
 - commit·apply 뒤 response
-- read protocol 선택
+- log에 기록하는 core read
 
-core 권장 read:
-
-- read도 log command로 넣거나
-- current-term commit과 quorum confirmation을 요구하는 ReadIndex 방식
-
-lease read는 선택 확장입니다.
+core `get`도 log command로 기록하고 quorum commit·ordered apply 뒤 응답합니다. ReadIndex와 lease read는 core 완료 뒤 선택 확장이며 public contract를 대신하지 않습니다.
 
 완료 조건:
 
@@ -375,7 +370,7 @@ schedule:
 실제 코드를 확장하지 않더라도 다음 두 dossier는 필수입니다.
 
 ```text
-.workspace/replicated-kv/evidence/
+.workspace/replicated-kv/design/
 ├── membership-review.md
 └── sharding-review.md
 ```
@@ -455,6 +450,7 @@ design/
 - durable state·crash point 표
 - read protocol 결정
 - snapshot·session 계약
+- membership-review.md와 sharding-review.md
 
 tests/
 - deterministic schedules
@@ -463,7 +459,7 @@ tests/
 - fault matrix
 
 evidence/
-- manifest: source·runtime·config·seed·schedule·failure model identity
+- run-report.json과 manifest.json: source·runtime·config·seed·schedule·failure model identity
 - public-tests.log와 추가 검사 결과
 - schedules/와 traces/: 정상·경계·대표 실패 실행
 - invariants.md와 histories.md
@@ -472,7 +468,7 @@ evidence/
 - final-report.md: 통과·실패·UNVERIFIED와 알려진 한계
 ```
 
-trace와 manifest는 [`trace-schema`](../reference/trace-schema.md)를 따릅니다. test 이름이나 존재만 나열하지 말고 실제 command, 결과, trace hash와 사람이 확인할 판단 근거를 남깁니다.
+trace와 manifest는 [`trace-schema`](../reference/trace-schema.md)와 [`capstone/evidence` schema·예시](../capstone/evidence/README.md)를 따릅니다. test 이름이나 존재만 나열하지 말고 실제 command, 결과, trace hash와 사람이 확인할 판단 근거를 남깁니다.
 
 ## 최종 완료 조건
 

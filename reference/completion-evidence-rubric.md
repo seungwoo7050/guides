@@ -45,6 +45,7 @@ learner가 작성한 추가 검사, trace, checker 결과와 설계 판단을 �
 ```text
 .workspace/replicated-kv/evidence/
 ├── completion-dossier.md
+├── run-report.json
 ├── manifest.json
 ├── public-tests.txt
 ├── schedules/
@@ -58,10 +59,10 @@ learner가 작성한 추가 검사, trace, checker 결과와 설계 판단을 �
 │   └── counterexamples/
 ├── invariant-results.json
 ├── history-results.json
-├── membership-review.md
-├── sharding-review.md
 └── limitations.md
 ```
+
+membership·sharding 검토 원본은 starter가 제공한 `design/membership-review.md`와 `design/sharding-review.md`를 채웁니다. `run-report.json`과 manifest의 기계 판정 형식은 [`capstone/evidence`](../capstone/evidence/README.md)를 사용합니다.
 
 파일 이름은 바꿀 수 있지만 다음 정보는 빠지면 안 됩니다.
 
@@ -82,10 +83,10 @@ learner가 작성한 추가 검사, trace, checker 결과와 설계 판단을 �
 
 | 정본 `owns` | 개념 설명 | 단계 실습·대표 실패 | capstone 누적 근거 | 종료 능력 |
 |---|---|---|---|---|
-| 분산 시간·순서·failure detector | `docs/01-model-and-time/` 전체, `03-consensus-and-membership/05-*` | causality trace의 concurrent pair·consistent cut, failure model의 timeout·partition 반례, simulation plan | Milestone 0 model, Milestone 1 election, Milestone 7 partition·leader-change schedule와 virtual-time trace | safety·liveness 설명; partition·leader 교체 재현 |
-| 복제와 일관성 모델 | `docs/02-replication-and-consistency/` 전체 | consistency history의 stale·overlap·pending case, quorum register의 version conflict·partial write | Milestone 2 log replication, 3 key-value/read, 5 retry, 7 history checker | safety·liveness 설명; 작은 저장소 구현·검증 |
+| 분산 시간·순서·failure detector | `docs/01-model-and-time/` 전체, `03-consensus-and-membership/05-*` | causality trace의 concurrent pair·consistent cut, failure model의 timeout·partition, failure detector의 false suspicion·lease/fencing 반례 | Milestone 0 model, Milestone 1 election, Milestone 7 partition·leader-change schedule와 virtual-time trace | safety·liveness 설명; partition·leader 교체 재현 |
+| 복제와 일관성 모델 | `docs/02-replication-and-consistency/` 전체 | consistency history의 stale·overlap·pending case, quorum register의 version conflict·partial write, anti-entropy의 sibling·tombstone resurrection | Milestone 2 log replication, 3 key-value/read, 5 retry, 7 history checker | safety·liveness 설명; 작은 저장소 구현·검증 |
 | leader election·합의·replicated log | `docs/03-consensus-and-membership/01-*`~`03-*`, `05-*` | election trace의 split vote·stale candidate, log reconciliation의 conflicting suffix·current-term commit, client session의 response loss | Milestone 1–5·7의 term·vote·log·commit·apply·session evidence | 세 종료 능력 모두 |
-| snapshot·membership change·sharding | `03-consensus-and-membership/04-*`, `docs/04-partitioning-and-atomicity/01-*` | client session의 unsafe snapshot, shard rebalance의 stale router·dual authority, atomic commit의 uncertain decision | Milestone 6 snapshot 구현과 필수 `membership-review.md`·`sharding-review.md`; 실제 확장 코드는 선택 | safety·liveness 설명; 작은 저장소 구현·검증 |
+| snapshot·membership change·sharding | `03-consensus-and-membership/04-*`, `docs/04-partitioning-and-atomicity/01-*` | client session의 unsafe snapshot, membership change의 disjoint quorum·removed-node write, shard rebalance의 stale router·dual authority | Milestone 6 snapshot 구현과 필수 `membership-review.md`·`sharding-review.md`; 실제 확장 코드는 선택 | safety·liveness 설명; 작은 저장소 구현·검증 |
 | 결정적 장애 주입과 history 검증 | `docs/05-validation/` 전체 | linearizability의 legal·illegal·pending history, simulation plan의 source identity·fault evidence | Milestone 7 replayable schedule, every-step checker, 최소 counterexample, run manifest | 세 종료 능력 모두 |
 
 문서 경로는 간결하게 표시했습니다. 실제 제출에서는 읽은 정의를 복사하지 말고 현재 구현의 state field, event와 checker에 연결합니다.

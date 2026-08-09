@@ -10,6 +10,8 @@
 
 helper는 target이 이미 있거나 경로에 symlink가 있으면 중단합니다. 새 starter와 비교하려면 별도 target을 인자로 주며 기존 learner 작업을 덮어쓰지 않습니다.
 
+완료 evidence 형식과 시작 예시는 [`capstone/evidence`](../evidence/README.md)에 있습니다. 예시 hash와 결과를 그대로 제출하지 말고 실제 source·schedule·trace digest로 교체해 `evidence/run-report.json`과 `evidence/manifest.json`을 만듭니다.
+
 공개 계약 검사(반드시 복사본 경로를 지정합니다):
 
 ```sh

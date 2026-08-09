@@ -51,22 +51,23 @@ commit하지 않은 learner workspace는 `commit`을 `null`로 두고 `tree_sha2
   "actor": "simulator",
   "target": "node-b",
   "message_id": "msg-0009",
-  "operation_id": null,
-  "before_hash": "<global-state-digest>",
-  "after_hash": "<global-state-digest>",
+  "delivery_id": "delivery-0012",
+  "state_before_hash": "<64-lowercase-hex>",
+  "state_after_hash": "<64-lowercase-hex>",
+  "invariant_results": [],
   "details": {}
 }
 ```
 
-필수 공통 field는 `schema_version`, `run_id`, `step`, `virtual_time`, `event_id`, `kind`, `actor`, `before_hash`, `after_hash`, `details`입니다. `target`, `message_id`, `operation_id`는 해당 event에 없으면 `null`로 둡니다.
+공통 envelope은 `schema_version`, `run_id`, `step`, `virtual_time`, `event_id`, `kind`, `actor`, `target`, `message_id`, `delivery_id`, `state_before_hash`, `state_after_hash`, `invariant_results`, `details`의 14개 field를 정확히 가집니다. 해당 event에 없는 identity는 `null`, checker 결과가 아직 없으면 빈 list로 둡니다. client `operation_id`와 causation identity는 `details` 또는 별도 client history artifact에 두며 공통 field를 늘리지 않습니다.
 
 규칙:
 
 - `event_id`는 run 안에서 유일합니다.
 - `step`은 적용 순서를 나타내며 한 run에서 엄격히 증가합니다.
 - `virtual_time`은 같은 값이 반복될 수 있지만 step이 증가하는 동안 감소하지 않습니다.
-- `before_hash`는 event 적용 직전, `after_hash`는 모든 emitted state update 뒤의 canonical global state digest입니다.
-- 한 event의 `after_hash`와 다음 state-transition event의 `before_hash`가 다르면 중간 state change를 별도 event로 기록합니다.
+- `state_before_hash`는 event 적용 직전, `state_after_hash`는 모든 emitted state update 뒤의 canonical global state SHA-256입니다.
+- 한 event의 `state_after_hash`와 다음 event의 `state_before_hash`는 같아야 합니다. 다르면 중간 state change를 별도 event로 기록합니다.
 - drop·duplicate·partition·crash 같은 fault도 정상 message와 같은 event stream에 둡니다.
 
 ## Canonical hash
@@ -103,7 +104,7 @@ set, unordered map, object address, wall-clock timestamp와 random iteration ord
 }
 ```
 
-재전달은 같은 `message_id`를 사용하고 delivery event가 새 `event_id`를 가집니다. logical retry가 새 wire message를 만들면 새 `message_id`와 원래 `operation_id` 또는 `causation_message_id`를 함께 기록합니다.
+재전달은 같은 `message_id`를 사용하고 각 전송 시도는 새 `delivery_id`와 `event_id`를 가집니다. logical retry가 새 wire message를 만들면 새 `message_id`와 원래 `operation_id` 또는 `causation_message_id`를 `details`에 함께 기록합니다.
 
 ## Client history
 

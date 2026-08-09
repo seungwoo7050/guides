@@ -127,10 +127,10 @@ protocol 구현 또는 장애를 조사할 때 읽습니다.
 
 | `owns` | 핵심 문서 | 단계 실습·대표 실패 | capstone 누적 근거 | 연결되는 종료 능력 |
 |---|---|---|---|---|
-| 분산 시간·순서·failure detector | Part 1, failure detector 문서 | causality trace, failure model, timeout·partition 반례 | Milestone 0·1·7의 model, partition과 leader-change schedule | safety·liveness 설명, partition·leader 교체 재현 |
-| 복제와 일관성 모델 | Part 2 | consistency history, quorum register, stale read·conflict | Milestone 2·3·5·7의 replicated state와 history 결과 | safety·liveness 설명, 작은 저장소 구현·검증 |
+| 분산 시간·순서·failure detector | Part 1, failure detector 문서 | causality trace, failure model, failure detector의 false suspicion·lease/fencing 반례 | Milestone 0·1·7의 model, partition과 leader-change schedule | safety·liveness 설명, partition·leader 교체 재현 |
+| 복제와 일관성 모델 | Part 2 | consistency history, quorum register, anti-entropy의 sibling·tombstone resurrection | Milestone 2·3·5·7의 replicated state와 history 결과 | safety·liveness 설명, 작은 저장소 구현·검증 |
 | leader election·합의·replicated log | Part 3의 election·log·persistence | election trace, log reconciliation, client session, stale candidate·conflicting suffix | Milestone 1–5·7의 term·vote·log·commit·retry evidence | 세 종료 능력 모두 |
-| snapshot·membership change·sharding | snapshot/membership 문서, Part 4 | client session, shard rebalance, incomplete snapshot·stale epoch | Milestone 6과 필수 reconfiguration·sharding dossier; 구현 확장은 선택 | safety·liveness 설명, 작은 저장소 구현·검증 |
+| snapshot·membership change·sharding | snapshot/membership 문서, Part 4 | client session, membership change, shard rebalance의 incomplete snapshot·disjoint quorum·stale epoch | Milestone 6과 필수 reconfiguration·sharding dossier; 구현 확장은 선택 | safety·liveness 설명, 작은 저장소 구현·검증 |
 | 결정적 장애 주입과 history 검증 | Part 5 | linearizability, simulation plan, known violation·pending operation | Milestone 7의 replayable schedule, checker, 최소 counterexample와 manifest | 세 종료 능력 모두 |
 
 membership와 sharding의 실제 코드 확장은 선택이지만, 해당 소유 범위를 capstone에서 생략할 수는 없습니다. learner catch-up·configuration 전이·removed-node fencing과 shard snapshot·delta·fence·cutover·stale-router 거절을 현재 capstone 상태에 적용한 설계·trace dossier는 필수입니다.
@@ -141,11 +141,14 @@ membership와 sharding의 실제 코드 확장은 선택이지만, 해당 소유
 |---|---|
 | 실행 모델·causality | [causality trace](../exercises/01-model-and-time/01-causality-trace/README.md) |
 | failure model·불가능성 | [failure model](../exercises/01-model-and-time/02-failure-model/README.md) |
+| failure detector·lease·fencing | [failure detector](../exercises/01-model-and-time/03-failure-detector/README.md) |
 | consistency model | [consistency history](../exercises/02-replication-and-consistency/01-consistency-history/README.md) |
 | quorum과 version | [quorum register](../exercises/02-replication-and-consistency/02-quorum-register/README.md) |
+| anti-entropy·tombstone repair | [anti-entropy](../exercises/02-replication-and-consistency/03-anti-entropy/README.md) |
 | leader election | [election trace](../exercises/03-consensus-and-membership/01-election-trace/README.md) |
 | log replication | [log reconciliation](../exercises/03-consensus-and-membership/02-log-reconciliation/README.md) |
 | client retry·snapshot | [client session](../exercises/03-consensus-and-membership/03-client-session/README.md) |
+| joint quorum·learner fencing | [membership change](../exercises/03-consensus-and-membership/04-membership-change/README.md) |
 | sharding·rebalancing | [shard rebalance](../exercises/04-partitioning-and-atomicity/01-shard-rebalance/README.md) |
 | atomic commit 경계 | [atomic commit](../exercises/04-partitioning-and-atomicity/02-atomic-commit/README.md) |
 | linearizability | [history checking](../exercises/05-validation/01-linearizability/README.md) |

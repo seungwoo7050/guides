@@ -98,7 +98,7 @@ CAPSTONE_ROOT="$PWD/.workspace/replicated-kv" \
   python3 -m unittest discover -s capstone/tests -v
 ```
 
-정리 명령은 `.guide/`와 Python cache를 제거하며 `.workspace/`의 learner source는 보존합니다.
+정리 명령은 이 가이드가 소유한 `.guide/distributed-systems/`만 제거하며 `.workspace/`와 다른 Python cache를 순회하지 않습니다.
 
 ```sh
 make clean
