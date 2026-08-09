@@ -50,12 +50,23 @@ def validate(path: Path) -> dict[str, int]:
             file_count += 1
 
     required_templates = {
+        "baseline.json",
+        "bundle-evaluation.json",
+        "checksums.json",
+        "decision-policy.json",
+        "evaluation.json",
         "problem-statement.md",
         "dataset-card.md",
         "inference-contract.md",
+        "golden-inputs.jsonl",
+        "golden-predictions.jsonl",
         "model-card.md",
         "monitoring-plan.md",
+        "neural-experiment.json",
+        "preprocessing.json",
         "release-decision.md",
+        "reproduction.json",
+        "split-audit.json",
         "model-bundle-manifest.json",
         "input-schema.json",
         "experiment-record.json",
@@ -66,6 +77,10 @@ def validate(path: Path) -> dict[str, int]:
         raise AssertionError(f"missing templates: {missing}")
     for json_path in templates.glob("*.json"):
         json.loads(json_path.read_text(encoding="utf-8"))
+    for jsonl_path in templates.glob("*.jsonl"):
+        records = [json.loads(line) for line in jsonl_path.read_text(encoding="utf-8").splitlines() if line.strip()]
+        if not records:
+            raise AssertionError(f"JSONL template has no records: {jsonl_path.name}")
 
     for source in (ROOT / "exercises/model-lifecycle/skeleton/src").rglob("*.py"):
         compile(source.read_text(encoding="utf-8"), str(source), "exec")

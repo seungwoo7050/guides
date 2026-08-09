@@ -1,0 +1,7 @@
+{
+  "preprocessing_version": "replace-me",
+  "fit_split": "train",
+  "feature_order": ["replace-me"],
+  "steps": [{"kind": "replace-me", "fitted_state": "replace-me"}],
+  "unknown_and_missing_policy": "replace-me"
+}

@@ -1,0 +1,65 @@
+{
+  "feature_order": [
+    "tenure_months",
+    "monthly_usage_hours",
+    "usage_change_90d",
+    "support_tickets_90d",
+    "late_payments_180d",
+    "marketing_contacts_30d",
+    "plan_tier=basic",
+    "plan_tier=standard",
+    "plan_tier=premium",
+    "region=north",
+    "region=south",
+    "region=east",
+    "region=west"
+  ],
+  "fit_split": "train",
+  "preprocessing_version": "churn-preprocessing-v1",
+  "steps": [
+    {
+      "fields": [
+        "tenure_months",
+        "monthly_usage_hours",
+        "usage_change_90d",
+        "support_tickets_90d",
+        "late_payments_180d",
+        "marketing_contacts_30d"
+      ],
+      "kind": "standardize",
+      "means": {
+        "late_payments_180d": 0.31282051,
+        "marketing_contacts_30d": 1.95897436,
+        "monthly_usage_hours": 20.24825641,
+        "support_tickets_90d": 0.86153846,
+        "tenure_months": 27.47692308,
+        "usage_change_90d": -1.92521795
+      },
+      "scales": {
+        "late_payments_180d": 0.5159902,
+        "marketing_contacts_30d": 1.42625886,
+        "monthly_usage_hours": 6.20526186,
+        "support_tickets_90d": 1.37236748,
+        "tenure_months": 13.24011894,
+        "usage_change_90d": 6.30493254
+      }
+    },
+    {
+      "fields": {
+        "plan_tier": [
+          "basic",
+          "standard",
+          "premium"
+        ],
+        "region": [
+          "north",
+          "south",
+          "east",
+          "west"
+        ]
+      },
+      "kind": "one_hot"
+    }
+  ],
+  "unknown_and_missing_policy": "reject"
+}

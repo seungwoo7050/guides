@@ -101,6 +101,12 @@
       "stage": 8,
       "title": "model card, monitoring and release decision",
       "files": [
+        {"path": "artifacts/model-bundle/model.json", "type": "json", "required_keys": ["format_version", "model_version", "family", "feature_schema_version", "preprocessing_version", "feature_order", "weights", "bias", "training"]},
+        {"path": "artifacts/model-bundle/checksums.json", "type": "json", "required_keys": ["algorithm", "files"]},
+        {"path": "artifacts/model-bundle/golden-inputs.jsonl", "type": "jsonl", "minimum_records": 2, "required_keys": ["case_id", "input"]},
+        {"path": "artifacts/model-bundle/golden-predictions.jsonl", "type": "jsonl", "minimum_records": 2, "required_keys": ["case_id", "model_version", "policy_version", "probability", "decision"]},
+        {"path": "artifacts/model-bundle/reproduction.json", "type": "json", "required_keys": ["source_revision", "python_requirement", "command", "fixture_digests", "determinism", "expected_files"]},
+        {"path": "reports/reproduction.json", "type": "json", "required_keys": ["source_revision", "python_requirement", "command", "fixture_digests", "determinism", "expected_files"]},
         {"path": "reports/model-card.md", "type": "markdown", "headings": ["Intended use, users and subjects", "Prohibited and out-of-scope use", "Baselines, evaluation and threshold", "Known limitations and failure modes", "Operational controls and human review", "Monitoring, incident and rollback"]},
         {"path": "reports/monitoring-plan.md", "type": "markdown", "headings": ["Service health signals", "Data quality and feature drift", "Delayed outcome quality and label maturity", "Alerts, owners, evidence and actions", "Retraining triggers and release approval", "Incident containment and rollback"]},
         {"path": "reports/release-decision.md", "type": "markdown", "headings": ["Decision", "Reviewed versions", "Supported claim", "Blocking findings", "Required controls and owners", "Revalidation triggers"]}

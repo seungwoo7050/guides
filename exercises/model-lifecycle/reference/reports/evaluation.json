@@ -1,0 +1,288 @@
+{
+  "calibration": [
+    {
+      "count": 148,
+      "lower": 0.0,
+      "mean_probability": 0.10504428,
+      "positive_rate": 0.12162162,
+      "upper": 0.2
+    },
+    {
+      "count": 20,
+      "lower": 0.2,
+      "mean_probability": 0.27099366,
+      "positive_rate": 0.15,
+      "upper": 0.4
+    },
+    {
+      "count": 6,
+      "lower": 0.4,
+      "mean_probability": 0.50601938,
+      "positive_rate": 0.33333333,
+      "upper": 0.6
+    },
+    {
+      "count": 0,
+      "lower": 0.6,
+      "mean_probability": null,
+      "positive_rate": null,
+      "upper": 0.8
+    },
+    {
+      "count": 0,
+      "lower": 0.8,
+      "mean_probability": null,
+      "positive_rate": null,
+      "upper": 1.0
+    }
+  ],
+  "error_analysis": {
+    "false_negatives": [
+      "customer-0006-2025-01",
+      "customer-0030-2025-02",
+      "customer-0041-2025-02",
+      "customer-0072-2025-01",
+      "customer-0074-2025-01"
+    ],
+    "false_positives": [
+      "customer-0029-2025-01",
+      "customer-0029-2025-02",
+      "customer-0053-2025-01",
+      "customer-0057-2025-01",
+      "customer-0057-2025-02"
+    ]
+  },
+  "limitations": [
+    "Single small synthetic holdout; slice estimates are noisy.",
+    "No production latency, drift, intervention, or fairness claim."
+  ],
+  "selected_run_id": "logistic-v1",
+  "selection_reason": "Validation F1, probability quality, simplicity, and deterministic serialization were reviewed before opening test labels.",
+  "slices": {
+    "plan_tier": {
+      "basic": {
+        "accuracy": 0.74193548,
+        "brier": 0.13919983,
+        "confusion": {
+          "false_negative": 13,
+          "false_positive": 11,
+          "true_negative": 68,
+          "true_positive": 1
+        },
+        "f1": 0.07692308,
+        "log_loss": 0.44803354,
+        "positives": 14,
+        "precision": 0.08333333,
+        "recall": 0.07142857,
+        "roc_auc": 0.579566,
+        "rows": 93,
+        "threshold": 0.2
+      },
+      "premium": {
+        "accuracy": 0.92592593,
+        "brier": 0.05067224,
+        "confusion": {
+          "false_negative": 1,
+          "false_positive": 1,
+          "true_negative": 24,
+          "true_positive": 1
+        },
+        "f1": 0.5,
+        "log_loss": 0.20715492,
+        "positives": 2,
+        "precision": 0.5,
+        "recall": 0.5,
+        "roc_auc": 0.8,
+        "rows": 27,
+        "threshold": 0.2
+      },
+      "standard": {
+        "accuracy": 0.75925926,
+        "brier": 0.11243715,
+        "confusion": {
+          "false_negative": 4,
+          "false_positive": 9,
+          "true_negative": 38,
+          "true_positive": 3
+        },
+        "f1": 0.31578947,
+        "log_loss": 0.38103506,
+        "positives": 7,
+        "precision": 0.25,
+        "recall": 0.42857143,
+        "roc_auc": 0.60182371,
+        "rows": 54,
+        "threshold": 0.2
+      }
+    },
+    "region": {
+      "east": {
+        "accuracy": 0.74358974,
+        "brier": 0.12506888,
+        "confusion": {
+          "false_negative": 5,
+          "false_positive": 5,
+          "true_negative": 28,
+          "true_positive": 1
+        },
+        "f1": 0.16666667,
+        "log_loss": 0.42249471,
+        "positives": 6,
+        "precision": 0.16666667,
+        "recall": 0.16666667,
+        "roc_auc": 0.57575758,
+        "rows": 39,
+        "threshold": 0.2
+      },
+      "north": {
+        "accuracy": 0.85185185,
+        "brier": 0.1033157,
+        "confusion": {
+          "false_negative": 6,
+          "false_positive": 2,
+          "true_negative": 46,
+          "true_positive": 0
+        },
+        "f1": 0.0,
+        "log_loss": 0.34349571,
+        "positives": 6,
+        "precision": 0.0,
+        "recall": 0.0,
+        "roc_auc": 0.70138889,
+        "rows": 54,
+        "threshold": 0.2
+      },
+      "south": {
+        "accuracy": 0.80952381,
+        "brier": 0.11215259,
+        "confusion": {
+          "false_negative": 4,
+          "false_positive": 4,
+          "true_negative": 33,
+          "true_positive": 1
+        },
+        "f1": 0.2,
+        "log_loss": 0.37412949,
+        "positives": 5,
+        "precision": 0.2,
+        "recall": 0.2,
+        "roc_auc": 0.60540541,
+        "rows": 42,
+        "threshold": 0.2
+      },
+      "west": {
+        "accuracy": 0.66666667,
+        "brier": 0.13379994,
+        "confusion": {
+          "false_negative": 3,
+          "false_positive": 10,
+          "true_negative": 23,
+          "true_positive": 3
+        },
+        "f1": 0.31578947,
+        "log_loss": 0.43837677,
+        "positives": 6,
+        "precision": 0.23076923,
+        "recall": 0.5,
+        "roc_auc": 0.61616162,
+        "rows": 39,
+        "threshold": 0.2
+      }
+    },
+    "tenure_band": {
+      "0-17": {
+        "accuracy": 0.77777778,
+        "brier": 0.15709228,
+        "confusion": {
+          "false_negative": 5,
+          "false_positive": 5,
+          "true_negative": 31,
+          "true_positive": 4
+        },
+        "f1": 0.44444444,
+        "log_loss": 0.49725581,
+        "positives": 9,
+        "precision": 0.44444444,
+        "recall": 0.44444444,
+        "roc_auc": 0.63271605,
+        "rows": 45,
+        "threshold": 0.2
+      },
+      "18-35": {
+        "accuracy": 0.69512195,
+        "brier": 0.13407648,
+        "confusion": {
+          "false_negative": 11,
+          "false_positive": 14,
+          "true_negative": 56,
+          "true_positive": 1
+        },
+        "f1": 0.07407407,
+        "log_loss": 0.43861011,
+        "positives": 12,
+        "precision": 0.06666667,
+        "recall": 0.08333333,
+        "roc_auc": 0.51428571,
+        "rows": 82,
+        "threshold": 0.2
+      },
+      "36+": {
+        "accuracy": 0.91489362,
+        "brier": 0.04940247,
+        "confusion": {
+          "false_negative": 2,
+          "false_positive": 2,
+          "true_negative": 43,
+          "true_positive": 0
+        },
+        "f1": 0.0,
+        "log_loss": 0.20199265,
+        "positives": 2,
+        "precision": 0.0,
+        "recall": 0.0,
+        "roc_auc": 0.62222222,
+        "rows": 47,
+        "threshold": 0.2
+      }
+    }
+  },
+  "supported_claim": "The frozen reference pipeline runs reproducibly on unseen synthetic entities and is compared with two baselines.",
+  "test": {
+    "accuracy": 0.77586207,
+    "brier": 0.11715713,
+    "confusion": {
+      "false_negative": 18,
+      "false_positive": 21,
+      "true_negative": 130,
+      "true_positive": 5
+    },
+    "f1": 0.20408163,
+    "log_loss": 0.38986319,
+    "positives": 23,
+    "precision": 0.19230769,
+    "recall": 0.2173913,
+    "roc_auc": 0.61128707,
+    "rows": 174,
+    "threshold": 0.2
+  },
+  "threshold": 0.2,
+  "threshold_selection_split": "validation",
+  "validation_at_selected_threshold": {
+    "accuracy": 0.83333333,
+    "brier": 0.10388703,
+    "confusion": {
+      "false_negative": 11,
+      "false_positive": 15,
+      "true_negative": 122,
+      "true_positive": 8
+    },
+    "f1": 0.38095238,
+    "log_loss": 0.34916068,
+    "positives": 19,
+    "precision": 0.34782609,
+    "recall": 0.42105263,
+    "roc_auc": 0.71840184,
+    "rows": 156,
+    "threshold": 0.2
+  }
+}

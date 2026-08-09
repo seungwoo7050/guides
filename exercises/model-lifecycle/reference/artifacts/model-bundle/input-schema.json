@@ -1,0 +1,66 @@
+{
+  "compatibility": [
+    "Only exact churn-input-v1 payloads are accepted."
+  ],
+  "fields": [
+    {
+      "minimum": 0,
+      "name": "tenure_months",
+      "required": true,
+      "type": "integer"
+    },
+    {
+      "minimum": 0,
+      "name": "monthly_usage_hours",
+      "required": true,
+      "type": "number"
+    },
+    {
+      "name": "usage_change_90d",
+      "required": true,
+      "type": "number"
+    },
+    {
+      "minimum": 0,
+      "name": "support_tickets_90d",
+      "required": true,
+      "type": "integer"
+    },
+    {
+      "minimum": 0,
+      "name": "late_payments_180d",
+      "required": true,
+      "type": "integer"
+    },
+    {
+      "minimum": 0,
+      "name": "marketing_contacts_30d",
+      "required": true,
+      "type": "integer"
+    },
+    {
+      "allowed_values": [
+        "basic",
+        "standard",
+        "premium"
+      ],
+      "name": "plan_tier",
+      "required": true,
+      "type": "category"
+    },
+    {
+      "allowed_values": [
+        "north",
+        "south",
+        "east",
+        "west"
+      ],
+      "name": "region",
+      "required": true,
+      "type": "category"
+    }
+  ],
+  "observation_unit": "customer-month at snapshot cutoff",
+  "schema_version": "churn-input-v1",
+  "unknown_field_policy": "reject"
+}

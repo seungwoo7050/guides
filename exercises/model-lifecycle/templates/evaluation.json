@@ -1,0 +1,12 @@
+{
+  "selected_run_id": "replace-me",
+  "selection_reason": "replace-me",
+  "threshold": "replace-me",
+  "threshold_selection_split": "validation",
+  "test": {"replace-me": "replace-me"},
+  "calibration": [],
+  "slices": {"plan_tier": {}, "region": {}, "tenure_band": {}},
+  "error_analysis": {"false_positives": [], "false_negatives": []},
+  "supported_claim": "replace-me",
+  "limitations": ["replace-me"]
+}

@@ -1,0 +1,29 @@
+{
+  "bundle_format_version": "1",
+  "bundle_id": "synthetic-churn-logistic-v1",
+  "checksums_file": "checksums.json",
+  "dataset_version": "synthetic-churn-v1",
+  "decision_policy_file": "decision-policy.json",
+  "evaluation_file": "evaluation.json",
+  "feature_schema_version": "churn-features-v1",
+  "golden_inputs_file": "golden-inputs.jsonl",
+  "golden_predictions_file": "golden-predictions.jsonl",
+  "input_schema_file": "input-schema.json",
+  "known_limitations": [
+    "Single small synthetic holdout; slice estimates are noisy.",
+    "No production latency, drift, intervention, or fairness claim."
+  ],
+  "model_artifact_status": "included",
+  "model_card_file": "model-card.md",
+  "model_family": "binary-logistic-regression",
+  "model_file": "model.json",
+  "model_sha256": "90f413cbdb249482f6663639b9e766050b914ef262ecd80ccca64778f9a4ba91",
+  "model_version": "churn-logistic-v1",
+  "preprocessing_file": "preprocessing.json",
+  "reproduction_file": "reproduction.json",
+  "runtime": {
+    "dependencies": {},
+    "python": ">=3.11"
+  },
+  "split_policy_version": "entity-hash-v1"
+}

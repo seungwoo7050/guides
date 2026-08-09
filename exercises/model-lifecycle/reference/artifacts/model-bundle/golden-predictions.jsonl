@@ -1,0 +1,3 @@
+{"case_id": "golden-1", "decision": "no_review", "model_version": "churn-logistic-v1", "policy_version": "churn-review-v1", "probability": 0.051871076212}
+{"case_id": "golden-2", "decision": "manual_review", "model_version": "churn-logistic-v1", "policy_version": "churn-review-v1", "probability": 0.203885823383}
+{"case_id": "golden-3", "decision": "no_review", "model_version": "churn-logistic-v1", "policy_version": "churn-review-v1", "probability": 0.076505600365}

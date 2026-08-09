@@ -1,0 +1,14 @@
+{
+  "source_revision": "replace-me",
+  "python_requirement": "replace-me",
+  "command": "replace-me",
+  "fixture_digests": {
+    "dataset-card.md": "replace-me",
+    "dataset.csv": "replace-me",
+    "schema.json": "replace-me",
+    "split-policy.json": "replace-me",
+    "split_manifest.csv": "replace-me"
+  },
+  "determinism": {"seed": 7050, "network": false, "threads": 1, "timestamps_in_outputs": false},
+  "expected_files": ["replace-me"]
+}

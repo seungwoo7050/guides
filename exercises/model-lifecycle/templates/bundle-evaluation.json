@@ -1,0 +1,10 @@
+{
+  "selected_run_id": "replace-me",
+  "dataset_version": "synthetic-churn-v1",
+  "split_policy_version": "entity-hash-v1",
+  "threshold": "replace-me",
+  "threshold_selection_split": "validation",
+  "test": {"replace-me": "replace-me"},
+  "slices": {},
+  "limitations": ["replace-me"]
+}

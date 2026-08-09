@@ -1,0 +1,18 @@
+{
+  "run_id": "replace-me",
+  "shapes": {"input": "replace-me", "hidden": "replace-me", "output": 1},
+  "parameter_count": "replace-me",
+  "loss": "replace-me",
+  "optimizer": {"name": "replace-me", "learning_rate": "replace-me"},
+  "small_batch_overfit": {"rows": "replace-me", "loss_before": "replace-me", "loss_after": "replace-me"},
+  "training_trace": [],
+  "checkpoint_rule": "replace-me",
+  "seed_variation": [],
+  "failure_diagnoses": [
+    {"symptom": "replace-me", "evidence": "replace-me", "cause": "replace-me", "fix": "replace-me"},
+    {"symptom": "replace-me", "evidence": "replace-me", "cause": "replace-me", "fix": "replace-me"},
+    {"symptom": "replace-me", "evidence": "replace-me", "cause": "replace-me", "fix": "replace-me"}
+  ],
+  "comparison": {"metric": "replace-me", "neural_value": "replace-me", "classical_value": "replace-me", "baseline_value": "replace-me"},
+  "limitations": ["replace-me"]
+}

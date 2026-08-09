@@ -1,0 +1,8 @@
+{
+  "policy_version": "replace-me",
+  "model_output": {"name": "replace-me", "range": [0.0, 1.0], "model_version": "replace-me"},
+  "threshold": "replace-me",
+  "actions": {"below_threshold": "replace-me", "at_or_above_threshold": "replace-me"},
+  "abstention": {"invalid_input": "replace-me"},
+  "selected_on": "validation"
+}

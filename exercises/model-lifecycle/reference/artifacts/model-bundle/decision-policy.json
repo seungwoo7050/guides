@@ -1,0 +1,21 @@
+{
+  "abstention": {
+    "automatic_action": false,
+    "invalid_input": "reject without a prediction"
+  },
+  "actions": {
+    "at_or_above_threshold": "manual_review",
+    "below_threshold": "no_review"
+  },
+  "model_output": {
+    "model_version": "churn-logistic-v1",
+    "name": "churn_probability",
+    "range": [
+      0.0,
+      1.0
+    ]
+  },
+  "policy_version": "churn-review-v1",
+  "selected_on": "validation",
+  "threshold": 0.2
+}

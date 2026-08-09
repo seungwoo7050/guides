@@ -1,0 +1,3 @@
+{"case_id": "golden-1", "input": {"late_payments_180d": 0, "marketing_contacts_30d": 4, "monthly_usage_hours": 32.793, "plan_tier": "basic", "region": "north", "support_tickets_90d": 0, "tenure_months": 41, "usage_change_90d": -0.083}}
+{"case_id": "golden-2", "input": {"late_payments_180d": 0, "marketing_contacts_30d": 1, "monthly_usage_hours": 16.773, "plan_tier": "standard", "region": "north", "support_tickets_90d": 4, "tenure_months": 39, "usage_change_90d": 4.715}}
+{"case_id": "golden-3", "input": {"late_payments_180d": 1, "marketing_contacts_30d": 4, "monthly_usage_hours": 15.734, "plan_tier": "premium", "region": "south", "support_tickets_90d": 3, "tenure_months": 30, "usage_change_90d": 9.945}}

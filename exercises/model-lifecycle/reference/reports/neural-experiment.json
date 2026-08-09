@@ -1,0 +1,137 @@
+{
+  "checkpoint_rule": "Lowest validation log loss among declared trace checkpoints; test is excluded.",
+  "comparison": {
+    "baseline_value": 0.44444444,
+    "classical_run": "logistic-v1",
+    "classical_value": 0.38095238,
+    "metric": "validation_f1",
+    "neural_value": 0.0,
+    "reason": "Prefer the simpler serializable model absent decisive validation benefit.",
+    "selection": "logistic-v1"
+  },
+  "failure_diagnoses": [
+    {
+      "cause": "unstable probability math, non-finite input, or excessive learning rate",
+      "evidence": "the first non-finite trace entry and offending batch",
+      "fix": "use stable sigmoid/cross-entropy, reject non-finite input, and lower the learning rate",
+      "symptom": "loss is non-finite"
+    },
+    {
+      "cause": "broken gradient flow, constant features, or label/input misalignment",
+      "evidence": "near-zero parameter update across consecutive checkpoints",
+      "fix": "assert non-zero updates, inspect standardized variance, and test row-label joins",
+      "symptom": "training loss is flat"
+    },
+    {
+      "cause": "overfitting or selection on a noisy checkpoint",
+      "evidence": "diverging train and validation loss in the frozen trace",
+      "fix": "restore the validation-selected checkpoint and simplify or regularize without consulting test",
+      "symptom": "validation degrades while training improves"
+    }
+  ],
+  "limitations": [
+    "Didactic full-batch implementation; not a performance template.",
+    "Small synthetic data cannot justify neural complexity."
+  ],
+  "loss": "binary cross entropy",
+  "optimizer": {
+    "epochs": 180,
+    "learning_rate": 0.06,
+    "name": "full-batch gradient descent"
+  },
+  "parameter_count": 76,
+  "run_id": "tiny-mlp-v1",
+  "seed_variation": [
+    {
+      "seed": 7050,
+      "validation": {
+        "accuracy": 0.87820513,
+        "brier": 0.10650803,
+        "confusion": {
+          "false_negative": 19,
+          "false_positive": 0,
+          "true_negative": 137,
+          "true_positive": 0
+        },
+        "f1": 0.0,
+        "log_loss": 0.36881587,
+        "positives": 19,
+        "precision": 0.0,
+        "recall": 0.0,
+        "roc_auc": 0.58432578,
+        "rows": 156,
+        "threshold": 0.5
+      }
+    },
+    {
+      "seed": 7051,
+      "validation": {
+        "accuracy": 0.87820513,
+        "brier": 0.10571062,
+        "confusion": {
+          "false_negative": 19,
+          "false_positive": 0,
+          "true_negative": 137,
+          "true_positive": 0
+        },
+        "f1": 0.0,
+        "log_loss": 0.36578642,
+        "positives": 19,
+        "precision": 0.0,
+        "recall": 0.0,
+        "roc_auc": 0.71840184,
+        "rows": 156,
+        "threshold": 0.5
+      }
+    }
+  ],
+  "shapes": {
+    "hidden": 5,
+    "input": 13,
+    "output": 1
+  },
+  "small_batch_overfit": {
+    "claim": "The fixed eight-row batch loss decreases; perfect memorization is not required or claimed.",
+    "loss_after": 0.03624957,
+    "loss_before": 0.68022186,
+    "rows": 8,
+    "status": "loss-decrease-observed"
+  },
+  "training_trace": [
+    {
+      "epoch": 1,
+      "train_log_loss": 0.68255918,
+      "validation_log_loss": 0.68336231
+    },
+    {
+      "epoch": 30,
+      "train_log_loss": 0.51716302,
+      "validation_log_loss": 0.51594281
+    },
+    {
+      "epoch": 60,
+      "train_log_loss": 0.44083187,
+      "validation_log_loss": 0.43870107
+    },
+    {
+      "epoch": 90,
+      "train_log_loss": 0.40440676,
+      "validation_log_loss": 0.40203315
+    },
+    {
+      "epoch": 120,
+      "train_log_loss": 0.38591514,
+      "validation_log_loss": 0.38377155
+    },
+    {
+      "epoch": 150,
+      "train_log_loss": 0.37577013,
+      "validation_log_loss": 0.37420396
+    },
+    {
+      "epoch": 180,
+      "train_log_loss": 0.36959525,
+      "validation_log_loss": 0.36881587
+    }
+  ]
+}

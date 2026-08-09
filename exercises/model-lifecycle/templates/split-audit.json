@@ -1,0 +1,12 @@
+{
+  "dataset_version": "synthetic-churn-v1",
+  "split_policy_version": "entity-hash-v1",
+  "rows": {"train": 0, "validation": 0, "test": 0},
+  "entities": {"train": 0, "validation": 0, "test": 0},
+  "positives": {"train": 0, "validation": 0, "test": 0},
+  "entity_overlap": [],
+  "duplicate_row_ids": [],
+  "forbidden_features": ["future_refund_30d"],
+  "valid": false,
+  "limitations": ["replace-me"]
+}

@@ -1,0 +1,13 @@
+{
+  "dataset_version": "synthetic-churn-v1",
+  "selection_split": "validation",
+  "selection_metric": "replace-me",
+  "decision_context": {"action": "replace-me", "review_budget_fraction": "replace-me"},
+  "baselines": [
+    {"name": "train-prevalence", "fit_split": "train", "validation": {"replace-me": "replace-me"}},
+    {"name": "business-rule", "fit_split": "none", "validation": {"replace-me": "replace-me"}}
+  ],
+  "chosen_baseline": "replace-me",
+  "choice_reason": "replace-me",
+  "known_limitations": ["replace-me"]
+}

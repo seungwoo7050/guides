@@ -1,0 +1,29 @@
+{
+  "dataset_version": "synthetic-churn-v1",
+  "duplicate_row_ids": [],
+  "entities": {
+    "test": 58,
+    "train": 130,
+    "validation": 52
+  },
+  "entity_overlap": [],
+  "forbidden_features": [
+    "future_refund_30d"
+  ],
+  "limitations": [
+    "Entity hashing does not evaluate future calendar-time shift.",
+    "The fixture is synthetic and cannot establish representativeness."
+  ],
+  "positives": {
+    "test": 23,
+    "train": 50,
+    "validation": 19
+  },
+  "rows": {
+    "test": 174,
+    "train": 390,
+    "validation": 156
+  },
+  "split_policy_version": "entity-hash-v1",
+  "valid": true
+}

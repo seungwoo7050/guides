@@ -356,10 +356,11 @@ artifacts/model-bundle/
 reports/inference-contract.md
 ```
 
-실제 model binary는 선택이다.
+7단계에서는 contract review를 먼저 끝내기 위해 실제 model artifact를 보류할 수 있다.
 
 - 포함하면 checksum과 clean-process smoke test를 추가한다.
-- 포함하지 않으면 manifest에 `model_artifact_status: not-included`를 기록하고 필요한 format·loader·test를 설명한다.
+- 아직 포함하지 않으면 manifest에 `model_artifact_status: not-included`를 기록하고 필요한 format·loader·test를 설명한다.
+- `not-included`는 7단계 중간 상태일 뿐 최종 완료가 아니다.
 
 ### 완료 질문
 
@@ -382,7 +383,19 @@ reports/inference-contract.md
 reports/model-card.md
 reports/monitoring-plan.md
 reports/release-decision.md
+reports/reproduction.json
+artifacts/model-bundle/model.json
+artifacts/model-bundle/checksums.json
+artifacts/model-bundle/golden-inputs.jsonl
+artifacts/model-bundle/golden-predictions.jsonl
+artifacts/model-bundle/reproduction.json
 ```
+
+8단계에서는 `model_artifact_status: included`인 실제 artifact가 필수다. Manifest의
+SHA-256과 전체 checksum 목록을 확인하고, 새 process에서 golden input을 읽어
+golden prediction과 parity를 검사한다. Reproduction evidence에는 fixture digest,
+runtime 요구사항, 실행 명령, seed와 비-network 조건을 기록한다. Artifact를
+직렬화할 수 없거나 smoke test가 실패하면 이 단계는 완료가 아니다.
 
 Decision은 다음 중 하나다.
 

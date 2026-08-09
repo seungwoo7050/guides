@@ -1,0 +1,45 @@
+{
+  "bias": -1.40621034,
+  "family": "binary-logistic-regression",
+  "feature_order": [
+    "tenure_months",
+    "monthly_usage_hours",
+    "usage_change_90d",
+    "support_tickets_90d",
+    "late_payments_180d",
+    "marketing_contacts_30d",
+    "plan_tier=basic",
+    "plan_tier=standard",
+    "plan_tier=premium",
+    "region=north",
+    "region=south",
+    "region=east",
+    "region=west"
+  ],
+  "feature_schema_version": "churn-features-v1",
+  "format_version": 1,
+  "model_version": "churn-logistic-v1",
+  "preprocessing_version": "churn-preprocessing-v1",
+  "training": {
+    "epochs": 420,
+    "l2": 0.002,
+    "learning_rate": 0.12,
+    "seed": 7050,
+    "split": "train"
+  },
+  "weights": [
+    -0.2122385,
+    0.1100443,
+    -0.24622216,
+    0.53395039,
+    -0.01280424,
+    -0.06568369,
+    -0.34715415,
+    -0.05864448,
+    -0.88424482,
+    -0.66468245,
+    -0.33725405,
+    -0.30336147,
+    0.01525451
+  ]
+}
