@@ -1,11 +1,28 @@
 {
   "schema_version": 1,
   "source_language": ["msl", "hlsl"],
+  "sources": {
+    "metal_runtime": "triangle.metal",
+    "portable_offline": "triangle.hlsl"
+  },
   "entry_points": {"vertex": "vertex_main", "fragment": "fragment_main"},
   "vertex_layout": ["float3-position@0", "float4-color@12"],
+  "metal_source_hash_fnv1a64": "f6d7c86e9a48ac03",
+  "minimum_sdl3": "3.4.10",
   "offline_tool": {
     "repository": "https://github.com/libsdl-org/SDL_shadercross",
-    "commit": "e55cf5e31ced6f3d1be5cc6d0c50e99384f9f4ba"
+    "commit": "e55cf5e31ced6f3d1be5cc6d0c50e99384f9f4ba",
+    "commands": [
+      "cmake -E make_directory build/shaders",
+      "shadercross exercises/08-renderer-capstone/project/shaders/triangle.hlsl -s HLSL -d SPIRV -t vertex -e vertex_main -o build/shaders/triangle.vertex.spv",
+      "shadercross exercises/08-renderer-capstone/project/shaders/triangle.hlsl -s HLSL -d SPIRV -t fragment -e fragment_main -o build/shaders/triangle.fragment.spv",
+      "shadercross exercises/08-renderer-capstone/project/shaders/triangle.hlsl -s HLSL -d DXIL -t vertex -e vertex_main -o build/shaders/triangle.vertex.dxil",
+      "shadercross exercises/08-renderer-capstone/project/shaders/triangle.hlsl -s HLSL -d DXIL -t fragment -e fragment_main -o build/shaders/triangle.fragment.dxil",
+      "shadercross exercises/08-renderer-capstone/project/shaders/triangle.hlsl -s HLSL -d MSL -t vertex -e vertex_main -o build/shaders/triangle.vertex.msl",
+      "shadercross exercises/08-renderer-capstone/project/shaders/triangle.hlsl -s HLSL -d MSL -t fragment -e fragment_main -o build/shaders/triangle.fragment.msl"
+    ]
   },
-  "generated_binaries_tracked": false
+  "generated_output_root": "build/shaders",
+  "generated_binaries_tracked": false,
+  "default_build_requires_shadercross": false
 }

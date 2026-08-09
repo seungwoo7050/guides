@@ -22,7 +22,8 @@ endif()
 
 set(CG_HAS_SDL3 OFF)
 if(NOT CG_GPU STREQUAL "off")
-  find_package(SDL3 3.2 CONFIG QUIET)
+  # 3.4.10 is the documented stable compatibility floor for this guide.
+  find_package(SDL3 3.4.10 CONFIG QUIET)
   if(SDL3_FOUND)
     set(CG_HAS_SDL3 ON)
   elseif(CG_GPU STREQUAL "required")
@@ -31,6 +32,16 @@ if(NOT CG_GPU STREQUAL "off")
 endif()
 
 set(CG_IMPLEMENTATION_DIR "${CMAKE_CURRENT_SOURCE_DIR}/${CG_IMPLEMENTATION}")
+set_property(
+  DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS
+  "${CMAKE_CURRENT_SOURCE_DIR}/shaders/triangle.metal"
+)
+file(READ "${CMAKE_CURRENT_SOURCE_DIR}/shaders/triangle.metal" CG_MSL_SOURCE)
+configure_file(
+  "${CMAKE_CURRENT_SOURCE_DIR}/common/shader_source.hpp.in"
+  "${CMAKE_CURRENT_BINARY_DIR}/generated/cg/shader_source.hpp"
+  @ONLY
+)
 add_library(cg_core STATIC
   common/artifact.cpp
   common/contracts.cpp
@@ -38,7 +49,10 @@ add_library(cg_core STATIC
   "${CG_IMPLEMENTATION_DIR}/raster.cpp"
   "${CG_IMPLEMENTATION_DIR}/gpu.cpp"
 )
-target_include_directories(cg_core PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/include")
+target_include_directories(cg_core
+  PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/include"
+  PRIVATE "${CMAKE_CURRENT_BINARY_DIR}/generated"
+)
 target_compile_definitions(cg_core PUBLIC CG_HAS_SDL3=$<BOOL:${CG_HAS_SDL3}>)
 if(MSVC)
   target_compile_options(cg_core PRIVATE /W4 /permissive-)

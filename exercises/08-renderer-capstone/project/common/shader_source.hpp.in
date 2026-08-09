@@ -1,0 +1,7 @@
+#pragma once
+
+namespace cg::embedded {
+
+inline constexpr char msl_source[] = R"CGMSL(@CG_MSL_SOURCE@)CGMSL";
+
+}  // namespace cg::embedded
