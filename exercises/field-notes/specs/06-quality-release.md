@@ -253,20 +253,21 @@ Stage 01~05의 실패를 release candidate에서 다시 결합한다.
 
 이미 실행된 local migration이나 remote command는 JavaScript rollback만으로 되돌아가지 않는다. rollback과 data recovery를 같은 말로 쓰지 않는다.
 
-## 자동 검증
+## 자동 검증과 외부 build gate
 
-자동화하기 적합한 항목:
+현재 `verify.sh`가 자동으로 모으는 범위:
 
 - 전체 public behavior/unit/contract/integration suite
-- reference 통과와 skeleton/known-wrong rejection
+- reference 통과, Stage 01 skeleton rejection과 명명된 known-wrong model rejection
 - link·structure·license와 source fingerprint
 - resolved app config와 profile 정적 계약
 - CNG generation, Android/iOS Metro bundle
-- 가능한 host의 native compile와 artifact digest
 - migration/upgrade fixtures와 Stage 04/05 fault history
 - release evidence schema v2와 source/lock/config, `artifacts[]`·installation/signing/store ref 연결
 
-자동 검사는 UI 문자열이나 generated file 존재만으로 통과시키지 않는다. build command가 실행되지 않았거나 tool 부재로 생략됐으면 필수 성공으로 표시하지 않는다.
+현재 verify의 CNG·bundle은 **native compile, signed artifact 생성 또는 실제 artifact digest 재계산이 아니다**. Android/iOS native compile, AAB/APK/xcarchive/IPA 생성·digest, signing, install과 store 처리는 외부 build/device gate이며 기본 verify summary에서 `NOT-RUN` 수동 항목으로 남는다. 허가된 local build나 CI가 이를 실행했다면 command, host/toolchain, exit status, 고유 artifact ref와 실제 file에서 계산한 digest를 별도 evidence로 연결한다.
+
+자동 검사는 UI 문자열이나 generated file 존재만으로 통과시키지 않는다. 외부 build command가 실행되지 않았거나 tool 부재로 생략됐으면 필수 성공으로 표시하지 않으며, release-contract fixture의 예시 digest를 실제 artifact digest로 재사용하지 않는다.
 
 cloud build는 유일한 필수 구현 수단이 아니다. local native build, EAS 또는 허가된 CI 중 하나를 선택하되 어떤 계층까지 실행했는지 결과에 적는다.
 

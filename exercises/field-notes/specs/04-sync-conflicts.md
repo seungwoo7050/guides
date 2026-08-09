@@ -20,16 +20,16 @@ Stage 02의 outbox command를 remote contract와 연결한다. timeout, response
 - time·UUID·network result를 통제할 수 있는 test port
 - 정상 응답과 fault를 결정적으로 선택할 수 있는 test server
 
-skeleton에서 다음은 의도적으로 미완성이다.
+Stage 03을 마친 learner 작업 복사본에서 다음은 의도적으로 미완성이다.
 
 - claim/lease와 terminal transition
 - attempted command snapshot 보존
 - response runtime validation과 remote version 단조성 검사
 - newer edit와 stale result 조정
 - conflict 저장·해결
-- auth block, retry와 permanent failure 정책
+- auth block, retry exhaustion과 permanent failure 정책
 
-skeleton은 typecheck 또는 app shell이 동작할 수 있지만 Stage 04 공개 행동 검사를 통과해서는 안 된다. 미완성 상태가 reference와 같이 통과하면 검사가 구현 문자열이나 존재 여부만 본 결함이다.
+저장소의 제공 `skeleton`과 그 rejection runner는 **Stage 01의 navigation·form TODO만** 소유한다. Stage 04 전용 skeleton rejection이 있다는 뜻이 아니다. Stage 04에서는 위 learner 기준선에 public sync contract를 적용하고, production reference behavior suite 및 sync-model known-wrong mutation 결과와 비교한다. 미완성 learner 구현이 관련 Stage 04 behavior case를 통과하면 해당 검사의 판정력을 보정한다.
 
 ## 관찰할 상태와 불변식
 
@@ -39,7 +39,7 @@ skeleton은 typecheck 또는 app shell이 동작할 수 있지만 Stage 04 공�
 | queued/claimed command | outbox repository | local transaction, claim, lease expiry, result transaction | 전송을 시도한 command는 stable `commandId`와 immutable attempted snapshot을 가진다. |
 | remote snapshot/version | sync result transaction | 검증된 success/conflict | 이미 아는 remote version이 회귀하지 않는다. |
 | conflict | conflict repository | version mismatch, 사용자 해결 | local·remote·base·원 command 근거를 함께 보존한다. |
-| session block | session/application layer | 401, credential 회복, account change | 인증 실패가 unsynced data를 삭제하거나 busy retry를 만들지 않는다. |
+| session block | session/application layer | 401, 외부 재인증 확인, 명시적 resume, account change | 인증 실패가 unsynced data를 삭제하거나 busy retry를 만들지 않는다. resume 자체를 credential 회복으로 간주하지 않는다. |
 | attachment bytes와 link | file/attachment repository | upload, link, cleanup | upload와 record link의 부분 성공을 같은 성공으로 표시하지 않는다. |
 
 정상 경로는 한 pending command가 한 번 적용되고 local/remote version이 수렴하는 경우다. 대표 경계는 전송 중 newer local edit다. 대표 실패는 server 적용 뒤 response를 잃고 같은 command를 다시 보내는 경우다.
@@ -66,6 +66,8 @@ server 또는 deterministic simulator는 다음 행동을 가져야 한다.
 - fault control로 delay, reorder, response drop, 401, retryable 5xx, malformed body와 explicit permanent failure를 재현한다.
 
 HTTP를 구현하는 모양은 필수가 아니다. `SyncTransport` fake와 fault server가 같은 공개 의미를 보이면 된다. 실제 backend를 쓰는 경우에도 동일한 acceptance case를 격리된 test data로 실행해야 한다.
+
+제공 fault server와 production reference suite가 자동으로 다루는 wire command는 record upsert/delete다. `UPLOAD_ATTACHMENT`와 remote record-link protocol은 learner가 선택한 public contract로 구현하고 아래 partial-failure evidence를 별도로 제출한다. 제공 server에 해당 endpoint가 없다는 사실을 attachment 성공 근거로 바꾸지 않는다.
 
 ## attempted command는 불변입니다
 
@@ -160,7 +162,7 @@ A와 B response가 역순으로 도착해도 response 도착 순서를 정본으
 | server apply 후 response loss | UNKNOWN으로 기록하고 동일 command를 retry; server effect 1회 | 새 ID로 같은 effect 재실행 |
 | duplicate request/response | 같은 memoized result를 idempotent하게 적용 | local revision/version 두 번 증가 |
 | response reorder | stale result는 최신 local payload를 덮지 않음 | arrival order로 synced 판정 |
-| 401 | `blocked-auth`, unsynced record/outbox 보존, session recovery action 제공 | busy retry, local data 삭제, 401을 conflict로 표시 |
+| 401 | `blocked-auth`, unsynced record/outbox 보존; 외부 재인증 확인 뒤 명시적 resume | busy retry, local data 삭제, resume를 credential 생성·refresh 증거로 표시 |
 | malformed success body | success 전이 금지, `malformed-response` retry-wait; 제한 초과 시 permanent evidence | type assertion으로 record/version 저장 |
 | explicit permanent failure | `failed`와 reason, attempted snapshot 보존; 사용자 수정/discard action | 무한 retry 또는 command 조용히 삭제 |
 
@@ -201,6 +203,8 @@ UI는 최소 다음 선택을 제공한다.
 
 대규모 resumable upload와 media transcoding은 선택 확장이다.
 
+제공 Stage 04 자동 suite는 record command의 lease/checkpoint와 fault history를 검사한다. attachment upload 성공 뒤 local checkpoint/link 실패, local file 누락과 remote link reconciliation은 learner 구현의 결정적 fake 또는 격리된 test endpoint 결과와 사람 검토 trace를 함께 제출한다. 실제 bytes, private URI와 사용자 record 내용은 evidence에 넣지 않는다.
+
 ## 필수 failure matrix
 
 다음은 구현 모양이 아니라 event 뒤 DB/outbox/remote/UI 관측 결과로 검사한다.
@@ -217,20 +221,23 @@ UI는 최소 다음 선택을 제공한다.
 10. explicit permanent failure
 11. foreground/background worker 동시 claim
 12. process 종료로 만료된 lease
-13. attachment upload 성공 후 local result transaction 실패
-14. local attachment file 누락
+13. attachment upload 성공 후 local result transaction 실패 — learner 자동 trace + 사람 검토
+14. local attachment file 누락 — learner 자동 trace + 사람 검토
 
 ## 자동 검증
 
-자동화하기 적합한 항목:
+자동 근거는 서로 다른 세 층을 구분한다.
 
-- reference가 public sync contract와 모든 terminal transition을 통과한다.
-- skeleton의 TODO behavior와 known-wrong mutant를 같은 검사기가 거부한다.
-- response loss 뒤 request는 같은 command snapshot이고 server apply count는 1이다.
-- newer edit, response reorder와 version regression에서 최신 local payload가 보존된다.
-- 401, malformed, permanent가 서로 다른 durable/visible 상태가 된다.
-- conflict의 두 snapshot과 새 해결 command가 restart 뒤 남는다.
-- lease expiry, concurrent trigger, queue fairness와 attachment 부분 실패를 deterministic clock/server로 재현한다.
+```sh
+npm run test:stage04
+python3 scripts/expect_skeleton_rejection.py
+python3 scripts/verify_mutants.py
+```
+
+- `test:stage04`는 production reference의 SQLite adapter·fetch transport와 sync-engine/fault-server 공개 행동을 검사한다. response loss 뒤 같은 snapshot과 apply count 1, newer edit·reorder·version regression, 401 block, malformed bounded exhaustion, permanent, conflict, lease expiry와 concurrent claim을 판정한다.
+- `expect_skeleton_rejection.py`는 Stage 01 reference baseline과 Stage 01 learner skeleton의 두 명명된 behavior rejection만 확인한다. Stage 04 TODO rejection이라고 확대하지 않는다.
+- `verify_mutants.py`는 순수 [`examples/sync-model`](../../../examples/sync-model/README.md)의 permanent-as-synced, version regression 수용, malformed payload 수용 mutant를 거부한다. production SQLite/fetch source mutation이나 attachment protocol을 검사하지 않는다.
+- attachment upload/link partial failure는 제공 reference 자동 suite 밖이다. learner가 같은 상태·불변식을 자신의 deterministic test와 사람 trace로 증명한다.
 
 검사는 내부 SQL 문자열, 함수 이름이나 정답 source를 찾지 않는다. public port 호출, normalized trace, repository snapshot과 server apply history를 판정한다.
 
@@ -242,6 +249,7 @@ UI는 최소 다음 선택을 제공한다.
 - app background/foreground 또는 process restart 중 같은 업무 의도가 중복 표시되지 않는가?
 - conflict 화면을 TalkBack/VoiceOver와 큰 글자에서 비교·해결할 수 있고 draft가 보존되는가?
 - 큰 attachment 처리 중 app 이동·중단에서 spinner가 무한히 남지 않는가?
+- upload bytes 성공과 record link/checkpoint 실패가 서로 다른 상태와 recovery action으로 보이는가?
 - account 만료 뒤 local unsynced data의 owner와 삭제/재인증 선택을 오해 없이 설명하는가?
 
 UI 명료성·접근성은 screenshot 하나로 자동 판정하지 않는다. device/build, 수행자, 질문별 판단과 screen recording 또는 accessibility trace를 남긴다.
@@ -257,6 +265,7 @@ stage-04/
 │   ├── reorder-and-newer-edit.md
 │   ├── auth-malformed-permanent.md
 │   └── conflict-and-version-regression.md
+├── attachment-upload-link-review.md
 ├── automated-test-output.txt
 └── conflict-ui-review.md
 ```
@@ -268,10 +277,10 @@ stage-04/
 - duplicate·timeout·response loss가 remote 업무 변경을 두 번 만들지 않는다.
 - attempted command는 retry·newer edit 뒤에도 바뀌지 않는다.
 - response reorder와 remote version regression이 최신 local state를 덮지 않는다.
-- 401·malformed response·permanent failure를 구분하고 command evidence를 보존한다.
+- 401·malformed response·permanent failure를 구분하고 command evidence를 보존한다. 외부 재인증 확인과 명시적 resume를 credential 생성 증거와 구분한다.
 - conflict는 local과 remote를 모두 보존하고 새 command로 명시적으로 해결한다.
 - process restart와 concurrent trigger에서 eligible outbox가 다시 진행된다.
-- attachment upload와 record link의 부분 실패를 설명하고 재조정할 수 있다.
+- attachment upload와 record link의 부분 실패를 learner 자동 trace와 사람 검토로 설명하고 재조정할 수 있다.
 - 자동 검사와 사람 UI/device evidence의 보장 범위를 구분했다.
 
 ## 비범위와 알려진 한계

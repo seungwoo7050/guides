@@ -10,7 +10,8 @@
 - 자동 검사는 command, exit status, normalized trace와 final repository/server snapshot을 연결한다.
 - 사람/기기 검토는 device/build, 수행자/date, 평가 질문과 관측을 연결한다.
 - 자동+사람 행은 둘 다 만족해야 통과다. 한쪽이 없으면 `미검사` 또는 `실패`다.
-- reference는 자동 public contract를 통과해야 하고, skeleton/known-wrong behavior는 같은 검사에서 거부돼야 한다.
+- Stage 01은 reference와 learner skeleton에 같은 Stage 01 contract를 적용해 명명된 TODO behavior가 거부되는지 확인한다.
+- Stage 04는 production reference behavior suite의 통과와 별도로 순수 sync-model known-wrong mutant의 거부를 확인한다. 이를 Stage 04 skeleton 또는 production source mutation rejection으로 확대하지 않는다.
 
 ## 공통 matrix
 
@@ -32,11 +33,12 @@
 | SYNC-04 | 04 | A/B attempted | B response 뒤 A response | arrival order와 무관하게 known remote/local version 회귀 없음 | 자동 | 미검사 | |
 | SYNC-05 | 04 | baseVersion stale | conflict | local+remote+base+command durable 보존, 자동 overwrite/retry 없음 | 자동+사람 | 미검사 | |
 | SYNC-06 | 04 | conflict 저장 | local/remote/merge 해결 | 선택 결과와 새 command가 transaction으로 남음 | 자동+사람 | 미검사 | |
-| SYNC-07 | 04 | 여러 pending command | transport 401 | 모두 `blocked-auth`/preserved; busy retry·data 삭제 없음 | 자동 | 미검사 | |
+| SYNC-07 | 04 | attempted command와 unsynced data | transport 401 | `blocked-auth`/preserved; 외부 재인증 확인 전 busy retry 없음; 명시적 resume가 같은 snapshot 사용 | 자동+사람 | 미검사 | |
 | SYNC-08 | 04 | attempted command | malformed success body 반복 | success 금지; retry-wait 뒤 configured permanent evidence | 자동 | 미검사 | |
 | SYNC-09 | 04 | known remote version 5 | success body version 4 | version regression 거절, local/remote snapshot 불변 | 자동 | 미검사 | |
 | SYNC-10 | 04 | attempted command | explicit permanent failure | failed reason/snapshot 보존, 자동 retry 없음, recovery action | 자동+사람 | 미검사 | |
 | SYNC-11 | 04 | eligible queue | foreground/background 동시 claim | 한 command lease/attempt, 다른 trigger는 duplicate effect 없음 | 자동 | 미검사 | |
+| SYNC-12 | 04 | remote attachment bytes 성공, record link/local checkpoint 미완료 | link/checkpoint transaction 실패 | upload와 link를 같은 성공으로 표시하지 않음; stable identity로 재조회·재조정; private bytes/URI 없는 trace | 자동+사람 | 미검사 | |
 | BG-01 | 05 | pending outbox | scheduler가 실행되지 않음 | pending 보존, app-active가 같은 bounded worker로 재개 | 자동+기기 | 미검사 | |
 | BG-02 | 05 | active lease | task expiration/process death | checkpoint/attempt 보존, lease expiry 뒤 재개 | 자동+기기 | 미검사 | |
 | BG-03 | 05 | 같은 fixture/fault | manual·app-active·background trigger | trigger와 무관한 final durable state | 자동 | 미검사 | |
@@ -57,6 +59,8 @@
 | RELEASE-01 | 06 | release candidate | schema v2 manifest review | source·lock/config·app/build/runtime 아래 고유 refs의 Android AAB+APK/Play split, iOS xcarchive+IPA/TestFlight set 연결 | 자동+사람 | 미검사 | |
 | RELEASE-02 | 06 | privacy/data inventory | declaration review | 실제 storage/permission/telemetry와 일치, 법률 판단 분리 | 사람 | 미검사 | |
 | RELEASE-03 | 06 | artifact/store identity | signing·store evidence review | artifact-linked `claimed`/`manually-reviewed`, publishing/store build ref, delivered bytes `declared`/review와 자동 비보장 분리 | 사람 | 미검사 | |
+
+`SYNC-12`는 제공 reference/fault-server의 자동 통과로 채우지 않는다. learner가 구현한 attachment upload/link port의 결정적 실패 검사와 사람이 검토한 recovery trace가 모두 있어야 한다. `SYNC-07`의 사람 근거는 실제 credential 값이 아니라 외부 재인증 완료 시점, 명시적 resume 사건과 동일 attempted command identity다.
 
 ## 결과 값
 

@@ -136,25 +136,23 @@ SecureStore의 여러 key 쓰기는 하나의 transaction이 아니다. access t
 
 refresh 중 app가 종료될 수 있다. 이전 token 삭제와 새 token 저장 순서를 설계하고, 실패 뒤 어떤 credential이 남는지 확인한다. 특히 iOS Keychain-backed 값은 같은 bundle identifier의 app를 삭제·재설치해도 남을 수 있으므로 reinstall을 logout이나 credential 삭제의 증거로 사용하지 않는다.
 
+이 절은 credential을 사용하는 제품의 **경계 설계**다. Field Notes의 제공 reference는 credential을 생성·refresh·rotation하거나 SecureStore에 저장하는 인증 reference가 아니다. `SessionStore` port는 일반 record 저장소와 분리해야 할 접점을 보여 주고, Stage 04의 실행 기준은 401 뒤 command를 `blocked-auth`로 보존하는 데서 멈춘다.
+
 ## 401을 무한 재시도하지 않습니다
 
-여러 request가 동시에 401을 받으면 각자 refresh를 시작할 수 있다. 하나의 refresh coordinator를 두고 결과를 공유한다.
+인증 client를 실제로 연결한 제품에서는 여러 request가 동시에 401을 받을 수 있다. 이 경우 각 request가 refresh를 시작하지 않도록 하나의 refresh coordinator가 결과를 공유해야 한다. 다만 이 과정은 Field Notes reference의 자동 검증 범위가 아니다.
 
 ```text
-첫 401
-→ refresh 시작
-
-추가 401
-→ 같은 refresh 결과 대기
-
-refresh 성공
-→ 새 credential로 안전한 요청만 재실행
-
-refresh 실패
-→ session을 reauth-required로 전환
+401
+→ attempted command와 outbox를 blocked-auth로 보존
+→ 자동 busy retry 중단
+→ 외부 session/auth layer에서 재인증
+→ credential 회복을 별도 근거로 확인
+→ 사용자가 명시적으로 resume
+→ 같은 attempted command를 다시 claim
 ```
 
-mutation을 자동 재실행할 때는 server가 첫 요청을 처리했을 가능성을 고려한다. command id나 idempotency key가 없으면 중복 업무 변경이 생길 수 있다.
+reference의 resume action은 credential을 만들거나 refresh 성공을 증명하지 않는다. 호출자는 먼저 외부 인증 경계가 실제로 회복됐음을 확인해야 한다. mutation을 다시 실행할 때는 server가 첫 요청을 처리했을 가능성을 고려하며, command id나 idempotency key가 없으면 중복 업무 변경이 생길 수 있다.
 
 ## retry는 operation의 의미가 결정합니다
 
@@ -293,13 +291,13 @@ request log에 다음을 포함할 수 있다.
 
 - 연결 상태와 실제 request 결과를 구분한다.
 - 외부 response를 runtime schema로 검증한다.
-- credential과 일반 local data의 저장소가 분리돼 있다.
-- 동시 401에서 하나의 refresh 작업만 수행한다.
+- credential을 사용하는 구현이라면 일반 local data와 저장소·수명을 분리한다. 제공 reference는 credential 생성·저장을 완료했다고 주장하지 않는다.
+- 401에서 attempted command를 `blocked-auth`로 보존하고, 외부 재인증이 확인된 뒤에만 명시적으로 resume한다.
 - mutation retry에는 command identity와 최대 attempt가 있다.
 - timeout 뒤 server 결과가 UNKNOWN일 수 있음을 UI와 outbox가 표현한다.
 - stale response가 최신 화면·database를 덮지 않는다.
 - offline·auth·forbidden·conflict·malformed 오류에 서로 다른 다음 행동이 있다.
 
-자동 검사는 normalized error, credential generation과 outbox 전이를 검증한다. 실제 radio 전환, captive portal, OS secure-storage 정책, server의 중복 제거와 backend authorization까지 보장하지는 않는다. 해당 항목은 실제 기기·허가된 test server evidence로 별도 검토한다.
+자동 검사는 response runtime validation, UNKNOWN·401·malformed·permanent의 normalized 상태, bounded retry exhaustion과 outbox 전이를 검증한다. credential 생성·refresh·rotation, SecureStore persistence, 동시 refresh single-flight를 검증하지 않는다. 실제 radio 전환, captive portal, OS secure-storage 정책, server의 중복 제거와 backend authorization도 실제 기기·허가된 test server evidence로 별도 검토한다.
 
 이제 요청 실패를 일시 화면 오류로만 두지 않고 local 업무 상태와 outbox로 수렴시킨다. [local data·offline·sync](05-local-data-offline-and-sync.md)로 이어간다.

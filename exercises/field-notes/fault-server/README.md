@@ -29,6 +29,36 @@ package를 직접 실행하면 loopback port `3104`를 사용한다. `FIELD_NOTE
 fnm exec --using=24.19.0 npm --prefix exercises/field-notes/fault-server start
 ```
 
+## app 실행 환경별 endpoint
+
+HTTP server는 의도적으로 host loopback에만 bind한다. 실행 환경에서 `127.0.0.1`이 가리키는 owner가 다르므로 reference app의 `EXPO_PUBLIC_FIELD_NOTES_SYNC_URL`을 다음처럼 선택한다.
+
+| app 실행 환경 | app에 설정할 command endpoint | 범위와 준비 |
+|---|---|---|
+| Node/in-process test | HTTP endpoint 없음 | 같은 core를 memory에서 직접 호출한다. |
+| iOS simulator | `http://127.0.0.1:3104/commands` | simulator가 host network를 공유하는 개발 evidence다. 실제 iPhone evidence가 아니다. |
+| Android emulator | `http://10.0.2.2:3104/commands` | Android emulator의 host-loopback alias다. 다른 emulator 제품은 자체 정본을 확인한다. |
+| Android physical development device | `http://127.0.0.1:3104/commands` | 아래 `adb reverse`가 성공한 현재 USB device에서만 사용한다. |
+| iOS physical device | 허가된 격리 HTTPS test endpoint 또는 `미검사` | 이 저장소는 host loopback server를 iPhone에 노출하는 bridge를 제공하지 않는다. |
+
+Android physical device에서는 server를 loopback bind 그대로 둔 채 USB reverse를 명시적으로 열고, 실습 뒤 제거한다.
+
+```sh
+adb reverse tcp:3104 tcp:3104
+adb reverse --list
+# device evidence 수행
+adb reverse --remove tcp:3104
+```
+
+예를 들어 Android emulator용 Metro를 시작할 때는 development/test 환경에서만 다음 값을 전달한다.
+
+```sh
+EXPO_PUBLIC_FIELD_NOTES_SYNC_URL=http://10.0.2.2:3104/commands \
+  npm run start:dev-client --workspace=@field-notes/reference
+```
+
+local cleartext HTTP가 platform policy에 거부되면 production 전체의 transport policy를 낮추지 않는다. 허가된 HTTPS test endpoint를 사용하거나 해당 device 항목을 `미검사`로 남긴다. iOS physical device를 위해 server를 `0.0.0.0`에 bind하거나 unauthenticated `/__test/*` control endpoint를 LAN·tunnel·공개 host에 노출하지 않는다. 외부 test endpoint가 필요하면 command API와 test control plane을 분리하고 owner·인증·격리·정리 근거를 제출한다.
+
 ## in-process API
 
 자동 검사는 HTTP를 거치지 않고 같은 core를 직접 사용할 수 있다.

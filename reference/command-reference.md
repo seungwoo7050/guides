@@ -29,6 +29,19 @@ fnm exec --using=24.19.0 npm ci
 fnm exec --using=24.19.0 npm test
 ```
 
+## Stage 04 local fault endpoint
+
+local fault server는 host `127.0.0.1:3104`에만 bind한다. app 실행 환경별 endpoint는 다음과 같다.
+
+| app 환경 | `EXPO_PUBLIC_FIELD_NOTES_SYNC_URL` | 추가 조건 |
+|---|---|---|
+| iOS simulator | `http://127.0.0.1:3104/commands` | simulator evidence로만 기록 |
+| Android emulator | `http://10.0.2.2:3104/commands` | Android emulator host alias |
+| Android physical device | `http://127.0.0.1:3104/commands` | `adb reverse tcp:3104 tcp:3104`, 종료 뒤 `adb reverse --remove tcp:3104` |
+| iOS physical device | 허가된 격리 HTTPS endpoint 또는 `미검사` | 이 저장소는 loopback reverse bridge를 제공하지 않음 |
+
+전체 명령, 안전 경계와 정리 절차는 [fault server README](../exercises/field-notes/fault-server/README.md#app-실행-환경별-endpoint)를 따른다. iOS device를 연결하려고 unauthenticated test control endpoint를 LAN이나 공개 tunnel에 노출하지 않는다. platform cleartext policy를 production 전역에서 낮추지 말고, 안전한 HTTPS test endpoint가 없다면 실제 device network fault 항목을 `미검사`로 둔다.
+
 ## compatible package 설치
 
 ```sh
@@ -124,6 +137,16 @@ simulator는 camera·background scheduler·push·biometric·battery의 실제 �
 ./verify.sh
 ```
 
+Stage 04 자동 근거를 좁혀 다시 실행할 때는 다음 세 층을 구분한다.
+
+```sh
+npm run test:stage04
+python3 scripts/expect_skeleton_rejection.py
+python3 scripts/verify_mutants.py
+```
+
+첫 명령은 production reference SQLite/fetch와 sync-engine/fault-server behavior를 검사한다. 두 번째는 Stage 01 skeleton의 명명된 navigation/form 실패만 확인하고, 세 번째는 순수 sync-model의 세 known-wrong mutation만 거부한다. 어느 명령도 attachment upload/link protocol, 실제 credential refresh, device radio 또는 production backend를 증명하지 않는다.
+
 Stage 06의 machine-checkable release evidence schema만 좁혀 검사할 때는 다음을 사용한다.
 
 ```sh
@@ -138,4 +161,4 @@ fixture와 validator `OK`는 `artifacts[]`, artifact ref, runtime/device matrix�
 
 `verify.sh`는 저장소 밖의 unique temporary directory에 log를 남기고 필수 suite를 끝까지 집계한다. 출력된 절대 log path를 evidence에 연결하며, 같은 이름의 repository file이나 고정 `/tmp` log를 덮어쓰지 않는다. `.guide/mobile-app/`만 정리하려면 `make clean`을 사용한다.
 
-검사 결과에는 자동 실행, `not-run` 수동 항목과 environment limitation이 구분돼야 한다. 자동 통과는 교육적 완성이나 stable 판정이 아니며, cloud build·signing·store upload·실제 Android/iOS device 결과를 대신하지 않는다.
+검사 결과에는 자동 실행, `not-run` 수동 항목과 environment limitation이 구분돼야 한다. 현재 verify의 CNG·Metro bundle은 native compile이나 artifact 생성/digest가 아니다. Android/iOS compile, AAB/APK/xcarchive/IPA 생성과 실제 file digest, signing·install·store는 외부 gate이며 별도 명령/evidence가 없으면 `NOT-RUN`으로 남긴다. 자동 통과는 교육적 완성이나 stable 판정이 아니며, cloud build·signing·store upload·실제 Android/iOS device 결과를 대신하지 않는다.
