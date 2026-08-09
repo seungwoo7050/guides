@@ -1,0 +1,18 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://guides.example/contracts/model-request-1.0.schema.json",
+  "title": "Provider-independent model request",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["request_id", "session_id", "task", "instruction_blocks", "context_items", "tool_definitions", "deadline_epoch_ms"],
+  "properties": {
+    "request_id": {"$ref": "#/$defs/identifier"},
+    "session_id": {"$ref": "#/$defs/identifier"},
+    "task": {"type": "string", "minLength": 1, "maxLength": 100000},
+    "instruction_blocks": {"type": "array", "items": {"type": "object"}},
+    "context_items": {"type": "array", "items": {"type": "object"}},
+    "tool_definitions": {"type": "array", "items": {"type": "object"}},
+    "deadline_epoch_ms": {"type": ["integer", "null"], "minimum": 0}
+  },
+  "$defs": {"identifier": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$"}}
+}

@@ -1,0 +1,28 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://guides.example/contracts/context-item-1.0.schema.json",
+  "title": "Cited context item",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["reference", "excerpt", "kind"],
+  "properties": {
+    "reference": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["source_id", "origin", "location", "revision", "digest", "trust", "scope", "freshness", "retrieved_at"],
+      "properties": {
+        "source_id": {"type": "string", "minLength": 1},
+        "origin": {"enum": ["repository", "knowledge"]},
+        "location": {"type": "string", "minLength": 1},
+        "revision": {"type": "string", "minLength": 1},
+        "digest": {"type": "string", "pattern": "^sha256:[0-9a-f]{64}$"},
+        "trust": {"type": "string", "minLength": 1},
+        "scope": {"type": "string", "minLength": 1},
+        "freshness": {"enum": ["current", "stale"]},
+        "retrieved_at": {"type": "string", "format": "date-time"}
+      }
+    },
+    "excerpt": {"type": "string", "maxLength": 12000},
+    "kind": {"enum": ["FACT", "HYPOTHESIS", "DECISION", "INSTRUCTION", "EXECUTION_EVIDENCE"]}
+  }
+}

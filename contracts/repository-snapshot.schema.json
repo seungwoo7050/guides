@@ -1,0 +1,23 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://guides.example/contracts/repository-snapshot-1.0.schema.json",
+  "title": "Repository snapshot identity",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["snapshot_id", "root", "head", "branch", "index_tree", "staged", "unstaged", "untracked", "files"],
+  "properties": {
+    "snapshot_id": {"$ref": "#/$defs/digest"},
+    "root": {"type": "string", "minLength": 1},
+    "head": {"type": ["string", "null"]},
+    "branch": {"type": ["string", "null"]},
+    "index_tree": {"type": ["string", "null"]},
+    "staged": {"$ref": "#/$defs/paths"},
+    "unstaged": {"$ref": "#/$defs/paths"},
+    "untracked": {"$ref": "#/$defs/paths"},
+    "files": {"type": "object", "additionalProperties": {"$ref": "#/$defs/digest"}}
+  },
+  "$defs": {
+    "digest": {"type": "string", "pattern": "^sha256:[0-9a-f]{64}$"},
+    "paths": {"type": "array", "uniqueItems": true, "items": {"type": "string", "minLength": 1}}
+  }
+}
