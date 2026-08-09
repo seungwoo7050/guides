@@ -13,6 +13,4 @@ workspace:
 	./scripts/new-capstone-workspace.sh
 
 clean:
-	rm -rf .guide
-	find . -type d -name __pycache__ -prune -exec rm -rf {} +
-	find . -type f \( -name '*.pyc' -o -name '*.pyo' \) -delete
+	PYTHONDONTWRITEBYTECODE=1 python3 scripts/clean_generated.py

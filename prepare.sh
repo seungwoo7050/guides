@@ -3,4 +3,4 @@ set -eu
 
 ROOT=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd -P)
 cd "$ROOT"
-python3 scripts/prepare.py
+PYTHONDONTWRITEBYTECODE=1 python3 scripts/prepare.py
