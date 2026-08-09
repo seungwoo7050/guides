@@ -1,0 +1,9 @@
+frame,raw_delta_us,clamped_delta_us,pause_reasons,accumulator_before_us,executed_ticks,consumed_sequences,accumulator_after_us,dropped_us,notes
+1,8000,8000,none,0,none,none,8000,0,"seq 1 Move sample is retained because no fixed tick runs"
+2,12000,12000,none,8000,120,"1;2",3333,0,"tick 120 applies the latest Move sample and consumes Dash once"
+3,50000,50000,none,3333,121-123,none,3332,0,"the held Move state persists; no event sequence is consumed again"
+4,200000,100000,none,3332,124-127,3,3330,33334,"four-step cap reached; two whole backlog steps are dropped and the fraction is kept"
+5,16667,16667,menu,3330,none,none,3330,0,"fixed_tick is paused; allowed seq 4 Confirm remains queued"
+6,16667,16667,menu,3330,none,none,3330,0,"fixed_tick is paused; seq 5 Dash release is blocked by Menu"
+7,10000,10000,none,3330,none,none,13330,0,"seq 6 Move sample replaces seq 1 but waits because no fixed tick runs"
+8,24000,24000,none,13330,128-129,"4;6",3996,0,"tick 128 consumes queued Confirm once and applies the latest Move sample once"

@@ -1,0 +1,277 @@
+{
+  "trace_version": 1,
+  "tick_assignment": {
+    "tick_rate_hz": 60,
+    "session_start_ms": 0,
+    "rule": "ceil((time_ms - session_start_ms) * tick_rate_hz / 1000)"
+  },
+  "commands": [
+    {
+      "tick": 6,
+      "player": "player-a",
+      "local_user": "local-1",
+      "sequence": 1,
+      "channel": "gameplay",
+      "kind": "move",
+      "value": [
+        0.0,
+        1.0
+      ],
+      "source_event_sequences": [
+        1
+      ],
+      "decision": "accepted",
+      "reason": "keyboard-1 belongs to local-1 and W resolves to Gameplay Move"
+    },
+    {
+      "tick": 9,
+      "player": "player-b",
+      "local_user": "local-2",
+      "sequence": 2,
+      "channel": "gameplay",
+      "kind": "move",
+      "value": [
+        0.6,
+        0.0
+      ],
+      "source_event_sequences": [
+        2
+      ],
+      "decision": "accepted",
+      "reason": "gamepad-2 belongs to local-2 and the latest LeftStick sample is preserved"
+    },
+    {
+      "tick": 14,
+      "player": "player-a",
+      "local_user": "local-1",
+      "sequence": 3,
+      "channel": "gameplay",
+      "kind": "dash",
+      "value": true,
+      "source_event_sequences": [
+        3
+      ],
+      "decision": "accepted",
+      "reason": "LeftShift resolves to a single Gameplay Dash edge"
+    },
+    {
+      "tick": 56,
+      "player": "player-a",
+      "local_user": "local-1",
+      "sequence": 4,
+      "channel": "ui",
+      "kind": "ui_confirm",
+      "value": true,
+      "source_event_sequences": [
+        4
+      ],
+      "decision": "accepted",
+      "reason": "Menu outranks Gameplay, so shared Gamepad.South resolves to Confirm rather than Dash"
+    },
+    {
+      "tick": 72,
+      "player": "player-a",
+      "local_user": "local-1",
+      "sequence": 5,
+      "channel": "ui",
+      "kind": "ui_confirm",
+      "value": true,
+      "source_event_sequences": [
+        5
+      ],
+      "decision": "accepted",
+      "reason": "Enter resolves to Menu Confirm and does not mutate gameplay state directly"
+    },
+    {
+      "tick": 114,
+      "player": "player-a",
+      "local_user": "local-1",
+      "sequence": 6,
+      "channel": "gameplay",
+      "kind": "move",
+      "value": [
+        0.0,
+        0.0
+      ],
+      "source_event_sequences": [],
+      "decision": "accepted",
+      "reason": "OS focus loss synthesizes a neutral Move command for local-1"
+    },
+    {
+      "tick": 114,
+      "player": "player-b",
+      "local_user": "local-2",
+      "sequence": 7,
+      "channel": "gameplay",
+      "kind": "move",
+      "value": [
+        0.0,
+        0.0
+      ],
+      "source_event_sequences": [],
+      "decision": "accepted",
+      "reason": "OS focus loss synthesizes a neutral Move command for local-2"
+    },
+    {
+      "tick": 141,
+      "player": "player-a",
+      "local_user": "local-1",
+      "sequence": 8,
+      "channel": "gameplay",
+      "kind": "move",
+      "value": [
+        0.0,
+        1.0
+      ],
+      "source_event_sequences": [
+        9
+      ],
+      "decision": "accepted",
+      "reason": "focus returned to Gameplay before the new W press"
+    },
+    {
+      "tick": 144,
+      "player": "player-a",
+      "local_user": "local-1",
+      "sequence": 9,
+      "channel": "gameplay",
+      "kind": "interact",
+      "value": true,
+      "source_event_sequences": [
+        10
+      ],
+      "decision": "accepted",
+      "reason": "E resolves to Gameplay Interact after focus returns"
+    }
+  ],
+  "event_decisions": [
+    {
+      "source_event_sequence": 1,
+      "local_user": "local-1",
+      "resolved_action": "Move",
+      "active_context": "Gameplay",
+      "disposition": "consumed",
+      "command_sequence": 1,
+      "reason": "buffered as the latest axis sample until tick 6"
+    },
+    {
+      "source_event_sequence": 2,
+      "local_user": "local-2",
+      "resolved_action": "Move",
+      "active_context": "Gameplay",
+      "disposition": "consumed",
+      "command_sequence": 2,
+      "reason": "buffered as the latest axis sample until tick 9"
+    },
+    {
+      "source_event_sequence": 3,
+      "local_user": "local-1",
+      "resolved_action": "Dash",
+      "active_context": "Gameplay",
+      "disposition": "consumed",
+      "command_sequence": 3,
+      "reason": "pressed edge is emitted once"
+    },
+    {
+      "source_event_sequence": 4,
+      "local_user": "local-1",
+      "resolved_action": "Confirm",
+      "active_context": "Menu",
+      "disposition": "consumed",
+      "command_sequence": 4,
+      "reason": "Menu is the highest active mapped context for the shared South control"
+    },
+    {
+      "source_event_sequence": 5,
+      "local_user": "local-1",
+      "resolved_action": "Confirm",
+      "active_context": "Menu",
+      "disposition": "consumed",
+      "command_sequence": 5,
+      "reason": "Menu owns Enter while pause-menu has focus"
+    },
+    {
+      "source_event_sequence": 6,
+      "local_user": "local-1",
+      "resolved_action": null,
+      "active_context": "TextEntry",
+      "disposition": "consumed",
+      "command_sequence": null,
+      "reason": "text/IME focus consumes E before Gameplay Interact mapping"
+    },
+    {
+      "source_event_sequence": 7,
+      "local_user": "local-1",
+      "resolved_action": "Move",
+      "active_context": "os-lost",
+      "disposition": "ignored",
+      "command_sequence": null,
+      "reason": "no input context is active and focus-loss cleanup already neutralized held Move"
+    },
+    {
+      "source_event_sequence": 8,
+      "local_user": "local-2",
+      "resolved_action": null,
+      "active_context": "os-lost",
+      "disposition": "consumed",
+      "command_sequence": null,
+      "reason": "device lifecycle owner removes gamepad-2 association; neutral state is already idempotent"
+    },
+    {
+      "source_event_sequence": 9,
+      "local_user": "local-1",
+      "resolved_action": "Move",
+      "active_context": "Gameplay",
+      "disposition": "consumed",
+      "command_sequence": 8,
+      "reason": "new input after focus regain creates a new held sample"
+    },
+    {
+      "source_event_sequence": 10,
+      "local_user": "local-1",
+      "resolved_action": "Interact",
+      "active_context": "Gameplay",
+      "disposition": "consumed",
+      "command_sequence": 9,
+      "reason": "Gameplay owns E after TextEntry and Menu close"
+    }
+  ],
+  "synthetic_cleanup_events": [
+    {
+      "time_ms": 1900,
+      "tick": 114,
+      "local_user": "local-1",
+      "player": "player-a",
+      "kind": "move",
+      "value": [
+        0.0,
+        0.0
+      ],
+      "command_sequence": 6,
+      "reason": "focus_loss"
+    },
+    {
+      "time_ms": 1900,
+      "tick": 114,
+      "local_user": "local-2",
+      "player": "player-b",
+      "kind": "move",
+      "value": [
+        0.0,
+        0.0
+      ],
+      "command_sequence": 7,
+      "reason": "focus_loss"
+    },
+    {
+      "time_ms": 2000,
+      "tick": 120,
+      "local_user": "local-2",
+      "player": "player-b",
+      "kind": "device_association_removed",
+      "value": "gamepad-2",
+      "command_sequence": null,
+      "reason": "device_disconnect_after_focus_cleanup"
+    }
+  ]
+}
