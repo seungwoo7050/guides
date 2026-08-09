@@ -1,0 +1,40 @@
+{
+  "schema_version": 1,
+  "id": "distributed-systems",
+  "title": "분산 시스템 설계·구현·검증 가이드",
+  "runtime": {
+    "python": ">=3.12",
+    "external_dependencies": []
+  },
+  "required_foundations": [
+    "computer-networks",
+    "algorithms",
+    "one of python, java, cpp"
+  ],
+  "recommended_foundations": [
+    "operating-systems",
+    "database-systems",
+    "distributed-services"
+  ],
+  "owns": [
+    "distributed execution and failure models",
+    "causality and logical time",
+    "replication and consistency",
+    "consensus and replicated logs",
+    "snapshots and membership",
+    "sharding and atomic commit boundaries",
+    "deterministic simulation and history checking"
+  ],
+  "does_not_own": [
+    "service-level saga and outbox workflows",
+    "network protocol fundamentals",
+    "single-node DBMS internals",
+    "host and container operations"
+  ],
+  "capstone": {
+    "name": "deterministic replicated key-value store",
+    "reference_implementation_included": false,
+    "starter_included": true,
+    "public_contract_tests_included": true
+  }
+}

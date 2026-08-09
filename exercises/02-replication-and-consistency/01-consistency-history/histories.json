@@ -1,0 +1,54 @@
+{
+  "schema_version": 1,
+  "object": {"type": "register", "initial": 0},
+  "histories": [
+    {
+      "id": "h1",
+      "operations": [
+        {"id":"w1","process":"c1","op":"write","value":1,"invoke":1,"complete":4,"result":"OK"},
+        {"id":"r1","process":"c2","op":"read","invoke":5,"complete":7,"result":1}
+      ]
+    },
+    {
+      "id": "h2",
+      "operations": [
+        {"id":"w1","process":"c1","op":"write","value":1,"invoke":1,"complete":3,"result":"OK"},
+        {"id":"r1","process":"c2","op":"read","invoke":4,"complete":6,"result":0}
+      ]
+    },
+    {
+      "id": "h3",
+      "operations": [
+        {"id":"w1","process":"c1","op":"write","value":1,"invoke":1,"complete":4,"result":"OK"},
+        {"id":"r1","process":"c2","op":"read","invoke":5,"complete":7,"result":0},
+        {"id":"r2","process":"c2","op":"read","invoke":8,"complete":10,"result":1}
+      ]
+    },
+    {
+      "id": "h4",
+      "operations": [
+        {"id":"w1","process":"c1","op":"write","value":1,"invoke":1,"complete":8,"result":"OK"},
+        {"id":"r1","process":"c2","op":"read","invoke":2,"complete":3,"result":0},
+        {"id":"r2","process":"c3","op":"read","invoke":4,"complete":5,"result":1}
+      ]
+    },
+    {
+      "id": "h5",
+      "object": {"type":"two-registers","initial":{"x":0,"y":0}},
+      "operations": [
+        {"id":"wx","process":"c1","op":"write","key":"x","value":1,"invoke":1,"complete":2,"result":"OK"},
+        {"id":"rx","process":"c1","op":"read","key":"x","invoke":3,"complete":4,"result":1},
+        {"id":"wy","process":"c1","op":"write","key":"y","value":1,"depends_on":["rx"],"invoke":5,"complete":6,"result":"OK"},
+        {"id":"ry","process":"c2","op":"read","key":"y","invoke":7,"complete":8,"result":1},
+        {"id":"rx2","process":"c2","op":"read","key":"x","invoke":9,"complete":10,"result":0}
+      ]
+    },
+    {
+      "id": "h6",
+      "operations": [
+        {"id":"w1","process":"c1","op":"write","value":1,"invoke":1,"complete":null,"result":null},
+        {"id":"r1","process":"c2","op":"read","invoke":3,"complete":4,"result":1}
+      ]
+    }
+  ]
+}

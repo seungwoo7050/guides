@@ -1,0 +1,68 @@
+{
+  "schema_version": 1,
+  "protocol": "TODO",
+  "implementation_revision": "TODO",
+  "system_model": {
+    "nodes": "TODO",
+    "network": "asynchronous message passing with explicit delivery",
+    "storage": "TODO",
+    "clock": "virtual monotonic time",
+    "clients": "TODO"
+  },
+  "state": {
+    "node_state": ["TODO"],
+    "network_state": ["in_flight_messages"],
+    "storage_state": ["TODO"],
+    "client_state": ["TODO"]
+  },
+  "events": [
+    {"kind": "deliver_message", "parameters": ["message_id"]},
+    {"kind": "fire_timer", "parameters": ["node_id", "timer_id"]},
+    {"kind": "client_operation", "parameters": ["client_id", "operation"]},
+    {"kind": "crash", "parameters": ["node_id"]},
+    {"kind": "restart", "parameters": ["node_id"]},
+    {"kind": "TODO", "parameters": []}
+  ],
+  "faults": [
+    "drop",
+    "delay",
+    "duplicate",
+    "reorder",
+    "partition",
+    "crash",
+    "restart",
+    "TODO"
+  ],
+  "safety_invariants": ["TODO"],
+  "liveness_expectations": [
+    {
+      "condition": "TODO",
+      "fairness_assumption": "TODO",
+      "bound": "TODO"
+    }
+  ],
+  "schedules": [
+    {
+      "id": "normal-1",
+      "seed": 1,
+      "events": ["TODO"]
+    },
+    {
+      "id": "fault-1",
+      "seed": 2,
+      "events": ["TODO"]
+    }
+  ],
+  "failure_artifacts": [
+    "implementation revision",
+    "configuration",
+    "seed",
+    "explicit event schedule",
+    "initial state",
+    "first violated invariant",
+    "state snapshot before and after violation"
+  ],
+  "shrinking_strategy": ["TODO"],
+  "model_gaps": ["TODO"],
+  "external_integration_tests": ["TODO"]
+}

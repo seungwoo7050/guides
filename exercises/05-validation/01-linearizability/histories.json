@@ -1,0 +1,52 @@
+{
+  "schema_version": 1,
+  "object": {"type": "register", "initial": 0},
+  "histories": [
+    {
+      "id": "completed-write-then-read",
+      "operations": [
+        {"id": "w1", "process": "p1", "op": "write", "value": 1, "invoke": 1, "complete": 3, "result": "OK"},
+        {"id": "r1", "process": "p2", "op": "read", "invoke": 4, "complete": 5, "result": 1}
+      ]
+    },
+    {
+      "id": "stale-read-after-completion",
+      "operations": [
+        {"id": "w1", "process": "p1", "op": "write", "value": 1, "invoke": 1, "complete": 2, "result": "OK"},
+        {"id": "r1", "process": "p2", "op": "read", "invoke": 3, "complete": 4, "result": 0}
+      ]
+    },
+    {
+      "id": "overlapping-write-and-reads",
+      "operations": [
+        {"id": "w1", "process": "p1", "op": "write", "value": 1, "invoke": 1, "complete": 8, "result": "OK"},
+        {"id": "r1", "process": "p2", "op": "read", "invoke": 2, "complete": 3, "result": 0},
+        {"id": "r2", "process": "p3", "op": "read", "invoke": 4, "complete": 5, "result": 1},
+        {"id": "r3", "process": "p2", "op": "read", "invoke": 9, "complete": 10, "result": 1}
+      ]
+    },
+    {
+      "id": "new-then-old-during-one-write",
+      "operations": [
+        {"id": "w1", "process": "p1", "op": "write", "value": 1, "invoke": 1, "complete": 10, "result": "OK"},
+        {"id": "r1", "process": "p2", "op": "read", "invoke": 2, "complete": 4, "result": 1},
+        {"id": "r2", "process": "p3", "op": "read", "invoke": 5, "complete": 7, "result": 0}
+      ]
+    },
+    {
+      "id": "pending-write-observed",
+      "operations": [
+        {"id": "w1", "process": "p1", "op": "write", "value": 1, "invoke": 1, "complete": null, "result": null},
+        {"id": "r1", "process": "p2", "op": "read", "invoke": 3, "complete": 4, "result": 1}
+      ]
+    },
+    {
+      "id": "two-overlapping-writes",
+      "operations": [
+        {"id": "w1", "process": "p1", "op": "write", "value": 1, "invoke": 1, "complete": 6, "result": "OK"},
+        {"id": "w2", "process": "p2", "op": "write", "value": 2, "invoke": 2, "complete": 5, "result": "OK"},
+        {"id": "r1", "process": "p3", "op": "read", "invoke": 7, "complete": 8, "result": 1}
+      ]
+    }
+  ]
+}

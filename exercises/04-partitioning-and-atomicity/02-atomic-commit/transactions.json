@@ -1,0 +1,56 @@
+{
+  "schema_version": 1,
+  "participants": ["shard-A", "shard-B"],
+  "scenarios": [
+    {
+      "id": "commit-decision-survives",
+      "transaction_id": "tx-101",
+      "events": [
+        {"id": "e1", "kind": "begin", "coordinator": "C"},
+        {"id": "e2", "kind": "prepare_request", "to": "shard-A"},
+        {"id": "e3", "kind": "persist_prepared", "participant": "shard-A", "intent": "debit 10"},
+        {"id": "e4", "kind": "vote_yes", "from": "shard-A"},
+        {"id": "e5", "kind": "prepare_request", "to": "shard-B"},
+        {"id": "e6", "kind": "persist_prepared", "participant": "shard-B", "intent": "credit 10"},
+        {"id": "e7", "kind": "vote_yes", "from": "shard-B"},
+        {"id": "e8", "kind": "persist_global_decision", "decision": "COMMIT"},
+        {"id": "e9", "kind": "send_decision", "to": "shard-A", "decision": "COMMIT"},
+        {"id": "e10", "kind": "persist_commit", "participant": "shard-A"},
+        {"id": "e11", "kind": "coordinator_crash"},
+        {"id": "e12", "kind": "participant_recovery_query", "from": "shard-B"},
+        {"id": "e13", "kind": "read_durable_decision", "decision": "COMMIT"},
+        {"id": "e14", "kind": "persist_commit", "participant": "shard-B"},
+        {"id": "e15", "kind": "coordinator_restart"}
+      ]
+    },
+    {
+      "id": "prepared-without-decision",
+      "transaction_id": "tx-102",
+      "events": [
+        {"id": "e1", "kind": "begin", "coordinator": "C"},
+        {"id": "e2", "kind": "persist_prepared", "participant": "shard-A", "intent": "debit 20"},
+        {"id": "e3", "kind": "vote_yes", "from": "shard-A"},
+        {"id": "e4", "kind": "persist_prepared", "participant": "shard-B", "intent": "credit 20"},
+        {"id": "e5", "kind": "vote_yes", "from": "shard-B"},
+        {"id": "e6", "kind": "coordinator_crash_before_decision"},
+        {"id": "e7", "kind": "client_timeout"},
+        {"id": "e8", "kind": "participant_local_timeout", "participant": "shard-A"},
+        {"id": "e9", "kind": "decision_service_unavailable"}
+      ]
+    },
+    {
+      "id": "participant-votes-no",
+      "transaction_id": "tx-103",
+      "events": [
+        {"id": "e1", "kind": "begin", "coordinator": "C"},
+        {"id": "e2", "kind": "persist_prepared", "participant": "shard-A", "intent": "debit 30"},
+        {"id": "e3", "kind": "vote_yes", "from": "shard-A"},
+        {"id": "e4", "kind": "vote_no", "from": "shard-B", "reason": "constraint"},
+        {"id": "e5", "kind": "persist_global_decision", "decision": "ABORT"},
+        {"id": "e6", "kind": "send_decision", "to": "shard-A", "decision": "ABORT"},
+        {"id": "e7", "kind": "persist_abort", "participant": "shard-A"},
+        {"id": "e8", "kind": "send_decision", "to": "shard-B", "decision": "ABORT"}
+      ]
+    }
+  ]
+}

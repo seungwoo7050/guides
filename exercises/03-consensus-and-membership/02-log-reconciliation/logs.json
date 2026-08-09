@@ -1,0 +1,66 @@
+{
+  "schema_version": 1,
+  "scenarios": [
+    {
+      "id": "conflicting-suffix",
+      "term": 8,
+      "leader": {
+        "id": "L",
+        "log": [
+          {"index": 1, "term": 1, "command": "set a=1"},
+          {"index": 2, "term": 1, "command": "set b=1"},
+          {"index": 3, "term": 3, "command": "set a=2"},
+          {"index": 4, "term": 4, "command": "set c=1"},
+          {"index": 5, "term": 4, "command": "set b=2"},
+          {"index": 6, "term": 7, "command": "set d=1"},
+          {"index": 7, "term": 8, "command": "set a=3"}
+        ],
+        "next_index_for_f": 8,
+        "commit_index": 5
+      },
+      "follower": {
+        "id": "F",
+        "log": [
+          {"index": 1, "term": 1, "command": "set a=1"},
+          {"index": 2, "term": 1, "command": "set b=1"},
+          {"index": 3, "term": 3, "command": "set a=2"},
+          {"index": 4, "term": 5, "command": "set c=9"},
+          {"index": 5, "term": 5, "command": "set e=1"},
+          {"index": 6, "term": 5, "command": "set f=1"}
+        ],
+        "commit_index": 3
+      },
+      "attempts": [
+        {"id": "a1", "prev_log_index": 7, "prev_log_term": 8, "entries": []},
+        {"id": "a2", "prev_log_index": 6, "prev_log_term": 7, "entries": [{"index": 7, "term": 8, "command": "set a=3"}]},
+        {"id": "a3", "prev_log_index": 5, "prev_log_term": 4, "entries": [
+          {"index": 6, "term": 7, "command": "set d=1"},
+          {"index": 7, "term": 8, "command": "set a=3"}
+        ]},
+        {"id": "a4", "prev_log_index": 3, "prev_log_term": 3, "entries": [
+          {"index": 4, "term": 4, "command": "set c=1"},
+          {"index": 5, "term": 4, "command": "set b=2"},
+          {"index": 6, "term": 7, "command": "set d=1"},
+          {"index": 7, "term": 8, "command": "set a=3"}
+        ]}
+      ]
+    },
+    {
+      "id": "old-term-majority",
+      "cluster": ["A", "B", "C", "D", "E"],
+      "leader": "A",
+      "current_term": 7,
+      "log": [
+        {"index": 1, "term": 1, "command": "x=1"},
+        {"index": 2, "term": 3, "command": "y=1"},
+        {"index": 3, "term": 6, "command": "x=2"},
+        {"index": 4, "term": 6, "command": "z=1"},
+        {"index": 5, "term": 7, "command": "noop"}
+      ],
+      "states": [
+        {"id": "s1", "match_index": {"A": 4, "B": 4, "C": 4, "D": 2, "E": 2}, "leader_commit_before": 2},
+        {"id": "s2", "match_index": {"A": 5, "B": 5, "C": 5, "D": 2, "E": 2}, "leader_commit_before": 2}
+      ]
+    }
+  ]
+}

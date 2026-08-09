@@ -1,0 +1,27 @@
+# System model
+
+> 이 문서의 `TODO`를 구현 전에 채웁니다.
+
+## Node와 process
+
+- node 집합: `TODO`
+- 한 node의 crash가 보존하는 durable state: `TODO`
+- restart가 초기화하는 volatile state: `TODO`
+
+## Network
+
+- delivery 보장: `TODO`
+- 허용 fault: `TODO`
+- Byzantine message 여부: `TODO`
+
+## Time
+
+- clock 종류: virtual monotonic time
+- election 진행에 필요한 bound와 fairness: `TODO`
+- safety가 wall clock 정확성에 의존하는지: `TODO`
+
+## Storage
+
+- core의 persist 원자성: `TODO`
+- persist 완료와 message send의 순서: `TODO`
+- corruption 처리: `TODO`

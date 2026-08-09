@@ -1,0 +1,95 @@
+{
+  "schema_version": 1,
+  "processes": [
+    "A",
+    "B",
+    "C"
+  ],
+  "events": [
+    {
+      "id": "a1",
+      "process": "A",
+      "kind": "local",
+      "label": "prepare x"
+    },
+    {
+      "id": "a2",
+      "process": "A",
+      "kind": "send",
+      "message": "m1",
+      "to": "B"
+    },
+    {
+      "id": "b1",
+      "process": "B",
+      "kind": "local",
+      "label": "prepare y"
+    },
+    {
+      "id": "c1",
+      "process": "C",
+      "kind": "local",
+      "label": "observe cache"
+    },
+    {
+      "id": "b2",
+      "process": "B",
+      "kind": "receive",
+      "message": "m1",
+      "from": "A"
+    },
+    {
+      "id": "b3",
+      "process": "B",
+      "kind": "send",
+      "message": "m2",
+      "to": "C"
+    },
+    {
+      "id": "a3",
+      "process": "A",
+      "kind": "local",
+      "label": "commit x"
+    },
+    {
+      "id": "c2",
+      "process": "C",
+      "kind": "receive",
+      "message": "m2",
+      "from": "B"
+    },
+    {
+      "id": "c3",
+      "process": "C",
+      "kind": "send",
+      "message": "m3",
+      "to": "A"
+    },
+    {
+      "id": "a4",
+      "process": "A",
+      "kind": "receive",
+      "message": "m3",
+      "from": "C"
+    }
+  ],
+  "candidate_cuts": {
+    "cut-1": [
+      "a1",
+      "a2",
+      "b1",
+      "b2",
+      "b3",
+      "c1",
+      "c2"
+    ],
+    "cut-2": [
+      "a1",
+      "a2",
+      "b1",
+      "b2",
+      "c1",
+      "c2"
+    ]
+  }
+}

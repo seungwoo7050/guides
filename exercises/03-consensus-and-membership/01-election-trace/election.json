@@ -1,0 +1,67 @@
+{
+  "schema_version": 1,
+  "cluster": ["A", "B", "C", "D", "E"],
+  "quorum": 3,
+  "scenarios": [
+    {
+      "id": "stale-candidate",
+      "initial": {
+        "A": {"current_term": 4, "voted_for": null, "log_terms": [1, 1, 2, 4, 4]},
+        "B": {"current_term": 4, "voted_for": null, "log_terms": [1, 1, 2, 4, 4]},
+        "C": {"current_term": 4, "voted_for": null, "log_terms": [1, 1, 2, 3]},
+        "D": {"current_term": 4, "voted_for": null, "log_terms": [1, 1, 2, 2, 2, 2]},
+        "E": {"current_term": 4, "voted_for": null, "log_terms": [1, 1, 2, 4]}
+      },
+      "events": [
+        {"id": "e1", "kind": "timeout", "node": "C", "next_term": 5},
+        {"id": "e2", "kind": "deliver_request_vote", "from": "C", "to": "A", "term": 5, "last_log_index": 4, "last_log_term": 3},
+        {"id": "e3", "kind": "deliver_request_vote", "from": "C", "to": "D", "term": 5, "last_log_index": 4, "last_log_term": 3},
+        {"id": "e4", "kind": "deliver_request_vote", "from": "C", "to": "E", "term": 5, "last_log_index": 4, "last_log_term": 3}
+      ]
+    },
+    {
+      "id": "split-vote-and-retry",
+      "initial": {
+        "A": {"current_term": 8, "voted_for": null, "log_terms": [1, 3, 5, 8]},
+        "B": {"current_term": 8, "voted_for": null, "log_terms": [1, 3, 5, 8]},
+        "C": {"current_term": 8, "voted_for": null, "log_terms": [1, 3, 5, 8]},
+        "D": {"current_term": 8, "voted_for": null, "log_terms": [1, 3, 5, 8]},
+        "E": {"current_term": 8, "voted_for": null, "log_terms": [1, 3, 5, 8]}
+      },
+      "events": [
+        {"id": "e1", "kind": "timeout", "node": "A", "next_term": 9},
+        {"id": "e2", "kind": "timeout", "node": "D", "next_term": 9},
+        {"id": "e3", "kind": "deliver_request_vote", "from": "A", "to": "B", "term": 9, "last_log_index": 4, "last_log_term": 8},
+        {"id": "e4", "kind": "deliver_request_vote", "from": "D", "to": "C", "term": 9, "last_log_index": 4, "last_log_term": 8},
+        {"id": "e5", "kind": "deliver_request_vote", "from": "A", "to": "E", "term": 9, "last_log_index": 4, "last_log_term": 8},
+        {"id": "e6", "kind": "drop_request_vote", "from": "D", "to": "E", "term": 9},
+        {"id": "e7", "kind": "timeout", "node": "D", "next_term": 10},
+        {"id": "e8", "kind": "deliver_request_vote", "from": "D", "to": "B", "term": 10, "last_log_index": 4, "last_log_term": 8},
+        {"id": "e9", "kind": "deliver_request_vote", "from": "D", "to": "C", "term": 10, "last_log_index": 4, "last_log_term": 8},
+        {"id": "e10", "kind": "deliver_request_vote", "from": "D", "to": "E", "term": 10, "last_log_index": 4, "last_log_term": 8}
+      ]
+    },
+    {
+      "id": "vote-before-persist",
+      "implementation_variant": "unsafe-send-before-persist",
+      "initial": {
+        "A": {"current_term": 6, "voted_for": null, "log_terms": [1, 2, 4, 6]},
+        "B": {"current_term": 6, "voted_for": null, "log_terms": [1, 2, 4, 6]},
+        "C": {"current_term": 6, "voted_for": null, "log_terms": [1, 2, 4, 6]},
+        "D": {"current_term": 6, "voted_for": null, "log_terms": [1, 2, 4, 6]},
+        "E": {"current_term": 6, "voted_for": null, "log_terms": [1, 2, 4, 6]}
+      },
+      "events": [
+        {"id": "e1", "kind": "timeout", "node": "B", "next_term": 7},
+        {"id": "e2", "kind": "deliver_request_vote", "from": "B", "to": "A", "term": 7, "last_log_index": 4, "last_log_term": 6},
+        {"id": "e3", "kind": "send_vote_response_before_persist", "from": "A", "to": "B", "granted": true},
+        {"id": "e4", "kind": "crash", "node": "A"},
+        {"id": "e5", "kind": "restart", "node": "A"},
+        {"id": "e6", "kind": "timeout", "node": "C", "next_term": 7},
+        {"id": "e7", "kind": "deliver_request_vote", "from": "C", "to": "A", "term": 7, "last_log_index": 4, "last_log_term": 6},
+        {"id": "e8", "kind": "deliver_request_vote", "from": "B", "to": "D", "term": 7, "last_log_index": 4, "last_log_term": 6},
+        {"id": "e9", "kind": "deliver_request_vote", "from": "C", "to": "E", "term": 7, "last_log_index": 4, "last_log_term": 6}
+      ]
+    }
+  ]
+}

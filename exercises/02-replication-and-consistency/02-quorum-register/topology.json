@@ -1,0 +1,49 @@
+{
+  "schema_version": 1,
+  "replicas": ["A", "B", "C", "D", "E"],
+  "home_set_epoch_7": ["A", "B", "C", "D", "E"],
+  "parameters": {"N": 5, "R": 3, "W": 3},
+  "initial": {"value": "v0", "version": {"A": 0, "B": 0, "C": 0, "D": 0, "E": 0}},
+  "scenarios": [
+    {
+      "id": "q1",
+      "writes": [
+        {"operation":"w1","value":"v1","acks":["A","B","C"],"version":{"A":1,"B":0,"C":0,"D":0,"E":0}}
+      ],
+      "read_responses": {
+        "C":{"value":"v1","version":{"A":1,"B":0,"C":0,"D":0,"E":0}},
+        "D":{"value":"v0","version":{"A":0,"B":0,"C":0,"D":0,"E":0}},
+        "E":{"value":"v0","version":{"A":0,"B":0,"C":0,"D":0,"E":0}}
+      }
+    },
+    {
+      "id": "q2",
+      "writes": [
+        {"operation":"wA","value":"red","base":"v0","acks":["A","B","C"],"version":{"A":1,"B":0,"C":0,"D":0,"E":0}},
+        {"operation":"wD","value":"blue","base":"v0","acks":["C","D","E"],"version":{"A":0,"B":0,"C":0,"D":1,"E":0}}
+      ],
+      "read_responses": {
+        "A":{"siblings":[{"value":"red","version":{"A":1,"B":0,"C":0,"D":0,"E":0}}]},
+        "C":{"siblings":[
+          {"value":"red","version":{"A":1,"B":0,"C":0,"D":0,"E":0}},
+          {"value":"blue","version":{"A":0,"B":0,"C":0,"D":1,"E":0}}
+        ]},
+        "E":{"siblings":[{"value":"blue","version":{"A":0,"B":0,"C":0,"D":1,"E":0}}]}
+      }
+    },
+    {
+      "id": "q3-sloppy",
+      "home_replicas":["A","B","C"],
+      "write_1_actual":["A","B","X"],
+      "write_2_actual":["C","D","Y"],
+      "note":"X와 Y는 임시 fallback replica입니다."
+    },
+    {
+      "id": "q4-membership",
+      "old":{"epoch":7,"replicas":["A","B","C","D","E"]},
+      "new":{"epoch":8,"replicas":["F","G","H","I","J"]},
+      "stale_coordinator_write":{"epoch":7,"targets":["A","B","C"]},
+      "new_coordinator_write":{"epoch":8,"targets":["F","G","H"]}
+    }
+  ]
+}

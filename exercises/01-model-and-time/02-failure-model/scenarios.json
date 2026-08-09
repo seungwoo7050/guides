@@ -1,0 +1,39 @@
+{
+  "schema_version": 1,
+  "scenarios": [
+    {
+      "id": "slow-or-crashed",
+      "events": [
+        "leader A sends heartbeat to B",
+        "B does not receive it before election timeout",
+        "A continues processing local work"
+      ]
+    },
+    {
+      "id": "vote-before-persist",
+      "events": [
+        "A receives RequestVote(term=7,candidate=B)",
+        "A sends granted=true",
+        "A crashes before storing votedFor",
+        "A restarts and receives RequestVote(term=7,candidate=C)"
+      ]
+    },
+    {
+      "id": "partitioned-register",
+      "events": [
+        "replicas are {A,B,C}",
+        "A is isolated from B and C",
+        "client X writes v1 through A",
+        "client Y writes v2 through B and C"
+      ]
+    },
+    {
+      "id": "crash-recovery-log",
+      "events": [
+        "C acknowledges log entry e9",
+        "C crashes",
+        "C restarts with only entries through e8"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,42 @@
+{
+  "schema_version": 1,
+  "shard": {"id": "S7", "range": "[a,m)", "source": "G1", "target": "G2"},
+  "initial": {
+    "metadata_epoch": 21,
+    "owner": "G1",
+    "source_applied_index": 120,
+    "target_applied_index": 0
+  },
+  "plans": [
+    {
+      "id": "safe-plan",
+      "events": [
+        {"id": "e1", "kind": "prepare", "migration_id": "M9", "source": "G1", "target": "G2", "base_index": 120},
+        {"id": "e2", "kind": "copy_snapshot", "to": "G2", "through_index": 120},
+        {"id": "e3", "kind": "client_write", "write_id": "w1", "router_epoch": 21, "target": "G1", "key": "b", "value": 1, "source_index_after": 121},
+        {"id": "e4", "kind": "stream_delta", "to": "G2", "through_index": 121},
+        {"id": "e5", "kind": "client_write", "write_id": "w2", "router_epoch": 21, "target": "G1", "key": "c", "value": 2, "source_index_after": 122},
+        {"id": "e6", "kind": "stream_delta", "to": "G2", "through_index": 122},
+        {"id": "e7", "kind": "fence_source", "source": "G1", "new_epoch": 22, "final_index": 122},
+        {"id": "e8", "kind": "commit_metadata_cutover", "metadata_epoch": 22, "owner": "G2", "required_target_index": 122},
+        {"id": "e9", "kind": "enable_target_writes", "target": "G2", "epoch": 22},
+        {"id": "e10", "kind": "client_write", "write_id": "w3", "router_epoch": 21, "target": "G1", "key": "d", "value": 3},
+        {"id": "e11", "kind": "client_retry", "write_id": "w3", "router_epoch": 22, "target": "G2", "key": "d", "value": 3, "target_index_after": 123},
+        {"id": "e12", "kind": "cleanup_source", "source": "G1", "after_epoch": 22}
+      ]
+    },
+    {
+      "id": "unsafe-early-cutover",
+      "events": [
+        {"id": "e1", "kind": "prepare", "migration_id": "M10", "source": "G1", "target": "G2", "base_index": 120},
+        {"id": "e2", "kind": "copy_snapshot", "to": "G2", "through_index": 120},
+        {"id": "e3", "kind": "client_write", "write_id": "w1", "router_epoch": 21, "target": "G1", "key": "b", "value": 1, "source_index_after": 121},
+        {"id": "e4", "kind": "commit_metadata_cutover", "metadata_epoch": 22, "owner": "G2", "target_applied_index": 120},
+        {"id": "e5", "kind": "enable_target_writes", "target": "G2", "epoch": 22},
+        {"id": "e6", "kind": "client_write", "write_id": "w2", "router_epoch": 22, "target": "G2", "key": "c", "value": 2, "target_index_after": 121},
+        {"id": "e7", "kind": "late_delta", "from": "G1", "to": "G2", "source_index": 121},
+        {"id": "e8", "kind": "cleanup_source", "source": "G1", "after_epoch": 22}
+      ]
+    }
+  ]
+}

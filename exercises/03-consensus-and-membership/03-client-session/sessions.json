@@ -1,0 +1,39 @@
+{
+  "schema_version": 1,
+  "sequential_spec": {
+    "initial": {"counter": 0},
+    "command": "increment(amount)",
+    "result": "new counter value"
+  },
+  "client": "client-7",
+  "scenarios": [
+    {
+      "id": "safe-snapshot",
+      "snapshot_includes": ["kv_state", "client_sessions", "last_included_index", "last_included_term"],
+      "events": [
+        {"id": "e1", "kind": "commit_and_apply", "index": 9, "term": 4, "client_id": "client-7", "sequence": 3, "fingerprint": "increment:5", "amount": 5},
+        {"id": "e2", "kind": "lose_response", "client_id": "client-7", "sequence": 3},
+        {"id": "e3", "kind": "retry", "client_id": "client-7", "sequence": 3, "fingerprint": "increment:5", "amount": 5},
+        {"id": "e4", "kind": "commit_and_apply", "index": 10, "term": 4, "client_id": "client-7", "sequence": 4, "fingerprint": "increment:2", "amount": 2},
+        {"id": "e5", "kind": "create_snapshot", "last_included_index": 10, "last_included_term": 4},
+        {"id": "e6", "kind": "crash"},
+        {"id": "e7", "kind": "restart_from_snapshot"},
+        {"id": "e8", "kind": "retry", "client_id": "client-7", "sequence": 4, "fingerprint": "increment:2", "amount": 2},
+        {"id": "e9", "kind": "conflicting_retry", "client_id": "client-7", "sequence": 4, "fingerprint": "increment:9", "amount": 9},
+        {"id": "e10", "kind": "gap_request", "client_id": "client-7", "sequence": 6, "fingerprint": "increment:1", "amount": 1}
+      ]
+    },
+    {
+      "id": "unsafe-snapshot",
+      "snapshot_includes": ["kv_state", "last_included_index", "last_included_term"],
+      "events": [
+        {"id": "e1", "kind": "commit_and_apply", "index": 9, "term": 4, "client_id": "client-7", "sequence": 3, "fingerprint": "increment:5", "amount": 5},
+        {"id": "e2", "kind": "lose_response", "client_id": "client-7", "sequence": 3},
+        {"id": "e3", "kind": "create_snapshot", "last_included_index": 9, "last_included_term": 4},
+        {"id": "e4", "kind": "crash"},
+        {"id": "e5", "kind": "restart_from_snapshot"},
+        {"id": "e6", "kind": "retry", "client_id": "client-7", "sequence": 3, "fingerprint": "increment:5", "amount": 5}
+      ]
+    }
+  ]
+}

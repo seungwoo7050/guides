@@ -1,0 +1,14 @@
+{
+  "schema_version": 1,
+  "nodes": ["A", "B", "C"],
+  "actions": [
+    {"kind": "send", "from": "A", "to": "B", "payload": {"type": "ping", "n": 1}, "delay": 5},
+    {"kind": "send", "from": "A", "to": "C", "payload": {"type": "ping", "n": 2}, "delay": 3},
+    {"kind": "duplicate", "message_id": "m1", "extra_delay": 4},
+    {"kind": "drop", "message_id": "m2"},
+    {"kind": "crash", "node": "B"},
+    {"kind": "deliver_next"},
+    {"kind": "restart", "node": "B"},
+    {"kind": "deliver_all"}
+  ]
+}
