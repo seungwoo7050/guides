@@ -46,29 +46,49 @@
 ## 이 가이드가 소유하는 범위
 
 ```text
-문제 framing과 prediction contract
-Dataset·label·sampling·split·leakage
-Baseline·metric·calibration·threshold
-Supervised·unsupervised learning의 핵심 모델
-Loss·optimization·generalization·model selection
-Tensor·autodiff·neural network training
-Embedding·tokenization·attention·transformer
-Pretraining·transfer·fine-tuning
-실험 기록·model artifact·inference contract
-Monitoring·drift·retraining·model card
+데이터 분리와 평가
+손실·최적화·일반화
+신경망·attention·transformer
+fine-tuning과 모델 artifact
+재현 가능한 inference와 모델 카드
 ```
+
+문제 framing, dataset·label, baseline·metric·threshold, 고전적 모델과 monitoring은 위 책임을 종단 간 모델 개발 흐름으로 연결하는 구성 요소다. [`계약 추적 지도`](../reference/contract-traceability.md)는 각 소유 범위를 개념 문서, 실습, 대표 실패, capstone과 종료 능력에 대응한다.
 
 ## 다른 브랜치가 소유하는 범위
 
 - Python 언어·일반 패키징·프로세스·테스트: [`python`](https://github.com/seungwoo7050/guides/tree/python)
 - 알고리즘의 정확성·복잡도와 일반 설계 기법: [`algorithms`](https://github.com/seungwoo7050/guides/tree/algorithms)
-- 장기간 데이터 수집, CDC, event time, backfill, replay, lineage와 warehouse/lake: `data-engineering`
-- 모델을 API·retrieval·tool·memory·workflow에 연결하는 에이전트 시스템: `agentic-systems`
+- 대규모 데이터 파이프라인, CDC, event time, backfill, replay와 lineage 운영: [`data-engineering`](https://github.com/seungwoo7050/guides/tree/data-engineering)
+- 모델을 API·retrieval·tool·memory·workflow에 연결하고 도구를 실행하는 시스템: [`agentic-systems`](https://github.com/seungwoo7050/guides/tree/agentic-systems)
 - GPU·SIMD·메모리 계층의 하드웨어 원리: [`computer-architecture`](https://github.com/seungwoo7050/guides/tree/computer-architecture)
-- 분산 학습, 대규모 inference cluster, feature store와 조직 공용 ML platform: 후속 `ml-systems` 또는 `platform-engineering`
+- 분산 GPU 학습 시스템 전체, 대규모 inference cluster와 조직 공용 실행 경로: [`platform-engineering`](https://github.com/seungwoo7050/guides/tree/platform-engineering) 및 현재 카탈로그 밖의 외부 전문 자료
+- UI·인증·업무 흐름을 포함한 제품 웹 개발: [`web-app`](https://github.com/seungwoo7050/guides/tree/web-app)
+- 게임 loop·상태·자산에 모델 결과를 연결하는 제품 개발: [`game-development`](https://github.com/seungwoo7050/guides/tree/game-development)
 - prompt injection, model extraction, poisoning과 AI 공격·방어의 전문 과정: [`cybersecurity`](https://github.com/seungwoo7050/guides/tree/cybersecurity)와 후속 교차 프로젝트
 
 겹치는 용어가 있어도 책임은 다르다. 예를 들어 이 브랜치의 data drift는 모델 가정과 평가 집합의 변화에 초점을 두고, `data-engineering`의 freshness는 pipeline이 정해진 시간 안에 데이터를 전달했는지에 초점을 둔다.
+
+## 카탈로그 관계와 트랙 위치
+
+| 관계 | 브랜치 |
+|---|---|
+| 종류 | `field-entry` |
+| 필수 | `python` |
+| 권장 | `algorithms` |
+| 협업 접점 | `data-engineering`, `agentic-systems`, `computer-architecture`, `platform-engineering`, `game-development` |
+| 일반 후속 | `data-engineering` |
+
+`machine-learning` 트랙의 기본 선형 경로는 `git → python → algorithms → machine-learning`이다. `game-data-ml` 트랙에서는 `git → python → algorithms → game-development → database-systems → data-engineering → machine-learning` 순서로 모델 개발을 게임 데이터 의사결정에 연결한다.
+
+다른 트랙에서 이 브랜치는 다음처럼 사용된다.
+
+- `agentic-systems`: 권장 인접 기반
+- `data-engineering`: 핵심 트랙 뒤 advanced
+- `game-client-gameplay`: 선택 advanced
+- `game-data-ml`: 필수이며 선형 경로의 종료 지점
+
+트랙의 `recommended`·`advanced` 표기는 이 브랜치의 직접 필수 조건을 늘리지 않는다.
 
 ## 필수 학습 지도
 
@@ -163,7 +183,7 @@ Monitoring·drift·retraining·model card
 → 생성 모델 평가
 ```
 
-이 경로를 완료해도 agent loop, tool permission과 RAG 시스템 운영은 다루지 않는다. 그 범위는 `agentic-systems`로 이동한다.
+이 경로를 완료해도 agent loop, tool permission과 RAG 시스템 운영은 다루지 않는다. 그 범위는 [`agentic-systems`](https://github.com/seungwoo7050/guides/tree/agentic-systems)로 이동한다.
 
 ### 실무 모델 release를 검토하려는 경우
 

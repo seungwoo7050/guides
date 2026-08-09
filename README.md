@@ -16,18 +16,27 @@
 
 ## 이 브랜치의 위치
 
-필수 기반은 [`python`](https://github.com/seungwoo7050/guides/tree/python)이다. Python 문법, 패키징과 일반 테스트는 여기서 다시 설명하지 않는다. 알고리즘의 정확성·복잡도는 [`algorithms`](https://github.com/seungwoo7050/guides/tree/algorithms), 장기간의 데이터 수집·CDC·backfill·lineage는 `data-engineering`, 모델을 도구·메모리·workflow에 연결하는 개발은 `agentic-systems`가 소유한다.
+이 브랜치는 `field-entry`다. 필수 기반은 [`python`](https://github.com/seungwoo7050/guides/tree/python), 권장 기반은 [`algorithms`](https://github.com/seungwoo7050/guides/tree/algorithms)다. Python 문법·패키징·일반 테스트와 알고리즘 정확성·복잡도는 여기서 다시 가르치지 않고 모델 개발 실패를 해석하는 데 필요한 접점만 사용한다.
+
+인접 경로는 다음과 같이 구분한다.
+
+- 장기간 데이터 수집·CDC·backfill·lineage: [`data-engineering`](https://github.com/seungwoo7050/guides/tree/data-engineering)
+- 모델을 tool·memory·workflow에 연결하는 시스템: [`agentic-systems`](https://github.com/seungwoo7050/guides/tree/agentic-systems)
+- GPU·SIMD·메모리 계층: [`computer-architecture`](https://github.com/seungwoo7050/guides/tree/computer-architecture)
+- 여러 팀의 공용 ML 실행 경로: [`platform-engineering`](https://github.com/seungwoo7050/guides/tree/platform-engineering)
+- 게임 상태·플레이 이벤트에 모델을 연결하는 프로젝트: [`game-development`](https://github.com/seungwoo7050/guides/tree/game-development)
+
+일반적인 다음 심화 브랜치는 `data-engineering`이다. 위 `connects` 관계는 협업 접점이며 필수 선행이나 자동 후속 순서를 뜻하지 않는다.
 
 이 브랜치는 **모델 개발**을 소유한다.
 
-- 문제 정의, 관측 단위와 label 계약
-- train·validation·test 분리와 데이터 누출 방지
-- baseline, metric, calibration과 decision threshold
-- 선형 모델, tree·ensemble, clustering과 차원 축소
-- tensor, automatic differentiation, 신경망과 training loop
-- embedding, tokenization, attention과 transformer의 모델 구조
-- transfer learning과 fine-tuning
-- 실험 기록, 모델 artifact, inference 계약, monitoring과 model card
+- 데이터 분리와 평가
+- 손실·최적화·일반화
+- 신경망·attention·transformer
+- fine-tuning과 모델 artifact
+- 재현 가능한 inference와 모델 카드
+
+문제 정의, label 계약, 고전적 모델, calibration, monitoring 같은 세부 단원은 이 다섯 책임을 하나의 실험 흐름으로 연결한다. 반대로 대규모 데이터 파이프라인 운영, 에이전트 도구 실행, 분산 GPU 시스템 전체와 제품 웹 개발은 소유하지 않는다. 문서·실습·대표 실패·capstone·종료 능력의 대응은 [`계약 추적 지도`](reference/contract-traceability.md)에서 확인한다.
 
 ## 지원 환경
 
