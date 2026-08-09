@@ -10,6 +10,6 @@ Markdown 문서와 문서에 포함된 설명, 표, 그림은 [Creative Commons 
 
 ## 코드
 
-셸 스크립트, 검증 스크립트와 설정 예제는 [MIT License](LICENSES/MIT.txt)에 따라 이용할 수 있습니다.
+Python starter·reference·evaluator·fixture 코드, 셸·검증 스크립트, JSON Schema와 설정 예제는 [MIT License](LICENSES/MIT.txt)에 따라 이용할 수 있습니다. Markdown 안의 설명용 짧은 코드 조각은 해당 문서와 함께 CC BY 4.0을 적용합니다.
 
 별도 라이선스 고지가 있는 외부 자료에는 해당 자료의 라이선스가 우선 적용됩니다.

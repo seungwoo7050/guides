@@ -74,6 +74,25 @@ cancel-cleanup.md
 - incompatible checkpoint는 read-only export 또는 manual review로 이동합니다.
 - cancel 뒤 process·credential·temporary resource가 정리됩니다.
 
+## 실행 파일과 판정
+
+- 구현 경계: [starter `budget.py`](../10-capstone-local-coding-agent/starter/coding_agent/budget.py), [starter `checkpoint.py`](../10-capstone-local-coding-agent/starter/coding_agent/checkpoint.py), [starter `trace.py`](../10-capstone-local-coding-agent/starter/coding_agent/trace.py)
+- 비교 구현: [reference `budget.py`](../10-capstone-local-coding-agent/reference/coding_agent/budget.py), [reference `checkpoint.py`](../10-capstone-local-coding-agent/reference/coding_agent/checkpoint.py), [reference `trace.py`](../10-capstone-local-coding-agent/reference/coding_agent/trace.py)
+- 공개 판정: [`test_stage_08_durable.py`](../10-capstone-local-coding-agent/tests/test_stage_08_durable.py)
+
+```sh
+python3 exercises/10-capstone-local-coding-agent/tests/run.py --implementation reference --stage 08
+python3 exercises/10-capstone-local-coding-agent/tests/run.py --implementation starter --stage 08 --expect-incomplete
+python3 exercises/10-capstone-local-coding-agent/tests/run.py --implementation .workspace/local-coding-agent --stage 08
+```
+
+starter의 `NotImplementedError` 메시지에 있는 `stage-08`은 reserve-before-effect budget, tamper-evident checkpoint/event log와 operation reconciliation의 의도한 미완성 표식입니다. 대표 실패는 같은 operation ID를 다른 input으로 재사용하거나 변조된 checkpoint를 resume하거나 budget 초과 effect를 먼저 실행하는 경우입니다. 단계 검사는 01부터 누적됩니다. 위 설계 산출물만으로는 완료가 아니며, 구현·canonical test 결과와 crash/cancel/reconcile trace를 함께 제출합니다.
+
+사람 검토 질문:
+
+- `STARTED`와 실제 workspace/process state가 어긋날 때 재실행·완료·수동 검토를 어떤 증거로 선택합니까?
+- cancel과 budget exhaustion 뒤 재개하더라도 권한·비용·effect 한도가 되살아나지 않습니까?
+
 ## 의도적 비범위
 
 - 여러 machine의 distributed scheduler

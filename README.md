@@ -190,7 +190,7 @@ coding-agent run \
 
 ## 준비와 검증
 
-필수 offline 구현·문서 검증에는 Python 3.10 이상과 POSIX 호환 셸이 필요하며 public network, API key와 유료 model 호출은 필요하지 않습니다.
+필수 offline 구현·문서 검증에는 Python 3.12 이상과 POSIX 호환 셸이 필요하며 public network, API key와 유료 model 호출은 필요하지 않습니다.
 
 ```sh
 ./prepare.sh

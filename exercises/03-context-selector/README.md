@@ -68,6 +68,25 @@ compaction-contract.md
 - authority, fact, hypothesis와 tool output이 다른 type으로 전달됩니다.
 - context overflow가 임의 truncation이 아니라 명시적 failure 또는 compaction을 만듭니다.
 
+## 실행 파일과 판정
+
+- 구현 경계: [starter `context.py`](../10-capstone-local-coding-agent/starter/coding_agent/context.py)
+- 비교 구현: [reference `context.py`](../10-capstone-local-coding-agent/reference/coding_agent/context.py)
+- 공개 판정: [`test_stage_03_context.py`](../10-capstone-local-coding-agent/tests/test_stage_03_context.py)
+
+```sh
+python3 exercises/10-capstone-local-coding-agent/tests/run.py --implementation reference --stage 03
+python3 exercises/10-capstone-local-coding-agent/tests/run.py --implementation starter --stage 03 --expect-incomplete
+python3 exercises/10-capstone-local-coding-agent/tests/run.py --implementation .workspace/local-coding-agent --stage 03
+```
+
+starter의 `NotImplementedError` 메시지에 있는 `stage-03`은 의도한 미완성 표식입니다. 대표 실패는 authorization 전에 source를 읽거나 stale·conflicting evidence를 `READY`로 조용히 승격하는 경우입니다. 단계 검사는 01부터 누적됩니다. 위 설계 산출물만으로는 완료가 아니며, 구현과 canonical test 결과뿐 아니라 선택·제외 이유와 citation identity가 보이는 trace를 함께 제출합니다.
+
+사람 검토 질문:
+
+- 거절된 scope의 내용이 후보·context·citation·trace 어디에도 나타나지 않았음을 어떻게 입증합니까?
+- summary의 각 주장에서 원 source revision과 digest로 돌아갈 수 있습니까?
+
 ## 의도적 비범위
 
 - embedding model 선택

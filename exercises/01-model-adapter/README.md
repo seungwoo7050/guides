@@ -74,6 +74,25 @@ adapter-state-machine.md
 - cancel 뒤 late event가 session을 다시 활성화하지 않습니다.
 - provider를 바꿔도 runtime event와 verifier가 바뀌지 않습니다.
 
+## 실행 파일과 판정
+
+- 구현 경계: [starter `model.py`](../10-capstone-local-coding-agent/starter/coding_agent/model.py), [starter `contracts.py`](../10-capstone-local-coding-agent/starter/coding_agent/contracts.py)
+- 비교 구현: [reference `model.py`](../10-capstone-local-coding-agent/reference/coding_agent/model.py), [reference `contracts.py`](../10-capstone-local-coding-agent/reference/coding_agent/contracts.py)
+- 공개 판정: [`test_stage_01_model.py`](../10-capstone-local-coding-agent/tests/test_stage_01_model.py)
+
+```sh
+python3 exercises/10-capstone-local-coding-agent/tests/run.py --implementation reference --stage 01
+python3 exercises/10-capstone-local-coding-agent/tests/run.py --implementation starter --stage 01 --expect-incomplete
+python3 exercises/10-capstone-local-coding-agent/tests/run.py --implementation .workspace/local-coding-agent --stage 01
+```
+
+starter의 `NotImplementedError` 메시지에 있는 `stage-01`은 의도한 미완성 표식입니다. 대표 실패는 partial·unknown action이나 terminal 뒤 late event가 실행 가능한 action으로 통과하는 경우입니다. 위 설계 산출물만으로는 완료가 아니며, 같은 불변식을 구현한 learner module, canonical test 결과, 정상·대표 실패 trace를 함께 제출합니다.
+
+사람 검토 질문:
+
+- provider SDK type이나 server-side state가 runtime의 정본 계약으로 새어 나오지 않는다는 증거는 무엇입니까?
+- cancel과 terminal event가 경쟁할 때 단 하나의 종료 상태만 남는 이유를 trace로 설명할 수 있습니까?
+
 ## 의도적 비범위
 
 - model 품질 비교

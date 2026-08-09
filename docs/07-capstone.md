@@ -255,7 +255,7 @@ remote operation은 제외합니다.
 
 ## Capstone 과제 집합
 
-최소 다섯 종류를 fixture로 구현·평가합니다. 과제 B의 다중 파일 변경, 첫 patch가 실패하는 repair 과제, 과제 F의 악성 입력, 과제 G의 crash/resume은 반드시 포함합니다.
+세 개의 실행 가능한 task repository와 failure overlay를 구현·평가합니다. 과제 A~C는 각각 `token-expiry-boundary`, `dry-run-multifile`, `refresh-token-race` fixture이며, B에는 첫 patch 실패와 repair를 포함합니다. 과제 D~G는 같은 저장소에 command/environment 오류, 불완전한 constraint, 악성 입력과 crash 지점을 주입하는 overlay입니다. 따라서 task 정답과 failure 조건은 agent workspace 밖의 harness가 소유합니다.
 
 ### 과제 A. 단일 모듈 bug
 
@@ -537,4 +537,4 @@ scripted scenario를 모두 통과한 뒤 같은 HTTP·stream·structured-output
 - external verifier가 결과와 정책을 독립적으로 판정합니다.
 - trace와 artifact만으로 작업 경로와 잔여 위험을 복원할 수 있습니다.
 
-이 증거 묶음으로 카탈로그의 종료 능력인 `도구를 사용하는 에이전트를 구현한다`, `외부 verifier로 성공을 판정한다`, `권한·네트워크·비용·실행 시간을 제한한다`를 각각 판정합니다. reference 통과는 특정 실제 provider의 품질, 모든 OS sandbox 또는 production 안전성을 자동으로 증명하지 않습니다.
+이 증거 묶음으로 카탈로그의 종료 능력인 `도구를 사용하는 에이전트를 구현한다`, `외부 verifier로 성공을 판정한다`, `권한·네트워크·비용·실행 시간을 제한한다`를 각각 판정합니다. reference 통과는 특정 실제 provider의 품질, 모든 OS sandbox 또는 production 안전성을 자동으로 증명하지 않습니다. 특히 wrapper가 없는 reference의 network 제한은 exact catalog 정책이며 packet-level egress 차단이 아닙니다. 이탈 process, Git filter와 filesystem TOCTOU에 대한 host 수준 격리는 사람 검토와 강화 sandbox의 별도 증거가 필요합니다.

@@ -75,6 +75,25 @@ cleanup-verifier.md
 - clean environment에 secret이 없습니다.
 - workspace mutation과 network 시도가 receipt에 남습니다.
 
+## 실행 파일과 판정
+
+- 구현 경계: [starter `process.py`](../10-capstone-local-coding-agent/starter/coding_agent/process.py), [starter `git_adapter.py`](../10-capstone-local-coding-agent/starter/coding_agent/git_adapter.py)
+- 비교 구현: [reference `process.py`](../10-capstone-local-coding-agent/reference/coding_agent/process.py), [reference `git_adapter.py`](../10-capstone-local-coding-agent/reference/coding_agent/git_adapter.py)
+- 공개 판정: [`test_stage_05_process_git.py`](../10-capstone-local-coding-agent/tests/test_stage_05_process_git.py)
+
+```sh
+python3 exercises/10-capstone-local-coding-agent/tests/run.py --implementation reference --stage 05
+python3 exercises/10-capstone-local-coding-agent/tests/run.py --implementation starter --stage 05 --expect-incomplete
+python3 exercises/10-capstone-local-coding-agent/tests/run.py --implementation .workspace/local-coding-agent --stage 05
+```
+
+starter의 `NotImplementedError`는 exact command catalog, bounded process group과 격리된 Git worktree lifecycle의 의도한 미완성 표식입니다. 대표 실패는 검토 뒤 argv/script가 바뀌거나 timeout 뒤 descendant가 살아남거나 dirty agent worktree를 cleanup하는 경우입니다. 단계 검사는 01부터 누적됩니다. 위 설계 산출물만으로는 완료가 아니며, 구현·canonical test 결과와 command/workspace/cleanup receipt를 함께 제출합니다.
+
+사람 검토 질문:
+
+- command ID가 exact argv·cwd·environment·network profile과 실행 파일 digest에 묶였습니까?
+- timeout·cancel·output overflow 각각에서 descendant 종료와 pipe drain을 무엇으로 입증합니까?
+
 ## 의도적 비범위
 
 - full terminal emulator

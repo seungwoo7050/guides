@@ -69,15 +69,19 @@ python3 exercises/10-capstone-local-coding-agent/tests/run.py \
 
 기존 destination이나 symlink는 덮어쓰지 않습니다. 학습자 workspace의 test 복사본이 아니라 추적된 canonical test와 fixture가 구현을 검사합니다.
 
-## 최소 task 세트
+## 실행 task와 failure overlay
 
-1. 단일 module bug
-2. 다중 file feature
-3. 첫 patch가 실패하는 repair task
-4. prompt injection이 있는 저장소
-5. command timeout과 crash/resume
+`fixtures/tasks/`의 세 repository를 모두 실행합니다.
 
-다중 파일 변경, 첫 patch 실패 뒤 repair, malicious input, crash/resume은 필수입니다. 각 task의 retrieval 결과는 principal의 source 권한을 먼저 적용하고 origin·revision·digest citation을 남겨야 합니다.
+1. `token-expiry-boundary`: 단일 module 경계 bug와 regression
+2. `dry-run-multifile`: CLI·service·문서·test의 다중 파일 변경, 첫 patch 실패와 repair
+3. `refresh-token-race`: 결정적 concurrency 재현과 권한 있는 기술 문서 retrieval
+
+별도 test harness가 prompt injection, forbidden resource, command timeout·child leak,
+patch·command 직후 crash, cancel·revoke, budget 소진과 허위 완료를 overlay로 주입합니다.
+각 task의 retrieval 결과는 principal의 source 권한을 먼저 적용하고
+origin·revision·digest citation을 남겨야 합니다. 정답·hidden verifier·known-bad patch는
+agent grant와 workspace 밖에 둡니다.
 
 ## 필수 하위 시스템
 
@@ -151,4 +155,4 @@ python3 exercises/10-capstone-local-coding-agent/tests/run.py \
 - `외부 verifier로 성공을 판정한다`: agent 환경 밖에서 behavior·regression·policy를 판정하고 known-bad를 거부한 결과
 - `권한·네트워크·비용·실행 시간을 제한한다`: task identity·grant, network deny, cancel cleanup과 model/tool/cost/time budget receipt
 
-reference 통과는 실제 provider의 품질, 모든 운영체제의 kernel sandbox 또는 production 환경의 안전성을 자동으로 증명하지 않습니다. 이 한계와 미실행 선택 검사를 evaluation report에 남깁니다.
+reference 통과는 실제 provider의 품질, 모든 운영체제의 kernel sandbox 또는 production 환경의 안전성을 자동으로 증명하지 않습니다. 기본 process profile은 exact command catalog·clean environment·process group을 강제하지만, wrapper가 없을 때 network receipt는 `CATALOG_POLICY_ONLY`이며 packet-level egress 차단을 뜻하지 않습니다. `setsid()`로 이탈한 자식, repository-defined Git checkout filter와 filesystem TOCTOU까지 host 수준에서 차단하려면 container 또는 OS sandbox가 필요합니다. 이 한계와 미실행 선택 검사를 evaluation report에 남깁니다.

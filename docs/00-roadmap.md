@@ -226,4 +226,4 @@ machine-learning
 - crash/resume·cancel·budget exhaustion 실행 근거
 - 권한 인지 retrieval의 source citation과 denied-source 부정 근거
 
-한 번의 agent run은 한 과제를 해결하지만, 완료 평가 집합은 다중 파일 변경·첫 실패 뒤 repair·악성 입력·crash/resume을 포함한 최소 다섯 fixture를 모두 판정합니다. 어느 과제도 처음부터 정해진 한 파일을 한 번 바꾸는 script가 아니라 **조사·다중 파일 변경·명령 실행·실패 해석·재수정**의 전체 루프를 보여야 합니다.
+한 번의 agent run은 한 과제를 해결하지만, 완료 평가 집합은 세 개의 실행 가능한 task repository와 다중 파일 변경·첫 실패 뒤 repair·악성 입력·timeout·crash/resume failure overlay를 함께 판정합니다. Capstone task는 처음부터 정해진 한 파일을 한 번 바꾸는 script가 아니라 **조사·변경·명령 실행·실패 해석·재수정**의 전체 루프를 보여야 합니다.

@@ -73,6 +73,25 @@ incident-cases.md
 - sandbox 밖 host credential과 verifier가 보이지 않습니다.
 - revoke 뒤 tool gateway와 credential broker 모두 차단합니다.
 
+## 실행 파일과 판정
+
+- 구현 경계: [starter `policy.py`](../10-capstone-local-coding-agent/starter/coding_agent/policy.py), [starter `tools.py`](../10-capstone-local-coding-agent/starter/coding_agent/tools.py)
+- 비교 구현: [reference `policy.py`](../10-capstone-local-coding-agent/reference/coding_agent/policy.py), [reference `tools.py`](../10-capstone-local-coding-agent/reference/coding_agent/tools.py)
+- 공개 판정: [`test_stage_07_policy.py`](../10-capstone-local-coding-agent/tests/test_stage_07_policy.py)
+
+```sh
+python3 exercises/10-capstone-local-coding-agent/tests/run.py --implementation reference --stage 07
+python3 exercises/10-capstone-local-coding-agent/tests/run.py --implementation starter --stage 07 --expect-incomplete
+python3 exercises/10-capstone-local-coding-agent/tests/run.py --implementation .workspace/local-coding-agent --stage 07
+```
+
+starter의 `NotImplementedError`는 durable approval/revocation, authorization-before-retrieval과 policy-first tool gateway의 의도한 미완성 표식입니다. 대표 실패는 approval의 principal·arguments·artifact digest가 달라도 재사용되거나 revoke 뒤 pending effect가 실행되는 경우입니다. 단계 검사는 01부터 누적됩니다. 위 설계 산출물만으로는 완료가 아니며, 구현·canonical test 결과와 allow/deny/revoke decision trace를 함께 제출합니다.
+
+사람 검토 질문:
+
+- model이 우회 문자열을 만들더라도 gateway 바깥에서 effect나 retrieval을 시작할 경로가 없습니까?
+- exact approval의 대상·작업·digest·operation ID·expiry와 one-shot 소비가 trace에서 확인됩니까?
+
 ## 의도적 비범위
 
 - enterprise IAM 전체
