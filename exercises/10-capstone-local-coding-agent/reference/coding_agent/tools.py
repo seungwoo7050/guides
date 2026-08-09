@@ -280,9 +280,13 @@ class ToolGateway:
         if tool == "restore_change_set":
             if not request.operation_id:
                 raise ContractError("restore_change_set requires an operation_id")
-            patch_id = arguments.pop("patch_id", arguments.pop("change_set_id", None))
+            patch_id = self._compatible_identifier(
+                arguments,
+                canonical="change_set_id",
+                alias="patch_id",
+            )
             self._expect_only(arguments, ())
-            if not isinstance(patch_id, str) or not patch_id:
+            if patch_id is None:
                 raise ContractError("restore_change_set requires change_set_id")
             artifact = self.patch_engine.get(patch_id)
             for operation in artifact.operations:
@@ -295,41 +299,42 @@ class ToolGateway:
                 raise ContractError("run_check requires an operation_id")
             if self.process_runner is None:
                 raise ContractError(f"{tool} requires a ProcessRunner")
-            command_id = arguments.pop("command_id", arguments.pop("check_id", None))
-            if not isinstance(command_id, str) or not command_id:
-                raise ContractError(f"{tool} requires command_id or check_id")
+            command_id = self._compatible_identifier(
+                arguments,
+                canonical="check_id",
+                alias="command_id",
+            )
+            if command_id is None:
+                raise ContractError(f"{tool} requires check_id")
             spec = self.process_runner.catalog.get(command_id)
-            argv = arguments.pop("argv", spec.argv)
-            cwd = arguments.pop("cwd", spec.cwd)
-            environment = arguments.pop("environment", {})
-            timeout = arguments.pop("timeout_seconds", 30.0)
-            output_limit = arguments.pop("max_output_bytes", 100_000)
-            network = arguments.pop("network", "deny")
             self._expect_only(arguments, ())
-            if not self._string_sequence(argv) or not isinstance(cwd, str) or not isinstance(environment, Mapping):
-                raise ContractError("invalid command arguments")
+            if "deny" not in spec.network_profiles:
+                raise ContractError("model-facing checks require a deny-network catalog profile")
             command = CommandRequest(
                 command_id=command_id,
-                argv=tuple(argv),
-                cwd=cwd,
-                environment=dict(environment),
-                timeout_seconds=timeout,
-                max_output_bytes=output_limit,
-                network=network,
+                argv=spec.argv,
+                cwd=spec.cwd,
+                environment=dict(spec.environment),
+                timeout_seconds=spec.timeout_seconds,
+                max_output_bytes=spec.max_output_bytes,
+                network="deny",
             )
             self.policy.authorize_command(
                 request.principal,
                 command_id,
-                network=network,
+                network=command.network,
                 purpose=purpose,
                 argv=command.argv,
             )
             result = self.process_runner.run(command)
             output = asdict(result)
+            integrity = self.process_runner.catalog.integrity(command_id)
             output["request"] = {
                 "argv": command.argv,
+                "resolved_argv": (str(integrity["executable"]), *command.argv[1:]),
                 "cwd": command.cwd,
                 "environment_keys": tuple(sorted(command.environment)),
+                "environment_digest": value_digest(dict(command.environment)),
                 "timeout_seconds": command.timeout_seconds,
                 "max_output_bytes": command.max_output_bytes,
                 "network": command.network,
@@ -339,12 +344,29 @@ class ToolGateway:
             )
             output["catalog_digest"] = self.process_runner.catalog.digest
             output["catalog_entry_digest"] = self.process_runner.catalog.entry_digest(command_id)
+            output["command_integrity"] = integrity
             return output, "PROCESS", command_id
         raise ContractError(f"unknown tool: {tool}")
 
     @staticmethod
     def _required_string(arguments: dict[str, Any], key: str) -> str:
         value = arguments.pop(key, None)
+        if not isinstance(value, str) or not value:
+            raise ContractError(f"{key} must be a non-empty string")
+        return value
+
+    @staticmethod
+    def _compatible_identifier(
+        arguments: dict[str, Any], *, canonical: str, alias: str
+    ) -> str | None:
+        if canonical in arguments and alias in arguments:
+            raise ContractError(
+                f"use {canonical}, not both {canonical} and compatibility alias {alias}"
+            )
+        key = canonical if canonical in arguments else alias
+        value = arguments.pop(key, None)
+        if value is None:
+            return None
         if not isinstance(value, str) or not value:
             raise ContractError(f"{key} must be a non-empty string")
         return value

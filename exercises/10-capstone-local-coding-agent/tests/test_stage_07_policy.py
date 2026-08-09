@@ -104,6 +104,10 @@ class PolicyAndGatewayTests(unittest.TestCase):
         with self.assertRaises(PolicyDenied):
             self.policy.authorize_command("agent:test", "check", argv=("curl", "https://example.invalid"))
         with self.assertRaises(PolicyDenied):
+            self.policy.authorize_command("agent:test", "check", argv=("bash", "-c", "echo bypass"))
+        with self.assertRaises(PolicyDenied):
+            self.policy.authorize_command("agent:test", "check", argv=("git", "commit", "-am", "bypass"))
+        with self.assertRaises(PolicyDenied):
             self.policy.authorize_command("agent:test", "unregistered", argv=(sys.executable, "-V"))
 
     def test_gateway_authorizes_retrieval_before_call_and_applies_exact_patch_idempotently(self) -> None:

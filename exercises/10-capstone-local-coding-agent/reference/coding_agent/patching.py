@@ -313,7 +313,8 @@ class PatchEngine:
         }
 
     def _journal_path(self, patch_id: str) -> Path:
-        if not patch_id or any(char not in "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-_." for char in patch_id):
+        safe = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-_."
+        if not patch_id or any(char not in safe for char in patch_id):
             raise ContractError("patch_id contains unsafe characters")
         return self.journal_dir / f"{patch_id}.json"
 
@@ -327,6 +328,8 @@ class PatchEngine:
 
     @staticmethod
     def _read_journal(path: Path) -> dict[str, Any]:
+        if path.is_symlink():
+            raise PolicyDenied("patch journal may not be a symlink")
         value = read_json(path)
         if not isinstance(value, dict):
             raise ContractError("invalid patch journal")
@@ -385,9 +388,16 @@ class PatchEngine:
             journal["status"] = "ROLLED_BACK"
             self._write_journal(journal)
             raise
-        changed = tuple(sorted(name for name in before if self._state_digest(before[name]) != self._state_digest(after[name])))
+        changed = tuple(
+            sorted(
+                name
+                for name in before
+                if self._state_digest(before[name]) != self._state_digest(after[name])
+            )
+        )
         receipt = {
             "patch_id": artifact.patch_id,
+            "change_set_id": artifact.patch_id,
             "patch_digest": artifact.digest,
             "snapshot_id": artifact.snapshot_id,
             "changed_paths": changed,
@@ -476,13 +486,23 @@ class PatchEngine:
             raise ContractError(f"unknown patch journal: {patch_id}")
         journal = self._read_journal(path)
         if journal.get("status") == "ROLLED_BACK":
-            return {"patch_id": patch_id, "status": "ROLLED_BACK", "duplicate": True}
+            return {
+                "patch_id": patch_id,
+                "change_set_id": patch_id,
+                "status": "ROLLED_BACK",
+                "duplicate": True,
+            }
         if journal.get("status") != "APPLIED":
             raise OperationConflict("only a completely applied patch can be rolled back; use recover()")
         self._safe_restore(journal["before"], acceptable=(journal["after"],))
         journal["status"] = "ROLLED_BACK"
         self._write_journal(journal)
-        return {"patch_id": patch_id, "status": "ROLLED_BACK", "duplicate": False}
+        return {
+            "patch_id": patch_id,
+            "change_set_id": patch_id,
+            "status": "ROLLED_BACK",
+            "duplicate": False,
+        }
 
     def recover(self, patch_id: str) -> Mapping[str, Any]:
         with self._effect_lock():
@@ -495,10 +515,20 @@ class PatchEngine:
         journal = self._read_journal(path)
         status = journal.get("status")
         if status in {"APPLIED", "ROLLED_BACK"}:
-            return {"patch_id": patch_id, "status": status, "duplicate": True}
+            return {
+                "patch_id": patch_id,
+                "change_set_id": patch_id,
+                "status": status,
+                "duplicate": True,
+            }
         if status not in {"PREPARED", "APPLYING", "ROLLBACK_REQUIRED"}:
             raise ContractError("invalid patch journal state")
         self._safe_restore(journal["before"], acceptable=(journal["before"], journal["after"]))
         journal["status"] = "ROLLED_BACK"
         self._write_journal(journal)
-        return {"patch_id": patch_id, "status": "ROLLED_BACK", "duplicate": False}
+        return {
+            "patch_id": patch_id,
+            "change_set_id": patch_id,
+            "status": "ROLLED_BACK",
+            "duplicate": False,
+        }

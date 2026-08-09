@@ -9,7 +9,7 @@ import time
 import unittest
 from pathlib import Path
 
-from coding_agent.errors import OperationConflict, PolicyDenied
+from coding_agent.errors import ContractError, OperationConflict, PolicyDenied
 from coding_agent.git_adapter import GitAdapter
 from coding_agent.process import CommandCatalog, CommandSpec, ProcessRunner
 from coding_agent.types import CommandRequest
@@ -37,8 +37,21 @@ class ProcessRunnerTests(unittest.TestCase):
     ) -> CommandRequest:
         return CommandRequest(command_id, argv, ".", {}, timeout, max_output, "deny")
 
-    def runner_for(self, command_id: str, argv: tuple[str, ...]) -> ProcessRunner:
-        return ProcessRunner(self.workspace, catalog=CommandCatalog((CommandSpec(command_id, argv),)))
+    def runner_for(
+        self,
+        command_id: str,
+        argv: tuple[str, ...],
+        *,
+        timeout: float = 2.0,
+        max_output: int = 100_000,
+    ) -> ProcessRunner:
+        specification = CommandSpec(
+            command_id,
+            argv,
+            timeout_seconds=timeout,
+            max_output_bytes=max_output,
+        )
+        return ProcessRunner(self.workspace, catalog=CommandCatalog((specification,)))
 
     def test_stdout_stderr_unicode_replacement_and_nonzero_are_distinct(self) -> None:
         argv = (sys.executable, str(FIXTURES / "emit.py"), "7")
@@ -53,16 +66,128 @@ class ProcessRunnerTests(unittest.TestCase):
 
     def test_catalog_rejects_same_id_with_different_arguments_and_publishes_digests(self) -> None:
         argv = (sys.executable, str(FIXTURES / "emit.py"), "0")
-        catalog = CommandCatalog((CommandSpec("emit", argv),))
+        catalog = CommandCatalog((CommandSpec("emit", argv, timeout_seconds=2.0),))
         self.assertTrue(catalog.digest.startswith("sha256:"))
         self.assertTrue(catalog.entry_digest("emit").startswith("sha256:"))
+        self.assertTrue(catalog.integrity("emit")["executable_digest"].startswith("sha256:"))
+        self.assertTrue(catalog.integrity("emit")["script_digest"].startswith("sha256:"))
         with self.assertRaises(PolicyDenied):
             catalog.validate(self.request("emit", (*argv[:-1], "1")))
+        with self.assertRaises(PolicyDenied):
+            catalog.validate(self.request("emit", argv, timeout=1.0))
+        with self.assertRaises(PolicyDenied):
+            catalog.validate(self.request("emit", argv, max_output=99_999))
+        with self.assertRaises(PolicyDenied):
+            catalog.validate(CommandRequest("emit", argv, ".", {"DEBUG": "1"}, 2.0, 100_000, "deny"))
+
+    def test_catalog_rejects_a_script_changed_after_review(self) -> None:
+        script = self.workspace / "reviewed.py"
+        script.write_text("print('reviewed')\n", encoding="utf-8")
+        argv = (sys.executable, str(script))
+        catalog = CommandCatalog((CommandSpec("reviewed", argv, timeout_seconds=2.0),))
+        request = self.request("reviewed", argv)
+        catalog.validate(request)
+        script.write_text("print('changed')\n", encoding="utf-8")
+        with self.assertRaises(PolicyDenied):
+            catalog.validate(request)
+
+    def test_relative_script_and_executable_are_bound_to_the_workspace(self) -> None:
+        script = self.workspace / "relative.py"
+        script.write_text("print('reviewed')\n", encoding="utf-8")
+        script_spec = CommandSpec(
+            "relative-script",
+            (sys.executable, "relative.py"),
+            timeout_seconds=2.0,
+        )
+        script_catalog = CommandCatalog((script_spec,), workspace=self.workspace)
+        script_runner = ProcessRunner(self.workspace, catalog=script_catalog)
+        self.assertEqual(
+            script_catalog.integrity("relative-script")["script"],
+            str(script.resolve(strict=True)),
+        )
+        script.write_text("print('changed')\n", encoding="utf-8")
+        with self.assertRaises(PolicyDenied):
+            script_runner.run(
+                self.request("relative-script", script_spec.argv)
+            )
+
+        executable = self.workspace / "reviewed-check"
+        executable.write_text("#!/bin/sh\nprintf 'reviewed\\n'\n", encoding="utf-8")
+        executable.chmod(0o700)
+        executable_spec = CommandSpec(
+            "relative-executable",
+            ("./reviewed-check",),
+            timeout_seconds=2.0,
+        )
+        executable_runner = ProcessRunner(
+            self.workspace,
+            catalog=CommandCatalog((executable_spec,)),
+        )
+        executable.write_text("#!/bin/sh\nprintf 'changed\\n'\n", encoding="utf-8")
+        with self.assertRaises(PolicyDenied):
+            executable_runner.run(
+                self.request("relative-executable", executable_spec.argv)
+            )
+
+    def test_catalog_rejects_execution_identity_and_unbounded_specs(self) -> None:
+        argv = (sys.executable, "-c", "print('ok')")
+        invalid = (
+            CommandSpec("path-env", argv, environment=(("PATH", "/tmp/fake"),)),
+            CommandSpec("python-env", argv, environment=(("PYTHONPATH", "/tmp/fake"),)),
+            CommandSpec("parent-cwd", argv, cwd="../outside"),
+            CommandSpec("absolute-cwd", argv, cwd=str(self.workspace)),
+            CommandSpec("long", argv, timeout_seconds=CommandCatalog.MAX_TIMEOUT_SECONDS + 1),
+            CommandSpec("large", argv, max_output_bytes=CommandCatalog.MAX_OUTPUT_BYTES + 1),
+        )
+        for specification in invalid:
+            with self.subTest(command_id=specification.command_id):
+                with self.assertRaises(ContractError):
+                    CommandCatalog((specification,))
+
+    def test_catalog_freeze_is_idempotent_and_blocks_late_registration(self) -> None:
+        argv = (sys.executable, "-c", "print('ok')")
+        catalog = CommandCatalog((CommandSpec("check", argv),))
+        first = ProcessRunner(self.workspace, catalog=catalog)
+        second = ProcessRunner(self.workspace, catalog=catalog)
+        self.assertEqual(first.catalog_digest, second.catalog_digest)
+        with self.assertRaises(ContractError):
+            catalog.register("other", (sys.executable, "-V"))
+
+    def test_pre_cancel_does_not_spawn_and_binary_display_stays_byte_bounded(self) -> None:
+        marker = self.workspace / "must-not-exist"
+        mutate_argv = (
+            sys.executable,
+            str(FIXTURES / "mutate.py"),
+            str(marker),
+            "spawned",
+        )
+        cancelled = threading.Event()
+        cancelled.set()
+        result = self.runner_for("pre-cancel", mutate_argv).run(
+            self.request("pre-cancel", mutate_argv),
+            cancel_event=cancelled,
+        )
+        self.assertEqual((result.exit_kind, result.cleanup_status), ("CANCELLED", "NOT_STARTED"))
+        self.assertFalse(marker.exists())
+
+        binary_argv = (
+            sys.executable,
+            "-c",
+            "import os; os.write(1, b'\\xff' * 100)",
+        )
+        bounded = self.runner_for("binary", binary_argv, max_output=1).run(
+            self.request("binary", binary_argv, max_output=1)
+        )
+        self.assertTrue(bounded.truncated)
+        self.assertLessEqual(
+            len(bounded.stdout.encode("utf-8")) + len(bounded.stderr.encode("utf-8")),
+            1,
+        )
 
     def test_timeout_terminates_descendant_process_group(self) -> None:
         pid_file = self.workspace / "child.pid"
         argv = (sys.executable, str(FIXTURES / "child_tree.py"), "parent", str(pid_file))
-        runner = self.runner_for("tree", argv)
+        runner = self.runner_for("tree", argv, timeout=0.25)
         result = runner.run(self.request("tree", argv, timeout=0.25))
         self.assertEqual(result.exit_kind, "TIMEOUT")
         self.assertIn(result.cleanup_status, {"TERMINATED", "KILLED"})
@@ -73,7 +198,7 @@ class ProcessRunnerTests(unittest.TestCase):
 
     def test_cancel_and_output_limit_do_not_deadlock_pipe_draining(self) -> None:
         flood_argv = (sys.executable, str(FIXTURES / "output_flood.py"))
-        flood = self.runner_for("flood", flood_argv).run(
+        flood = self.runner_for("flood", flood_argv, max_output=4_096).run(
             self.request("flood", flood_argv, max_output=4_096)
         )
         self.assertEqual(flood.exit_kind, "SUCCESS")
@@ -82,7 +207,7 @@ class ProcessRunnerTests(unittest.TestCase):
 
         pid_file = self.workspace / "cancel-child.pid"
         tree_argv = (sys.executable, str(FIXTURES / "child_tree.py"), "parent", str(pid_file))
-        runner = self.runner_for("cancel-tree", tree_argv)
+        runner = self.runner_for("cancel-tree", tree_argv, timeout=5.0)
         result_holder: list[object] = []
         thread = threading.Thread(
             target=lambda: result_holder.append(runner.run(self.request("cancel-tree", tree_argv, timeout=5))),

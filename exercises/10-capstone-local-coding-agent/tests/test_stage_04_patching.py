@@ -70,7 +70,10 @@ class PatchEngineTests(unittest.TestCase):
         )
 
         receipt = self.engine.apply(artifact)
-        self.assertEqual(set(receipt["changed_paths"]), {"run.sh", "tests/test_new.py", "obsolete.txt", "old-name.txt", "new-name.txt"})
+        self.assertEqual(
+            set(receipt["changed_paths"]),
+            {"run.sh", "tests/test_new.py", "obsolete.txt", "old-name.txt", "new-name.txt"},
+        )
         self.assertEqual(executable.read_text(encoding="utf-8"), "#!/bin/sh\necho new\n")
         self.assertEqual(stat.S_IMODE(executable.stat().st_mode), 0o755)
         self.assertFalse(obsolete.exists())

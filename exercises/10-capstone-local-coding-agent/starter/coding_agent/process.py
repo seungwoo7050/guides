@@ -15,12 +15,22 @@ class CommandSpec:
     command_id: str
     argv: tuple[str, ...]
     cwd: str = "."
-    environment_keys: tuple[str, ...] = ()
+    environment: tuple[tuple[str, str], ...] = ()
     network_profiles: tuple[str, ...] = ("deny",)
+    timeout_seconds: float = 30.0
+    max_output_bytes: int = 100_000
 
 
 class CommandCatalog:
-    def __init__(self, specs: Iterable[CommandSpec] = ()) -> None:
+    MAX_TIMEOUT_SECONDS = 300.0
+    MAX_OUTPUT_BYTES = 2_000_000
+
+    def __init__(
+        self,
+        specs: Iterable[CommandSpec] = (),
+        *,
+        workspace: Path | None = None,
+    ) -> None:
         raise NotImplementedError("store and validate exact reviewed command entries")
 
     def register(
@@ -29,8 +39,10 @@ class CommandCatalog:
         argv: Sequence[str] | None = None,
         *,
         cwd: str = ".",
-        environment_keys: Sequence[str] = (),
+        environment: Mapping[str, str] | None = None,
         network_profiles: Sequence[str] = ("deny",),
+        timeout_seconds: float = 30.0,
+        max_output_bytes: int = 100_000,
     ) -> CommandSpec:
         raise NotImplementedError
 
@@ -38,9 +50,20 @@ class CommandCatalog:
         raise NotImplementedError
 
     def validate(self, request: CommandRequest) -> CommandSpec:
-        raise NotImplementedError("reject same ID with different argv/cwd/env/network")
+        raise NotImplementedError(
+            "reject changes to reviewed argv/cwd/env/network/time/output/file digests"
+        )
+
+    def bind_workspace(self, workspace: Path) -> None:
+        raise NotImplementedError("pin relative executable and script identities")
+
+    def freeze(self, workspace: Path | None = None) -> str:
+        raise NotImplementedError("freeze the catalog before process execution")
 
     def entry_digest(self, command_id: str) -> str:
+        raise NotImplementedError
+
+    def integrity(self, command_id: str) -> Mapping[str, str | None]:
         raise NotImplementedError
 
     @property

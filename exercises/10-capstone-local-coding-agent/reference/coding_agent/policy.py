@@ -179,6 +179,7 @@ class PolicyEngine:
         "ftp",
         "telnet",
     }
+    _BROAD_INTERPRETERS = {"sh", "bash", "zsh", "dash", "ksh", "fish"}
 
     def __init__(
         self,
@@ -318,6 +319,10 @@ class PolicyEngine:
         if network not in self._NETWORK_ORDER:
             raise PolicyDenied("unknown network profile")
         basename = os.path.basename(argv[0]) if argv else ""
+        if basename in self._BROAD_INTERPRETERS:
+            raise PolicyDenied("broad shell commands are not granted through the check catalog")
+        if basename == "git":
+            raise PolicyDenied("Git commands must use the dedicated Git adapter")
         if network != "allow" and basename in self._NETWORK_CLIENTS:
             raise PolicyDenied("general network client requires the allow profile")
         for grant in self._active_grants(principal, purpose=purpose):
