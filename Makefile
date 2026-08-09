@@ -1,7 +1,7 @@
 PYTHON ?= python3
 WORKSPACE ?= .workspaces/mica
 
-.PHONY: help prepare check verify structure links docs capstone examples capstone-start workspace clean
+.PHONY: help prepare check verify structure links docs capstone examples capstone-start workspace clean purge-workspace
 
 help:
 	@printf '%s\n' \
@@ -10,7 +10,8 @@ help:
 	  'make verify          임시 복사본에서 전체 검증' \
 	  'make workspace       Mica skeleton workspace 생성' \
 	  'make capstone-start  skeleton의 의도된 초기 실패 확인' \
-	  'make clean           준비 marker, 기본 workspace와 Python cache 제거'
+	  'make clean           준비 marker와 생성 cache 제거(workspace 보존)' \
+	  'make purge-workspace WORKSPACE=.workspaces/name  지정 workspace 제거'
 
 prepare:
 	./prepare.sh
@@ -44,6 +45,7 @@ workspace:
 	./scripts/new-workspace.sh $(WORKSPACE)
 
 clean:
-	rm -rf .guide .workspaces
-	find . -type d -name __pycache__ -prune -exec rm -rf {} +
-	find . -type f \( -name '*.pyc' -o -name '*.pyo' \) -delete
+	$(PYTHON) scripts/clean_generated.py
+
+purge-workspace:
+	$(PYTHON) scripts/purge_workspace.py "$(WORKSPACE)"

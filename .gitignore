@@ -1,6 +1,12 @@
 .guide/
 .workspaces/
 __pycache__/
+.pytest_cache/
+.mypy_cache/
+.venv/
+build/
+dist/
+*.egg-info/
 *.py[cod]
 *.log
 *.tmp
