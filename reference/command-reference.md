@@ -124,4 +124,8 @@ simulator는 camera·background scheduler·push·biometric·battery의 실제 �
 ./verify.sh
 ```
 
+`prepare.sh`는 고정 Node/npm과 lockfile로 `node_modules/`를 재생성하고 `.guide/mobile-app/`에 source/runtime fingerprint와 environment report를 쓴다. 학습자 source, skeleton workspace와 device 상태는 바꾸지 않는다. 준비 뒤 source나 runtime이 바뀌면 `verify.sh`는 오래된 marker를 거부한다.
+
+`verify.sh`는 저장소 밖의 unique temporary directory에 log를 남기고 필수 suite를 끝까지 집계한다. 출력된 절대 log path를 evidence에 연결하며, 같은 이름의 repository file이나 고정 `/tmp` log를 덮어쓰지 않는다. `.guide/mobile-app/`만 정리하려면 `make clean`을 사용한다.
+
 검사 결과에는 자동 실행, `not-run` 수동 항목과 environment limitation이 구분돼야 한다. 자동 통과는 교육적 완성이나 stable 판정이 아니며, cloud build·signing·store upload·실제 Android/iOS device 결과를 대신하지 않는다.
