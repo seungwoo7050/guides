@@ -157,6 +157,12 @@ describe("Stage 03 Expo adapter mapping", () => {
       () => never,
       1,
     ).availability()).resolves.toEqual(expect.objectContaining({ kind: "limited" }));
+    expect(() => new ExpoImagePickerCameraAdapter(
+      imageApi(),
+      "android",
+      async () => null,
+      0,
+    )).toThrow("deadline must be positive");
   });
 
   it("maps a second camera permission-query rejection to a retryable result", async () => {

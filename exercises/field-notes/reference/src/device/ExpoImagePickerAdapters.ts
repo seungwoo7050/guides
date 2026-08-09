@@ -101,7 +101,11 @@ export class ExpoImagePickerCameraAdapter implements CameraPort {
     private readonly platform: string = Platform.OS,
     private readonly availabilityProbe: CameraAvailabilityProbe = async () => null,
     private readonly availabilityDeadlineMs = CAMERA_AVAILABILITY_DEADLINE_MS,
-  ) {}
+  ) {
+    if (!Number.isFinite(availabilityDeadlineMs) || availabilityDeadlineMs <= 0) {
+      throw new RangeError("camera availability deadline must be positive");
+    }
+  }
 
   public async availability() {
     const module = nativeModuleAvailability(this.platform, "camera");
