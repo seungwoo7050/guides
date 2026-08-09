@@ -1,6 +1,6 @@
 # Catalog
 
-`branches.json`과 `tracks.json`은 `main`의 브랜치·트랙 문서를 만드는 정형 정본이다. 이 카탈로그는 독자의 경로 선택과 새 브랜치의 범위 설계를 함께 지원한다. 생성된 `docs/01-branch-catalog.md`, `docs/03-career-tracks.md`, `docs/04-dependency-map.md`를 직접 수정하지 않는다.
+`branches.json`과 `tracks.json`은 `main`의 브랜치·트랙 문서를 만드는 정형 정본이다. 이 카탈로그는 구현 순서와 무관하게 모든 등재 브랜치가 완성됐을 때의 목표 상태를 먼저 기술하며, 독자의 경로 선택과 새 브랜치의 범위 설계를 함께 지원한다. 생성된 `docs/01-branch-catalog.md`, `docs/03-career-tracks.md`, `docs/04-dependency-map.md`를 직접 수정하지 않는다.
 
 ## `branches.json`
 
@@ -24,13 +24,13 @@
 - `excludes`: 의도적으로 다루지 않거나 다른 브랜치에 주 소유권을 맡기는 범위.
 - `exit_capabilities`: 브랜치를 마친 독자가 설명과 수행 결과로 보여 줄 수 있어야 하는 능력.
 - `url`: `https://github.com/seungwoo7050/guides/tree/<id>` 형식의 정규 브랜치 URL.
-- `status`: 공개 카탈로그에서의 상태. 현재 카탈로그에는 `stable`만 등재한다.
+- `status`: `main`의 완성 목표 계약 상태. 현재 카탈로그에는 `stable`만 등재한다.
 
 ### `stable`의 의미
 
-`stable`은 파일 존재나 스크립트 성공으로 자동 판정하는 값이 아니다. 사람이 [`docs/09-branch-quality-contract.md`](../docs/09-branch-quality-contract.md)의 구조·내용·실습·완성도 기준을 검토하고, 독자가 처음부터 종료 능력까지 따라갈 수 있으며 소유 경계가 인접 브랜치와 합의되었다고 승인해 `main`에 등재한 상태다.
+`stable`은 `main`에서 해당 브랜치의 **완성 목표 계약**이 승인됐다는 뜻이다. 사람은 [`docs/09-branch-quality-contract.md`](../docs/09-branch-quality-contract.md)를 기준으로 대상 독자, 구조 역할, 소유·비소유 범위, 종료 능력, 인접 관계와 업무 트랙을 최종 상태 관점에서 검토한다. 이 계약을 후속 구현의 척도로 사용하기 위해 원격 브랜치 생성이나 실제 내용 완성보다 먼저 `main`에 등재할 수 있다.
 
-`stable`은 모든 오류가 없거나 내용이 영구히 고정되었다는 뜻도 아니다. 브랜치의 계약이 바뀌면 같은 인간 검토를 거쳐 카탈로그와 생성 문서를 함께 갱신한다. 자동 검사는 JSON 형식, 참조와 생성 결과의 기계적 일관성만 확인하며 교육적 품질이나 실제 완료를 대신 판정하지 않는다.
+따라서 `stable`은 원격 브랜치가 이미 존재한다거나 실제 문서·실습·capstone이 완성됐다는 증명이 아니다. 실제 브랜치 완료는 구현 뒤 사람이 같은 계약으로 구조·품질·완성도를 다시 검토해 별도로 판단한다. 계약이 바뀌면 먼저 `main`과 생성 문서를 갱신한 뒤 구현을 맞춘다. 자동 검사는 JSON 형식, 참조와 생성 결과의 기계적 일관성만 확인하며 두 사람 판단을 대신하지 않는다.
 
 ## `tracks.json`
 
@@ -66,7 +66,7 @@
 - 일부 예제 실행에만 필요한 언어나 인접 배경은 `recommends`에 둔다.
 - `connects`와 `continues_to`는 탐색 안내이며 의존성 graph의 실선이 아니다.
 - `linear_paths`는 목표 직무까지의 실제 진행 순서를 제공하되, 모든 인접·심화 브랜치를 한 경로에 넣지 않는다.
-- 새 브랜치를 추가할 때 고정된 총개수를 맞추지 않는다. 대신 고유 ID, 네 종류의 taxonomy, 유효한 참조와 인간의 `stable` 승인을 유지한다.
+- 새 브랜치를 추가할 때 고정된 총개수를 맞추지 않는다. 대신 고유 ID, 네 종류의 taxonomy, 유효한 참조와 완성 목표 계약에 대한 인간의 `stable` 승인을 유지한다.
 
 ## 갱신과 확인
 

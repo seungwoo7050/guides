@@ -14,8 +14,10 @@
 | 웹 개발 | [웹 백엔드 개발](#web-backend) | `git` → `web-app` → `java` → `backend-spring-boot` → `database-systems` → `web-infra` | HTTP·Java·Spring·관계형 데이터와 운영 경계를 연결해 기존 백엔드 서비스에 합류한다. |
 | 웹 개발 | [웹 프런트엔드 개발](#web-frontend) | `git` → `web-app` → `web-front-react-nextjs` → `web-infra` | 브라우저·React·Next.js 상태와 접근성·성능·운영 빌드를 연결한다. |
 | 웹 개발 | [풀스택 웹 개발](#full-stack-web) | `git` → `web-app` → `web-front-react-nextjs` → `java` → `backend-spring-boot` → `database-systems` → `web-infra` | 브라우저부터 API·데이터베이스·배포까지 작은 제품의 전체 흐름을 독립적으로 소유한다. |
-| 인프라·플랫폼·보안 | [인프라·플랫폼 엔지니어링](#infrastructure-platform) | `git` → `unix-systems` → `computer-networks` → `web-infra` → `cybersecurity` → `platform-engineering` | 단일 서비스 공개 운영에서 여러 팀의 self-service 플랫폼까지 확장한다. |
-| 인프라·플랫폼·보안 | [사이버보안](#cybersecurity) | `git` → `unix-systems` → `computer-networks` → `web-app` → `web-infra` → `cybersecurity` | 시스템과 웹의 공격 표면을 이해하고, 허가된 환경에서 공격·수정·탐지·복구를 한 흐름으로 수행한다. |
+| 웹 개발 | [SaaS 제품 개발](#saas-product-engineering) | 2개 — 작은 SaaS 제품 / Spring 기반 SaaS | 웹 제품을 고객 tenant·조직·권한·구독·quota·metering·감사·데이터 수명과 cloud 책임 경계까지 확장한다. |
+| 인프라·클라우드·플랫폼·보안 | [클라우드 엔지니어링](#cloud-engineering) | `git` → `unix-systems` → `computer-networks` → `web-infra` → `cloud-computing` | 단일 호스트 운영을 cloud resource·managed service·serverless·shared responsibility·비용·failure domain 설계로 확장한다. |
+| 인프라·클라우드·플랫폼·보안 | [인프라·플랫폼 엔지니어링](#infrastructure-platform) | 2개 — 호스트 운영에서 플랫폼까지 / 클라우드 기반 플랫폼 | 단일 서비스 공개 운영에서 여러 팀의 self-service 플랫폼까지 확장한다. |
+| 인프라·클라우드·플랫폼·보안 | [사이버보안](#cybersecurity) | `git` → `unix-systems` → `computer-networks` → `web-app` → `web-infra` → `cybersecurity` | 시스템과 웹의 공격 표면을 이해하고, 허가된 환경에서 공격·수정·탐지·복구를 한 흐름으로 수행한다. |
 | 모바일 애플리케이션 | [모바일 애플리케이션 개발](#mobile) | `git` → `web-app` → `web-front-react-nextjs` → `mobile-app` | 웹·React 기반을 모바일 수명 주기, 오프라인 상태, 기기 기능과 Android·iOS 배포로 확장한다. |
 | AI·데이터 | [머신러닝 모델 개발](#machine-learning) | `git` → `python` → `algorithms` → `machine-learning` | 데이터·학습·평가·오류 분석·모델 전달의 재현 가능한 흐름을 만든다. |
 | AI·데이터 | [에이전틱 시스템 개발](#agentic-systems) | `git` → `python` → `web-app` → `agentic-systems` | 모델을 도구·상태·검색·평가·권한과 연결해 실제 작업을 수행하는 시스템을 만든다. |
@@ -74,7 +76,7 @@
 
 ## 웹 개발
 
-프런트엔드·백엔드·풀스택은 책임 범위가 다르므로 직무별 선형 경로를 제공한다.
+프런트엔드·백엔드·풀스택·SaaS 제품은 책임 범위가 다르므로 직무별 선형 경로를 제공한다.
 
 ### 웹 백엔드 개발
 
@@ -91,7 +93,7 @@ HTTP·Java·Spring·관계형 데이터와 운영 경계를 연결해 기존 백
 - **택일 필수:** 없음
 - **공통·핵심 브랜치와 직접 의존성 순서:** [`git`](https://github.com/seungwoo7050/guides/tree/git), [`web-app`](https://github.com/seungwoo7050/guides/tree/web-app), [`java`](https://github.com/seungwoo7050/guides/tree/java), [`backend-spring-boot`](https://github.com/seungwoo7050/guides/tree/backend-spring-boot), [`database-systems`](https://github.com/seungwoo7050/guides/tree/database-systems)
 - **권장 인접 지식:** [`computer-networks`](https://github.com/seungwoo7050/guides/tree/computer-networks), [`unix-systems`](https://github.com/seungwoo7050/guides/tree/unix-systems), [`cybersecurity`](https://github.com/seungwoo7050/guides/tree/cybersecurity), [`web-infra`](https://github.com/seungwoo7050/guides/tree/web-infra)
-- **후속 심화:** [`distributed-services`](https://github.com/seungwoo7050/guides/tree/distributed-services), [`distributed-systems`](https://github.com/seungwoo7050/guides/tree/distributed-systems), [`data-engineering`](https://github.com/seungwoo7050/guides/tree/data-engineering), [`platform-engineering`](https://github.com/seungwoo7050/guides/tree/platform-engineering)
+- **후속 심화:** [`distributed-services`](https://github.com/seungwoo7050/guides/tree/distributed-services), [`distributed-systems`](https://github.com/seungwoo7050/guides/tree/distributed-systems), [`data-engineering`](https://github.com/seungwoo7050/guides/tree/data-engineering), [`cloud-computing`](https://github.com/seungwoo7050/guides/tree/cloud-computing), [`platform-engineering`](https://github.com/seungwoo7050/guides/tree/platform-engineering)
 
 **트랙 종료 능력**
 
@@ -137,7 +139,7 @@ HTTP·Java·Spring·관계형 데이터와 운영 경계를 연결해 기존 백
 - **택일 필수:** 없음
 - **공통·핵심 브랜치와 직접 의존성 순서:** [`git`](https://github.com/seungwoo7050/guides/tree/git), [`web-app`](https://github.com/seungwoo7050/guides/tree/web-app), [`web-front-react-nextjs`](https://github.com/seungwoo7050/guides/tree/web-front-react-nextjs), [`java`](https://github.com/seungwoo7050/guides/tree/java), [`backend-spring-boot`](https://github.com/seungwoo7050/guides/tree/backend-spring-boot), [`database-systems`](https://github.com/seungwoo7050/guides/tree/database-systems), [`web-infra`](https://github.com/seungwoo7050/guides/tree/web-infra)
 - **권장 인접 지식:** [`cybersecurity`](https://github.com/seungwoo7050/guides/tree/cybersecurity), [`distributed-services`](https://github.com/seungwoo7050/guides/tree/distributed-services)
-- **후속 심화:** [`data-engineering`](https://github.com/seungwoo7050/guides/tree/data-engineering), [`platform-engineering`](https://github.com/seungwoo7050/guides/tree/platform-engineering), [`agentic-systems`](https://github.com/seungwoo7050/guides/tree/agentic-systems)
+- **후속 심화:** [`data-engineering`](https://github.com/seungwoo7050/guides/tree/data-engineering), [`cloud-computing`](https://github.com/seungwoo7050/guides/tree/cloud-computing), [`platform-engineering`](https://github.com/seungwoo7050/guides/tree/platform-engineering), [`agentic-systems`](https://github.com/seungwoo7050/guides/tree/agentic-systems)
 
 **트랙 종료 능력**
 
@@ -145,10 +147,57 @@ HTTP·Java·Spring·관계형 데이터와 운영 경계를 연결해 기존 백
 - 상태 소유권과 배포 경계를 설명한다
 - 기능 실패와 운영 실패를 분리해 복구한다
 
+### SaaS 제품 개발
 
-## 인프라·플랫폼·보안
+<a id="saas-product-engineering"></a>
 
-서비스 운영, 내부 플랫폼, 공격·방어는 인접하지만 서로 다른 상태와 실패를 소유한다.
+웹 제품을 고객 tenant·조직·권한·구독·quota·metering·감사·데이터 수명과 cloud 책임 경계까지 확장한다.
+
+**권장 선형 경로**
+
+1. **작은 SaaS 제품** — [`git`](https://github.com/seungwoo7050/guides/tree/git) → [`web-app`](https://github.com/seungwoo7050/guides/tree/web-app) → [`database-systems`](https://github.com/seungwoo7050/guides/tree/database-systems) → [`web-infra`](https://github.com/seungwoo7050/guides/tree/web-infra) → [`cloud-computing`](https://github.com/seungwoo7050/guides/tree/cloud-computing)
+2. **Spring 기반 SaaS** — [`git`](https://github.com/seungwoo7050/guides/tree/git) → [`web-app`](https://github.com/seungwoo7050/guides/tree/web-app) → [`java`](https://github.com/seungwoo7050/guides/tree/java) → [`backend-spring-boot`](https://github.com/seungwoo7050/guides/tree/backend-spring-boot) → [`database-systems`](https://github.com/seungwoo7050/guides/tree/database-systems) → [`web-infra`](https://github.com/seungwoo7050/guides/tree/web-infra) → [`cloud-computing`](https://github.com/seungwoo7050/guides/tree/cloud-computing)
+
+- **공통:** [`git`](https://github.com/seungwoo7050/guides/tree/git)
+- **핵심 브랜치:** [`web-app`](https://github.com/seungwoo7050/guides/tree/web-app), [`database-systems`](https://github.com/seungwoo7050/guides/tree/database-systems), [`cloud-computing`](https://github.com/seungwoo7050/guides/tree/cloud-computing)
+- **택일 필수:** 없음
+- **공통·핵심 브랜치와 직접 의존성 순서:** [`git`](https://github.com/seungwoo7050/guides/tree/git), [`web-app`](https://github.com/seungwoo7050/guides/tree/web-app), [`database-systems`](https://github.com/seungwoo7050/guides/tree/database-systems), [`web-infra`](https://github.com/seungwoo7050/guides/tree/web-infra), [`cloud-computing`](https://github.com/seungwoo7050/guides/tree/cloud-computing)
+- **권장 인접 지식:** [`web-front-react-nextjs`](https://github.com/seungwoo7050/guides/tree/web-front-react-nextjs), [`backend-spring-boot`](https://github.com/seungwoo7050/guides/tree/backend-spring-boot), [`cybersecurity`](https://github.com/seungwoo7050/guides/tree/cybersecurity), [`distributed-services`](https://github.com/seungwoo7050/guides/tree/distributed-services)
+- **후속 심화:** [`data-engineering`](https://github.com/seungwoo7050/guides/tree/data-engineering), [`platform-engineering`](https://github.com/seungwoo7050/guides/tree/platform-engineering), [`agentic-systems`](https://github.com/seungwoo7050/guides/tree/agentic-systems)
+
+**트랙 종료 능력**
+
+- 고객 tenant와 사용자·조직·역할을 구분하고 API·DB 접근을 tenant 경계로 검증한다
+- 구독·quota·metering·audit를 업무 상태와 cloud 비용 근거에 연결한다
+- onboarding·migration·export·deletion·장애 복구를 고객 tenant 수명 주기로 설계·검증한다
+
+
+## 인프라·클라우드·플랫폼·보안
+
+단일 서비스 운영, cloud service model, 내부 플랫폼, 공격·방어는 인접하지만 서로 다른 상태와 실패를 소유한다.
+
+### 클라우드 엔지니어링
+
+<a id="cloud-engineering"></a>
+
+단일 호스트 운영을 cloud resource·managed service·serverless·shared responsibility·비용·failure domain 설계로 확장한다.
+
+**권장 선형 경로**
+
+1. **클라우드 운영과 서비스 모델** — [`git`](https://github.com/seungwoo7050/guides/tree/git) → [`unix-systems`](https://github.com/seungwoo7050/guides/tree/unix-systems) → [`computer-networks`](https://github.com/seungwoo7050/guides/tree/computer-networks) → [`web-infra`](https://github.com/seungwoo7050/guides/tree/web-infra) → [`cloud-computing`](https://github.com/seungwoo7050/guides/tree/cloud-computing)
+
+- **공통:** [`git`](https://github.com/seungwoo7050/guides/tree/git)
+- **핵심 브랜치:** [`unix-systems`](https://github.com/seungwoo7050/guides/tree/unix-systems), [`computer-networks`](https://github.com/seungwoo7050/guides/tree/computer-networks), [`web-infra`](https://github.com/seungwoo7050/guides/tree/web-infra), [`cloud-computing`](https://github.com/seungwoo7050/guides/tree/cloud-computing)
+- **택일 필수:** 없음
+- **공통·핵심 브랜치와 직접 의존성 순서:** [`git`](https://github.com/seungwoo7050/guides/tree/git), [`unix-systems`](https://github.com/seungwoo7050/guides/tree/unix-systems), [`computer-networks`](https://github.com/seungwoo7050/guides/tree/computer-networks), [`web-infra`](https://github.com/seungwoo7050/guides/tree/web-infra), [`cloud-computing`](https://github.com/seungwoo7050/guides/tree/cloud-computing)
+- **권장 인접 지식:** [`cybersecurity`](https://github.com/seungwoo7050/guides/tree/cybersecurity), [`distributed-services`](https://github.com/seungwoo7050/guides/tree/distributed-services), [`database-systems`](https://github.com/seungwoo7050/guides/tree/database-systems)
+- **후속 심화:** [`platform-engineering`](https://github.com/seungwoo7050/guides/tree/platform-engineering), [`distributed-systems`](https://github.com/seungwoo7050/guides/tree/distributed-systems)
+
+**트랙 종료 능력**
+
+- IaaS·PaaS·SaaS와 VM·container·FaaS의 책임·권한·운영 경계를 구분한다
+- region·availability zone·cloud identity·network·storage·compute를 failure domain과 비용 기준으로 설계한다
+- 예산·최소 권한·관측·cleanup을 포함한 재현 가능한 cloud workload 실험을 수행하고 근거를 남긴다
 
 ### 인프라·플랫폼 엔지니어링
 
@@ -158,13 +207,14 @@ HTTP·Java·Spring·관계형 데이터와 운영 경계를 연결해 기존 백
 
 **권장 선형 경로**
 
-1. **인프라에서 플랫폼까지** — [`git`](https://github.com/seungwoo7050/guides/tree/git) → [`unix-systems`](https://github.com/seungwoo7050/guides/tree/unix-systems) → [`computer-networks`](https://github.com/seungwoo7050/guides/tree/computer-networks) → [`web-infra`](https://github.com/seungwoo7050/guides/tree/web-infra) → [`cybersecurity`](https://github.com/seungwoo7050/guides/tree/cybersecurity) → [`platform-engineering`](https://github.com/seungwoo7050/guides/tree/platform-engineering)
+1. **호스트 운영에서 플랫폼까지** — [`git`](https://github.com/seungwoo7050/guides/tree/git) → [`unix-systems`](https://github.com/seungwoo7050/guides/tree/unix-systems) → [`computer-networks`](https://github.com/seungwoo7050/guides/tree/computer-networks) → [`web-infra`](https://github.com/seungwoo7050/guides/tree/web-infra) → [`cybersecurity`](https://github.com/seungwoo7050/guides/tree/cybersecurity) → [`platform-engineering`](https://github.com/seungwoo7050/guides/tree/platform-engineering)
+2. **클라우드 기반 플랫폼** — [`git`](https://github.com/seungwoo7050/guides/tree/git) → [`unix-systems`](https://github.com/seungwoo7050/guides/tree/unix-systems) → [`computer-networks`](https://github.com/seungwoo7050/guides/tree/computer-networks) → [`web-infra`](https://github.com/seungwoo7050/guides/tree/web-infra) → [`cloud-computing`](https://github.com/seungwoo7050/guides/tree/cloud-computing) → [`cybersecurity`](https://github.com/seungwoo7050/guides/tree/cybersecurity) → [`platform-engineering`](https://github.com/seungwoo7050/guides/tree/platform-engineering)
 
 - **공통:** [`git`](https://github.com/seungwoo7050/guides/tree/git)
 - **핵심 브랜치:** [`unix-systems`](https://github.com/seungwoo7050/guides/tree/unix-systems), [`computer-networks`](https://github.com/seungwoo7050/guides/tree/computer-networks), [`web-infra`](https://github.com/seungwoo7050/guides/tree/web-infra), [`platform-engineering`](https://github.com/seungwoo7050/guides/tree/platform-engineering)
 - **택일 필수:** 없음
 - **공통·핵심 브랜치와 직접 의존성 순서:** [`git`](https://github.com/seungwoo7050/guides/tree/git), [`unix-systems`](https://github.com/seungwoo7050/guides/tree/unix-systems), [`computer-networks`](https://github.com/seungwoo7050/guides/tree/computer-networks), [`web-infra`](https://github.com/seungwoo7050/guides/tree/web-infra), [`platform-engineering`](https://github.com/seungwoo7050/guides/tree/platform-engineering)
-- **권장 인접 지식:** [`operating-systems`](https://github.com/seungwoo7050/guides/tree/operating-systems), [`cybersecurity`](https://github.com/seungwoo7050/guides/tree/cybersecurity), [`distributed-services`](https://github.com/seungwoo7050/guides/tree/distributed-services), [`data-engineering`](https://github.com/seungwoo7050/guides/tree/data-engineering)
+- **권장 인접 지식:** [`operating-systems`](https://github.com/seungwoo7050/guides/tree/operating-systems), [`cybersecurity`](https://github.com/seungwoo7050/guides/tree/cybersecurity), [`distributed-services`](https://github.com/seungwoo7050/guides/tree/distributed-services), [`data-engineering`](https://github.com/seungwoo7050/guides/tree/data-engineering), [`cloud-computing`](https://github.com/seungwoo7050/guides/tree/cloud-computing)
 - **후속 심화:** [`distributed-systems`](https://github.com/seungwoo7050/guides/tree/distributed-systems)
 
 **트랙 종료 능력**

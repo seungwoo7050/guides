@@ -24,13 +24,14 @@
 | [`database-systems`](https://github.com/seungwoo7050/guides/tree/database-systems) | 없음 | [`web-app`](https://github.com/seungwoo7050/guides/tree/web-app), [`algorithms`](https://github.com/seungwoo7050/guides/tree/algorithms), [`operating-systems`](https://github.com/seungwoo7050/guides/tree/operating-systems) |
 | [`distributed-services`](https://github.com/seungwoo7050/guides/tree/distributed-services) | [`java`](https://github.com/seungwoo7050/guides/tree/java), [`web-app`](https://github.com/seungwoo7050/guides/tree/web-app) | [`database-systems`](https://github.com/seungwoo7050/guides/tree/database-systems), [`backend-spring-boot`](https://github.com/seungwoo7050/guides/tree/backend-spring-boot) |
 | [`web-infra`](https://github.com/seungwoo7050/guides/tree/web-infra) | 없음 | [`unix-systems`](https://github.com/seungwoo7050/guides/tree/unix-systems), [`computer-networks`](https://github.com/seungwoo7050/guides/tree/computer-networks), [`web-app`](https://github.com/seungwoo7050/guides/tree/web-app) |
+| [`cloud-computing`](https://github.com/seungwoo7050/guides/tree/cloud-computing) | [`web-infra`](https://github.com/seungwoo7050/guides/tree/web-infra) | [`web-app`](https://github.com/seungwoo7050/guides/tree/web-app), [`database-systems`](https://github.com/seungwoo7050/guides/tree/database-systems), [`distributed-services`](https://github.com/seungwoo7050/guides/tree/distributed-services), [`cybersecurity`](https://github.com/seungwoo7050/guides/tree/cybersecurity) |
 | [`cybersecurity`](https://github.com/seungwoo7050/guides/tree/cybersecurity) | [`unix-systems`](https://github.com/seungwoo7050/guides/tree/unix-systems), [`computer-networks`](https://github.com/seungwoo7050/guides/tree/computer-networks) | [`web-app`](https://github.com/seungwoo7050/guides/tree/web-app), [`operating-systems`](https://github.com/seungwoo7050/guides/tree/operating-systems), [`web-infra`](https://github.com/seungwoo7050/guides/tree/web-infra), [`python`](https://github.com/seungwoo7050/guides/tree/python), [`c`](https://github.com/seungwoo7050/guides/tree/c), [`computer-architecture`](https://github.com/seungwoo7050/guides/tree/computer-architecture) |
 | [`mobile-app`](https://github.com/seungwoo7050/guides/tree/mobile-app) | [`web-app`](https://github.com/seungwoo7050/guides/tree/web-app) | [`web-front-react-nextjs`](https://github.com/seungwoo7050/guides/tree/web-front-react-nextjs), [`computer-networks`](https://github.com/seungwoo7050/guides/tree/computer-networks), [`cybersecurity`](https://github.com/seungwoo7050/guides/tree/cybersecurity) |
 | [`machine-learning`](https://github.com/seungwoo7050/guides/tree/machine-learning) | [`python`](https://github.com/seungwoo7050/guides/tree/python) | [`algorithms`](https://github.com/seungwoo7050/guides/tree/algorithms) |
 | [`agentic-systems`](https://github.com/seungwoo7050/guides/tree/agentic-systems) | [`python`](https://github.com/seungwoo7050/guides/tree/python), [`web-app`](https://github.com/seungwoo7050/guides/tree/web-app) | [`distributed-services`](https://github.com/seungwoo7050/guides/tree/distributed-services), [`cybersecurity`](https://github.com/seungwoo7050/guides/tree/cybersecurity), [`machine-learning`](https://github.com/seungwoo7050/guides/tree/machine-learning) |
 | [`distributed-systems`](https://github.com/seungwoo7050/guides/tree/distributed-systems) | [`operating-systems`](https://github.com/seungwoo7050/guides/tree/operating-systems), [`computer-networks`](https://github.com/seungwoo7050/guides/tree/computer-networks), [`database-systems`](https://github.com/seungwoo7050/guides/tree/database-systems) | [`algorithms`](https://github.com/seungwoo7050/guides/tree/algorithms), [`distributed-services`](https://github.com/seungwoo7050/guides/tree/distributed-services) |
 | [`data-engineering`](https://github.com/seungwoo7050/guides/tree/data-engineering) | [`python`](https://github.com/seungwoo7050/guides/tree/python), [`database-systems`](https://github.com/seungwoo7050/guides/tree/database-systems) | [`distributed-services`](https://github.com/seungwoo7050/guides/tree/distributed-services), [`distributed-systems`](https://github.com/seungwoo7050/guides/tree/distributed-systems) |
-| [`platform-engineering`](https://github.com/seungwoo7050/guides/tree/platform-engineering) | [`web-infra`](https://github.com/seungwoo7050/guides/tree/web-infra) | [`distributed-services`](https://github.com/seungwoo7050/guides/tree/distributed-services), [`cybersecurity`](https://github.com/seungwoo7050/guides/tree/cybersecurity), [`computer-networks`](https://github.com/seungwoo7050/guides/tree/computer-networks), [`data-engineering`](https://github.com/seungwoo7050/guides/tree/data-engineering) |
+| [`platform-engineering`](https://github.com/seungwoo7050/guides/tree/platform-engineering) | [`web-infra`](https://github.com/seungwoo7050/guides/tree/web-infra) | [`distributed-services`](https://github.com/seungwoo7050/guides/tree/distributed-services), [`cybersecurity`](https://github.com/seungwoo7050/guides/tree/cybersecurity), [`computer-networks`](https://github.com/seungwoo7050/guides/tree/computer-networks), [`cloud-computing`](https://github.com/seungwoo7050/guides/tree/cloud-computing), [`data-engineering`](https://github.com/seungwoo7050/guides/tree/data-engineering) |
 | [`language-implementation`](https://github.com/seungwoo7050/guides/tree/language-implementation) | [`cpp`](https://github.com/seungwoo7050/guides/tree/cpp), [`algorithms`](https://github.com/seungwoo7050/guides/tree/algorithms), [`computer-architecture`](https://github.com/seungwoo7050/guides/tree/computer-architecture) | [`operating-systems`](https://github.com/seungwoo7050/guides/tree/operating-systems) |
 | [`embedded-systems`](https://github.com/seungwoo7050/guides/tree/embedded-systems) | [`c`](https://github.com/seungwoo7050/guides/tree/c), [`computer-architecture`](https://github.com/seungwoo7050/guides/tree/computer-architecture), [`operating-systems`](https://github.com/seungwoo7050/guides/tree/operating-systems) | [`cybersecurity`](https://github.com/seungwoo7050/guides/tree/cybersecurity) |
 | [`computer-graphics`](https://github.com/seungwoo7050/guides/tree/computer-graphics) | [`cpp`](https://github.com/seungwoo7050/guides/tree/cpp), [`algorithms`](https://github.com/seungwoo7050/guides/tree/algorithms), [`computer-architecture`](https://github.com/seungwoo7050/guides/tree/computer-architecture) | [`operating-systems`](https://github.com/seungwoo7050/guides/tree/operating-systems) |
@@ -60,6 +61,7 @@ flowchart LR
   database_systems["database-systems"]
   distributed_services["distributed-services"]
   web_infra["web-infra"]
+  cloud_computing["cloud-computing"]
   cybersecurity["cybersecurity"]
   mobile_app["mobile-app"]
   machine_learning["machine-learning"]
@@ -76,6 +78,7 @@ flowchart LR
   web_app --> backend_spring_boot
   java --> distributed_services
   web_app --> distributed_services
+  web_infra --> cloud_computing
   unix_systems --> cybersecurity
   computer_networks --> cybersecurity
   web_app --> mobile_app
@@ -113,6 +116,7 @@ flowchart LR
   class database_systems specialization;
   class distributed_services specialization;
   class web_infra entry;
+  class cloud_computing specialization;
   class cybersecurity entry;
   class mobile_app entry;
   class machine_learning entry;
@@ -130,7 +134,7 @@ flowchart LR
 
 아래 graph는 카탈로그의 관계에서 생성된다. 실선 `A --> B`는 `requires`, 점선 `A -.-> B`는 `recommends`다. `connects`와 `continues_to`는 순서를 뜻하지 않으므로 표시하지 않는다.
 
-### 웹·데이터·분산·플랫폼
+### 웹·데이터·분산·클라우드·플랫폼
 
 ```mermaid
 flowchart LR
@@ -147,6 +151,8 @@ flowchart LR
   data_engineering["data-engineering"]
   unix_systems["unix-systems"]
   web_infra["web-infra"]
+  cloud_computing["cloud-computing"]
+  cybersecurity["cybersecurity"]
   platform_engineering["platform-engineering"]
   web_app --> web_front_react_nextjs
   computer_networks -.-> web_front_react_nextjs
@@ -174,9 +180,22 @@ flowchart LR
   unix_systems -.-> web_infra
   computer_networks -.-> web_infra
   web_app -.-> web_infra
+  web_infra --> cloud_computing
+  web_app -.-> cloud_computing
+  database_systems -.-> cloud_computing
+  distributed_services -.-> cloud_computing
+  cybersecurity -.-> cloud_computing
+  unix_systems --> cybersecurity
+  computer_networks --> cybersecurity
+  web_app -.-> cybersecurity
+  operating_systems -.-> cybersecurity
+  web_infra -.-> cybersecurity
+  python -.-> cybersecurity
   web_infra --> platform_engineering
   distributed_services -.-> platform_engineering
+  cybersecurity -.-> platform_engineering
   computer_networks -.-> platform_engineering
+  cloud_computing -.-> platform_engineering
   data_engineering -.-> platform_engineering
 ```
 

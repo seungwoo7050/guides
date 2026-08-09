@@ -19,6 +19,7 @@
 - `distributed-services`: 서비스 간 업무 상태를 수렴시킨다.
 - `distributed-systems`: 복제·합의로 시스템 상태를 수렴시킨다.
 - `web-infra`: 한 서비스를 공개 운영한다.
+- `cloud-computing`: 공급자와 소비자의 책임, failure domain, managed service, serverless와 고객 tenant 경계를 비교·검증한다.
 - `platform-engineering`: 여러 팀의 운영 경로를 플랫폼으로 제공한다.
 - `game-development`: game loop·게임플레이 상태·자산·에디터·엔진 하위 시스템을 게임 제품 맥락에서 연결한다.
 - `computer-graphics`: rasterization·shader·GPU resource·동기화처럼 렌더링 파이프라인 자체를 구현한다.
@@ -39,7 +40,9 @@
 
 - `devops`는 독립 브랜치로 두지 않는다. 단일 서비스 운영은 `web-infra`, 여러 팀의 self-service 플랫폼은 `platform-engineering`이 소유한다.
 - Kotlin·Swift·Dart를 모바일 진입 전에 모두 별도 언어 브랜치로 만들지 않는다. `mobile-app`이 필요한 네이티브 경계를 다루고, 독립 네이티브 프로젝트 수요가 커질 때만 후속 브랜치를 검토한다.
+- IaaS·PaaS·FaaS·SaaS를 각각 독립 브랜치로 만들지 않는다. `cloud-computing`이 서비스 책임과 실행·제품 모델의 차이를 함께 소유하며, 웹·데이터·분산·보안 구현은 기존 소유 브랜치에 연결한다.
 - Kubernetes·Terraform은 `platform-engineering`의 구현 수단이지 현재 구조에서 독립 목적이 아니다.
+- AWS·Azure·Google Cloud의 제품 목록과 자격증 범위를 공급자별 브랜치로 만들지 않는다. `cloud-computing`은 공급자가 바뀌어도 남는 책임·실패·비용 계약을 정본으로 삼고, 공급자별 profile은 선택 실습으로 둔다.
 - Unity·Unreal·Godot 같은 특정 엔진 API 전체를 각각 별도 진입 브랜치로 만들지 않는다. `game-development`가 엔진에 공통으로 남는 상태·수명·실패 모델을 소유하고, 특정 엔진은 실제 프로젝트 또는 선택 구현 프로필에서 다룬다.
 
 브랜치 종류는 공통 기반, 언어 진입, 분야 진입, 심화의 네 가지다. 둘 이상의 기반을 결합하는 교차 확장은 별도 종류가 아니라 어떤 종류에도 적용될 수 있는 특성이다. 종류와 관계없이 위의 고유한 소유권 조건을 만족해야 한다.
@@ -58,17 +61,20 @@
 - `cybersecurity`는 TCP 전체를 다시 설명하지 않고 공격 경로에서 DNS·TCP·TLS 증거를 어떻게 사용하며 어떤 오판을 막는지 다룬다.
 - `agentic-systems`는 retry 일반론을 다시 쓰지 않고 모델 호출·도구 실행·외부 효과에서 retry가 어떤 중복과 비용을 만드는지 다룬다.
 - `data-engineering`은 DB index 전체를 다시 다루지 않고 source·sink·partition·backfill에서 질의와 저장 구조가 어떤 제약을 만드는지 다룬다.
+- `cloud-computing`은 Linux·Docker·TLS, 일반 retry와 웹 인증을 다시 가르치지 않고, 같은 workload의 책임이 IaaS·managed platform·FaaS·SaaS에서 어떻게 이동하고 어떤 실패·비용·고객 tenant 경계가 생기는지 다룬다.
+- FaaS에서 공급자 delivery·재실행·concurrency가 만드는 제약은 `cloud-computing`이 다루되, retry·idempotency·Outbox·Saga·DLQ의 일반 설계는 `distributed-services`를 정본으로 삼는다.
+- SaaS 고객 tenant의 공급자·소비자 책임, metering·quota·data lifecycle은 `cloud-computing`, API 권한은 `web-app`, 관계 스키마·제약·질의 격리는 `database-systems`, 공격·탐지는 `cybersecurity`, 내부 팀·workload의 self-service tenancy는 `platform-engineering`이 소유한다.
 - `game-development`는 렌더링 수학과 GPU pipeline을 다시 구현하지 않고 해당 하위 시스템을 장면·자산·게임 상태·frame budget에 어떻게 연결하는지 다룬다.
 
 ## 내부 브랜치와 외부 범위의 구분
 
-카탈로그에 등록된 ID만 현재 존재하는 내부 브랜치로 표기한다. 필요한 선행 지식이나 후속 주제가 카탈로그에 없다면 다음 중 하나로 명시한다.
+카탈로그에 등록된 ID만 `guides`의 내부 브랜치 계약으로 표기한다. 카탈로그는 완성 상태를 먼저 설계하므로 해당 원격 브랜치의 구현이 뒤따를 수 있다. 필요한 선행 지식이나 후속 주제가 카탈로그에 없다면 다음 중 하나로 명시한다.
 
 - 현재 브랜치에서 필요한 범위만 설명하고 외부 자료를 연결한다.
 - 아직 내부 정본이 없는 인접 영역이라고 밝힌다.
 - 분리 조건을 충분히 만족한다면 향후 브랜치 검토 후보로 기록한다.
 
-향후 후보를 이미 존재하는 브랜치처럼 링크하거나, 카탈로그 밖의 이름을 암묵적인 필수 브랜치로 사용하지 않는다. 이렇게 해야 독자가 실제로 선택할 수 있는 경로와 아직 제공하지 않는 경로를 구분할 수 있다.
+향후 후보를 승인된 내부 계약처럼 링크하거나, 카탈로그 밖의 이름을 암묵적인 필수 브랜치로 사용하지 않는다. 카탈로그 등재 여부는 목표 구조의 승인 여부를 뜻하며, 원격 구현 완료 여부와는 별도로 사람이 확인한다.
 
 ## 소유권 충돌 해결
 

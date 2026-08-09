@@ -109,6 +109,7 @@
         "distributed-services",
         "distributed-systems",
         "data-engineering",
+        "cloud-computing",
         "platform-engineering"
       ],
       "exit_capabilities": [
@@ -194,6 +195,7 @@
       ],
       "advanced": [
         "data-engineering",
+        "cloud-computing",
         "platform-engineering",
         "agentic-systems"
       ],
@@ -220,6 +222,106 @@
       ]
     },
     {
+      "id": "saas-product-engineering",
+      "title": "SaaS 제품 개발",
+      "summary": "웹 제품을 고객 tenant·조직·권한·구독·quota·metering·감사·데이터 수명과 cloud 책임 경계까지 확장한다.",
+      "common": [
+        "git"
+      ],
+      "required": [
+        "web-app",
+        "database-systems",
+        "cloud-computing"
+      ],
+      "required_any": [],
+      "recommended": [
+        "web-front-react-nextjs",
+        "backend-spring-boot",
+        "cybersecurity",
+        "distributed-services"
+      ],
+      "advanced": [
+        "data-engineering",
+        "platform-engineering",
+        "agentic-systems"
+      ],
+      "exit_capabilities": [
+        "고객 tenant와 사용자·조직·역할을 구분하고 API·DB 접근을 tenant 경계로 검증한다",
+        "구독·quota·metering·audit를 업무 상태와 cloud 비용 근거에 연결한다",
+        "onboarding·migration·export·deletion·장애 복구를 고객 tenant 수명 주기로 설계·검증한다"
+      ],
+      "group": "web",
+      "linear_paths": [
+        {
+          "id": "small-product",
+          "title": "작은 SaaS 제품",
+          "branches": [
+            "git",
+            "web-app",
+            "database-systems",
+            "web-infra",
+            "cloud-computing"
+          ]
+        },
+        {
+          "id": "spring-product",
+          "title": "Spring 기반 SaaS",
+          "branches": [
+            "git",
+            "web-app",
+            "java",
+            "backend-spring-boot",
+            "database-systems",
+            "web-infra",
+            "cloud-computing"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "cloud-engineering",
+      "title": "클라우드 엔지니어링",
+      "summary": "단일 호스트 운영을 cloud resource·managed service·serverless·shared responsibility·비용·failure domain 설계로 확장한다.",
+      "common": [
+        "git"
+      ],
+      "required": [
+        "unix-systems",
+        "computer-networks",
+        "web-infra",
+        "cloud-computing"
+      ],
+      "required_any": [],
+      "recommended": [
+        "cybersecurity",
+        "distributed-services",
+        "database-systems"
+      ],
+      "advanced": [
+        "platform-engineering",
+        "distributed-systems"
+      ],
+      "exit_capabilities": [
+        "IaaS·PaaS·SaaS와 VM·container·FaaS의 책임·권한·운영 경계를 구분한다",
+        "region·availability zone·cloud identity·network·storage·compute를 failure domain과 비용 기준으로 설계한다",
+        "예산·최소 권한·관측·cleanup을 포함한 재현 가능한 cloud workload 실험을 수행하고 근거를 남긴다"
+      ],
+      "group": "infra-security",
+      "linear_paths": [
+        {
+          "id": "default",
+          "title": "클라우드 운영과 서비스 모델",
+          "branches": [
+            "git",
+            "unix-systems",
+            "computer-networks",
+            "web-infra",
+            "cloud-computing"
+          ]
+        }
+      ]
+    },
+    {
       "id": "infrastructure-platform",
       "title": "인프라·플랫폼 엔지니어링",
       "summary": "단일 서비스 공개 운영에서 여러 팀의 self-service 플랫폼까지 확장한다.",
@@ -237,7 +339,8 @@
         "operating-systems",
         "cybersecurity",
         "distributed-services",
-        "data-engineering"
+        "data-engineering",
+        "cloud-computing"
       ],
       "advanced": [
         "distributed-systems"
@@ -250,13 +353,26 @@
       "group": "infra-security",
       "linear_paths": [
         {
-          "id": "default",
-          "title": "인프라에서 플랫폼까지",
+          "id": "host-platform",
+          "title": "호스트 운영에서 플랫폼까지",
           "branches": [
             "git",
             "unix-systems",
             "computer-networks",
             "web-infra",
+            "cybersecurity",
+            "platform-engineering"
+          ]
+        },
+        {
+          "id": "cloud-platform",
+          "title": "클라우드 기반 플랫폼",
+          "branches": [
+            "git",
+            "unix-systems",
+            "computer-networks",
+            "web-infra",
+            "cloud-computing",
             "cybersecurity",
             "platform-engineering"
           ]

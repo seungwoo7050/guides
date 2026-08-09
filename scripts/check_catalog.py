@@ -131,7 +131,7 @@ def main() -> int:
         if b.get('kind') not in KINDS:
             fail(f'{owner}.kind: invalid kind {b.get("kind")!r}', errors)
         if b.get('status') != 'stable':
-            fail(f'{owner}.status: final catalog requires stable', errors)
+            fail(f'{owner}.status: target-state catalog requires stable', errors)
         expected_url = f'https://github.com/seungwoo7050/guides/tree/{branch_id}'
         if b.get('url') != expected_url:
             fail(f'{owner}.url: expected {expected_url}', errors)

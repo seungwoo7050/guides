@@ -2,7 +2,7 @@
 
 > 이 문서는 `catalog/branches.json`에서 생성된다. 직접 수정하지 않는다.
 
-전체 학습 브랜치는 **27개**다. 브랜치 종류는 난이도가 아니라 저장소 안에서의 역할을 나타낸다.
+전체 학습 브랜치는 **28개**다. 브랜치 종류는 난이도가 아니라 저장소 안에서의 역할을 나타낸다.
 
 ## 한눈에 보기
 
@@ -29,6 +29,7 @@
 | [`backend-spring-boot`](https://github.com/seungwoo7050/guides/tree/backend-spring-boot) | 심화·전문화 | Spring Core·MVC·Security·JPA·Redis·Kafka·외부 HTTP·Testcontainers·Actuator를 하나의 서비스 경계로 연결한다. |
 | [`database-systems`](https://github.com/seungwoo7050/guides/tree/database-systems) | 심화·전문화 | 관계 의미론·인덱스·저장 엔진·MVCC·WAL·실행 계획·안전한 마이그레이션을 애플리케이션과 DBMS 양쪽에서 다룬다. |
 | [`distributed-services`](https://github.com/seungwoo7050/guides/tree/distributed-services) | 심화·전문화 | 서비스 사이의 부분 실패·중복·순서 역전·불확실한 결과를 멱등성·Outbox·Saga·재조정으로 수렴시킨다. |
+| [`cloud-computing`](https://github.com/seungwoo7050/guides/tree/cloud-computing) | 심화·전문화 | 공유 책임·region·availability zone·control plane을 바탕으로 IaaS·PaaS·SaaS와 VM·container·FaaS의 책임·실패·비용·고객 tenant 경계를 비교하고 검증한다. |
 | [`distributed-systems`](https://github.com/seungwoo7050/guides/tree/distributed-systems) | 심화·전문화 | 시간·순서·장애 모델부터 복제·일관성·합의·sharding·재구성까지 분산 저장 시스템의 핵심을 구현·검증한다. |
 | [`data-engineering`](https://github.com/seungwoo7050/guides/tree/data-engineering) | 심화·전문화 | 여러 원천의 데이터를 schema·batch·stream·CDC·품질·lineage·backfill·replay로 신뢰 가능한 데이터 제품으로 만든다. |
 | [`platform-engineering`](https://github.com/seungwoo7050/guides/tree/platform-engineering) | 심화·전문화 | 여러 팀이 서비스를 self-service로 생성·검증·배포·관찰하도록 IaC·오케스트레이션·정책·공통 서비스를 플랫폼으로 제공한다. |
@@ -364,8 +365,8 @@ HTML·CSS·JavaScript·TypeScript·React·API·PostgreSQL·인증·WebSocket을 
 
 - **필수 의존성:** 없음
 - **권장 기반:** [`unix-systems`](https://github.com/seungwoo7050/guides/tree/unix-systems), [`computer-networks`](https://github.com/seungwoo7050/guides/tree/computer-networks), [`web-app`](https://github.com/seungwoo7050/guides/tree/web-app)
-- **인접 연결:** [`platform-engineering`](https://github.com/seungwoo7050/guides/tree/platform-engineering), [`cybersecurity`](https://github.com/seungwoo7050/guides/tree/cybersecurity), [`distributed-services`](https://github.com/seungwoo7050/guides/tree/distributed-services)
-- **일반적 후속 심화:** [`platform-engineering`](https://github.com/seungwoo7050/guides/tree/platform-engineering)
+- **인접 연결:** [`platform-engineering`](https://github.com/seungwoo7050/guides/tree/platform-engineering), [`cybersecurity`](https://github.com/seungwoo7050/guides/tree/cybersecurity), [`distributed-services`](https://github.com/seungwoo7050/guides/tree/distributed-services), [`cloud-computing`](https://github.com/seungwoo7050/guides/tree/cloud-computing)
+- **일반적 후속 심화:** [`cloud-computing`](https://github.com/seungwoo7050/guides/tree/cloud-computing), [`platform-engineering`](https://github.com/seungwoo7050/guides/tree/platform-engineering)
 
 **소유 범위**
 
@@ -394,7 +395,7 @@ HTML·CSS·JavaScript·TypeScript·React·API·PostgreSQL·인증·WebSocket을 
 
 - **필수 의존성:** [`unix-systems`](https://github.com/seungwoo7050/guides/tree/unix-systems), [`computer-networks`](https://github.com/seungwoo7050/guides/tree/computer-networks)
 - **권장 기반:** [`web-app`](https://github.com/seungwoo7050/guides/tree/web-app), [`operating-systems`](https://github.com/seungwoo7050/guides/tree/operating-systems), [`web-infra`](https://github.com/seungwoo7050/guides/tree/web-infra), [`python`](https://github.com/seungwoo7050/guides/tree/python), [`c`](https://github.com/seungwoo7050/guides/tree/c), [`computer-architecture`](https://github.com/seungwoo7050/guides/tree/computer-architecture)
-- **인접 연결:** [`platform-engineering`](https://github.com/seungwoo7050/guides/tree/platform-engineering), [`agentic-systems`](https://github.com/seungwoo7050/guides/tree/agentic-systems), [`embedded-systems`](https://github.com/seungwoo7050/guides/tree/embedded-systems), [`game-development`](https://github.com/seungwoo7050/guides/tree/game-development)
+- **인접 연결:** [`platform-engineering`](https://github.com/seungwoo7050/guides/tree/platform-engineering), [`cloud-computing`](https://github.com/seungwoo7050/guides/tree/cloud-computing), [`agentic-systems`](https://github.com/seungwoo7050/guides/tree/agentic-systems), [`embedded-systems`](https://github.com/seungwoo7050/guides/tree/embedded-systems), [`game-development`](https://github.com/seungwoo7050/guides/tree/game-development)
 - **일반적 후속 심화:** [`platform-engineering`](https://github.com/seungwoo7050/guides/tree/platform-engineering)
 
 **소유 범위**
@@ -634,7 +635,7 @@ Spring Core·MVC·Security·JPA·Redis·Kafka·외부 HTTP·Testcontainers·Actu
 
 - **필수 의존성:** [`java`](https://github.com/seungwoo7050/guides/tree/java), [`web-app`](https://github.com/seungwoo7050/guides/tree/web-app)
 - **권장 기반:** [`database-systems`](https://github.com/seungwoo7050/guides/tree/database-systems), [`backend-spring-boot`](https://github.com/seungwoo7050/guides/tree/backend-spring-boot)
-- **인접 연결:** [`distributed-systems`](https://github.com/seungwoo7050/guides/tree/distributed-systems), [`data-engineering`](https://github.com/seungwoo7050/guides/tree/data-engineering), [`platform-engineering`](https://github.com/seungwoo7050/guides/tree/platform-engineering), [`agentic-systems`](https://github.com/seungwoo7050/guides/tree/agentic-systems), [`game-development`](https://github.com/seungwoo7050/guides/tree/game-development)
+- **인접 연결:** [`distributed-systems`](https://github.com/seungwoo7050/guides/tree/distributed-systems), [`data-engineering`](https://github.com/seungwoo7050/guides/tree/data-engineering), [`platform-engineering`](https://github.com/seungwoo7050/guides/tree/platform-engineering), [`cloud-computing`](https://github.com/seungwoo7050/guides/tree/cloud-computing), [`agentic-systems`](https://github.com/seungwoo7050/guides/tree/agentic-systems), [`game-development`](https://github.com/seungwoo7050/guides/tree/game-development)
 - **일반적 후속 심화:** [`distributed-systems`](https://github.com/seungwoo7050/guides/tree/distributed-systems), [`data-engineering`](https://github.com/seungwoo7050/guides/tree/data-engineering), [`platform-engineering`](https://github.com/seungwoo7050/guides/tree/platform-engineering)
 
 **소유 범위**
@@ -656,6 +657,41 @@ Spring Core·MVC·Security·JPA·Redis·Kafka·외부 HTTP·Testcontainers·Actu
 - UNKNOWN 결과와 중복 전달을 모델링한다
 - 부분 실패 뒤 상태를 수렴시킨다
 - 다중 서비스 장애를 재현·복구한다
+
+### `cloud-computing` — 클라우드 컴퓨팅과 서비스 모델
+
+공유 책임·region·availability zone·control plane을 바탕으로 IaaS·PaaS·SaaS와 VM·container·FaaS의 책임·실패·비용·고객 tenant 경계를 비교하고 검증한다.
+
+- **필수 의존성:** [`web-infra`](https://github.com/seungwoo7050/guides/tree/web-infra)
+- **권장 기반:** [`web-app`](https://github.com/seungwoo7050/guides/tree/web-app), [`database-systems`](https://github.com/seungwoo7050/guides/tree/database-systems), [`distributed-services`](https://github.com/seungwoo7050/guides/tree/distributed-services), [`cybersecurity`](https://github.com/seungwoo7050/guides/tree/cybersecurity)
+- **인접 연결:** [`platform-engineering`](https://github.com/seungwoo7050/guides/tree/platform-engineering), [`data-engineering`](https://github.com/seungwoo7050/guides/tree/data-engineering), [`machine-learning`](https://github.com/seungwoo7050/guides/tree/machine-learning), [`agentic-systems`](https://github.com/seungwoo7050/guides/tree/agentic-systems), [`distributed-systems`](https://github.com/seungwoo7050/guides/tree/distributed-systems)
+- **일반적 후속 심화:** [`platform-engineering`](https://github.com/seungwoo7050/guides/tree/platform-engineering)
+
+**소유 범위**
+
+- on-demand·resource pooling·elasticity·measured service와 공급자·소비자 공유 책임
+- region·availability zone·failure domain과 compute·network·storage·identity의 관리 경계
+- IaaS·PaaS·SaaS 서비스 모델과 VM·container·CaaS·serverless/FaaS 실행 모델의 구분
+- FaaS event source·delivery·concurrency·cold start·timeout 제약에 기존 전달 계약을 적용하는 방법
+- 고객 조직을 위한 SaaS tenant 수명·control/data plane·격리·metering·quota·export·deletion
+- 예산·탄력성·가용성·portability·vendor lock-in의 근거 기반 비교
+
+**비소유 범위**
+
+- 단일 Linux 호스트·Docker Compose·DNS·TLS 운영 재교육
+- 웹 프레임워크·인증·업무 도메인 구현 전체
+- 일반적인 retry·idempotency·Outbox·Saga·DLQ와 분산 합의 재교육
+- DBMS 내부구조와 tenant 관계 스키마·제약 설계 전체
+- 자격 증명 공격·취약점 탐지·사고 복구 같은 보안 전문 과정
+- 여러 내부 팀·workload의 Kubernetes·IaC module·golden path·self-service tenancy 플랫폼 운영
+- 특정 클라우드 공급자의 제품 목록·자격증 전 범위
+
+**종료 능력**
+
+- 마케팅 명칭이 아니라 소비자와 공급자의 책임 경계로 cloud service를 분류한다
+- 같은 workload를 IaaS·managed platform·FaaS에 배치하고 실패·비용·운영 책임의 변화를 설명한다
+- 작은 SaaS의 공급자·고객 책임, control/data plane, tenant별 격리 요구·metering·quota·data lifecycle 계약을 정의하고 구현 소유 브랜치에 연결한다
+- 예산·최소 권한·관측·cleanup 근거를 갖춘 격리된 cloud 실험을 재현하고 한계를 설명한다
 
 ### `distributed-systems` — 분산 시스템과 복제 상태 기계
 
@@ -722,8 +758,8 @@ Spring Core·MVC·Security·JPA·Redis·Kafka·외부 HTTP·Testcontainers·Actu
 여러 팀이 서비스를 self-service로 생성·검증·배포·관찰하도록 IaC·오케스트레이션·정책·공통 서비스를 플랫폼으로 제공한다.
 
 - **필수 의존성:** [`web-infra`](https://github.com/seungwoo7050/guides/tree/web-infra)
-- **권장 기반:** [`distributed-services`](https://github.com/seungwoo7050/guides/tree/distributed-services), [`cybersecurity`](https://github.com/seungwoo7050/guides/tree/cybersecurity), [`computer-networks`](https://github.com/seungwoo7050/guides/tree/computer-networks), [`data-engineering`](https://github.com/seungwoo7050/guides/tree/data-engineering)
-- **인접 연결:** [`agentic-systems`](https://github.com/seungwoo7050/guides/tree/agentic-systems), [`machine-learning`](https://github.com/seungwoo7050/guides/tree/machine-learning), [`distributed-systems`](https://github.com/seungwoo7050/guides/tree/distributed-systems), [`game-development`](https://github.com/seungwoo7050/guides/tree/game-development)
+- **권장 기반:** [`distributed-services`](https://github.com/seungwoo7050/guides/tree/distributed-services), [`cybersecurity`](https://github.com/seungwoo7050/guides/tree/cybersecurity), [`computer-networks`](https://github.com/seungwoo7050/guides/tree/computer-networks), [`cloud-computing`](https://github.com/seungwoo7050/guides/tree/cloud-computing), [`data-engineering`](https://github.com/seungwoo7050/guides/tree/data-engineering)
+- **인접 연결:** [`agentic-systems`](https://github.com/seungwoo7050/guides/tree/agentic-systems), [`machine-learning`](https://github.com/seungwoo7050/guides/tree/machine-learning), [`distributed-systems`](https://github.com/seungwoo7050/guides/tree/distributed-systems), [`cloud-computing`](https://github.com/seungwoo7050/guides/tree/cloud-computing), [`game-development`](https://github.com/seungwoo7050/guides/tree/game-development)
 - **일반적 후속 심화:** 없음
 
 **소유 범위**

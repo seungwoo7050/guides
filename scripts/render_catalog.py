@@ -21,8 +21,8 @@ KIND_ORDER = ['common-foundation', 'language-entry', 'field-entry', 'specializat
 
 TRACK_GROUPS = [
     ('common', '공통 시작점', '목표 직무를 아직 정하지 않았을 때 구현 언어 하나와 변경·검증 기반을 선택한다.'),
-    ('web', '웹 개발', '프런트엔드·백엔드·풀스택은 책임 범위가 다르므로 직무별 선형 경로를 제공한다.'),
-    ('infra-security', '인프라·플랫폼·보안', '서비스 운영, 내부 플랫폼, 공격·방어는 인접하지만 서로 다른 상태와 실패를 소유한다.'),
+    ('web', '웹 개발', '프런트엔드·백엔드·풀스택·SaaS 제품은 책임 범위가 다르므로 직무별 선형 경로를 제공한다.'),
+    ('infra-security', '인프라·클라우드·플랫폼·보안', '단일 서비스 운영, cloud service model, 내부 플랫폼, 공격·방어는 인접하지만 서로 다른 상태와 실패를 소유한다.'),
     ('mobile', '모바일 애플리케이션', '웹·React 기반을 모바일 수명 주기·오프라인·기기 기능·배포로 확장한다.'),
     ('ai-data', 'AI·데이터', '모델 학습, 에이전틱 시스템, 데이터 파이프라인을 독립적인 결과물 기준으로 분리한다.'),
     ('systems', '시스템·저수준·개발 도구', '운영체제·하드웨어·DBMS·컴파일러·그래픽스·임베디드 내부구조를 구현 수준으로 확장한다.'),
@@ -31,14 +31,14 @@ TRACK_GROUPS = [
 
 FIELD_FLOW_GROUPS = [
     (
-        '웹·데이터·분산·플랫폼',
+        '웹·데이터·분산·클라우드·플랫폼',
         [
             'web-app', 'web-front-react-nextjs', 'java',
             'backend-spring-boot', 'database-systems',
             'distributed-services', 'operating-systems',
             'computer-networks', 'distributed-systems', 'python',
             'data-engineering', 'unix-systems', 'web-infra',
-            'platform-engineering',
+            'cloud-computing', 'cybersecurity', 'platform-engineering',
         ],
     ),
     (
