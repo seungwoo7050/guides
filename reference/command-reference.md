@@ -13,6 +13,8 @@
 make check
 ```
 
+`make check`와 `verify.sh`는 로컬 file·heading·fragment만 자동 확인하고 외부 HTTP(S)·`mailto`의 현재 상태는 사람이 확인할 범위로 출력합니다. `verify.sh`는 모든 필수 검사와 meta-test를 저장소 밖 임시 복사본에서 실행하고 원본 source와 `.workspace/`가 바뀌지 않았는지 비교합니다.
+
 ## 문서 실습 workspace
 
 ```sh
@@ -32,6 +34,12 @@ scripts/check_workspace.sh projects/multitenant-document-processing-saas
 ```sh
 python3 scripts/verify_cloud_model.py \
   --implementation exercises/07-local-cloud-model/reference/cloud_model.py
+
+# report는 새 파일만 만들며 기존 파일을 덮어쓰지 않습니다.
+report_dir=$(mktemp -d)
+python3 scripts/verify_cloud_model.py \
+  --implementation exercises/07-local-cloud-model/reference/cloud_model.py \
+  --report "$report_dir/cloud-model-report.json"
 
 # 아래 starter는 정확히 contract.json의 8개 check에서 실패해야 합니다.
 python3 scripts/verify_cloud_model.py \

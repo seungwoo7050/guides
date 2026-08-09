@@ -19,6 +19,8 @@ destroy 순서
 final inventory와 billing 확인
 ```
 
+하나라도 비어 있으면 실제 provider 경로를 실행하지 않고 `budget=0` 로컬 모델과 문서 검토 경로를 사용합니다. 필수 학습 경로는 credential, network 또는 외부 resource를 요구하지 않습니다.
+
 ## 권한
 
 - 개인 root/owner credential을 일상 CLI에 사용하지 않습니다.
@@ -26,6 +28,7 @@ final inventory와 billing 확인
 - production account와 연결하지 않습니다.
 - access key를 repository·shell history·screenshot에 남기지 않습니다.
 - function/VM role에 broad administrator 권한을 주지 않습니다.
+- credential은 environment·승인된 local credential store로만 주입하고 `.env`, provider CLI config, key, Terraform variable·state·plan을 저장소에 추가하지 않습니다.
 
 ## 비용
 
@@ -57,6 +60,12 @@ traffic/trigger disable
 → 다음 billing 확인
 ```
 
+destroy 명령의 성공 출력만으로 정리를 판정하지 않습니다. 생성 전 inventory와 final inventory를 resource ID·region·owner tag로 대조하고, 비동기 삭제·retention·soft-delete·reserved commitment와 지연 billing을 별도 미해결 항목으로 남깁니다. cleanup이 일부 실패하면 재실행 가능한 순서, 현재 owner와 다음 확인 시각을 기록하고 계정 전체를 무차별 삭제하지 않습니다.
+
 ## 사고
 
 credential 노출, 예상 밖 resource, 비용 급증 또는 public exposure가 발생하면 실험을 중단합니다. credential revoke, trigger disable, evidence 보존과 resource isolation을 먼저 수행하고 무작정 전체 삭제해 원인을 지우지 않습니다.
+
+## 로컬 대체 경로의 한계
+
+[`07-local-cloud-model`](../exercises/07-local-cloud-model/README.md)과 Capstone [`09-isolated-experiment`](../projects/multitenant-document-processing-saas/reference/09-isolated-experiment.md)는 budget `0`, 합성 data, child-process 제한과 create-only evidence report로 실행됩니다. 이 경로는 tenant·quota·event·cleanup의 application contract를 재현하지만 실제 IAM enforcement, network isolation, provider retry semantics, physical deletion, billing 지연, region 장애나 control plane을 보장하지 않습니다.

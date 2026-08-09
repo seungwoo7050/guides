@@ -79,9 +79,14 @@ chore: establish guide structure and verification
 다음 상태가 모두 확인돼야 합니다.
 
 - 문서와 내부 링크가 존재합니다.
+- Markdown의 inline·image·reference-style link와 local fragment가 실제 파일·heading을 가리킵니다. 외부 HTTP(S)·`mailto`는 오프라인 필수 검사 범위가 아니므로 공식 출처를 사람이 다시 확인합니다.
 - reference 산출물은 계약을 통과합니다.
-- template은 미완성 상태 때문에 거부됩니다.
+- 각 template 필수 파일은 의도적인 미완성 표시를 유지하고 정확히 `E_UNFILLED` 때문에 거부됩니다. missing·invalid JSON·checker crash를 의도된 실패로 간주하지 않습니다.
 - local model reference는 모든 불변식을 지킵니다.
-- vulnerable skeleton은 동일 테스트에서 거부됩니다.
-- 준비 뒤 source가 바뀌면 검증이 중단됩니다.
+- vulnerable skeleton과 check별 single-defect mutant는 선언된 ID에서 거부됩니다.
+- 준비 뒤 source의 bytes·path·mode가 바뀌거나 symlink가 생기면 검증이 중단됩니다.
+- 검증 전후 source와 `.workspace/`의 bytes·path·mode·symlink target 지문이 같습니다.
+- 필수 검사는 저장소 밖 임시 복사본에서 실행되며 하나라도 실행되지 않거나 meta-test 수가 기준보다 적으면 실패합니다.
 - 검증이 cloud credential이나 외부 서비스에 의존하지 않습니다.
+
+자동 검사는 산출물 구조, 공개 행동, 연결과 결정적 로컬 evidence만 보조 검증합니다. provider의 실제 IAM·가격·billing 지연·region 장애·control plane 의미와 설계 판단은 [`reference/manual-review-guide.md`](reference/manual-review-guide.md)에 따라 사람이 확인합니다.
