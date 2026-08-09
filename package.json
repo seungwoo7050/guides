@@ -20,6 +20,7 @@
   "workspaces": [
     "exercises/field-notes/fault-server",
     "exercises/field-notes/lifecycle-engine",
+    "exercises/field-notes/release-contract",
     "exercises/field-notes/shared",
     "exercises/field-notes/skeleton",
     "exercises/field-notes/reference",
@@ -32,7 +33,11 @@
     "test:stage03": "npm run test:stage03 --workspace=@field-notes/reference",
     "test:stage04": "npm run test:stage04 --workspace=@field-notes/reference && npm test --workspace=@field-notes/fault-server && npm test --workspace=@field-notes/sync-engine",
     "test:stage05": "npm run test:stage05 --workspace=@field-notes/reference && npm test --workspace=@field-notes/lifecycle-engine",
+    "test:stage06": "npm test --workspace=@field-notes/release-contract && npm run validate:fixtures --workspace=@field-notes/release-contract && npm run validate:eas-profile --workspace=@field-notes/release-contract",
+    "test:reference": "npm run test:stage01 && npm run test:stage02 && npm run test:stage03 && npm run test:stage04 && npm run test:stage05 && npm run test:stage06",
     "test:stage01:skeleton": "npm run test:stage01 --workspace=@field-notes/skeleton",
+    "test:skeleton:reject": "python3 scripts/expect_skeleton_rejection.py",
+    "test:mutants": "python3 scripts/verify_mutants.py",
     "bundle:android": "npm run bundle:android --workspace=@field-notes/reference",
     "bundle:ios": "npm run bundle:ios --workspace=@field-notes/reference",
     "bundle:android:skeleton": "npm run bundle:android --workspace=@field-notes/skeleton",
@@ -41,6 +46,11 @@
     "check:stage02": "npm run typecheck && npm run test:stage01 && npm run test:stage02",
     "check:stage03": "npm run typecheck && npm run test:stage01 && npm run test:stage02 && npm run test:stage03",
     "check:stage04": "npm run typecheck && npm run test:stage01 && npm run test:stage02 && npm run test:stage03 && npm run test:stage04",
-    "check:stage05": "npm run check:stage04 && npm run test:stage05"
+    "check:stage05": "npm run check:stage04 && npm run test:stage05",
+    "check:stage06": "npm run check:stage05 && npm run test:stage06",
+    "check:profiles": "python3 scripts/check_app_profiles.py",
+    "check:cng": "python3 scripts/check_cng.py",
+    "check:expo": "npm exec --workspace=@field-notes/reference -- expo install --check && npm exec --workspace=@field-notes/skeleton -- expo install --check",
+    "verify": "./verify.sh"
   }
 }
