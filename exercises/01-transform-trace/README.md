@@ -87,3 +87,32 @@ normal trace에는 model normal matrix, 변환 전후 길이와 tangent dot를 �
 - 오답 mutation 최소 두 개의 실패 로그
 - convention을 다른 API profile로 옮길 때 필요한 변환표
 - 구현하지 않은 수치 안정성 범위
+
+## 준비·workspace·stage 검사
+
+저장소 root에서 [공통 workspace 절차](../README.md#workspace-준비와-공개-명령)를 먼저 수행합니다. `workspace/`가 아직 없을 때만 `./scripts/new-workspace.sh`를 실행하며 기존 학습자 파일에는 다시 실행하지 않습니다.
+
+```sh
+cmake -S exercises/08-renderer-capstone/project \
+  -B build/workspace \
+  -DCG_IMPLEMENTATION=workspace \
+  -DCG_GPU=off
+cmake --build build/workspace
+python3 exercises/check.py --impl workspace --stage 01-transform-trace --expect pass --gpu off
+```
+
+새 workspace의 공개 미완성 경계를 먼저 확인하려면 `--expect not-implemented`를 사용합니다. reference 비교는 다음 명령이 생성한 좌표·clip trace와 checker report를 기준으로 하며 reference source를 workspace로 복사하지 않습니다.
+
+```sh
+python3 exercises/check.py --impl reference --stage 01-transform-trace --expect pass --gpu off
+```
+
+자동 증거는 artifact 존재뿐 아니라 identity, direction translation 제외, normal/tangent 직교, hierarchy 순서, clipping 뒤 plane 범위와 finite viewport 값을 검사합니다. starter와 최소 두 known-bad mutation은 성공으로 판정되면 안 됩니다.
+
+사람 검토에서는 다음에 답합니다.
+
+- 첫 잘못된 공간을 어떤 trace field로 찾았습니까?
+- singular normal matrix와 invalid camera를 왜 거부하거나 별도 상태로 분류했습니까?
+- 과정 규약을 다른 API profile로 옮길 때 정확히 어느 입구 변환이 필요합니까?
+
+정리는 `make clean`으로 `.guide/`, `build/`, `out/`만 제거합니다. 실패 trace는 원인을 기록할 때까지 보존합니다. workspace 복구가 필요하면 기존 디렉터리를 별도 보존·이름 변경한 뒤에만 `./scripts/new-workspace.sh`를 다시 실행합니다.

@@ -81,3 +81,20 @@ out/textured-lit-scene/
 - culling/LOD input/output count와 선택 metric
 - known-bad mutation 최소 네 개 거부
 - 외부 format을 사용했다면 source/hash/license/import profile
+
+## 준비·workspace·stage 검사
+
+[공통 workspace 절차](../README.md#workspace-준비와-공개-명령)의 누적 learner 사본에서 asset·scene 단계를 추가합니다.
+
+```sh
+cmake -S exercises/08-renderer-capstone/project -B build/workspace -DCG_IMPLEMENTATION=workspace -DCG_GPU=off
+cmake --build build/workspace
+python3 exercises/check.py --impl workspace --stage 05-textured-lit-scene --expect pass --gpu off
+python3 exercises/check.py --impl reference --stage 05-textured-lit-scene --expect pass --gpu off
+```
+
+checker는 정상 scene뿐 아니라 invalid index·attribute, cycle, stale handle, conservative bounds, non-uniform normal, data texture와 LOD hysteresis를 검사하고 final/debug attachment를 reference와 비교합니다. starter와 최소 네 known-bad mutation은 거부돼야 합니다.
+
+사람 검토에서는 raw asset과 renderable asset의 실패 경계, mirrored UV·normal 공간의 선택, frustum/LOD 결정이 결과와 work count를 함께 보존하는지 설명합니다. 외부 asset을 사용했다면 source·hash·license도 확인합니다.
+
+`make clean`은 생성물만 제거합니다. asset validation과 culling report를 먼저 보존하고 잘못된 입력을 reference로 교체하지 않은 채 원인별로 복구합니다. workspace는 자동 삭제하지 않습니다.

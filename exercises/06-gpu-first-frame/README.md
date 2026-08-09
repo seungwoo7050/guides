@@ -66,3 +66,24 @@ out/gpu-first-frame/
 - resize·minimize·restore 로그
 - known-bad mutation 최소 세 개가 validation 또는 image 검사에서 실패
 - 지원하지 않는 backend/platform과 이유
+
+## 준비·workspace·stage 검사
+
+[공통 workspace 절차](../README.md#workspace-준비와-공개-명령)를 수행하고 GPU mode를 명시합니다.
+
+```sh
+cmake -S exercises/08-renderer-capstone/project -B build/workspace -DCG_IMPLEMENTATION=workspace -DCG_GPU=auto
+cmake --build build/workspace
+python3 exercises/check.py --impl workspace --stage 06-gpu-first-frame --expect pass --gpu auto
+python3 exercises/check.py --impl reference --stage 06-gpu-first-frame --expect pass --gpu off
+```
+
+두 번째 명령은 결정적 state/lifetime 기준선이지 실제 GPU 실행의 대체물이 아닙니다. 지원 환경에서 최종 GPU 증거를 만들 때는 CMake와 checker를 모두 `required`로 다시 실행합니다.
+
+```sh
+python3 exercises/check.py --impl workspace --stage 06-gpu-first-frame --expect pass --gpu required
+```
+
+자동 증거는 shader manifest, layout/pipeline attachment, upload completion, frame-slot 재사용, zero extent와 resize generation을 검사합니다. starter와 최소 세 known-bad mutation이 validation 또는 의미/image oracle에서 거부돼야 합니다.
+
+사람 검토에서는 submit과 completion의 차이, old resource의 last-use 사건, validation이 잡지 못한 의미 오류와 미지원 backend의 한계를 환경 artifact로 설명합니다. `make clean`은 생성물만 제거하고 workspace는 보존합니다. GPU 실패 로그·validation baseline을 남긴 채 CPU 회귀와 실제 device 문제를 분리해 복구합니다.

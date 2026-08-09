@@ -110,3 +110,29 @@ capstone/
 - resize, reload와 종료 수명이 trace에서 안전합니다.
 - known-bad suite가 실제로 실패합니다.
 - 실제 오픈소스 또는 후속 프로젝트에서 선택할 첫 하위 시스템과 issue 조사 계획을 작성합니다.
+
+## 준비·workspace·누적 검사
+
+[공통 workspace 절차](../README.md#workspace-준비와-공개-명령)로 만든 한 project에서 01–07의 구현과 artifact를 그대로 누적합니다.
+
+```sh
+cmake -S exercises/08-renderer-capstone/project -B build/workspace -DCG_IMPLEMENTATION=workspace -DCG_GPU=auto
+cmake --build build/workspace
+ctest --test-dir build/workspace --output-on-failure
+python3 exercises/check.py --impl workspace --stage 08-renderer-capstone --expect pass --gpu auto
+python3 exercises/check.py --impl workspace --stage all --expect pass --gpu auto
+python3 exercises/check.py --impl reference --stage all --expect pass --gpu off
+```
+
+reference의 `gpu off` 통과는 결정적 CPU·상태 기준선입니다. “같은 장면을 GPU pipeline으로 옮긴다”는 종료 능력은 지원 환경에서 `--gpu required`로 전체 검사를 다시 실행하고 validation/capture/readback 증거를 제출해야 충족됩니다.
+
+자동 증거는 scene hash부터 coverage·depth·attribute·linear color·final output 순서의 비교, safe resize/reload/shutdown trace, 최소 여섯 known-bad 거부와 세 workload report를 검사합니다. starter의 `not-implemented`도 성공으로 오인되지 않아야 합니다.
+
+사람 검토에서는 다음을 최종 확인합니다.
+
+- software/GPU 차이가 처음 발생한 단계와 허용 tolerance 근거는 무엇입니까?
+- resource last-use와 frame slot completion을 어떤 trace로 입증합니까?
+- 성능 변경이 correctness hash, memory와 이식성 비용을 어떻게 보존했습니까?
+- 카탈로그의 세 종료 능력 각각을 어느 artifact가 증명합니까?
+
+`make clean`은 `.guide/`, `build/`, `out/`만 제거하고 learner workspace는 보존합니다. 복구 시 기존 workspace와 실패 report를 먼저 별도 보존한 뒤 새 starter 사본을 만들며 reference/expected를 학습자 결과로 덮어쓰지 않습니다.

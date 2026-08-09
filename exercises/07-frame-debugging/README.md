@@ -88,3 +88,20 @@ capture binary를 저장소에 넣지 못하면 재현 명령, tool version, fra
 - capture event/resource label과 CPU trace 대응
 - before/after diff와 regression test
 - CPU/GPU timing을 분리한 병목 조사 하나
+
+## 준비·workspace·stage 검사
+
+[공통 workspace 절차](../README.md#workspace-준비와-공개-명령)의 같은 build와 frame id를 사용합니다.
+
+```sh
+cmake -S exercises/08-renderer-capstone/project -B build/workspace -DCG_IMPLEMENTATION=workspace -DCG_GPU=auto
+cmake --build build/workspace
+python3 exercises/check.py --impl workspace --stage 07-frame-debugging --expect pass --gpu auto
+python3 exercises/check.py --impl reference --stage 07-frame-debugging --expect pass --gpu off
+```
+
+checker는 최소 여섯 결함 보고서의 artifact, before/after oracle, trace/capture label 관계와 CPU/GPU timing 구분을 검사합니다. 실제 validation·capture·timestamp 증거는 지원 환경에서 `--gpu required`로 다시 수집하며 생략을 성공으로 바꾸지 않습니다.
+
+사람 검토에서는 validation이 검출한 오류와 의미 오류를 구분하고, 각 case의 마지막 정상/첫 비정상 상태를 지목하며, 세 workload 실험이 병목 가설을 어떻게 지지하거나 반박했는지 설명합니다.
+
+`make clean`은 생성 build/out만 제거합니다. 실패 case의 환경·capture metadata·trace는 재현이 끝날 때까지 보존하고 workspace는 삭제하지 않습니다. capture binary를 보관할 수 없으면 재현 명령과 event/resource label을 남깁니다.

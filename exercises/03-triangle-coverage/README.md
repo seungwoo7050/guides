@@ -73,3 +73,20 @@ primitive-id artifact는 sample별 0(배경), triangle id 또는 overlap sentine
 - setup trace의 area, edge coefficient, top-left flag와 bounds
 - 알려진 오답 최소 세 개가 정확한 case에서 실패
 - quantization과 경계 equality 결정 기록
+
+## 준비·workspace·stage 검사
+
+[공통 workspace 절차](../README.md#workspace-준비와-공개-명령)로 만든 learner 사본을 사용합니다. 기존 workspace는 다시 생성하지 않습니다.
+
+```sh
+cmake -S exercises/08-renderer-capstone/project -B build/workspace -DCG_IMPLEMENTATION=workspace -DCG_GPU=off
+cmake --build build/workspace
+python3 exercises/check.py --impl workspace --stage 03-triangle-coverage --expect pass --gpu off
+python3 exercises/check.py --impl reference --stage 03-triangle-coverage --expect pass --gpu off
+```
+
+checker는 shared edge의 gap/overlap, winding 정규화, degenerate 0-write, framebuffer·scissor 경계와 primitive-id 결과를 reference와 비교합니다. starter와 최소 세 known-bad mutation이 올바른 fixture에서 거부돼야 합니다.
+
+사람 검토에서는 top-left equality와 subpixel quantization을 왜 그 방식으로 고정했는지, clipping child triangle의 union을 어떻게 확인했는지, 음수 좌표 bounding box에서 단순 cast가 왜 틀리는지 설명합니다.
+
+`make clean`은 생성물만 제거합니다. 실패한 primitive-id map과 setup trace는 보존하고 첫 다른 edge 판정부터 복구합니다. workspace 자체는 자동 삭제·덮어쓰기하지 않습니다.

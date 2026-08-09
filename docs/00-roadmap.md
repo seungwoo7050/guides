@@ -36,6 +36,29 @@
 
 이 기준이 부족하면 [`cpp`](https://github.com/seungwoo7050/guides/tree/cpp), [`algorithms`](https://github.com/seungwoo7050/guides/tree/algorithms), [`computer-architecture`](https://github.com/seungwoo7050/guides/tree/computer-architecture)의 필요한 문서로 이동합니다. 세 브랜치를 전부 다시 완료할 필요는 없습니다.
 
+## 카탈로그 관계와 트랙
+
+최신 `main` 카탈로그에서 `computer-graphics`는 `specialization`입니다. `cpp`, `algorithms`, `computer-architecture`를 `requires`로 두고 `operating-systems`를 `recommends`로 둡니다. `game-development`는 `connects` 관계이며 이 브랜치가 게임 엔진 전체를 다시 소유한다는 뜻이 아닙니다. `continues_to`는 비어 있으므로 완료 뒤 단일 후속 브랜치를 강제하지 않습니다. 정확한 관계는 [`catalog/branches.json`](https://github.com/seungwoo7050/guides/blob/main/catalog/branches.json)을 정본으로 사용합니다.
+
+이 브랜치는 네 트랙에 포함됩니다. 아래 경로는 [`catalog/tracks.json`](https://github.com/seungwoo7050/guides/blob/main/catalog/tracks.json)의 `linear_paths`를 순서까지 그대로 옮긴 것입니다.
+
+| 트랙 | 이 브랜치의 위치 | `linear_path` |
+|---|---|---|
+| `graphics` / `default` | 필수, 경로의 종료 specialization | `git → c → cpp → algorithms → computer-architecture → computer-graphics` |
+| `game-client-gameplay` / `beginner` | 추천 인접 역량이며 선형 경로에는 없음 | `git → c → cpp → algorithms → game-development` |
+| `game-client-gameplay` / `experienced` | 추천 인접 역량이며 선형 경로에는 없음 | `git → cpp → algorithms → game-development` |
+| `game-engine-core` / `default` | 추천 인접 역량이며 선형 경로에는 없음 | `git → c → cpp → algorithms → computer-architecture → operating-systems → game-development` |
+| `game-rendering` / `default` | 필수, game-development의 frame·scene 문맥 뒤 렌더링 specialization | `git → c → cpp → algorithms → computer-architecture → game-development → computer-graphics` |
+
+`game-client-gameplay`와 `game-engine-core`에서는 이 브랜치가 추천 목록에만 있으므로 선형 경로에 임의로 삽입하지 않습니다. 반대로 `game-rendering`에서는 필수이므로 같은 장면의 shader·resource·synchronization과 frame-time 근거까지 완료해야 합니다.
+
+트랙별 종료점과 이 가이드의 접점도 구분합니다.
+
+- `graphics`: software rasterizer 구현, shader·GPU resource 관리, frame budget·동기화 병목 측정을 이 브랜치에서 직접 증명합니다.
+- `game-client-gameplay`: 기존 게임 프로젝트의 frame·scene·asset 경계를 복원하고 기능 회귀·frame/resource 문제를 재현할 때 이 가이드의 artifact를 추천 근거로 사용합니다.
+- `game-engine-core`: 상태·수명·thread 경계와 resource 관리, 성능·메모리·동시성 진단에 그래픽스 사례가 필요할 때 선택합니다.
+- `game-rendering`: 게임 장면과 rendering pipeline 입력·출력, shader·resource·synchronization 변경, 화질과 frame-time trade-off까지 이 가이드의 capstone과 결합합니다.
+
 ## 이 가이드가 고정하는 규약
 
 그래픽스 오류의 상당수는 서로 다른 관례를 암묵적으로 섞을 때 발생합니다. 과정 전체에서 다음을 정본으로 사용합니다.
@@ -165,6 +188,22 @@ shader source와 binary format은 환경에 맞게 선택하되 다음을 기록
 | 14–17 | `06-gpu-first-frame` | shader interface, resource lifetime, acquire/submit 순서 |
 | 18–19 | `07-frame-debugging` | validation 무시, GPU/CPU timing 혼동, 근거 없는 최적화 |
 | 전체 | `08-renderer-capstone` | software/GPU 차이를 최종 화면만 보고 추측 |
+
+## `owns`에서 종료 능력까지의 추적표
+
+카탈로그의 `owns`는 선언으로 끝나지 않습니다. 다음 표의 문서, 단계 실습·대표 실패, capstone 증거를 거쳐 세 `exit_capabilities` 중 하나 이상으로 연결됩니다.
+
+| `owns` | 개념 설명 | 단계 실습과 대표 실패 | capstone 증거 | 연결되는 종료 능력 |
+|---|---|---|---|---|
+| 좌표계·camera·projection | 01–03 | `01-transform-trace`, `03-triangle-coverage`; 행렬 순서, `w` 조기 폐기, 잘못된 clipping·Y flip | 동일 scene의 transform/clip trace와 primitive count | 작은 software renderer 구현, 같은 장면의 GPU 이전 |
+| image·color·sampling | 04–05, 10–11 | `02-sampling-and-color`, `04-perspective-depth-blend`, `05-textured-lit-scene`; encoded sRGB 평균, alpha state 불일치, affine UV, data texture 오분류 | linear color·mip·normal/debug attachment와 final sRGB 비교 | 작은 software renderer 구현, 같은 장면의 GPU 이전 |
+| software rasterization | 06–09 | `03-triangle-coverage`, `04-perspective-depth-blend`; shared-edge gap/overlap, degenerate divide, depth convention 반전 | CPU reference의 coverage·depth·primitive-id·pixel trace | 작은 software renderer를 구현한다 |
+| shader와 GPU pipeline | 14, 16, 18, 20 | `06-gpu-first-frame`, `07-frame-debugging`; shader binding·vertex layout·attachment format 불일치 | shader manifest, validation baseline, capture/readback과 CPU reference 비교 | 같은 장면을 GPU pipeline으로 옮긴다 |
+| resource lifetime·CPU/GPU synchronization·profiling | 15, 17–20 | `06-gpu-first-frame`, `07-frame-debugging`; in-flight slot overwrite, staging 조기 파괴, stale resize attachment, CPU/GPU timing 혼동 | completion/generation trace, 안전한 resize·shutdown, 세 workload의 timing 보고서 | frame-time과 자원 수명을 측정·진단한다 |
+
+문서 12–13의 asset·scene·visibility 계약은 위 소유 범위를 capstone 장면에 연결합니다. 일반 asset pipeline이나 게임 엔진 전체를 새 범위로 만들지 않고, renderable validation·bounds·LOD가 픽셀과 frame budget에 미치는 부분만 다룹니다.
+
+자동 증거는 `python3 exercises/check.py --impl workspace --stage <id> --expect pass --gpu <mode>`로 모읍니다. 설계 판단은 각 실습의 사람 검토 질문과 artifact를 함께 제출합니다. 자동 검사가 통과해도 설명·비교·안전 판단까지 자동 증명됐다고 간주하지 않습니다.
 
 ## 경로 선택
 

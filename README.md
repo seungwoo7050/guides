@@ -28,6 +28,35 @@ GPU 렌더러
 
 벡터와 행렬은 그래픽스 좌표 변환에 필요한 범위에서 사용하지만, 일반 선형대수 과정으로 확장하지 않습니다. C++ 문법·RAII·CMake·일반 성능 측정도 필요한 접점만 연결합니다.
 
+## `main` 카탈로그 계약
+
+이 브랜치의 정본은 최신 `main`의 [`catalog/branches.json`](https://github.com/seungwoo7050/guides/blob/main/catalog/branches.json)과 [`catalog/tracks.json`](https://github.com/seungwoo7050/guides/blob/main/catalog/tracks.json)입니다. 카탈로그에서 이 가이드는 `specialization`이며, 목적은 “벡터·행렬·이미지·rasterization·shader·GPU resource·동기화·frame budget을 software renderer와 GPU pipeline으로 연결한다”입니다.
+
+| 관계 | 카탈로그 계약 | 이 가이드에서의 적용 |
+|---|---|---|
+| `requires` | `cpp`, `algorithms`, `computer-architecture` | C++20 구현, 결정적 fixture·반례, 메모리·성능 측정 능력을 전제로 합니다. |
+| `recommends` | `operating-systems` | process·thread·동기화와 driver 경계를 더 깊게 조사할 때 권장하지만 시작을 막지는 않습니다. |
+| `connects` | `game-development` | 엔진의 frame·scene·asset 문맥과 그래픽스 pipeline을 잇는 인접 계약입니다. 구현 범위는 이 가이드 안에서 임의로 확장하지 않습니다. |
+| `continues_to` | 없음 | 단일 후속 브랜치를 강제하지 않고 목적에 맞는 프로젝트·트랙으로 이동합니다. |
+
+이 브랜치가 소유하는 범위는 다음 다섯 가지입니다.
+
+- 좌표계·camera·projection
+- image·color·sampling
+- software rasterization
+- shader와 GPU pipeline
+- resource lifetime·CPU/GPU synchronization·profiling
+
+반대로 C++ 기초, 게임 엔진 전체, 3D 아트 제작, GPU 하드웨어 설계는 소유하지 않습니다. 필요한 전제만 링크하고 이 브랜치의 상태·실패·관측 모델에 적용되는 부분만 깊게 다룹니다.
+
+완료 시에는 다음 세 가지 종료 능력을 실제 artifact와 검사 결과로 입증해야 합니다.
+
+1. 작은 software renderer를 구현합니다.
+2. 같은 장면을 GPU pipeline으로 옮깁니다.
+3. frame-time과 자원 수명을 측정·진단합니다.
+
+세 종료 능력이 문서·실습·대표 실패·capstone 증거로 연결되는 표는 [로드맵의 계약 추적표](docs/00-roadmap.md#owns에서-종료-능력까지의-추적표)에 있습니다.
+
 ## 읽는 순서
 
 ### Part 1. 프레임을 정의하는 값과 규약
@@ -72,7 +101,7 @@ GPU 렌더러
 
 ## 실습 경로
 
-[실습 안내](exercises/README.md)는 구현 코드보다 **계약, 입력 fixture, 필수 산출물, 알려진 오답과 완료 근거**를 제공합니다.
+[실습 안내](exercises/README.md)는 하나의 누적 C++20 project를 starter·reference·learner workspace 세 구현으로 제공합니다. 각 단계는 **계약, 입력 fixture, 필수 산출물, 알려진 오답, 자동 증거와 사람 검토 질문**을 공유합니다.
 
 ```text
 01 transform trace
@@ -85,7 +114,7 @@ GPU 렌더러
 → 08 renderer capstone
 ```
 
-각 실습의 `contract.json`은 자동 검사기나 후속 구현 저장소가 사용할 수 있는 최소 정본입니다. 정답 구현을 제공하지 않는 대신 다음을 분명히 합니다.
+각 실습의 `contract.json`은 검사기가 읽는 최소 정본입니다. `exercises/08-renderer-capstone/project/starter/`의 `TODO`를 단계별로 구현하고, 같은 project의 결정적 `reference`와 공개 checker를 사용해 다음을 확인합니다.
 
 - 어떤 입력을 읽는가
 - 어떤 artifact를 생성하는가
@@ -93,7 +122,7 @@ GPU 렌더러
 - 어떤 잘못된 구현이 반드시 거부돼야 하는가
 - 무엇을 제출해야 완료로 판단하는가
 
-이미지 비교에는 표준 라이브러리만 사용하는 [`tools/ppm_diff.py`](tools/ppm_diff.py)를 제공합니다. 이는 작은 결정적 fixture를 위한 도구이며, 사람의 지각 품질이나 모든 GPU 차이를 대신 판정하지 않습니다.
+`scripts/new-workspace.sh`는 starter를 Git에서 제외된 `workspace/`로 한 번만 원자 복사하며 기존 학습자 작업을 덮어쓰지 않습니다. `exercises/check.py`는 `starter`가 `not-implemented`, 올바른 `reference`가 `pass`, 완성한 `workspace`가 단계별 `pass`인지 확인합니다. 이미지 비교에는 표준 라이브러리만 사용하는 [`tools/ppm_diff.py`](tools/ppm_diff.py)를 사용합니다. 이는 작은 결정적 fixture를 위한 도구이며, 사람의 지각 품질이나 모든 GPU 차이를 대신 판정하지 않습니다.
 
 ## 구현 프로필
 
@@ -108,7 +137,7 @@ GPU 렌더러
 
 GPU 개념은 Vulkan·Metal·Direct3D 12 계열의 명시적 모델을 기준으로 설명하고, 첫 이식 구현은 SDL3 GPU API를 권장합니다. SDL3는 window·device·command buffer·render pass·pipeline·resource의 경계를 비교적 작게 드러내면서 여러 backend를 사용할 수 있습니다.
 
-SDL3 자체와 shader compiler를 이 압축파일에 포함하지 않습니다. 설치·버전·backend·shader format은 [SDL3 GPU 구현 프로필](docs/90-appendix/02-api-profile-sdl3-gpu.md)과 [버전 기준](reference/version-baseline.md)에서 확인합니다.
+SDL3 자체와 shader compiler binary는 이 브랜치에 vendoring하지 않습니다. 설치·버전·backend·shader format은 [SDL3 GPU 구현 프로필](docs/90-appendix/02-api-profile-sdl3-gpu.md)과 [버전 기준](reference/version-baseline.md)에서 확인합니다.
 
 ## 준비와 검증
 
@@ -116,8 +145,25 @@ SDL3 자체와 shader compiler를 이 압축파일에 포함하지 않습니다.
 
 ```sh
 ./prepare.sh
+./scripts/new-workspace.sh
+
+cmake -S exercises/08-renderer-capstone/project \
+  -B build/workspace \
+  -DCG_IMPLEMENTATION=workspace \
+  -DCG_GPU=auto
+cmake --build build/workspace
+ctest --test-dir build/workspace --output-on-failure
+
+python3 exercises/check.py \
+  --impl workspace \
+  --stage 01-transform-trace \
+  --expect not-implemented \
+  --gpu auto
+
 ./verify.sh
 ```
+
+마지막 명령의 `not-implemented`는 새 workspace의 공개 미완성 상태가 정확히 검출됐다는 뜻입니다. 해당 단계를 구현한 뒤 `--expect pass`로 바꿉니다. 결정적 기준선은 같은 방식으로 `--impl reference --stage all --expect pass --gpu off`를 실행하고, starter의 음성 대조군은 `--impl starter --stage all --expect not-implemented --gpu off`로 확인합니다. 실제 GPU 완료 증거가 필요할 때만 지원 환경에서 `--gpu required`를 사용합니다. `auto`에서 장비가 없어 생략된 필수 GPU 검사는 성공으로 바뀌지 않으며 보고서에 제한으로 남습니다.
 
 `prepare.sh`는 다음만 수행합니다.
 
@@ -137,11 +183,15 @@ SDL3 자체와 shader compiler를 이 압축파일에 포함하지 않습니다.
 - PPM 비교기의 정상·오답 self-test
 - 임시 검증 뒤 원본 source 지문 불변
 
+`verify.sh`는 저장소와 교육 계약의 정합성을 검사하고, 위 CMake·CTest·exercise checker가 실제 구현 행동을 검사합니다. 둘 중 하나를 다른 하나의 대체물로 사용하지 않습니다.
+
 빠른 구조 검사는 다음으로 실행할 수 있습니다.
 
 ```sh
 make check
 ```
+
+생성물을 정리할 때는 `make clean`으로 `.guide/`, `build/`, `out/`만 제거합니다. 학습자 `workspace/`는 자동 삭제하지 않습니다. workspace가 손상됐다면 먼저 다른 위치에 보존한 뒤 직접 이름을 바꾸고 `./scripts/new-workspace.sh`로 새 사본을 만듭니다.
 
 ## 완료 뒤 할 수 있어야 하는 일
 

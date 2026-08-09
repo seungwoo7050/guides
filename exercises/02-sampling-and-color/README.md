@@ -71,3 +71,27 @@ out/sampling-color/
 - linear와 잘못된 sRGB 평균의 수치 차이 설명
 - straight/premultiplied가 같은 의도 결과를 만드는 case
 - known-bad mutation 최소 세 개 거부
+
+## 준비·workspace·stage 검사
+
+[공통 workspace 절차](../README.md#workspace-준비와-공개-명령)로 만든 learner 사본에서 진행합니다. 기존 workspace가 있으면 `new-workspace.sh`를 다시 실행하지 않습니다.
+
+```sh
+cmake -S exercises/08-renderer-capstone/project \
+  -B build/workspace \
+  -DCG_IMPLEMENTATION=workspace \
+  -DCG_GPU=off
+cmake --build build/workspace
+python3 exercises/check.py --impl workspace --stage 02-sampling-and-color --expect pass --gpu off
+python3 exercises/check.py --impl reference --stage 02-sampling-and-color --expect pass --gpu off
+```
+
+checker는 sample trace, address 결과, linear-space bilinear·mip, alpha 결과와 PPM diff를 reference와 비교합니다. UV 1 경계, 음수 repeat, odd extent와 alpha 0의 유색 RGB를 포함하며 starter와 최소 세 known-bad mutation이 거부돼야 합니다.
+
+사람 검토에서는 다음에 답합니다.
+
+- black/white 중간값을 encoded byte와 linear RGB에서 계산하면 왜 다릅니까?
+- color texture와 data texture가 같은 bytes여도 처리 경계가 달라지는 이유는 무엇입니까?
+- straight와 premultiplied alpha가 같은 의도 결과를 만들려면 어느 저장·blend 상태가 짝을 이뤄야 합니까?
+
+`make clean`은 생성물만 지우고 workspace는 남깁니다. 실패한 diff·worst-pixel trace를 보존한 채 첫 다른 sample 단계부터 복구하며 reference image를 실제 결과로 덮어쓰지 않습니다.

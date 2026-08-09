@@ -69,3 +69,20 @@ out/perspective-depth-blend/
 - transparent order와 alpha 표현 보고서
 - known-bad mutation 최소 네 개 거부
 - float tolerance와 exact attachment의 구분
+
+## 준비·workspace·stage 검사
+
+[공통 workspace 절차](../README.md#workspace-준비와-공개-명령) 뒤 같은 누적 renderer에서 진행합니다.
+
+```sh
+cmake -S exercises/08-renderer-capstone/project -B build/workspace -DCG_IMPLEMENTATION=workspace -DCG_GPU=off
+cmake --build build/workspace
+python3 exercises/check.py --impl workspace --stage 04-perspective-depth-blend --expect pass --gpu off
+python3 exercises/check.py --impl reference --stage 04-perspective-depth-blend --expect pass --gpu off
+```
+
+checker는 perspective/affine 차이, opaque draw-order metamorphic test, depth 범위, flat id, linear blend와 alpha state를 reference trace·image와 비교합니다. starter와 최소 네 known-bad mutation은 거부돼야 합니다.
+
+사람 검토에서는 `1/w` numerator·denominator 중 첫 차이를 지목하고, opaque와 transparent draw order가 다른 이유, exact attachment와 float tolerance를 나눈 근거를 artifact로 설명합니다.
+
+`make clean`은 build와 output만 정리합니다. 실패 pixel trace와 diff는 보존하고 tolerance를 넓히기 전에 coverage→depth→attribute→color 순서로 복구합니다. workspace는 지우지 않습니다.
