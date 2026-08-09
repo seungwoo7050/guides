@@ -98,6 +98,8 @@ trigger에 따라 정확성 rule이 달라지지 않는다. background에서는 
 - 화면은 focus/active 시 repository를 다시 읽는다.
 - foreground와 background 동시 실행은 DB claim/lease로 조정한다.
 
+이 원칙이 곧 모든 sample app이 background network 전송을 기본 활성화해야 한다는 뜻은 아니다. 제공 Field Notes Expo reference는 설정 가능한 endpoint로 local record를 자동 전송하지 않도록 automatic sync를 disabled로 유지하고 manual action만 transport를 실행한다. 같은-worker 불변식은 injected fake에서 검사한다. 실제 제품에서 automatic sync를 켜려면 사용자 opt-in, 허가된 endpoint·session owner, disable/logout 정리와 device evidence를 함께 추가한다. 그 근거가 없으면 app-active/background/notification 제품 경로는 `미검사`다.
+
 ## headless 실행에서 사용할 수 없는 것을 압니다
 
 background 또는 terminated 상태에서는 다음 가정이 깨질 수 있다.

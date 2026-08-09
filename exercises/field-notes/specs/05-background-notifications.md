@@ -12,6 +12,8 @@ Stage 04의 bounded sync worker를 OS가 제공하는 background 실행 기회�
 
 이 절은 Stage 04 공개 계약을 완료한 learner 작업 복사본의 Stage 05 기준선이다. 누적 reference의 lifecycle core/package 또는 adapter 존재는 구현 근거일 수 있지만, 실제 scheduler·notification·cold-start device evidence나 Stage 완료를 자동으로 뜻하지 않는다. 자동 범위는 현재 package scripts와 verify 결과로 확인한다.
 
+제공 reference는 민감한 local record가 설정 가능한 endpoint로 사용자 확인 없이 전송되는 예제를 만들지 않는다. production Expo 조합에서는 background 등록·상태와 disabled task의 안전 중단을 관찰하되 automatic network sync는 기본값과 제공 UI 모두에서 꺼져 있다. manual `/sync` action만 실제 transport를 실행한다. `lifecycle-engine`의 injected fake contract는 trigger별 같은 worker 불변식을 검증하지만 실제 endpoint에 대한 사용자 동의·session·data policy를 증명하지 않는다. learner 제품이 automatic sync를 연결하려면 명시적 opt-in, 허가된 endpoint owner, disable/logout 정리와 device evidence를 추가하고, 그렇지 않으면 automatic 제품 경로를 `미검사`로 남긴다.
+
 시작 상태:
 
 - Stage 04의 durable outbox, claim/lease와 bounded sync worker
@@ -220,7 +222,7 @@ deep link, restoration과 notification은 Stage 01의 공통 `NavigationIntent`�
 
 ## 자동 검증
 
-자동화하기 적합한 항목:
+자동화하기 적합한 항목이다. 첫 세 항목은 제공 `lifecycle-engine`의 injected repository/transport에서 확인하며, production reference의 automatic network egress가 켜졌다는 뜻이 아니다.
 
 - trigger만 다른 worker 실행이 같은 final durable state를 만든다.
 - task budget 종료·cancellation·lease expiry 뒤 재개된다.
@@ -232,6 +234,8 @@ deep link, restoration과 notification은 Stage 01의 공통 `NavigationIntent`�
 - skeleton/known-wrong adapter가 같은 public 검사에서 거부된다.
 
 자동 fake는 OS scheduler가 실제로 callback을 주거나 vendor별 background 제한, notification provider/OS delivery가 동작함을 보장하지 않는다.
+
+제공 Expo reference는 추가로 background 등록과 generated config, disabled task의 무전송 결과, manual foreground worker를 검사한다. 허가된 automatic endpoint와 opt-in을 구현하지 않은 상태에서는 app-active/background/notification network 전송을 성공으로 표시하지 않는다.
 
 ## 사람·실제 기기 검토
 
@@ -265,7 +269,7 @@ trace에는 source/build/runtime identity, trigger, attempt/message ID, normaliz
 
 ## 완료 조건
 
-- manual·app-active·background·notification이 같은 bounded worker와 result contract를 사용한다.
+- 제품에서 automatic sync를 켰다면 명시적 opt-in·허가된 endpoint 경계 아래 manual·app-active·background·notification이 같은 bounded worker와 result contract를 사용한다. 제공 reference처럼 끈 경우 automatic 제품 경로는 `미검사`다.
 - background task가 없어도 다음 foreground 기회에서 sync가 재개된다.
 - task는 중단·중복·동시 실행과 process death에 안전하다.
 - Android 13+에서 channel→permission→token 상태가 분리되고 순서가 evidence로 남는다.

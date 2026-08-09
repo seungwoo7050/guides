@@ -136,8 +136,8 @@ background callback은 React component, toast 또는 router를 직접 변경하�
 ## deterministic 검증
 
 ```sh
-npm run typecheck
-npm test
+fnm exec --using=24.19.0 npm run typecheck --workspace=@field-notes/lifecycle-engine
+fnm exec --using=24.19.0 npm test --workspace=@field-notes/lifecycle-engine
 ```
 
 testkit은 수동 clock/deadline, lease repository, bounded worker, repository readiness gate, durable intent claim과 Android call log를 제공한다. 검사는 다음을 포함한다.

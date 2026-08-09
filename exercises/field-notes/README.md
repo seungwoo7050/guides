@@ -2,7 +2,7 @@
 
 Field Notes는 현장 조사자가 network가 불안정한 장소에서 기록·사진·선택적 위치를 저장하고, 나중에 server와 동기화하는 모바일 앱이다.
 
-이 디렉터리는 빈 프로젝트 생성 지시만 제공하지 않는다. 실행 가능한 누적 reference 앱, 의도적으로 미완성인 learner skeleton, framework와 분리된 public contract, 단계별 대표 실패와 사람이 검토할 evidence 형식을 함께 제공한다. reference의 구현 모양이나 화면 문자열을 복사하는 것이 목표가 아니라 같은 사건 뒤 같은 업무 상태와 관측 결과를 만드는 것이 목표다.
+이 디렉터리는 빈 프로젝트 생성 지시만 제공하지 않는다. 실행 가능한 Expo 비교 앱, 의도적으로 미완성인 learner skeleton, framework와 분리된 역할별 reference core, 단계별 대표 실패와 사람이 검토할 evidence 형식을 함께 제공한다. 하나의 앱을 모든 Stage의 유일한 정답으로 보지 않는다. reference의 구현 모양이나 화면 문자열을 복사하는 것이 목표가 아니라 같은 사건 뒤 같은 업무 상태와 관측 결과를 만드는 것이 목표다.
 
 ## 디렉터리 역할
 
@@ -10,7 +10,10 @@ Field Notes는 현장 조사자가 network가 불안정한 장소에서 기록·
 |---|---|---|
 | [`shared`](shared/) | 단계가 공유하는 domain type, port, fixture와 framework-neutral contract runner | type을 구현했다는 사실만으로 device 동작을 보장하지 않는다. |
 | [`skeleton`](skeleton/) | compile·launch 가능하지만 Stage 01 parser, deduplication, back policy와 일부 UI 검사가 의도적으로 미완성인 시작점 | 처음부터 test가 통과하는 정답 프로젝트가 아니다. |
-| [`reference`](reference/) | 현재 package scripts와 공개 contract가 검사하는 행동을 연결한 누적 실행 예시 | 파일·script 존재만으로 실제 device·signing·store, 전체 Stage 또는 `stable` 승인을 뜻하지 않는다. |
+| [`reference`](reference/) | Stage 01~04 실행 흐름과 Stage 05 native adapter의 안전한 disabled/manual 경계를 연결한 Expo 비교 앱 | automatic network sync, 실제 scheduler/device·signing·store 또는 전체 Stage 완료를 뜻하지 않는다. |
+| [`fault-server`](fault-server/)·[`sync-engine`](sync-engine/) | Stage 04의 결정적 fault와 bounded sync 공개 행동 reference | production backend·session 운영을 뜻하지 않는다. |
+| [`lifecycle-engine`](lifecycle-engine/) | injected fake에서 Stage 05 trigger·budget·notification intent 불변식을 만족하는 reference core | Expo 앱의 automatic egress나 OS callback·push delivery를 뜻하지 않는다. |
+| [`release-contract`](release-contract/) | Stage 06 profile/evidence 입력의 모순과 known-wrong claim을 거부하는 reference validator | native build·artifact bytes·signing·install·store·Update 성공을 뜻하지 않는다. |
 | [`specs`](specs/) | Stage별 학습 결과, 시작 상태, public behavior, 실패 주입과 evidence 계약 | 문서를 읽거나 체크박스를 채운 것만으로 Stage를 통과하지 않는다. |
 | `checks/` | acceptance matrix, device matrix와 evidence template | 자동 생성된 stable 판정표가 아니다. |
 
@@ -18,9 +21,9 @@ Field Notes는 현장 조사자가 network가 불안정한 장소에서 기록·
 
 ## 누적 reference와 단계별 시작 상태
 
-누적 reference의 정확한 자동 범위는 root와 `reference`의 현재 package scripts, 이 README의 명령과 같은 source에서 실행한 `verify.sh` 결과로 확인한다. 새 package·adapter·test 파일이 보인다는 사실만으로 연결 검사, 실제 device 결과 또는 release 준비가 끝났다고 해석하지 않는다.
+reference 집합의 정확한 자동 범위는 root와 각 workspace의 현재 package scripts, 이 README의 명령과 같은 source에서 실행한 `verify.sh` 결과로 확인한다. `test:reference`는 여러 역할별 기준을 모으는 이름이지 하나의 production 앱이 Stage 01~06을 전부 완료했다는 선언이 아니다. 새 package·adapter·test 파일이 보인다는 사실만으로 연결 검사, actual product egress, 실제 device 결과 또는 release 준비가 끝났다고 해석하지 않는다.
 
-각 spec의 “시작 상태와 의도적 미완성”은 **그 Stage를 처음 수행하는 learner 작업 복사본의 기준선**이다. 현재 누적 reference의 기능 목록이 아니다. 예를 들어 Stage 01의 memory repository와 Stage 02 시작 전 placeholder 설명은 학습 순서를 고정하는 계약이며, 현재 reference가 SQLite·media를 제거해야 한다는 뜻이 아니다. Stage별 연습은 별도 learner 복사본에서 수행하고 누적 reference는 공개 행동 비교와 회귀 검사에 사용한다.
+각 spec의 “시작 상태와 의도적 미완성”은 **그 Stage를 처음 수행하는 learner 작업 복사본의 기준선**이다. 현재 reference 집합의 기능 목록이 아니다. 예를 들어 Stage 01의 memory repository와 Stage 02 시작 전 placeholder 설명은 학습 순서를 고정하는 계약이며, 현재 Expo reference가 SQLite·media를 제거해야 한다는 뜻이 아니다. Stage별 연습은 별도 learner 복사본에서 수행하고 역할별 reference는 공개 행동 비교와 회귀 검사에 사용한다.
 
 ## 왜 하나의 누적 프로젝트인가
 
@@ -117,7 +120,7 @@ npm run run:ios --workspace=@field-notes/reference -- --device
 | [02](specs/02-offline-records.md) | SQLite CRUD, app-owned file 경계와 outbox transaction | transaction rollback, partial file, v1 migration, restart |
 | [03](specs/03-media-permissions.md) | picker·camera·foreground location adapter와 permission degradation | denied·revoked·unavailable, cancel, process recreation |
 | [04](specs/04-sync-conflicts.md) | idempotent sync, timeout·중복·순서 역전·conflict | response loss, newer edit, version conflict |
-| [05](specs/05-background-notifications.md) | opportunistic background sync와 notification intent | task 미실행·중복, cold notification entry |
+| [05](specs/05-background-notifications.md) | lifecycle reference core의 opportunistic trigger와 Expo adapter·notification intent; 제품 automatic sync는 opt-in/endpoint evidence가 있을 때만 | task 미실행·중복, disabled 무전송, cold notification entry |
 | [06](specs/06-quality-release.md) | device matrix, native boundary, install·upgrade와 release evidence | runtime mismatch, migration/upgrade, 미검사 release gate |
 
 Stage 01부터 순서대로 진행한다. React Native 경험자는 단순 화면 구현을 줄일 수 있지만, 각 Stage의 실패와 durable state를 동등한 프로젝트 evidence로 증명해야 건너뛸 수 있다.

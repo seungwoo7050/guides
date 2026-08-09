@@ -39,9 +39,9 @@
 | SYNC-10 | 04 | attempted command | explicit permanent failure | failed reason/snapshot 보존, 자동 retry 없음, recovery action | 자동+사람 | 미검사 | |
 | SYNC-11 | 04 | eligible queue | foreground/background 동시 claim | 한 command lease/attempt, 다른 trigger는 duplicate effect 없음 | 자동 | 미검사 | |
 | SYNC-12 | 04 | remote attachment bytes 성공, record link/local checkpoint 미완료 | link/checkpoint transaction 실패 | upload와 link를 같은 성공으로 표시하지 않음; stable identity로 재조회·재조정; private bytes/URI 없는 trace | 자동+사람 | 미검사 | |
-| BG-01 | 05 | pending outbox | scheduler가 실행되지 않음 | pending 보존, app-active가 같은 bounded worker로 재개 | 자동+기기 | 미검사 | |
+| BG-01 | 05 | pending outbox | scheduler가 실행되지 않음 | pending 보존, 허가된 automatic 제품에서는 app-active가 같은 bounded worker로 재개; 제공 reference는 무전송/수동 action 경계 보존 | injected contract 자동+제품 기기 | 미검사 | |
 | BG-02 | 05 | active lease | task expiration/process death | checkpoint/attempt 보존, lease expiry 뒤 재개 | 자동+기기 | 미검사 | |
-| BG-03 | 05 | 같은 fixture/fault | manual·app-active·background trigger | trigger와 무관한 final durable state | 자동 | 미검사 | |
+| BG-03 | 05 | 같은 fixture/fault | manual·app-active·background trigger | injected fake에서 trigger와 무관한 final durable state; 실제 automatic endpoint/opt-in은 별도 제품 증거 | injected contract 자동+사람 | 미검사 | |
 | PUSH-01 | 05 | Android 13+, not-determined | notification setup | channel→permission→granted 뒤 token; denied에서 registration 없음 | 자동+실제 기기 | 미검사 | |
 | PUSH-02 | 05 | app process 없음, current conflict | valid notification tap | migration/session 준비 뒤 current conflict route | 자동+실제 기기 | 미검사 | |
 | PUSH-03 | 05 | response already claimed | same message/response 재전달 | duplicate trace, 추가 navigation·업무 효과 없음 | 자동 | 미검사 | |
