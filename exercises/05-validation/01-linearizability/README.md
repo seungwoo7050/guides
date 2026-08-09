@@ -49,3 +49,5 @@ read() -> 현재 register value
 - 한 history의 timestamp를 최소 한 곳 바꿔 판정이 뒤집히는 사례를 만듭니다.
 - checker가 탐색한 상태 수와 pruning rule을 기록합니다.
 - multi-key history에 같은 checker를 그대로 적용할 수 없는 이유를 설명합니다.
+
+직접 판정한 뒤 [`reference.md`](reference.md)의 해설과 [`expected.json`](expected.json)의 관측 결과를 비교합니다.

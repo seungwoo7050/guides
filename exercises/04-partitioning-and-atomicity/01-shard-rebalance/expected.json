@@ -1,0 +1,65 @@
+{
+  "schema_version": 1,
+  "exercise_id": "04-partitioning-and-atomicity/01-shard-rebalance",
+  "automated_checks": [
+    {
+      "id": "safe-catch-up-before-cutover",
+      "fixture": "rebalance.json#safe-plan",
+      "observation": "target frontier required by metadata cutover",
+      "expected": {
+        "source_final_index": 122,
+        "target_applied_index": 122,
+        "cutover_event": "e8"
+      }
+    },
+    {
+      "id": "single-write-authority",
+      "fixture": "rebalance.json#safe-plan",
+      "observation": "write authority across fence and enable events",
+      "expected": {
+        "before_e7": "G1",
+        "after_e7_before_e9": null,
+        "after_e9": "G2"
+      }
+    },
+    {
+      "id": "stale-router-retry",
+      "fixture": "rebalance.json#safe-plan/e10-e11",
+      "observation": "w3 application",
+      "expected": {
+        "e10_status": "STALE_EPOCH",
+        "applied_at": "G2",
+        "applied_index": 123,
+        "effect_count": 1
+      }
+    },
+    {
+      "id": "unsafe-index-conflict",
+      "fixture": "rebalance.json#unsafe-early-cutover",
+      "observation": "late source delta versus target write",
+      "expected": {
+        "source_write": "w1",
+        "source_index": 121,
+        "target_write": "w2",
+        "target_index": 121,
+        "safe": false
+      }
+    }
+  ],
+  "manual_review": [
+    {
+      "id": "durable-migration-state",
+      "question": "PREPARE, COPY, CATCH_UP, FENCE, CUTOVER, CLEANUP 각각의 durable state와 restart 행동을 정의했는가?",
+      "required_evidence": ["phase 전이표", "migration manifest", "crash resume source"]
+    },
+    {
+      "id": "fencing-boundaries",
+      "question": "stale router·source·target이 각각 write를 승인하지 못하도록 검사 위치를 정했는가?",
+      "required_evidence": ["epoch 비교 위치", "거절/redirect status", "authority 불변식"]
+    }
+  ],
+  "limits": [
+    "단일 shard와 단일 migration만 다룬다.",
+    "cross-shard transaction과 실제 storage cleanup 비용을 검증하지 않는다."
+  ]
+}

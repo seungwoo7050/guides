@@ -1,0 +1,64 @@
+{
+  "schema_version": 1,
+  "exercise_id": "05-validation/02-simulation-plan",
+  "automated_checks": [
+    {
+      "id": "canonical-template-is-incomplete",
+      "fixture": "plan-template.json",
+      "observation": "starter template contains learner markers",
+      "expected": {"contains_todo": true}
+    },
+    {
+      "id": "completed-plan-required-state",
+      "fixture": "learner plan derived from plan-template.json",
+      "observation": "required model sections",
+      "expected": {
+        "contains_todo": false,
+        "state_sections": ["node_state", "network_state", "storage_state", "client_state"]
+      }
+    },
+    {
+      "id": "completed-plan-schedule-coverage",
+      "fixture": "learner plan derived from plan-template.json",
+      "observation": "replayable schedule inventory",
+      "expected": {
+        "minimum_normal_schedules": 1,
+        "minimum_fault_schedules": 5,
+        "records_seed": true,
+        "records_explicit_events": true
+      }
+    },
+    {
+      "id": "completed-plan-artifacts",
+      "fixture": "learner plan derived from plan-template.json",
+      "observation": "failure reproduction fields",
+      "expected": {
+        "required": [
+          "implementation revision",
+          "configuration",
+          "seed",
+          "explicit event schedule",
+          "initial state",
+          "first violated invariant",
+          "state snapshot before and after violation"
+        ]
+      }
+    }
+  ],
+  "manual_review": [
+    {
+      "id": "fairness-and-bound",
+      "question": "각 liveness 기대가 connected majority, delivery/storage fairness와 finite step bound를 명시하는가?",
+      "required_evidence": ["condition", "fairness_assumption", "bound"]
+    },
+    {
+      "id": "model-gap",
+      "question": "simulation이 다루지 않는 실제 runtime 위험을 integration test로 연결했는가?",
+      "required_evidence": ["model_gaps", "external_integration_tests", "보장하지 않는 범위"]
+    }
+  ],
+  "limits": [
+    "template와 계획 검사는 protocol implementation을 실행하지 않는다.",
+    "bounded schedule coverage는 모든 reachable execution의 proof가 아니다."
+  ]
+}

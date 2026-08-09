@@ -55,3 +55,5 @@ accepted writes and their durable location
 - `unsafe-early-cutover`에서 유실되거나 중복될 수 있는 write를 표시합니다.
 - PREPARE, COPY, CATCH_UP, FENCE, CUTOVER, CLEANUP의 durable 상태와 재시작 행동을 정의합니다.
 - stale router·source·target 각각에 대한 fencing 검사를 설계합니다.
+
+직접 추적한 뒤 [`reference.md`](reference.md)의 해설과 [`expected.json`](expected.json)의 관측 결과를 비교합니다.

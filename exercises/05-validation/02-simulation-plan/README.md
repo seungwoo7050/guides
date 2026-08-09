@@ -44,3 +44,5 @@
 - 정상 schedule 1개와 fault schedule 5개 이상을 작성합니다.
 - 최소 한 fault schedule을 event 수가 더 작은 동등 반례로 축소합니다.
 - simulation에서 다루지 않는 실제 runtime 위험을 별도 통합 실험으로 연결합니다.
+
+계획을 작성한 뒤 [`reference.md`](reference.md)의 review 예시와 [`expected.json`](expected.json)의 계약을 비교합니다.

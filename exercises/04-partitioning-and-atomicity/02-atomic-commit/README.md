@@ -55,3 +55,5 @@ allowed recovery action
 - crash event 위치를 바꾼 추가 trace 두 개를 만듭니다.
 - PREPARED transaction의 recovery source와 operator escalation 조건을 정의합니다.
 - 2PC, Saga와 consensus를 동일한 문제의 대체 구현처럼 표현하지 않고 차이를 설명합니다.
+
+직접 추적한 뒤 [`reference.md`](reference.md)의 해설과 [`expected.json`](expected.json)의 관측 결과를 비교합니다.

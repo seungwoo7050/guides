@@ -1,0 +1,58 @@
+{
+  "schema_version": 1,
+  "exercise_id": "05-validation/01-linearizability",
+  "automated_checks": [
+    {
+      "id": "completed-write-then-read",
+      "fixture": "histories.json#completed-write-then-read",
+      "observation": "linearizability result",
+      "expected": {"linearizable": true, "witness": ["w1", "r1"], "included_pending": []}
+    },
+    {
+      "id": "stale-read-after-completion",
+      "fixture": "histories.json#stale-read-after-completion",
+      "observation": "linearizability result",
+      "expected": {"linearizable": false, "minimal_counterexample": ["w1", "r1"]}
+    },
+    {
+      "id": "overlapping-write-and-reads",
+      "fixture": "histories.json#overlapping-write-and-reads",
+      "observation": "one legal witness",
+      "expected": {"linearizable": true, "witness": ["r1", "w1", "r2", "r3"]}
+    },
+    {
+      "id": "new-then-old-during-one-write",
+      "fixture": "histories.json#new-then-old-during-one-write",
+      "observation": "linearizability result",
+      "expected": {"linearizable": false, "minimal_counterexample": ["w1", "r1", "r2"]}
+    },
+    {
+      "id": "pending-write-observed",
+      "fixture": "histories.json#pending-write-observed",
+      "observation": "pending completion policy",
+      "expected": {"linearizable": true, "witness": ["w1", "r1"], "included_pending": ["w1"]}
+    },
+    {
+      "id": "two-overlapping-writes",
+      "fixture": "histories.json#two-overlapping-writes",
+      "observation": "one legal witness",
+      "expected": {"linearizable": true, "witness": ["w2", "w1", "r1"]}
+    }
+  ],
+  "manual_review": [
+    {
+      "id": "timestamp-mutation",
+      "question": "timestamp 하나를 바꿔 판정이 뒤집히는 이유를 real-time edge로 설명했는가?",
+      "required_evidence": ["변경 전후 precedence graph", "변경 전후 판정"]
+    },
+    {
+      "id": "checker-boundary",
+      "question": "register checker를 multi-key transaction에 그대로 적용할 수 없는 이유를 설명했는가?",
+      "required_evidence": ["sequential spec 차이", "cross-key invariant 예시"]
+    }
+  ],
+  "limits": [
+    "고정된 작은 read/write register history만 검사한다.",
+    "checker 통과는 workload와 recorder가 다루지 않은 실행을 보장하지 않는다."
+  ]
+}

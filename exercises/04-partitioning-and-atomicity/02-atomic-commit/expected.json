@@ -1,0 +1,56 @@
+{
+  "schema_version": 1,
+  "exercise_id": "04-partitioning-and-atomicity/02-atomic-commit",
+  "automated_checks": [
+    {
+      "id": "commit-decision-survives",
+      "fixture": "transactions.json#commit-decision-survives",
+      "observation": "final durable participant decisions",
+      "expected": {
+        "global_decision": "COMMIT",
+        "shard-A": "COMMIT",
+        "shard-B": "COMMIT",
+        "recovery_source_event": "e13"
+      }
+    },
+    {
+      "id": "prepared-without-decision-blocks",
+      "fixture": "transactions.json#prepared-without-decision",
+      "observation": "safe participant action after e9",
+      "expected": {
+        "shard-A": "PREPARED",
+        "shard-B": "PREPARED",
+        "global_decision": null,
+        "client_result": "UNKNOWN",
+        "progress": "BLOCKED"
+      }
+    },
+    {
+      "id": "participant-no-aborts",
+      "fixture": "transactions.json#participant-votes-no",
+      "observation": "allowed global decision and final states",
+      "expected": {
+        "global_decision": "ABORT",
+        "shard-A": "ABORT",
+        "shard-B": "ABORT",
+        "commit_allowed": false
+      }
+    }
+  ],
+  "manual_review": [
+    {
+      "id": "crash-boundaries",
+      "question": "prepare와 global decision 전후 crash를 옮긴 두 추가 trace가 atomicity를 보존하는가?",
+      "required_evidence": ["durable state 표", "허용 recovery action", "client-visible result"]
+    },
+    {
+      "id": "problem-boundaries",
+      "question": "2PC, consensus와 Saga가 해결하는 agreement·atomicity·business convergence 문제를 구분했는가?",
+      "required_evidence": ["각 protocol의 participant/state/failure 비교"]
+    }
+  ],
+  "limits": [
+    "transaction isolation과 deadlock을 검사하지 않는다.",
+    "decision service 자체의 replication과 corruption recovery는 fixture 밖이다."
+  ]
+}
