@@ -1,0 +1,7 @@
+.guide/
+__pycache__/
+*.pyc
+*.pyo
+.DS_Store
+exercises/*/work/
+projects/synthetic-service-security-review/work/
