@@ -1,0 +1,20 @@
+{
+  "schema_version": 1,
+  "migration": {
+    "best_time_ms": 54210,
+    "unlocked_cosmetics": [
+      "cosmetic.player.default",
+      "cosmetic.player.founder-blue"
+    ],
+    "write_policy": "temp_validate_replace_keep_previous",
+    "source_preserved_on_failure": true
+  },
+  "replay": {
+    "last_equal_checkpoint_tick": 5,
+    "first_unequal_checkpoint_tick": 10,
+    "first_differing_command_sequence": 3,
+    "first_differing_command_tick": 8,
+    "a_y_milli": 1000,
+    "b_y_milli": 900
+  }
+}

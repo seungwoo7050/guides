@@ -16,11 +16,13 @@ old save를 current schema로 안전하게 옮기고, 두 replay trace의 첫 di
 
 - [`template/migration-plan.md`](template/migration-plan.md)
 - [`template/divergence-report.md`](template/divergence-report.md)
+- [`template/evidence.json`](template/evidence.json): 자동 검사가 읽는 migration·divergence 관측값
 
 `template/`은 의도적으로 미완성인 starter다. 자신의 작업 디렉터리에 복사해 작성하고 원본 fixture나 template을 검증 과정에서 덮어쓰지 않는다. 완료 뒤 다음 예시 해설과 비교한다.
 
 - [`reference/migration-plan.md`](reference/migration-plan.md)
 - [`reference/divergence-report.md`](reference/divergence-report.md)
+- [`reference/evidence.json`](reference/evidence.json)
 
 예시 해설은 문구를 강제하지 않지만 field 변환, alias resolution과 checkpoint/command 비교처럼 fixture가 결정하는 사실은 동일해야 한다.
 

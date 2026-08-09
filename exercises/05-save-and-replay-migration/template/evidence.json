@@ -1,0 +1,17 @@
+{
+  "schema_version": 1,
+  "migration": {
+    "best_time_ms": null,
+    "unlocked_cosmetics": [],
+    "write_policy": null,
+    "source_preserved_on_failure": false
+  },
+  "replay": {
+    "last_equal_checkpoint_tick": null,
+    "first_unequal_checkpoint_tick": null,
+    "first_differing_command_sequence": null,
+    "first_differing_command_tick": null,
+    "a_y_milli": null,
+    "b_y_milli": null
+  }
+}

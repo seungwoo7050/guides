@@ -59,6 +59,22 @@ EXERCISES = [
     "08-release-readiness",
 ]
 
+CAPSTONE_REQUIRED_ARTIFACTS = {
+    "runtime-state-map.md",
+    "time-and-input-contract.md",
+    "state-ownership.csv",
+    "world-and-asset-plan.md",
+    "gameplay-rules.md",
+    "movement-and-space.md",
+    "presentation-contract.md",
+    "save-and-replay.md",
+    "authority-and-latency.md",
+    "test-and-observability-plan.md",
+    "performance-and-release.md",
+    "traceability-matrix.csv",
+    "change-plan.md",
+}
+
 REQUIRED_FILES = [
     "README.md",
     "CONTRIBUTING.md",
@@ -78,7 +94,18 @@ REQUIRED_FILES = [
     "examples/fixed-step-replay/input-trace.json",
     "examples/fixed-step-replay/expected-state.json",
     "examples/fixed-step-replay/sim.py",
+    "scripts/check_submission.py",
+    "scripts/new-workspace.sh",
+    "scripts/new_workspace.py",
+    "scripts/cleanup.py",
     "projects/relay-arena-vertical-slice/README.md",
+    "projects/relay-arena-vertical-slice/starter/relay_arena.py",
+    "projects/relay-arena-vertical-slice/reference/relay_arena.py",
+    "projects/relay-arena-vertical-slice/reference/expected-contract.json",
+    "projects/relay-arena-vertical-slice/reference/boundary-recovery.md",
+    "projects/relay-arena-vertical-slice/tests/check_contract.py",
+    "projects/relay-arena-vertical-slice/tests/check_mutants.py",
+    "projects/relay-arena-vertical-slice/tests/known_bad.py",
     "reference/glossary.md",
     "reference/artifact-checklists.md",
     "reference/engine-crosswalk.md",
@@ -167,7 +194,7 @@ def check_required_structure() -> None:
             fail(f"필수 파일이 없습니다: {item}")
     for exercise in EXERCISES:
         base = ROOT / "exercises" / exercise
-        for name in ("README.md", "inputs", "template"):
+        for name in ("README.md", "inputs", "template", "reference"):
             if not (base / name).exists():
                 fail(f"실습 구조가 없습니다: exercises/{exercise}/{name}")
     project = ROOT / "projects/relay-arena-vertical-slice"
@@ -233,8 +260,9 @@ def check_markdown_links() -> None:
 
 
 def check_all_json_and_csv() -> None:
-    json_files = sorted(ROOT.rglob("*.json"), key=lambda p: rel(p))
-    csv_files = sorted(ROOT.rglob("*.csv"), key=lambda p: rel(p))
+    files = source_files()
+    json_files = [path for path in files if path.suffix == ".json"]
+    csv_files = [path for path in files if path.suffix == ".csv"]
     if len(json_files) < 25 or len(csv_files) < 10:
         fail("fixture 파일 수가 예상보다 적습니다")
     for path in json_files:
@@ -473,6 +501,14 @@ def check_capstone_fixtures() -> None:
     if actual_templates != expected_templates:
         fail(f"Capstone template set이 다릅니다: {sorted(expected_templates ^ actual_templates)}")
 
+    reference_artifacts = base / "reference/artifacts"
+    actual_artifacts = {path.name for path in reference_artifacts.iterdir() if path.is_file()}
+    if actual_artifacts != CAPSTONE_REQUIRED_ARTIFACTS:
+        fail(
+            "Capstone 필수 reference artifact set이 다릅니다: "
+            f"{sorted(CAPSTONE_REQUIRED_ARTIFACTS ^ actual_artifacts)}"
+        )
+
     _, req_rows = read_csv(inputs / "requirements.csv")
     req_ids = [row.get("requirement_id") for row in req_rows]
     unique(req_ids, "Capstone requirement id")
@@ -576,6 +612,33 @@ def check_prepare_marker() -> None:
     current = source_fingerprint()
     if marker.get("source_sha256") != current:
         fail("prepare 이후 source가 변경됐습니다. ./prepare.sh를 다시 실행하십시오")
+    head = subprocess.run(
+        ["git", "rev-parse", "HEAD"], cwd=ROOT, text=True, capture_output=True, check=False
+    )
+    if head.returncode == 0 and marker.get("git_head") != head.stdout.strip():
+        fail("prepare marker의 git HEAD가 현재 HEAD와 다릅니다. ./prepare.sh를 다시 실행하십시오")
+
+
+def run_required_check(command: list[str], context: str) -> None:
+    result = subprocess.run(command, cwd=ROOT, text=True, capture_output=True, check=False)
+    if result.returncode != 0:
+        fail(f"{context} 실패:\n{result.stdout}\n{result.stderr}")
+    if result.stdout.strip():
+        print(result.stdout.strip())
+
+
+def check_reference_starter_and_mutants() -> None:
+    run_required_check(
+        [sys.executable, str(ROOT / "scripts/check_submission.py"), "--self-test"],
+        "단계 실습 reference/template/mutant matrix",
+    )
+    run_required_check(
+        [
+            sys.executable,
+            str(ROOT / "projects/relay-arena-vertical-slice/tests/check_mutants.py"),
+        ],
+        "Capstone reference/starter/mutant matrix",
+    )
 
 
 def run_checks(*, quick: bool, fixtures_only: bool, require_marker: bool) -> None:
@@ -595,6 +658,8 @@ def run_checks(*, quick: bool, fixtures_only: bool, require_marker: bool) -> Non
         check_exercise_fixtures()
         check_capstone_fixtures()
         check_example_and_meta(meta=not quick)
+        if not quick:
+            check_reference_starter_and_mutants()
 
     after = source_fingerprint()
     if before != after:
@@ -614,9 +679,10 @@ def main() -> int:
         print(f"VERIFY_ERROR: {exc}", file=sys.stderr)
         return 1
 
-    markdown_count = sum(1 for _ in ROOT.rglob("*.md"))
-    json_count = sum(1 for _ in ROOT.rglob("*.json"))
-    csv_count = sum(1 for _ in ROOT.rglob("*.csv"))
+    files = source_files()
+    markdown_count = sum(path.suffix == ".md" for path in files)
+    json_count = sum(path.suffix == ".json" for path in files)
+    csv_count = sum(path.suffix == ".csv" for path in files)
     mode = "fixtures" if args.fixtures_only else ("quick" if args.quick else "full")
     print(f"VERIFY_OK mode={mode} markdown={markdown_count} json={json_count} csv={csv_count}")
     return 0
