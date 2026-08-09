@@ -75,7 +75,7 @@ owns → 개념의 상태·책임·실패 → 단계 실습과 known-bad → 결
 | 개념 | [catalog와 status API](../docs/07-self-service-platform-apis-and-catalogs.md), [identity·secret·policy](../docs/11-identity-secrets-and-policy.md), [journey telemetry와 audit](../docs/12-observability-audit-and-developer-feedback.md), [tenant 격리](../docs/13-multitenancy-quotas-and-isolation.md), [SLO·capacity·support](../docs/14-platform-slo-capacity-cost-and-support.md) |
 | 단계 실습 | [`06-self-service`](../exercises/06-self-service/)의 timeout retry 차단, [`08-identity-policy`](../exercises/08-identity-policy/)의 장기 token, [`09-multitenancy`](../exercises/09-multitenancy/)의 global queue, [`10-platform-slo`](../exercises/10-platform-slo/)의 platform defect SLO 제외 |
 | 결정적 행동 | `PE-004` fairness, `PE-006` bounded break-glass, `PE-007` workload identity, `PE-010` secret-free deterministic snapshot |
-| Capstone | [Identity와 Secret](../projects/internal-developer-platform/reference/06-security-catalog.md#identity와-secret), [Catalog와 Developer Feedback](../projects/internal-developer-platform/reference/06-security-catalog.md#catalog와-developer-feedback), [Journey SLO](../projects/internal-developer-platform/reference/07-slo-capacity.md#journey-slo), `FS-03`, `FS-05` |
+| Capstone | [Identity와 Secret](../projects/internal-developer-platform/reference/06-security-catalog.md#identity와-secret), [Catalog와 Developer Feedback](../projects/internal-developer-platform/reference/06-security-catalog.md#catalog와-developer-feedback), [Journey SLO](../projects/internal-developer-platform/reference/07-slo-capacity.md#journey-slo), `FS-03`, `FS-04`, `FS-05` |
 | 종료 연결 | `EXIT-1`, `EXIT-2`, `EXIT-3` 모두의 공통 운영·evidence 경계 |
 
 ## EXIT-1 — Self-service 서비스 경로 설계
