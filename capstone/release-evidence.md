@@ -11,7 +11,7 @@ Expo SDK / React Native / React:
 app version:
 Android versionCode:
 iOS buildNumber:
-runtimeVersion / update channel:
+runtimeVersion / update channel 또는 명시적 disabled·미검사 상태:
 runtime fingerprint 또는 policy ref:
 build profile / environment name:
 DB schema version:

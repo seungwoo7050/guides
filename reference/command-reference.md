@@ -26,7 +26,7 @@ npx expo start --dev-client
 
 ```sh
 fnm exec --using=24.19.0 npm ci
-fnm exec --using=24.19.0 npm test
+fnm exec --using=24.19.0 npm run test:reference
 ```
 
 ## Stage 04 local fault endpoint
@@ -90,6 +90,8 @@ eas build --platform all --profile production
 cloud service는 선택 사항이다. local native build나 다른 CI를 사용할 수 있다. 어느 경로든 source·profile·toolchain·artifact digest를 기록한다.
 
 ## update
+
+현재 Field Notes reference는 EAS Update를 구성하지 않으며 `eas.json`에도 channel이 없다. 아래는 별도 제품이 `expo-updates`, runtime compatibility와 channel owner를 명시적으로 도입한 뒤에만 사용하는 선택 확장 예다. 이 저장소에서 그대로 실행할 준비 명령이 아니다.
 
 ```sh
 eas update --channel preview --message "검증 설명"

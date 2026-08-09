@@ -58,7 +58,7 @@ production
 - Android `applicationId` / iOS bundle identifier
 - app name/icon과 test/prod 구분 표식
 - backend environment와 secret 주입 owner
-- update channel과 effective `runtimeVersion` policy
+- remote update 사용 여부, 사용한다면 channel owner와 effective `runtimeVersion` policy, 사용하지 않는다면 명시적 비활성화와 `미검사` 근거
 - logging/crash environment와 민감정보 제거
 - distribution 대상과 install 경로
 - signing credential owner, 접근·backup·rotation
@@ -304,7 +304,7 @@ stage-06/
 
 ## 완료 조건
 
-- development·preview·production profile의 identity, backend, update와 signing owner가 분리돼 있다.
+- development·preview·production profile의 identity, backend와 signing owner가 분리돼 있다. remote update를 사용하면 profile별 channel·runtime owner도 분리하고, 사용하지 않으면 설정과 evidence에서 비활성화·`미검사`를 명시한다.
 - CNG, JS bundle, native compile, signed artifact, install과 store processing을 서로 다른 gate로 판정한다.
 - source·lockfile·config·version·runtime과 고유 ref의 Android AAB+APK/Play split, iOS xcarchive+IPA/TestFlight artifact set이 연결된다.
 - installation의 실제 artifact ref·device class·관찰 runtime/policy·launch 결과가 일치하며 known-wrong matrix가 거부된다.

@@ -52,7 +52,7 @@ development   com.example.fieldnotes.dev
 - push credential와 token registry
 - deep/universal link domain·scheme
 - analytics/error environment
-- update channel
+- remote update를 쓰는 경우 update channel, 쓰지 않는 경우 명시적 비활성화 상태
 - local data migration 기대
 
 preview가 production API와 실제 사용자 data를 무심코 사용하지 않게 한다.
@@ -79,7 +79,7 @@ preview가 production API와 실제 사용자 data를 무심코 사용하지 않
 - store 배포용 signing
 - production identifier·environment
 - release logging·privacy 정책
-- 승인된 runtime/update channel
+- 승인된 runtime과, remote update를 쓰는 경우 update channel
 
 profile 이름만 다르고 실제 environment가 섞이지 않도록 generated config를 artifact evidence에 저장한다. secret 값 자체는 저장하지 않는다.
 
@@ -165,7 +165,7 @@ native runtime이 바뀌는 대표 사건:
 → R1 binary에는 method 없음
 ```
 
-runtimeVersion policy와 build fingerprint를 사용하고 preview channel에서 같은 runtime의 update를 먼저 검사한다.
+remote update를 사용하는 제품은 runtimeVersion policy와 build fingerprint를 사용하고 preview channel에서 같은 runtime의 update를 먼저 검사한다. 사용하지 않는 제품은 update 기능을 명시적으로 비활성화하고, channel·publish·delivery를 `미검사`나 성공으로 꾸미지 않는다.
 
 ## update와 store release의 rollback이 다릅니다
 
@@ -337,7 +337,7 @@ artifact·source·test evidence link
 
 ## Stage 06 완료 기준
 
-- dev·preview·production identifier와 backend/update channel이 분리돼 있다.
+- dev·preview·production identifier와 backend가 분리돼 있다. remote update를 사용하면 channel도 분리하고, 사용하지 않으면 명시적으로 비활성화한다.
 - app version, build number/code와 runtimeVersion을 독립적으로 기록한다.
 - signing credential의 owner·recovery·rotation이 문서화돼 있다.
 - source revision부터 Android/iOS artifact digest까지 evidence가 있다.
