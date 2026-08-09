@@ -109,11 +109,18 @@ test("denied and pre-Android-13 not-required remain distinct", async () => {
     canAskAgain: false,
   };
   assert.deepEqual(await legacy.coordinator.register({ requestPermission: true }), {
+    kind: "permission-denied",
+    canAskAgain: false,
+  });
+  assert.deepEqual(legacy.api.calls, ["channel", "permission:get"]);
+
+  const legacyEnabled = registrationFixture({ runtimePermissionRequired: false });
+  assert.deepEqual(await legacyEnabled.coordinator.register({ requestPermission: true }), {
     kind: "token-ready",
     permission: "not-required",
     token: "SECRET_EXPO_PUSH_TOKEN",
   });
-  assert.deepEqual(legacy.api.calls, ["channel", "permission:get", "token"]);
+  assert.deepEqual(legacyEnabled.api.calls, ["channel", "permission:get", "token"]);
 });
 
 test("permission request and token failures preserve the failed stage and safe reason", async () => {

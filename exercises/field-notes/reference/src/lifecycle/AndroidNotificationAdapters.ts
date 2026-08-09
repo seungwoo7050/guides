@@ -39,17 +39,17 @@ export function mapAndroidNotificationPermission(
   response: ExpoNotificationPermissionResponse,
   runtimePermissionRequired: boolean,
 ): NotificationPermissionState {
-  if (!runtimePermissionRequired) {
-    return { kind: "not-required" };
+  if (response.status === "granted" && response.granted) {
+    return runtimePermissionRequired ? { kind: "granted" } : { kind: "not-required" };
   }
-  if (response.status === "undetermined") {
+  if (runtimePermissionRequired && response.status === "undetermined") {
     return { kind: "not-determined" };
   }
-  if (response.status === "denied") {
-    return { kind: "denied", canAskAgain: response.canAskAgain };
-  }
-  if (response.status === "granted" && response.granted) {
-    return { kind: "granted" };
+  if (response.status === "denied" || !response.granted) {
+    return {
+      kind: "denied",
+      canAskAgain: runtimePermissionRequired && response.canAskAgain,
+    };
   }
   return { kind: "restricted", reason: "inconsistent-permission-response" };
 }
@@ -129,7 +129,7 @@ export class ExpoAndroidNotificationPermissionAdapter
 
   async request(): Promise<NotificationPermissionState> {
     if (!this.#runtimePermissionRequired) {
-      return { kind: "not-required" };
+      return this.current();
     }
     try {
       return mapAndroidNotificationPermission(
