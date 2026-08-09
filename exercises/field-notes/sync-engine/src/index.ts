@@ -1,0 +1,34 @@
+export { FixedSyncBudget } from "./budget.ts";
+export { FaultServerTransport } from "./fault-server-transport.ts";
+export {
+  InMemorySyncRepository,
+  SequentialCommandIdGenerator,
+} from "./in-memory-repository.ts";
+export { parseTransportResponse } from "./response-parser.ts";
+export { BoundedSyncWorker } from "./worker.ts";
+export type {
+  CommandIdGenerator,
+  SyncBudget,
+  SyncClock,
+  SyncRepository,
+  SyncTransport,
+} from "./ports.ts";
+export type {
+  AttemptedCommand,
+  CheckpointOutcome,
+  CheckpointResult,
+  ClaimedCommand,
+  ConflictResolution,
+  ConflictResolutionResult,
+  DurableCommand,
+  DurableCommandState,
+  DurableConflict,
+  LocalRecord,
+  ParsedTransportResult,
+  RecordCommand,
+  RecordPayload,
+  RemoteRecord,
+  RepositorySnapshot,
+  SyncTrigger,
+  WorkerRunResult,
+} from "./types.ts";
