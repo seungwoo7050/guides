@@ -233,27 +233,63 @@ describe("Stage 04 production SQLite SyncRepository", () => {
   });
 
   it("persists 401 blocking and resumes the same attempted command only after explicit auth action", async () => {
-    const harness = await createHarness();
+    const harness = await createHarness({ maxCommands: 2 });
     const saved = await updateRecord(harness, "forest-edge", "auth guarded");
+    const later = await updateRecord(harness, "harbor-light", "must remain pending");
     harness.server.inject({ kind: "unauthorized" }, {
       commandId: saved.command.commandId,
     });
-    await harness.worker("auth-block");
+    const blockedRun = await harness.worker("auth-block");
+    expect(blockedRun.stopped).toBe("auth-blocked");
     const blocked = await harness.syncRepository.getCommand(saved.command.commandId);
     expect(blocked?.state.kind).toBe("blocked_auth");
     if (blocked?.state.kind !== "blocked_auth") throw new Error("auth state missing");
     expect(blocked.state.attempted).toEqual(saved.command);
-    expect(await harness.syncRepository.claimNext({
-      workerId: "must-not-auto-resume",
-      now: 1_000,
-      leaseDurationMs: 100,
-    })).toBeNull();
+    expect((await harness.syncRepository.getCommand(later.command.commandId))?.state.kind)
+      .toBe("pending");
+    expect(harness.server.getApplyCount(later.command.commandId)).toBe(0);
+    expect((await harness.syncRepository.getCommand(saved.command.commandId))?.state.kind)
+      .toBe("blocked_auth");
+    const stillBlocked = await harness.worker("must-not-auto-resume");
+    expect(stillBlocked).toMatchObject({ claimed: 0, stopped: "idle" });
+    expect((await harness.syncRepository.getCommand(later.command.commandId))?.state.kind)
+      .toBe("pending");
+    expect(harness.server.getApplyCount(later.command.commandId)).toBe(0);
 
     expect(await harness.syncRepository.resumeBlockedAuth(harness.manualClock.now())).toBe(1);
     await harness.worker("auth-resumed");
     expect((await harness.syncRepository.getCommand(saved.command.commandId))?.state.kind)
       .toBe("completed");
+    expect((await harness.syncRepository.getCommand(later.command.commandId))?.state.kind)
+      .toBe("completed");
     expect(harness.server.getApplyCount(saved.command.commandId)).toBe(1);
+    harness.database.close();
+  });
+
+  it("reconciles an expired lease beyond maxAttempts without another transport send", async () => {
+    let failCheckpoint = true;
+    const harness = await createHarness({
+      maxAttempts: 1,
+      beforeCheckpointCommit: async () => {
+        if (failCheckpoint) {
+          failCheckpoint = false;
+          throw new Error("simulated process death");
+        }
+      },
+    });
+    const saved = await updateRecord(harness, "forest-edge", "attempt ceiling crash");
+    expect((await harness.worker("attempt-one")).stopped).toBe("checkpoint-failed");
+    expect(harness.server.getApplyCount(saved.command.commandId)).toBe(1);
+
+    harness.manualClock.advanceBy(100);
+    const recovered = await harness.worker("recovered-over-ceiling");
+    expect(recovered.checkpoints[0]).toMatchObject({ state: "permanent" });
+    expect(harness.server.getApplyCount(saved.command.commandId)).toBe(1);
+    expect((await harness.syncRepository.getCommand(saved.command.commandId))?.state)
+      .toMatchObject({
+        kind: "permanent",
+        reason: "attempt-exhausted:expired-lease-recovered-without-resend",
+      });
     harness.database.close();
   });
 
@@ -303,6 +339,28 @@ describe("Stage 04 production SQLite SyncRepository", () => {
       leaseDurationMs: 100,
     })).toBeNull();
     expect((await harness.repository.get("ridge-marker"))?.title).toBe("terminal policy");
+    harness.database.close();
+  });
+
+  it("keeps historical permanent evidence without letting it dominate a newer successful revision", async () => {
+    const harness = await createHarness();
+    const failed = await updateRecord(harness, "forest-edge", "old rejected edit");
+    harness.server.inject({ kind: "permanent-validation", reason: "old-policy" }, {
+      commandId: failed.command.commandId,
+    });
+    await harness.worker("old-permanent");
+    expect((await harness.repository.get("forest-edge"))?.syncState).toBe("failed");
+
+    const newer = await updateRecord(harness, "forest-edge", "new accepted edit");
+    expect(newer.record.syncState).toBe("pending");
+    await harness.worker("new-success");
+    expect(await harness.repository.get("forest-edge")).toMatchObject({
+      title: "new accepted edit",
+      syncState: "synced",
+      remoteVersion: 1,
+    });
+    expect((await harness.syncRepository.getCommand(failed.command.commandId))?.state.kind)
+      .toBe("permanent");
     harness.database.close();
   });
 

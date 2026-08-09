@@ -67,6 +67,12 @@ describe("Stage 04 production fetch transport", () => {
       .toThrow("http or https");
     expect(() => configuredSyncEndpoint("https://user:secret@example.test/commands"))
       .toThrow("must not embed credentials");
+    expect(() => configuredSyncEndpoint("https://example.com/commands"))
+      .toThrow("loopback or a reserved HTTPS .test host");
+    expect(() => configuredSyncEndpoint("http://example.test/commands"))
+      .toThrow("loopback or a reserved HTTPS .test host");
+    expect(configuredSyncEndpoint("https://example.test/commands"))
+      .toBe("https://example.test/commands");
   });
 
   it("preserves caller abort and clears its composed request", async () => {
@@ -200,6 +206,20 @@ describe("Stage 04 production fetch transport", () => {
       syncState: "retry-wait",
     });
     database.close();
+    jest.useRealTimers();
+  });
+
+  it("settles its deadline even when an injected fetch ignores AbortSignal", async () => {
+    jest.useFakeTimers();
+    const ignoresAbort: FetchLike = async () => new Promise(() => undefined);
+    const transport = new FetchSyncTransport({
+      fetch: ignoresAbort,
+      deadlineMs: 25,
+    });
+    const pending = transport.send(COMMAND, new AbortController().signal);
+    const rejected = expect(pending).rejects.toMatchObject({ name: "AbortError" });
+    await jest.advanceTimersByTimeAsync(25);
+    await rejected;
     jest.useRealTimers();
   });
 

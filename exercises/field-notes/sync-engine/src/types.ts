@@ -143,6 +143,6 @@ export type WorkerRunResult = {
   workerId: string;
   claimed: number;
   checkpoints: CheckpointResult[];
-  stopped: "budget" | "idle" | "aborted" | "checkpoint-failed";
+  stopped: "budget" | "idle" | "aborted" | "checkpoint-failed" | "auth-blocked";
   checkpointError?: string;
 };

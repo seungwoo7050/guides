@@ -104,7 +104,12 @@ export class BoundedSyncWorker {
       result.claimed += 1;
 
       let outcome: CheckpointOutcome;
-      try {
+      if (claim.attempt > this.#budget.maxAttempts()) {
+        outcome = {
+          kind: "permanent",
+          reason: "attempt-exhausted:expired-lease-recovered-without-resend",
+        };
+      } else try {
         const response = await this.#transport.send(claim.attempted, signal);
         const parsed = parseTransportResponse(response, {
           attempted: claim.attempted,
@@ -137,6 +142,10 @@ export class BoundedSyncWorker {
       try {
         const checkpoint = await this.#repository.checkpoint({ claim, outcome });
         result.checkpoints.push(checkpoint);
+        if (outcome.kind === "blocked_auth") {
+          result.stopped = "auth-blocked";
+          return result;
+        }
       } catch (error: unknown) {
         result.stopped = "checkpoint-failed";
         result.checkpointError = error instanceof Error ? error.message : "unknown checkpoint error";

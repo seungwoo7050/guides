@@ -49,6 +49,16 @@ export function configuredSyncEndpoint(
   if (url.username !== "" || url.password !== "") {
     throw new Error("sync endpoint must not embed credentials");
   }
+  const isLoopback =
+    url.hostname === "localhost" ||
+    url.hostname === "127.0.0.1" ||
+    url.hostname === "[::1]" ||
+    url.hostname === "10.0.2.2";
+  const isSecureReservedTest =
+    url.protocol === "https:" && url.hostname.endsWith(".test");
+  if (!(isLoopback || isSecureReservedTest)) {
+    throw new Error("reference sync endpoint must be loopback or a reserved HTTPS .test host");
+  }
   return url.toString();
 }
 
@@ -102,12 +112,15 @@ export class FetchSyncTransport implements SyncTransport {
       if (credential !== null && credential.trim() !== "") {
         headers.authorization = `Bearer ${credential}`;
       }
-      const response = await this.#fetch(this.#endpoint, {
-        method: "POST",
-        headers,
-        body: JSON.stringify(command),
-        signal: requestController.signal,
-      });
+      const response = await awaitWithAbort(
+        this.#fetch(this.#endpoint, {
+          method: "POST",
+          headers,
+          body: JSON.stringify(command),
+          signal: requestController.signal,
+        }),
+        requestController.signal,
+      );
       const declaredLength = Number(response.headers?.get("content-length"));
       if (
         Number.isFinite(declaredLength) &&

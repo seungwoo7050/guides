@@ -454,6 +454,9 @@ export class SQLiteSyncRepositoryAdapter implements SyncRepository {
            SELECT 1 FROM conflicts AS unresolved
            WHERE unresolved.record_id = candidate.record_id
              AND unresolved.resolution_kind IS NULL
+         ) AND NOT EXISTS (
+           SELECT 1 FROM outbox AS auth_block
+           WHERE auth_block.state = 'blocked-auth'
          )
          ORDER BY candidate.sequence, candidate.command_id
          LIMIT 1`,
@@ -746,17 +749,30 @@ export class SQLiteSyncRepositoryAdapter implements SyncRepository {
     txn: Pick<SQLiteDatabase, "getAllAsync" | "runAsync">,
     recordId: string,
   ): Promise<void> {
-    const rows = await txn.getAllAsync<{ state: string }>(
-      `SELECT state FROM outbox
+    const rows = await txn.getAllAsync<{ state: string; local_revision: number }>(
+      `SELECT state, local_revision FROM outbox
        WHERE record_id = ? AND state != 'applied'`,
       [recordId],
     );
+    const record = await txn.getAllAsync<{ local_revision: number }>(
+      "SELECT local_revision FROM records WHERE id = ?",
+      [recordId],
+    );
+    const currentRevision = record[0]?.local_revision;
+    if (currentRevision === undefined || !Number.isInteger(currentRevision)) {
+      throw new Error("record revision is missing");
+    }
     const states = rows.map((row) => row.state);
+    const currentPermanentFailure = rows.some(
+      (row) =>
+        row.state === "permanent-failure" &&
+        row.local_revision >= currentRevision,
+    );
     const state = states.includes("conflict")
       ? "conflict"
       : states.includes("blocked-auth")
         ? "blocked-auth"
-        : states.includes("permanent-failure")
+        : currentPermanentFailure
           ? "failed"
           : states.includes("claimed")
             ? "syncing"
@@ -792,6 +808,12 @@ export class SQLiteSyncRepositoryAdapter implements SyncRepository {
     conflictId: string,
     resolution: ConflictResolution,
   ): Promise<ConflictResolutionResult> {
+    const validatedMergePayload = resolution.kind === "merge"
+      ? parsePayload(JSON.stringify(resolution.payload), "merge resolution")
+      : null;
+    if (resolution.kind === "merge" && validatedMergePayload === null) {
+      throw new Error("merge resolution requires a payload");
+    }
     const db = await this.#db();
     let result: ConflictResolutionResult | null = null;
     await db.withExclusiveTransactionAsync(async (txn) => {
@@ -857,7 +879,7 @@ export class SQLiteSyncRepositoryAdapter implements SyncRepository {
           throw new Error(`resolution command already exists: ${resolution.commandId}`);
         }
         const payload = resolution.kind === "merge"
-          ? clone(resolution.payload)
+          ? clone(validatedMergePayload)
           : clone(payloadFromRecord(record));
         const localRevision = resolution.kind === "merge"
           ? record.local_revision + 1
