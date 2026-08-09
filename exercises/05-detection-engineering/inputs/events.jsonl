@@ -1,0 +1,8 @@
+{"event_type": "credential.issued", "event_time": "2026-08-08T10:00:00Z", "ingest_time": "2026-08-08T10:00:01Z", "credential_id": "cred-201", "service_id": "report-worker", "job_id": "job-81", "expires_at": "2026-08-08T10:20:00Z"}
+{"event_type": "job.created", "event_time": "2026-08-08T10:00:02Z", "ingest_time": "2026-08-08T10:00:03Z", "job_id": "job-81", "user_id": "usr-17", "report_id": "rpt-17-a"}
+{"event_type": "object.read", "event_time": "2026-08-08T10:00:05Z", "ingest_time": "2026-08-08T10:00:07Z", "service_id": "report-worker", "credential_id": "cred-201", "object_key": "tenant-17/source/rpt-17-a.json", "result": "allowed"}
+{"event_type": "object.write", "event_time": "2026-08-08T10:00:12Z", "ingest_time": "2026-08-08T10:00:14Z", "service_id": "report-worker", "credential_id": "cred-201", "object_key": "tenant-17/output/rpt-17-a.pdf", "result": "allowed"}
+{"event_type": "object.read", "event_time": "2026-08-08T10:21:13Z", "ingest_time": "2026-08-08T10:21:15Z", "service_id": "report-worker", "credential_id": "cred-201", "object_key": "tenant-42/source/rpt-42-b.json", "result": "allowed"}
+{"event_type": "credential.denied", "event_time": "2026-08-08T10:21:16Z", "ingest_time": "2026-08-08T10:21:18Z", "service_id": "report-worker", "reason": "requested scope is not a job prefix"}
+{"event_type": "release.changed", "event_time": "2026-08-08T10:19:30Z", "ingest_time": "2026-08-08T10:22:00Z", "service": "report-worker", "image_tag": "stable", "operator": "ci-release"}
+{"event_type": "object.read", "event_time": "2026-08-08T10:21:13Z", "ingest_time": "2026-08-08T10:23:30Z", "service_id": "report-worker", "credential_id": "cred-201", "object_key": "tenant-42/source/rpt-42-b.json", "result": "allowed", "delivery_duplicate": true}

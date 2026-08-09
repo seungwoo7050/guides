@@ -1,0 +1,49 @@
+{
+  "schema_version": 1,
+  "threats": [
+    {
+      "id": "THR-001",
+      "actor": "authenticated tenant user",
+      "precondition": "owns one report and can submit export jobs",
+      "boundary": "report API to object store",
+      "undesired_state": "reads or signs URL for another tenant's report",
+      "affected_assets": [
+        "report object",
+        "tenant boundary"
+      ]
+    },
+    {
+      "id": "THR-002",
+      "actor": "compromised report worker",
+      "precondition": "worker credential is issued",
+      "boundary": "workload identity to object store",
+      "undesired_state": "lists or modifies objects outside current job prefix",
+      "affected_assets": [
+        "all report objects",
+        "worker credential"
+      ]
+    },
+    {
+      "id": "THR-003",
+      "actor": "compromised build job",
+      "precondition": "can request packages through mirror",
+      "boundary": "build environment to package mirror",
+      "undesired_state": "receives mutable or unverified package under trusted name",
+      "affected_assets": [
+        "release artifact",
+        "provenance"
+      ]
+    },
+    {
+      "id": "THR-004",
+      "actor": "operator with audit access",
+      "precondition": "queries event store",
+      "boundary": "audit sink export",
+      "undesired_state": "cannot attribute sensitive object read to effective actor and delegated service",
+      "affected_assets": [
+        "accountability",
+        "incident scope"
+      ]
+    }
+  ]
+}

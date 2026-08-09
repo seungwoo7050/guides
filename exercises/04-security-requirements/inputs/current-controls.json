@@ -1,0 +1,33 @@
+{
+  "schema_version": 1,
+  "controls": [
+    {
+      "id": "CTL-001",
+      "description": "report API queries metadata by report_id and owner_id",
+      "owner": "report-api",
+      "evidence": "integration test snapshot",
+      "age_days": 18
+    },
+    {
+      "id": "CTL-002",
+      "description": "worker uses one shared bucket credential with write permission",
+      "owner": "platform-team",
+      "evidence": "identity policy snapshot",
+      "age_days": 7
+    },
+    {
+      "id": "CTL-003",
+      "description": "package mirror caches by package name and version",
+      "owner": "build-team",
+      "evidence": "configuration excerpt",
+      "age_days": 40
+    },
+    {
+      "id": "CTL-004",
+      "description": "object read events include service identity but delegated user is optional",
+      "owner": "audit-team",
+      "evidence": "event dictionary",
+      "age_days": 3
+    }
+  ]
+}
