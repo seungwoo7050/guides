@@ -1,0 +1,37 @@
+{
+  "schema_version": 1,
+  "id": "03-triangle-coverage",
+  "title": "Triangle Coverage",
+  "related_docs": [
+    "docs/02-software-rasterization/06-triangle-setup-coverage-and-fill-rules.md"
+  ],
+  "required_artifacts": [
+    "coverage_images",
+    "primitive_id_maps",
+    "setup-trace.json",
+    "coverage-counts.json",
+    "mutation-report.json"
+  ],
+  "invariants": [
+    "shared_edge_has_no_gap",
+    "shared_edge_has_no_overlap",
+    "degenerate_triangle_writes_no_samples",
+    "bounding_box_never_writes_outside_framebuffer",
+    "scissor_is_respected",
+    "winding_normalization_preserves_coverage_set"
+  ],
+  "known_bad_mutations": [
+    "make_every_edge_inclusive",
+    "make_every_edge_exclusive",
+    "truncate_negative_bounding_box",
+    "keep_old_front_face_after_y_flip",
+    "divide_by_zero_for_degenerate_area"
+  ],
+  "completion_evidence": [
+    "fixture_images",
+    "sample_count_assertions",
+    "edge_and_top_left_trace",
+    "at_least_three_mutation_failures",
+    "quantization_policy"
+  ]
+}

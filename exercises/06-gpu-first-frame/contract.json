@@ -1,0 +1,46 @@
+{
+  "schema_version": 1,
+  "id": "06-gpu-first-frame",
+  "title": "GPU First Frame",
+  "related_docs": [
+    "docs/04-gpu-rendering/14-gpu-execution-and-command-model.md",
+    "docs/04-gpu-rendering/15-resources-layouts-transfers-and-formats.md",
+    "docs/04-gpu-rendering/16-shaders-pipelines-and-render-passes.md",
+    "docs/04-gpu-rendering/17-frame-lifecycle-synchronization-and-resize.md"
+  ],
+  "required_artifacts": [
+    "environment.json",
+    "shader-manifests",
+    "resources.json",
+    "pipelines.json",
+    "frame-trace.json",
+    "screenshot",
+    "resize-trace.json",
+    "validation.log"
+  ],
+  "invariants": [
+    "shader_binary_matches_manifest",
+    "vertex_layout_matches_shader_interface",
+    "upload_resources_live_until_copy_completion",
+    "pipeline_matches_pass_attachments",
+    "frame_slot_reuse_waits_for_completion",
+    "zero_extent_does_not_create_invalid_target",
+    "old_resize_generation_retires_after_last_use"
+  ],
+  "known_bad_mutations": [
+    "wrong_vertex_stride",
+    "wrong_shader_binding_slot",
+    "overwrite_uniform_slot_in_flight",
+    "destroy_staging_after_submit_without_completion",
+    "mismatch_depth_format",
+    "reuse_old_extent_after_resize"
+  ],
+  "completion_evidence": [
+    "incremental_stage_screenshots",
+    "resource_pipeline_and_frame_trace",
+    "validation_baseline",
+    "resize_minimize_restore_log",
+    "at_least_three_mutation_failures",
+    "unsupported_environment_note"
+  ]
+}

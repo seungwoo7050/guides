@@ -1,0 +1,40 @@
+{
+  "schema_version": 1,
+  "id": "02-sampling-and-color",
+  "title": "Sampling and Color",
+  "related_docs": [
+    "docs/01-visual-model/04-images-color-and-alpha.md",
+    "docs/01-visual-model/05-sampling-filtering-and-aliasing.md"
+  ],
+  "required_artifacts": [
+    "samples.json",
+    "address-grid.ppm",
+    "bilinear-linear.ppm",
+    "bilinear-wrong-srgb.ppm",
+    "alpha-straight.ppm",
+    "alpha-premultiplied.ppm",
+    "report.json"
+  ],
+  "invariants": [
+    "texel_center_mapping_is_explicit",
+    "address_modes_handle_negative_and_upper_boundary",
+    "filtering_occurs_in_linear_rgb",
+    "color_and_data_textures_use_distinct_encoding",
+    "alpha_representation_matches_blend_equation",
+    "mip_chain_reaches_one_by_one"
+  ],
+  "known_bad_mutations": [
+    "truncate_u_times_width",
+    "use_language_remainder_for_negative_repeat",
+    "average_srgb_encoded_bytes",
+    "use_straight_factors_for_premultiplied_source",
+    "decode_normal_map_as_srgb",
+    "drop_odd_last_row_or_column"
+  ],
+  "completion_evidence": [
+    "numeric_sample_trace",
+    "ppm_diff_report",
+    "alpha_representation_comparison",
+    "at_least_three_mutation_failures"
+  ]
+}

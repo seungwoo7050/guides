@@ -1,0 +1,42 @@
+{
+  "schema_version": 1,
+  "id": "04-perspective-depth-blend",
+  "title": "Perspective, Depth, and Blend",
+  "related_docs": [
+    "docs/02-software-rasterization/07-interpolation-perspective-and-derivatives.md",
+    "docs/02-software-rasterization/08-depth-culling-blending-and-transparency.md"
+  ],
+  "required_artifacts": [
+    "perspective-correct.ppm",
+    "affine-mutation.ppm",
+    "depth-artifact",
+    "primitive-id.ppm",
+    "transparent-order-a.ppm",
+    "transparent-order-b.ppm",
+    "pixel-traces",
+    "report.json"
+  ],
+  "invariants": [
+    "perspective_uv_is_continuous_across_quad_diagonal",
+    "opaque_visibility_is_draw_order_invariant",
+    "depth_is_finite_and_in_zero_one",
+    "flat_ids_are_not_interpolated",
+    "blend_occurs_in_linear_color",
+    "alpha_representation_matches_state"
+  ],
+  "known_bad_mutations": [
+    "use_affine_uv",
+    "store_view_space_z_as_depth",
+    "reverse_depth_compare_without_projection_change",
+    "enable_depth_write_for_blended_surface",
+    "blend_srgb_encoded_values",
+    "mismatch_alpha_representation_and_factors"
+  ],
+  "completion_evidence": [
+    "correct_vs_affine_diff",
+    "opaque_order_metamorphic_test",
+    "transparent_order_report",
+    "at_least_four_mutation_failures",
+    "documented_float_tolerance"
+  ]
+}

@@ -1,0 +1,38 @@
+{
+  "schema_version": 1,
+  "id": "01-transform-trace",
+  "title": "Transform Trace",
+  "related_docs": [
+    "docs/01-visual-model/02-coordinate-spaces-and-transforms.md",
+    "docs/01-visual-model/03-camera-projection-and-clipping.md"
+  ],
+  "required_artifacts": [
+    "conventions.json",
+    "case-identity.json",
+    "case-nonuniform.json",
+    "case-hierarchy.json",
+    "case-near-clip.json",
+    "rejected.json"
+  ],
+  "invariants": [
+    "identity_preserves_position",
+    "direction_ignores_translation",
+    "normal_preserves_tangent_orthogonality",
+    "hierarchy_uses_parent_world_times_child_local",
+    "clipped_vertices_satisfy_all_clip_planes",
+    "valid_viewport_values_are_finite"
+  ],
+  "known_bad_mutations": [
+    "swap_projection_and_model_order",
+    "discard_clip_w_before_divide",
+    "transform_normal_with_model_matrix",
+    "apply_viewport_y_flip_twice",
+    "discard_triangle_when_one_vertex_is_outside"
+  ],
+  "completion_evidence": [
+    "artifact_manifest",
+    "automatic_case_results",
+    "at_least_two_mutation_failures",
+    "convention_mapping_note"
+  ]
+}

@@ -1,0 +1,49 @@
+{
+  "schema_version": 1,
+  "id": "08-renderer-capstone",
+  "title": "Renderer Capstone",
+  "related_docs": [
+    "docs/02-software-rasterization/09-software-rasterizer-capstone.md",
+    "docs/04-gpu-rendering/20-gpu-renderer-capstone.md"
+  ],
+  "required_artifacts": [
+    "conventions.json",
+    "scene_fixtures",
+    "software_artifacts",
+    "gpu_artifacts",
+    "comparison_reports",
+    "correctness.md",
+    "debugging.md",
+    "performance.md"
+  ],
+  "invariants": [
+    "software_and_gpu_consume_same_scene_contract",
+    "comparison_starts_with_structure_and_coverage",
+    "resource_reuse_is_completion_safe",
+    "resize_and_reload_use_generations",
+    "validation_fatal_count_is_zero",
+    "known_bad_suite_is_rejected",
+    "performance_report_preserves_correctness_hash"
+  ],
+  "known_bad_mutations": [
+    "swap_matrix_order",
+    "skip_clipping",
+    "break_top_left_rule",
+    "use_affine_uv",
+    "skip_srgb_decode",
+    "reverse_depth_convention",
+    "mismatch_alpha_blend",
+    "mismatch_vertex_layout",
+    "overwrite_frame_slot",
+    "use_stale_resize_attachment"
+  ],
+  "completion_evidence": [
+    "all_required_artifacts",
+    "first_difference_explanation_per_case",
+    "validation_warning_baseline",
+    "safe_resize_reload_shutdown_trace",
+    "at_least_six_mutation_failures",
+    "three_workload_performance_report",
+    "next_open_source_entry_plan"
+  ]
+}

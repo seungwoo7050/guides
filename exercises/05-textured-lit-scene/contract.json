@@ -1,0 +1,47 @@
+{
+  "schema_version": 1,
+  "id": "05-textured-lit-scene",
+  "title": "Textured Lit Scene",
+  "related_docs": [
+    "docs/03-lighting-assets-scene/10-normals-lighting-and-materials.md",
+    "docs/03-lighting-assets-scene/11-textures-mipmaps-and-normal-mapping.md",
+    "docs/03-lighting-assets-scene/12-meshes-scenes-and-asset-contracts.md",
+    "docs/03-lighting-assets-scene/13-visibility-spatial-organization-and-lod.md"
+  ],
+  "required_artifacts": [
+    "final.ppm",
+    "base-color.ppm",
+    "normal-world.ppm",
+    "ndotl.ppm",
+    "mip-level.ppm",
+    "object-id.ppm",
+    "asset-validation.json",
+    "culling-lod.json",
+    "frame.json"
+  ],
+  "invariants": [
+    "indices_and_attribute_counts_are_valid",
+    "scene_hierarchy_is_acyclic",
+    "world_bounds_conservatively_contain_geometry",
+    "normals_are_valid_after_nonuniform_scale",
+    "normal_maps_are_data_textures",
+    "lighting_uses_linear_rgb",
+    "lod_hysteresis_prevents_boundary_oscillation"
+  ],
+  "known_bad_mutations": [
+    "deduplicate_by_position_only",
+    "transform_normal_with_model_matrix",
+    "mark_normal_map_as_srgb",
+    "average_encoded_color_for_mips",
+    "transform_only_aabb_min_and_max",
+    "accept_scene_cycle",
+    "remove_lod_hysteresis"
+  ],
+  "completion_evidence": [
+    "final_and_debug_attachments",
+    "asset_validation_report",
+    "culling_and_lod_counts",
+    "at_least_four_mutation_failures",
+    "external_asset_provenance_if_used"
+  ]
+}

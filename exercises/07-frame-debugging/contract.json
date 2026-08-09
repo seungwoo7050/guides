@@ -1,0 +1,45 @@
+{
+  "schema_version": 1,
+  "id": "07-frame-debugging",
+  "title": "Frame Debugging",
+  "related_docs": [
+    "docs/04-gpu-rendering/18-debugging-validation-and-frame-capture.md",
+    "docs/04-gpu-rendering/19-performance-profiling-and-frame-budget.md"
+  ],
+  "required_artifacts": [
+    "six_case_reports",
+    "environment_manifests",
+    "frame_traces",
+    "validation_logs",
+    "capture_metadata",
+    "before_after_images",
+    "diff_reports",
+    "timing_report"
+  ],
+  "invariants": [
+    "each_report_identifies_last_good_and_first_bad_stage",
+    "validation_and_semantic_failures_are_distinguished",
+    "capture_labels_map_to_cpu_trace",
+    "regression_oracle_rejects_original_bug",
+    "cpu_and_gpu_timing_are_distinct"
+  ],
+  "known_bad_mutations": [
+    "wrong_matrix_order",
+    "wrong_vertex_layout",
+    "wrong_shader_binding",
+    "reverse_front_face",
+    "mismatch_depth_clear_compare",
+    "swap_srgb_and_data_format",
+    "overwrite_frame_slot",
+    "use_stale_resize_attachment",
+    "mismatch_blend_factors",
+    "readback_before_completion"
+  ],
+  "completion_evidence": [
+    "at_least_six_bug_reports",
+    "at_least_two_semantic_errors_not_caught_by_validation",
+    "capture_to_trace_mapping",
+    "before_after_regression_diff",
+    "one_profiled_bottleneck_hypothesis"
+  ]
+}

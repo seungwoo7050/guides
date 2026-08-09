@@ -1,0 +1,11 @@
+.guide/
+build/
+out/
+*.log
+*.ppm
+*.pgm
+*.raw
+*.spv
+*.dxil
+*.metallib
+.DS_Store
