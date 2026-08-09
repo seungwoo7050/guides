@@ -1,0 +1,49 @@
+{
+  "schema_version": 1,
+  "snapshot_time": "2026-08-06T09:00:00Z",
+  "namespaces": [
+    {
+      "name": "ledgerlab-internal",
+      "upstream": "internal-publisher",
+      "immutable_versions": true,
+      "publisher_id_required": true,
+      "cache_key": [
+        "namespace",
+        "name",
+        "version",
+        "content_digest"
+      ]
+    },
+    {
+      "name": "public-cache",
+      "upstream": "public-index",
+      "immutable_versions": false,
+      "publisher_id_required": false,
+      "cache_key": [
+        "name",
+        "version"
+      ]
+    }
+  ],
+  "resolution_order": [
+    "ledgerlab-internal",
+    "public-cache"
+  ],
+  "collision_behavior": "first successful match",
+  "build_client_request_fields": [
+    "name",
+    "version"
+  ],
+  "response_evidence_fields": [
+    "resolved_namespace",
+    "name",
+    "version",
+    "content_digest",
+    "cache_status"
+  ],
+  "not_enforced": [
+    "expected namespace in build lock entry",
+    "expected content digest in build request"
+  ],
+  "retention_days": 30
+}

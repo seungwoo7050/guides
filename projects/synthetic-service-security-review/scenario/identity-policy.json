@@ -1,0 +1,109 @@
+{
+  "schema_version": 1,
+  "snapshot_time": "2026-08-07T12:00:00Z",
+  "environment": "staging-synthetic",
+  "identities": [
+    {
+      "id": "id-gateway",
+      "type": "workload",
+      "issued_by": "workload-broker",
+      "max_ttl_minutes": 60,
+      "can_impersonate": false
+    },
+    {
+      "id": "id-account-api",
+      "type": "workload",
+      "issued_by": "workload-broker",
+      "max_ttl_minutes": 60,
+      "can_impersonate": false
+    },
+    {
+      "id": "id-report-worker",
+      "type": "workload",
+      "issued_by": "job-credential-broker",
+      "max_ttl_minutes": 30,
+      "can_impersonate": false
+    },
+    {
+      "id": "id-ci-release",
+      "type": "service-account",
+      "issued_by": "ci-oidc",
+      "max_ttl_minutes": 15,
+      "can_impersonate": false
+    }
+  ],
+  "policies": [
+    {
+      "policy_id": "POL-001",
+      "subject": "id-gateway",
+      "resource": "account-api/*",
+      "actions": [
+        "invoke"
+      ],
+      "condition": "delegated_user is present"
+    },
+    {
+      "policy_id": "POL-002",
+      "subject": "id-account-api",
+      "resource": "account-db/staging-synthetic/*",
+      "actions": [
+        "read",
+        "write"
+      ],
+      "condition": "application query authorization"
+    },
+    {
+      "policy_id": "POL-003",
+      "subject": "id-report-worker",
+      "resource": "object-store/ledgerlab-reports/*",
+      "actions": [
+        "read",
+        "write",
+        "list"
+      ],
+      "condition": "credential.environment == staging-synthetic"
+    },
+    {
+      "policy_id": "POL-004",
+      "subject": "id-report-worker",
+      "resource": "account-api/internal/report-data",
+      "actions": [
+        "invoke"
+      ],
+      "condition": "job_id claim is present"
+    },
+    {
+      "policy_id": "POL-005",
+      "subject": "id-ci-release",
+      "resource": "registry/ledgerlab/report-worker/*",
+      "actions": [
+        "push",
+        "retag"
+      ],
+      "condition": "repository == approved repository"
+    },
+    {
+      "policy_id": "POL-006",
+      "subject": "id-ci-release",
+      "resource": "deployer/staging-synthetic/report-worker",
+      "actions": [
+        "deploy"
+      ],
+      "condition": "environment == staging-synthetic"
+    }
+  ],
+  "broker_claims": [
+    "credential_id",
+    "service_id",
+    "environment",
+    "issued_at",
+    "expires_at",
+    "job_id"
+  ],
+  "not_in_snapshot": [
+    "tenant_id",
+    "object_prefix",
+    "artifact_digest binding",
+    "delegated_user propagation to object proxy"
+  ]
+}

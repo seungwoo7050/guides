@@ -1,0 +1,47 @@
+{
+  "schema_version": 2,
+  "findings": [
+    {
+      "id": "FND-TODO",
+      "candidate_id": "CAND-001",
+      "title": "TODO",
+      "validation_status": "unknown",
+      "treatment": null,
+      "lifecycle_status": "open",
+      "duplicate_of": null,
+      "asset": "TODO",
+      "preconditions": [
+        "TODO"
+      ],
+      "evidence": [
+        {
+          "id": "TODO",
+          "source": "TODO",
+          "observation": "TODO",
+          "supports": "TODO"
+        }
+      ],
+      "impact": "TODO",
+      "limitations": [
+        "TODO"
+      ],
+      "unknowns": [
+        "TODO"
+      ],
+      "next_safe_evidence": "TODO",
+      "reopen_trigger": "TODO",
+      "trace": {
+        "threat_ids": [],
+        "requirement_ids": [],
+        "test_ids": [],
+        "patch_ids": [],
+        "detection_ids": []
+      },
+      "severity": {
+        "rating": "unrated",
+        "rationale": "TODO"
+      },
+      "confidence": "low"
+    }
+  ]
+}

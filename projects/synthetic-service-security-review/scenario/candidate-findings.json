@@ -1,0 +1,117 @@
+{
+  "schema_version": 1,
+  "as_of": "2026-08-09T00:00:00Z",
+  "candidates": [
+    {
+      "id": "CAND-001",
+      "title": "download URL route may omit report owner authorization",
+      "source": "source-review",
+      "claim": "인증된 사용자가 다른 사용자의 completed report ID를 알면 signed URL을 받을 수 있다.",
+      "affected_assets": [
+        "AST-003"
+      ],
+      "evidence_refs": [
+        "route-and-authorization-notes.md",
+        "OBS-001",
+        "OBS-002"
+      ],
+      "safe_validation": "synthetic users and synthetic reports only"
+    },
+    {
+      "id": "CAND-002",
+      "title": "worker credential may authorize cross-job object access",
+      "source": "identity-policy-review",
+      "claim": "한 job의 worker credential이 다른 tenant·job prefix의 object를 읽거나 쓸 수 있다.",
+      "affected_assets": [
+        "AST-003",
+        "AST-004"
+      ],
+      "evidence_refs": [
+        "identity-policy.json",
+        "OBS-003",
+        "OBS-004",
+        "EVT-006"
+      ],
+      "safe_validation": "provided policy and synthetic observation only"
+    },
+    {
+      "id": "CAND-003",
+      "title": "package namespace resolution may accept mutable public content",
+      "source": "supply-chain-review",
+      "claim": "내부 package name과 충돌하는 public package가 build input으로 선택되거나 같은 version의 content가 바뀔 수 있다.",
+      "affected_assets": [
+        "AST-005",
+        "AST-006"
+      ],
+      "evidence_refs": [
+        "package-proxy-policy.json",
+        "OBS-005",
+        "EVT-002"
+      ],
+      "safe_validation": "provided resolver fixture only; no external registry"
+    },
+    {
+      "id": "CAND-004",
+      "title": "runtime artifact identity cannot be proven from deployment record",
+      "source": "release-review",
+      "claim": "실행 중인 report worker가 승인된 digest인지 incident 기록만으로 확인할 수 없다.",
+      "affected_assets": [
+        "AST-006",
+        "AST-007"
+      ],
+      "evidence_refs": [
+        "release-manifest.json",
+        "OBS-006",
+        "EVT-003",
+        "EVT-004"
+      ],
+      "safe_validation": "provided manifest and events only"
+    },
+    {
+      "id": "CAND-005",
+      "title": "object access events may not preserve delegated user and job",
+      "source": "event-schema-review",
+      "claim": "민감한 object access의 effective user와 job scope를 incident에서 재구성할 수 없다.",
+      "affected_assets": [
+        "AST-007"
+      ],
+      "evidence_refs": [
+        "event-dictionary.md",
+        "OBS-007",
+        "EVT-006"
+      ],
+      "safe_validation": "provided event fixture only"
+    },
+    {
+      "id": "CAND-006",
+      "title": "incident runbook may restore service without re-establishing artifact trust",
+      "source": "runbook-review",
+      "claim": "공급망 의심 사건에서 tag rollback과 health check만으로 recovery를 선언할 수 있다.",
+      "affected_assets": [
+        "AST-006",
+        "AST-008"
+      ],
+      "evidence_refs": [
+        "incident-runbook-excerpt.md",
+        "EVT-010",
+        "EVT-011"
+      ],
+      "safe_validation": "document review only"
+    },
+    {
+      "id": "CAND-007",
+      "title": "internal admin route appears in gateway route table",
+      "source": "configuration-scan",
+      "claim": "공개 사용자가 admin diagnostics를 호출할 수 있다.",
+      "affected_assets": [
+        "AST-001",
+        "AST-007"
+      ],
+      "evidence_refs": [
+        "OBS-008",
+        "OBS-009"
+      ],
+      "safe_validation": "provided route inventory only"
+    }
+  ]
+}

@@ -1,0 +1,93 @@
+{
+  "schema_version": 1,
+  "environment": "staging-synthetic fixture",
+  "observations": [
+    {
+      "id": "OBS-001",
+      "source": "integration-fixture",
+      "observed_at": "2026-08-08T08:00:00Z",
+      "statement": "synthetic user B requested download for user A completed report ID and received a signed URL response",
+      "limitations": [
+        "fixture does not contact real object storage",
+        "response URL contains synthetic object key only"
+      ]
+    },
+    {
+      "id": "OBS-002",
+      "source": "repository-query-trace",
+      "observed_at": "2026-08-08T08:05:00Z",
+      "statement": "download query predicate contains report_id and status but no owner_id in the provided build snapshot",
+      "limitations": [
+        "middleware and signer layers were reviewed separately",
+        "runtime build identity is not independently recorded"
+      ]
+    },
+    {
+      "id": "OBS-003",
+      "source": "policy-simulator",
+      "observed_at": "2026-08-08T08:30:00Z",
+      "statement": "POL-003 returns allow for id-report-worker reading synthetic/tenant-42/job-9 while credential job_id is job-81",
+      "limitations": [
+        "simulator uses provided policy snapshot",
+        "provider-side bucket policy is out of scope"
+      ]
+    },
+    {
+      "id": "OBS-004",
+      "source": "credential-metadata-fixture",
+      "observed_at": "2026-08-08T08:32:00Z",
+      "statement": "credential cred-201 contains job_id but no tenant_id or object_prefix claim",
+      "limitations": [
+        "claim absence does not prove no downstream mapping exists"
+      ]
+    },
+    {
+      "id": "OBS-005",
+      "source": "resolver-fixture",
+      "observed_at": "2026-08-08T09:00:00Z",
+      "statement": "request for name ledger-format version 1.4 without namespace resolves first successful match; changing public-cache content under same version changes returned digest",
+      "limitations": [
+        "fixture does not query external registry",
+        "actual lock entry for release build is unavailable"
+      ]
+    },
+    {
+      "id": "OBS-006",
+      "source": "deployment-record-review",
+      "observed_at": "2026-08-08T10:25:00Z",
+      "statement": "deployment event records report-worker:stable and readiness but not resolved runtime digest",
+      "limitations": [
+        "registry audit records tag changes",
+        "node runtime inspection is not provided"
+      ]
+    },
+    {
+      "id": "OBS-007",
+      "source": "event-sample-review",
+      "observed_at": "2026-08-08T10:28:00Z",
+      "statement": "object.read event includes service_id and credential_id but not delegated user, job_id, policy_id or resource owner",
+      "limitations": [
+        "other event partitions may contain enrichment",
+        "enrichment pipeline configuration is not provided"
+      ]
+    },
+    {
+      "id": "OBS-008",
+      "source": "gateway-config-snapshot",
+      "observed_at": "2026-08-01T12:00:00Z",
+      "statement": "admin diagnostics route is attached to listener admin-loopback",
+      "limitations": [
+        "snapshot is eight days old"
+      ]
+    },
+    {
+      "id": "OBS-009",
+      "source": "synthetic-route-inventory",
+      "observed_at": "2026-08-08T07:40:00Z",
+      "statement": "public listener inventory does not include admin diagnostics route; loopback inventory does",
+      "limitations": [
+        "inventory is generated before latest deployment"
+      ]
+    }
+  ]
+}

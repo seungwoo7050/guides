@@ -1,0 +1,109 @@
+{
+  "schema_version": 1,
+  "as_of": "2026-08-09T00:00:00Z",
+  "assets": [
+    {
+      "id": "AST-001",
+      "name": "user session",
+      "owner": "gateway",
+      "classification": "sensitive credential",
+      "security_goals": [
+        "confidentiality",
+        "expiry",
+        "revocation",
+        "actor-attribution"
+      ],
+      "authoritative_source": "session service"
+    },
+    {
+      "id": "AST-002",
+      "name": "account transaction data",
+      "owner": "account-api",
+      "classification": "synthetic confidential",
+      "security_goals": [
+        "authorization",
+        "integrity",
+        "auditability"
+      ],
+      "authoritative_source": "account database"
+    },
+    {
+      "id": "AST-003",
+      "name": "generated report object",
+      "owner": "reporting-team",
+      "classification": "synthetic confidential",
+      "security_goals": [
+        "authorization",
+        "integrity",
+        "expiry of access",
+        "auditability"
+      ],
+      "authoritative_source": "object storage"
+    },
+    {
+      "id": "AST-004",
+      "name": "report worker credential",
+      "owner": "platform-identity",
+      "classification": "ephemeral secret",
+      "security_goals": [
+        "least-privilege",
+        "expiry",
+        "revocation",
+        "non-exportability"
+      ],
+      "authoritative_source": "credential broker"
+    },
+    {
+      "id": "AST-005",
+      "name": "internal package namespace",
+      "owner": "developer-platform",
+      "classification": "build input",
+      "security_goals": [
+        "integrity",
+        "namespace ownership",
+        "immutability",
+        "provenance"
+      ],
+      "authoritative_source": "package proxy metadata"
+    },
+    {
+      "id": "AST-006",
+      "name": "release artifact",
+      "owner": "release-engineering",
+      "classification": "executable artifact",
+      "security_goals": [
+        "integrity",
+        "provenance",
+        "reproducible identity",
+        "rollback"
+      ],
+      "authoritative_source": "artifact registry digest"
+    },
+    {
+      "id": "AST-007",
+      "name": "audit event stream",
+      "owner": "security-operations",
+      "classification": "security evidence",
+      "security_goals": [
+        "integrity",
+        "availability",
+        "actor-attribution",
+        "resource-attribution",
+        "ordered reconstruction"
+      ],
+      "authoritative_source": "event store raw partition"
+    },
+    {
+      "id": "AST-008",
+      "name": "incident decision log",
+      "owner": "incident-commander",
+      "classification": "security evidence",
+      "security_goals": [
+        "integrity",
+        "time attribution",
+        "access control"
+      ],
+      "authoritative_source": "incident record"
+    }
+  ]
+}
