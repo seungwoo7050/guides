@@ -1,0 +1,24 @@
+{
+  "expo": {
+    "name": "Field Notes Skeleton",
+    "slug": "field-notes-skeleton",
+    "version": "1.0.0",
+    "scheme": "fieldnotes-skeleton",
+    "orientation": "default",
+    "userInterfaceStyle": "automatic",
+    "newArchEnabled": true,
+    "ios": {
+      "bundleIdentifier": "dev.openai.guides.fieldnotes.skeleton",
+      "supportsTablet": true
+    },
+    "android": {
+      "package": "dev.openai.guides.fieldnotes.skeleton",
+      "predictiveBackGestureEnabled": true
+    },
+    "plugins": ["expo-router", "expo-dev-client"],
+    "experiments": {
+      "typedRoutes": false
+    }
+  }
+}
+
