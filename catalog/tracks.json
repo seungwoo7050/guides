@@ -1,5 +1,5 @@
 {
-  "schema_version": 1,
+  "schema_version": 2,
   "tracks": [
     {
       "id": "software-foundations",
@@ -31,6 +31,58 @@
         "작은 프로젝트를 시작하고 변경을 검토한다",
         "오류를 재현하고 증거를 남긴다",
         "원하는 전문 트랙의 선행 부족을 스스로 보완한다"
+      ],
+      "group": "common",
+      "linear_paths": [
+        {
+          "id": "c-foundation",
+          "title": "C 기반",
+          "branches": [
+            "git",
+            "c",
+            "algorithms",
+            "unix-systems"
+          ]
+        },
+        {
+          "id": "cpp-foundation",
+          "title": "C++ 기반",
+          "branches": [
+            "git",
+            "cpp",
+            "algorithms",
+            "unix-systems"
+          ]
+        },
+        {
+          "id": "java-foundation",
+          "title": "Java 기반",
+          "branches": [
+            "git",
+            "java",
+            "algorithms",
+            "unix-systems"
+          ]
+        },
+        {
+          "id": "python-foundation",
+          "title": "Python 기반",
+          "branches": [
+            "git",
+            "python",
+            "algorithms",
+            "unix-systems"
+          ]
+        },
+        {
+          "id": "web-foundation",
+          "title": "웹 기반",
+          "branches": [
+            "git",
+            "web-app",
+            "computer-networks"
+          ]
+        }
       ]
     },
     {
@@ -63,6 +115,21 @@
         "수직 기능을 API·DB·권한·테스트까지 구현한다",
         "트랜잭션과 실패 뒤 상태를 설명한다",
         "로그·metric·DB 증거로 장애 계층을 좁힌다"
+      ],
+      "group": "web",
+      "linear_paths": [
+        {
+          "id": "default",
+          "title": "백엔드 직무 진입",
+          "branches": [
+            "git",
+            "web-app",
+            "java",
+            "backend-spring-boot",
+            "database-systems",
+            "web-infra"
+          ]
+        }
       ]
     },
     {
@@ -90,6 +157,19 @@
         "기존 프런트엔드 저장소의 상태·라우트·빌드 경계를 복원한다",
         "동시성과 접근성을 포함한 기능을 완성한다",
         "실제 브라우저와 운영 빌드로 결과를 검증한다"
+      ],
+      "group": "web",
+      "linear_paths": [
+        {
+          "id": "default",
+          "title": "프런트엔드 직무 진입",
+          "branches": [
+            "git",
+            "web-app",
+            "web-front-react-nextjs",
+            "web-infra"
+          ]
+        }
       ]
     },
     {
@@ -121,6 +201,22 @@
         "작은 웹 제품을 종단 간 구현한다",
         "상태 소유권과 배포 경계를 설명한다",
         "기능 실패와 운영 실패를 분리해 복구한다"
+      ],
+      "group": "web",
+      "linear_paths": [
+        {
+          "id": "default",
+          "title": "풀스택 직무 진입",
+          "branches": [
+            "git",
+            "web-app",
+            "web-front-react-nextjs",
+            "java",
+            "backend-spring-boot",
+            "database-systems",
+            "web-infra"
+          ]
+        }
       ]
     },
     {
@@ -150,6 +246,21 @@
         "서비스와 플랫폼의 책임을 분리한다",
         "배포·정책·관측·복구를 자동화한다",
         "여러 팀이 사용하는 운영 경로를 제품처럼 관리한다"
+      ],
+      "group": "infra-security",
+      "linear_paths": [
+        {
+          "id": "default",
+          "title": "인프라에서 플랫폼까지",
+          "branches": [
+            "git",
+            "unix-systems",
+            "computer-networks",
+            "web-infra",
+            "cybersecurity",
+            "platform-engineering"
+          ]
+        }
       ]
     },
     {
@@ -182,6 +293,21 @@
         "공격 전제와 경로를 증거로 남긴다",
         "취약점을 패치하고 회귀 검사를 만든다",
         "침해 시도와 복구 타임라인을 재구성한다"
+      ],
+      "group": "infra-security",
+      "linear_paths": [
+        {
+          "id": "default",
+          "title": "공격·방어 통합 진입",
+          "branches": [
+            "git",
+            "unix-systems",
+            "computer-networks",
+            "web-app",
+            "web-infra",
+            "cybersecurity"
+          ]
+        }
       ]
     },
     {
@@ -207,6 +333,19 @@
         "Android·iOS 공통 기능을 구현한다",
         "오프라인·권한·background 실패를 처리한다",
         "실제 기기와 배포 artifact로 완료를 증명한다"
+      ],
+      "group": "mobile",
+      "linear_paths": [
+        {
+          "id": "default",
+          "title": "크로스플랫폼 모바일 진입",
+          "branches": [
+            "git",
+            "web-app",
+            "web-front-react-nextjs",
+            "mobile-app"
+          ]
+        }
       ]
     },
     {
@@ -234,6 +373,19 @@
         "baseline과 평가 기준을 정의한다",
         "모델을 학습·개선하고 실패 사례를 분석한다",
         "모델 artifact와 추론 경계를 재현 가능하게 전달한다"
+      ],
+      "group": "ai-data",
+      "linear_paths": [
+        {
+          "id": "default",
+          "title": "모델 개발 진입",
+          "branches": [
+            "git",
+            "python",
+            "algorithms",
+            "machine-learning"
+          ]
+        }
       ]
     },
     {
@@ -263,6 +415,19 @@
         "도구 호출 agent를 구현한다",
         "외부 verifier로 결과를 판정한다",
         "권한·비용·실행·네트워크 한계를 강제한다"
+      ],
+      "group": "ai-data",
+      "linear_paths": [
+        {
+          "id": "default",
+          "title": "에이전트 시스템 진입",
+          "branches": [
+            "git",
+            "python",
+            "web-app",
+            "agentic-systems"
+          ]
+        }
       ]
     },
     {
@@ -290,6 +455,19 @@
         "재실행 가능한 pipeline을 설계한다",
         "late data와 backfill을 처리한다",
         "품질·freshness·lineage를 운영한다"
+      ],
+      "group": "ai-data",
+      "linear_paths": [
+        {
+          "id": "default",
+          "title": "데이터 파이프라인 진입",
+          "branches": [
+            "git",
+            "python",
+            "database-systems",
+            "data-engineering"
+          ]
+        }
       ]
     },
     {
@@ -323,12 +501,28 @@
         "safety와 liveness를 구분한다",
         "leader 교체와 partition을 재현한다",
         "복제 저장 시스템의 history를 검증한다"
+      ],
+      "group": "systems",
+      "linear_paths": [
+        {
+          "id": "default",
+          "title": "복제·합의 시스템 진입",
+          "branches": [
+            "git",
+            "c",
+            "computer-architecture",
+            "operating-systems",
+            "computer-networks",
+            "database-systems",
+            "distributed-systems"
+          ]
+        }
       ]
     },
     {
       "id": "database-engineering",
       "title": "데이터베이스 엔지니어링",
-      "summary": "애플리케이션 스키마와 질의부터 저장 엔진·동시성·복구·분산 저장까지 데이터 시스템을 깊게 다룬다.",
+      "summary": "애플리케이션 스키마와 질의부터 저장 엔진·동시성·복구까지 깊게 다루고, 분산 저장과 데이터 파이프라인으로 확장한다.",
       "common": [
         "git"
       ],
@@ -356,6 +550,30 @@
         "질의와 저장 엔진 동작을 연결한다",
         "동시성·복구 실패를 설명한다",
         "데이터 계층의 변경과 마이그레이션을 안전하게 설계한다"
+      ],
+      "group": "systems",
+      "linear_paths": [
+        {
+          "id": "internals",
+          "title": "DBMS 내부구조",
+          "branches": [
+            "git",
+            "c",
+            "computer-architecture",
+            "operating-systems",
+            "computer-networks",
+            "database-systems"
+          ]
+        },
+        {
+          "id": "application-data",
+          "title": "애플리케이션·데이터",
+          "branches": [
+            "git",
+            "python",
+            "database-systems"
+          ]
+        }
       ]
     },
     {
@@ -390,6 +608,31 @@
         "자원과 상태의 소유자를 명확히 한다",
         "프로세스·메모리·동시성 실패를 재현한다",
         "시스템 코드 변경을 sanitizer와 상태 근거로 검증한다"
+      ],
+      "group": "systems",
+      "linear_paths": [
+        {
+          "id": "c",
+          "title": "C 시스템 경로",
+          "branches": [
+            "git",
+            "c",
+            "computer-architecture",
+            "operating-systems",
+            "unix-systems"
+          ]
+        },
+        {
+          "id": "cpp",
+          "title": "C++ 시스템 경로",
+          "branches": [
+            "git",
+            "cpp",
+            "computer-architecture",
+            "operating-systems",
+            "unix-systems"
+          ]
+        }
       ]
     },
     {
@@ -414,6 +657,21 @@
         "parser와 타입 검사기를 만든다",
         "작은 interpreter·VM·IR을 구현한다",
         "진단·분석·변환 도구에 기여한다"
+      ],
+      "group": "systems",
+      "linear_paths": [
+        {
+          "id": "default",
+          "title": "컴파일러·언어 도구",
+          "branches": [
+            "git",
+            "c",
+            "cpp",
+            "algorithms",
+            "computer-architecture",
+            "language-implementation"
+          ]
+        }
       ]
     },
     {
@@ -438,6 +696,20 @@
         "MMIO·interrupt·task 경계를 구현한다",
         "실시간 실패와 watchdog 복구를 검증한다",
         "firmware update 상태를 안전하게 관리한다"
+      ],
+      "group": "systems",
+      "linear_paths": [
+        {
+          "id": "default",
+          "title": "임베디드·펌웨어",
+          "branches": [
+            "git",
+            "c",
+            "computer-architecture",
+            "operating-systems",
+            "embedded-systems"
+          ]
+        }
       ]
     },
     {
@@ -462,6 +734,356 @@
         "software rasterizer를 구현한다",
         "shader와 GPU resource를 관리한다",
         "frame budget과 동기화 병목을 측정한다"
+      ],
+      "group": "systems",
+      "linear_paths": [
+        {
+          "id": "default",
+          "title": "컴퓨터 그래픽스",
+          "branches": [
+            "git",
+            "c",
+            "cpp",
+            "algorithms",
+            "computer-architecture",
+            "computer-graphics"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "game-client-gameplay",
+      "title": "게임회사 — 클라이언트·게임플레이 개발",
+      "group": "game",
+      "summary": "엔진 프로젝트에서 입력·게임 상태·장면·자산·표현을 연결하는 게임플레이 기능을 구현한다.",
+      "common": [
+        "git"
+      ],
+      "required": [
+        "cpp",
+        "algorithms",
+        "game-development"
+      ],
+      "required_any": [],
+      "recommended": [
+        "c",
+        "computer-graphics",
+        "computer-architecture",
+        "operating-systems",
+        "computer-networks"
+      ],
+      "advanced": [
+        "cybersecurity",
+        "machine-learning"
+      ],
+      "linear_paths": [
+        {
+          "id": "beginner",
+          "title": "프로그래밍부터 시작",
+          "branches": [
+            "git",
+            "c",
+            "cpp",
+            "algorithms",
+            "game-development"
+          ]
+        },
+        {
+          "id": "experienced",
+          "title": "다른 언어 경험자",
+          "branches": [
+            "git",
+            "cpp",
+            "algorithms",
+            "game-development"
+          ]
+        }
+      ],
+      "exit_capabilities": [
+        "기존 게임 프로젝트의 frame·scene·asset 경계를 복원한다",
+        "입력부터 상태·표현·저장까지 이어지는 작은 기능을 완성한다",
+        "기능 회귀와 frame/resource 문제를 재현한다"
+      ]
+    },
+    {
+      "id": "game-engine-core",
+      "title": "게임회사 — 엔진·코어 시스템 개발",
+      "group": "game",
+      "summary": "메모리·동시성·플랫폼·resource lifetime을 게임 루프와 연결해 엔진 하위 시스템을 다룬다.",
+      "common": [
+        "git"
+      ],
+      "required": [
+        "cpp",
+        "algorithms",
+        "computer-architecture",
+        "operating-systems",
+        "game-development"
+      ],
+      "required_any": [],
+      "recommended": [
+        "c",
+        "computer-graphics",
+        "language-implementation",
+        "cybersecurity"
+      ],
+      "advanced": [
+        "embedded-systems"
+      ],
+      "linear_paths": [
+        {
+          "id": "default",
+          "title": "엔진·코어",
+          "branches": [
+            "git",
+            "c",
+            "cpp",
+            "algorithms",
+            "computer-architecture",
+            "operating-systems",
+            "game-development"
+          ]
+        }
+      ],
+      "exit_capabilities": [
+        "엔진 하위 시스템의 상태·수명·thread 경계를 설명한다",
+        "플랫폼 또는 resource 관리 기능을 구현한다",
+        "성능·메모리·동시성 문제를 측정 근거로 좁힌다"
+      ]
+    },
+    {
+      "id": "game-rendering",
+      "title": "게임회사 — 렌더링·그래픽스 개발",
+      "group": "game",
+      "summary": "게임 엔진 맥락과 GPU 렌더링 파이프라인을 연결해 화면 품질과 frame budget을 다룬다.",
+      "common": [
+        "git"
+      ],
+      "required": [
+        "cpp",
+        "algorithms",
+        "computer-architecture",
+        "game-development",
+        "computer-graphics"
+      ],
+      "required_any": [],
+      "recommended": [
+        "c",
+        "operating-systems"
+      ],
+      "advanced": [
+        "language-implementation"
+      ],
+      "linear_paths": [
+        {
+          "id": "default",
+          "title": "렌더링·그래픽스",
+          "branches": [
+            "git",
+            "c",
+            "cpp",
+            "algorithms",
+            "computer-architecture",
+            "game-development",
+            "computer-graphics"
+          ]
+        }
+      ],
+      "exit_capabilities": [
+        "게임 장면과 렌더링 pipeline의 입력·출력을 연결한다",
+        "shader·resource·synchronization 변경을 구현한다",
+        "화질과 frame-time trade-off를 측정한다"
+      ]
+    },
+    {
+      "id": "game-server",
+      "title": "게임회사 — Java/Spring 게임 서버 개발",
+      "group": "game",
+      "summary": "Java와 Spring 기반에서 권위 상태·세션·매치·실시간 통신·영속화·부분 실패를 운영 가능한 게임 서버로 연결한다.",
+      "common": [
+        "git"
+      ],
+      "required": [
+        "web-app",
+        "java",
+        "backend-spring-boot",
+        "database-systems",
+        "computer-networks",
+        "distributed-services",
+        "web-infra"
+      ],
+      "required_any": [],
+      "recommended": [
+        "game-development",
+        "cybersecurity",
+        "unix-systems"
+      ],
+      "advanced": [
+        "distributed-systems",
+        "data-engineering",
+        "platform-engineering"
+      ],
+      "linear_paths": [
+        {
+          "id": "default",
+          "title": "Java/Spring 게임 서버",
+          "branches": [
+            "git",
+            "web-app",
+            "java",
+            "backend-spring-boot",
+            "database-systems",
+            "game-development",
+            "computer-networks",
+            "distributed-services",
+            "web-infra"
+          ]
+        }
+      ],
+      "exit_capabilities": [
+        "클라이언트 요청과 권위 서버 상태의 경계를 설계한다",
+        "세션·매치·영속 상태를 실패 뒤에도 수렴시킨다",
+        "배포·관측·복구가 가능한 서버 변경을 완성한다"
+      ]
+    },
+    {
+      "id": "game-tools-platform",
+      "title": "게임회사 — 개발 도구·빌드·플랫폼",
+      "group": "game",
+      "summary": "asset·build·test·배포 workflow를 자동화하고 여러 개발자가 반복 사용하는 내부 경로를 만든다.",
+      "common": [
+        "git"
+      ],
+      "required": [
+        "python",
+        "unix-systems",
+        "web-infra",
+        "platform-engineering"
+      ],
+      "required_any": [],
+      "recommended": [
+        "game-development",
+        "cpp",
+        "cybersecurity",
+        "computer-networks"
+      ],
+      "advanced": [
+        "data-engineering"
+      ],
+      "linear_paths": [
+        {
+          "id": "default",
+          "title": "도구·빌드·플랫폼",
+          "branches": [
+            "git",
+            "python",
+            "unix-systems",
+            "game-development",
+            "web-infra",
+            "platform-engineering"
+          ]
+        }
+      ],
+      "exit_capabilities": [
+        "asset·build·test pipeline의 실패 경계를 복원한다",
+        "반복 가능한 개발 도구와 CI workflow를 만든다",
+        "self-service 배포·관측 경로를 운영한다"
+      ]
+    },
+    {
+      "id": "game-data-ml",
+      "title": "게임회사 — 데이터·머신러닝 개발",
+      "group": "game",
+      "summary": "플레이 이벤트·운영 데이터·모델 평가를 신뢰 가능한 pipeline과 게임 도메인 의사결정에 연결한다.",
+      "common": [
+        "git"
+      ],
+      "required": [
+        "python",
+        "database-systems",
+        "data-engineering",
+        "machine-learning"
+      ],
+      "required_any": [],
+      "recommended": [
+        "game-development",
+        "algorithms",
+        "distributed-services"
+      ],
+      "advanced": [
+        "agentic-systems",
+        "platform-engineering"
+      ],
+      "linear_paths": [
+        {
+          "id": "default",
+          "title": "게임 데이터·ML",
+          "branches": [
+            "git",
+            "python",
+            "algorithms",
+            "game-development",
+            "database-systems",
+            "data-engineering",
+            "machine-learning"
+          ]
+        }
+      ],
+      "exit_capabilities": [
+        "플레이 이벤트와 분석 지표의 의미 계약을 정의한다",
+        "재처리 가능한 pipeline과 품질 검사를 운영한다",
+        "게임 문제에 대한 baseline·모델·평가 결과를 전달한다"
+      ]
+    },
+    {
+      "id": "game-security-anticheat",
+      "title": "게임회사 — 보안·안티치트 개발",
+      "group": "game",
+      "summary": "클라이언트·운영체제·네트워크·서버 신뢰 경계를 분석하고 조작 탐지와 안전한 대응을 설계한다.",
+      "common": [
+        "git"
+      ],
+      "required": [
+        "c",
+        "cpp",
+        "algorithms",
+        "game-development",
+        "computer-architecture",
+        "operating-systems",
+        "computer-networks",
+        "cybersecurity"
+      ],
+      "required_any": [],
+      "recommended": [
+        "web-infra",
+        "database-systems"
+      ],
+      "advanced": [
+        "distributed-systems",
+        "data-engineering"
+      ],
+      "linear_paths": [
+        {
+          "id": "default",
+          "title": "보안·안티치트",
+          "branches": [
+            "git",
+            "c",
+            "cpp",
+            "algorithms",
+            "game-development",
+            "computer-architecture",
+            "operating-systems",
+            "unix-systems",
+            "computer-networks",
+            "cybersecurity"
+          ]
+        }
+      ],
+      "exit_capabilities": [
+        "클라이언트·서버 신뢰 가정과 공격 경로를 문서화한다",
+        "조작을 재현하고 패치·탐지·회귀 검사를 연결한다",
+        "오탐·우회·운영 비용을 포함해 대응을 평가한다"
       ]
     }
   ]

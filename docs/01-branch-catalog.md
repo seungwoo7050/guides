@@ -2,7 +2,7 @@
 
 > 이 문서는 `catalog/branches.json`에서 생성된다. 직접 수정하지 않는다.
 
-전체 학습 브랜치는 **26개**다. 브랜치 종류는 난이도가 아니라 저장소 안에서의 역할을 나타낸다.
+전체 학습 브랜치는 **27개**다. 브랜치 종류는 난이도가 아니라 저장소 안에서의 역할을 나타낸다.
 
 ## 한눈에 보기
 
@@ -24,6 +24,7 @@
 | [`mobile-app`](https://github.com/seungwoo7050/guides/tree/mobile-app) | 분야 진입 | React Native·Expo를 중심으로 모바일 수명 주기·오프라인 상태·기기 권한·배포를 Android와 iOS에 연결한다. |
 | [`machine-learning`](https://github.com/seungwoo7050/guides/tree/machine-learning) | 분야 진입 | 데이터 분리·baseline·학습·평가·오류 분석·신경망·transformer·fine-tuning·모델 전달을 하나의 실험 흐름으로 다룬다. |
 | [`agentic-systems`](https://github.com/seungwoo7050/guides/tree/agentic-systems) | 분야 진입 | 기존 모델을 구조화된 출력·검색·도구·상태·메모리·평가·권한과 연결해 장기 실행 소프트웨어 시스템을 만든다. |
+| [`game-development`](https://github.com/seungwoo7050/guides/tree/game-development) | 분야 진입 | 게임 루프·시간·입력·장면·엔티티·자산·물리·애니메이션·오디오·네트워크 경계를 연결해 게임 코드베이스에 진입한다. |
 | [`web-front-react-nextjs`](https://github.com/seungwoo7050/guides/tree/web-front-react-nextjs) | 심화·전문화 | 기존 Next.js 코드베이스에 합류해 상태·동시성·접근성·성능·운영 산출물까지 수직 기능을 완성한다. |
 | [`backend-spring-boot`](https://github.com/seungwoo7050/guides/tree/backend-spring-boot) | 심화·전문화 | Spring Core·MVC·Security·JPA·Redis·Kafka·외부 HTTP·Testcontainers·Actuator를 하나의 서비스 경계로 연결한다. |
 | [`database-systems`](https://github.com/seungwoo7050/guides/tree/database-systems) | 심화·전문화 | 관계 의미론·인덱스·저장 엔진·MVCC·WAL·실행 계획·안전한 마이그레이션을 애플리케이션과 DBMS 양쪽에서 다룬다. |
@@ -71,8 +72,8 @@
 
 - **필수 의존성:** 없음
 - **권장 기반:** [`python`](https://github.com/seungwoo7050/guides/tree/python), [`cpp`](https://github.com/seungwoo7050/guides/tree/cpp)
-- **인접 연결:** [`database-systems`](https://github.com/seungwoo7050/guides/tree/database-systems), [`distributed-systems`](https://github.com/seungwoo7050/guides/tree/distributed-systems), [`machine-learning`](https://github.com/seungwoo7050/guides/tree/machine-learning), [`language-implementation`](https://github.com/seungwoo7050/guides/tree/language-implementation), [`computer-graphics`](https://github.com/seungwoo7050/guides/tree/computer-graphics)
-- **일반적 후속 심화:** [`distributed-systems`](https://github.com/seungwoo7050/guides/tree/distributed-systems), [`language-implementation`](https://github.com/seungwoo7050/guides/tree/language-implementation), [`computer-graphics`](https://github.com/seungwoo7050/guides/tree/computer-graphics)
+- **인접 연결:** [`database-systems`](https://github.com/seungwoo7050/guides/tree/database-systems), [`distributed-systems`](https://github.com/seungwoo7050/guides/tree/distributed-systems), [`machine-learning`](https://github.com/seungwoo7050/guides/tree/machine-learning), [`language-implementation`](https://github.com/seungwoo7050/guides/tree/language-implementation), [`computer-graphics`](https://github.com/seungwoo7050/guides/tree/computer-graphics), [`game-development`](https://github.com/seungwoo7050/guides/tree/game-development)
+- **일반적 후속 심화:** [`distributed-systems`](https://github.com/seungwoo7050/guides/tree/distributed-systems), [`language-implementation`](https://github.com/seungwoo7050/guides/tree/language-implementation), [`computer-graphics`](https://github.com/seungwoo7050/guides/tree/computer-graphics), [`game-development`](https://github.com/seungwoo7050/guides/tree/game-development)
 
 **소유 범위**
 
@@ -185,7 +186,7 @@ Ethernet부터 IP·TCP·DNS·TLS·QUIC까지 헤더·상태·경로·손실 복�
 
 - **필수 의존성:** 없음
 - **권장 기반:** [`unix-systems`](https://github.com/seungwoo7050/guides/tree/unix-systems), [`operating-systems`](https://github.com/seungwoo7050/guides/tree/operating-systems)
-- **인접 연결:** [`web-app`](https://github.com/seungwoo7050/guides/tree/web-app), [`web-infra`](https://github.com/seungwoo7050/guides/tree/web-infra), [`cybersecurity`](https://github.com/seungwoo7050/guides/tree/cybersecurity), [`distributed-systems`](https://github.com/seungwoo7050/guides/tree/distributed-systems)
+- **인접 연결:** [`web-app`](https://github.com/seungwoo7050/guides/tree/web-app), [`web-infra`](https://github.com/seungwoo7050/guides/tree/web-infra), [`cybersecurity`](https://github.com/seungwoo7050/guides/tree/cybersecurity), [`distributed-systems`](https://github.com/seungwoo7050/guides/tree/distributed-systems), [`game-development`](https://github.com/seungwoo7050/guides/tree/game-development)
 - **일반적 후속 심화:** [`web-infra`](https://github.com/seungwoo7050/guides/tree/web-infra), [`cybersecurity`](https://github.com/seungwoo7050/guides/tree/cybersecurity), [`distributed-systems`](https://github.com/seungwoo7050/guides/tree/distributed-systems)
 
 **소유 범위**
@@ -246,8 +247,8 @@ Ethernet부터 IP·TCP·DNS·TLS·QUIC까지 헤더·상태·경로·손실 복�
 
 - **필수 의존성:** 없음
 - **권장 기반:** [`c`](https://github.com/seungwoo7050/guides/tree/c), [`git`](https://github.com/seungwoo7050/guides/tree/git)
-- **인접 연결:** [`language-implementation`](https://github.com/seungwoo7050/guides/tree/language-implementation), [`computer-graphics`](https://github.com/seungwoo7050/guides/tree/computer-graphics), [`database-systems`](https://github.com/seungwoo7050/guides/tree/database-systems), [`computer-networks`](https://github.com/seungwoo7050/guides/tree/computer-networks)
-- **일반적 후속 심화:** [`language-implementation`](https://github.com/seungwoo7050/guides/tree/language-implementation), [`computer-graphics`](https://github.com/seungwoo7050/guides/tree/computer-graphics)
+- **인접 연결:** [`language-implementation`](https://github.com/seungwoo7050/guides/tree/language-implementation), [`computer-graphics`](https://github.com/seungwoo7050/guides/tree/computer-graphics), [`database-systems`](https://github.com/seungwoo7050/guides/tree/database-systems), [`computer-networks`](https://github.com/seungwoo7050/guides/tree/computer-networks), [`game-development`](https://github.com/seungwoo7050/guides/tree/game-development)
+- **일반적 후속 심화:** [`language-implementation`](https://github.com/seungwoo7050/guides/tree/language-implementation), [`computer-graphics`](https://github.com/seungwoo7050/guides/tree/computer-graphics), [`game-development`](https://github.com/seungwoo7050/guides/tree/game-development)
 
 **소유 범위**
 
@@ -393,7 +394,7 @@ HTML·CSS·JavaScript·TypeScript·React·API·PostgreSQL·인증·WebSocket을 
 
 - **필수 의존성:** [`unix-systems`](https://github.com/seungwoo7050/guides/tree/unix-systems), [`computer-networks`](https://github.com/seungwoo7050/guides/tree/computer-networks)
 - **권장 기반:** [`web-app`](https://github.com/seungwoo7050/guides/tree/web-app), [`operating-systems`](https://github.com/seungwoo7050/guides/tree/operating-systems), [`web-infra`](https://github.com/seungwoo7050/guides/tree/web-infra), [`python`](https://github.com/seungwoo7050/guides/tree/python), [`c`](https://github.com/seungwoo7050/guides/tree/c), [`computer-architecture`](https://github.com/seungwoo7050/guides/tree/computer-architecture)
-- **인접 연결:** [`platform-engineering`](https://github.com/seungwoo7050/guides/tree/platform-engineering), [`agentic-systems`](https://github.com/seungwoo7050/guides/tree/agentic-systems), [`embedded-systems`](https://github.com/seungwoo7050/guides/tree/embedded-systems)
+- **인접 연결:** [`platform-engineering`](https://github.com/seungwoo7050/guides/tree/platform-engineering), [`agentic-systems`](https://github.com/seungwoo7050/guides/tree/agentic-systems), [`embedded-systems`](https://github.com/seungwoo7050/guides/tree/embedded-systems), [`game-development`](https://github.com/seungwoo7050/guides/tree/game-development)
 - **일반적 후속 심화:** [`platform-engineering`](https://github.com/seungwoo7050/guides/tree/platform-engineering)
 
 **소유 범위**
@@ -451,7 +452,7 @@ React Native·Expo를 중심으로 모바일 수명 주기·오프라인 상태�
 
 - **필수 의존성:** [`python`](https://github.com/seungwoo7050/guides/tree/python)
 - **권장 기반:** [`algorithms`](https://github.com/seungwoo7050/guides/tree/algorithms)
-- **인접 연결:** [`data-engineering`](https://github.com/seungwoo7050/guides/tree/data-engineering), [`agentic-systems`](https://github.com/seungwoo7050/guides/tree/agentic-systems), [`computer-architecture`](https://github.com/seungwoo7050/guides/tree/computer-architecture), [`platform-engineering`](https://github.com/seungwoo7050/guides/tree/platform-engineering)
+- **인접 연결:** [`data-engineering`](https://github.com/seungwoo7050/guides/tree/data-engineering), [`agentic-systems`](https://github.com/seungwoo7050/guides/tree/agentic-systems), [`computer-architecture`](https://github.com/seungwoo7050/guides/tree/computer-architecture), [`platform-engineering`](https://github.com/seungwoo7050/guides/tree/platform-engineering), [`game-development`](https://github.com/seungwoo7050/guides/tree/game-development)
 - **일반적 후속 심화:** [`data-engineering`](https://github.com/seungwoo7050/guides/tree/data-engineering)
 
 **소유 범위**
@@ -504,6 +505,37 @@ React Native·Expo를 중심으로 모바일 수명 주기·오프라인 상태�
 - 도구를 사용하는 에이전트를 구현한다
 - 외부 verifier로 성공을 판정한다
 - 권한·네트워크·비용·실행 시간을 제한한다
+
+### `game-development` — 게임 시스템과 엔진 기반 개발
+
+게임 루프·시간·입력·장면·엔티티·자산·물리·애니메이션·오디오·네트워크 경계를 연결해 게임 코드베이스에 진입한다.
+
+- **필수 의존성:** 없음
+- **권장 기반:** [`algorithms`](https://github.com/seungwoo7050/guides/tree/algorithms), [`cpp`](https://github.com/seungwoo7050/guides/tree/cpp), [`operating-systems`](https://github.com/seungwoo7050/guides/tree/operating-systems), [`computer-networks`](https://github.com/seungwoo7050/guides/tree/computer-networks)
+- **인접 연결:** [`computer-graphics`](https://github.com/seungwoo7050/guides/tree/computer-graphics), [`distributed-services`](https://github.com/seungwoo7050/guides/tree/distributed-services), [`machine-learning`](https://github.com/seungwoo7050/guides/tree/machine-learning), [`cybersecurity`](https://github.com/seungwoo7050/guides/tree/cybersecurity), [`platform-engineering`](https://github.com/seungwoo7050/guides/tree/platform-engineering)
+- **일반적 후속 심화:** [`computer-graphics`](https://github.com/seungwoo7050/guides/tree/computer-graphics), [`distributed-services`](https://github.com/seungwoo7050/guides/tree/distributed-services), [`machine-learning`](https://github.com/seungwoo7050/guides/tree/machine-learning), [`cybersecurity`](https://github.com/seungwoo7050/guides/tree/cybersecurity)
+
+**소유 범위**
+
+- 고정·가변 시간 단계와 game loop
+- 입력·카메라·장면·엔티티·컴포넌트의 상태 경계
+- 자산 로딩·직렬화·resource lifetime과 editor workflow
+- 물리·애니메이션·오디오·렌더링 하위 시스템의 게임 계층 통합
+- 게임플레이 기능의 상태 전이·저장·재현·테스트
+- frame budget·profiling·client/server authoritative 경계의 게임 맥락
+
+**비소유 범위**
+
+- GPU 렌더링 파이프라인과 shader 내부구조
+- 운영체제·네트워크 프로토콜·분산 합의의 일반 원리
+- 특정 상용 엔진 API 전체
+- 게임 기획·아트·사운드 제작 직무 교육
+
+**종료 능력**
+
+- 기존 엔진 프로젝트의 update·render·asset·tool 경계를 복원한다
+- 입력부터 상태·표현·저장까지 이어지는 작은 게임플레이 기능을 구현한다
+- frame·resource·simulation 실패를 재현하고 profiling 근거로 수정한다
 
 
 ## 심화·전문화
@@ -602,7 +634,7 @@ Spring Core·MVC·Security·JPA·Redis·Kafka·외부 HTTP·Testcontainers·Actu
 
 - **필수 의존성:** [`java`](https://github.com/seungwoo7050/guides/tree/java), [`web-app`](https://github.com/seungwoo7050/guides/tree/web-app)
 - **권장 기반:** [`database-systems`](https://github.com/seungwoo7050/guides/tree/database-systems), [`backend-spring-boot`](https://github.com/seungwoo7050/guides/tree/backend-spring-boot)
-- **인접 연결:** [`distributed-systems`](https://github.com/seungwoo7050/guides/tree/distributed-systems), [`data-engineering`](https://github.com/seungwoo7050/guides/tree/data-engineering), [`platform-engineering`](https://github.com/seungwoo7050/guides/tree/platform-engineering), [`agentic-systems`](https://github.com/seungwoo7050/guides/tree/agentic-systems)
+- **인접 연결:** [`distributed-systems`](https://github.com/seungwoo7050/guides/tree/distributed-systems), [`data-engineering`](https://github.com/seungwoo7050/guides/tree/data-engineering), [`platform-engineering`](https://github.com/seungwoo7050/guides/tree/platform-engineering), [`agentic-systems`](https://github.com/seungwoo7050/guides/tree/agentic-systems), [`game-development`](https://github.com/seungwoo7050/guides/tree/game-development)
 - **일반적 후속 심화:** [`distributed-systems`](https://github.com/seungwoo7050/guides/tree/distributed-systems), [`data-engineering`](https://github.com/seungwoo7050/guides/tree/data-engineering), [`platform-engineering`](https://github.com/seungwoo7050/guides/tree/platform-engineering)
 
 **소유 범위**
@@ -691,7 +723,7 @@ Spring Core·MVC·Security·JPA·Redis·Kafka·외부 HTTP·Testcontainers·Actu
 
 - **필수 의존성:** [`web-infra`](https://github.com/seungwoo7050/guides/tree/web-infra)
 - **권장 기반:** [`distributed-services`](https://github.com/seungwoo7050/guides/tree/distributed-services), [`cybersecurity`](https://github.com/seungwoo7050/guides/tree/cybersecurity), [`computer-networks`](https://github.com/seungwoo7050/guides/tree/computer-networks), [`data-engineering`](https://github.com/seungwoo7050/guides/tree/data-engineering)
-- **인접 연결:** [`agentic-systems`](https://github.com/seungwoo7050/guides/tree/agentic-systems), [`machine-learning`](https://github.com/seungwoo7050/guides/tree/machine-learning), [`distributed-systems`](https://github.com/seungwoo7050/guides/tree/distributed-systems)
+- **인접 연결:** [`agentic-systems`](https://github.com/seungwoo7050/guides/tree/agentic-systems), [`machine-learning`](https://github.com/seungwoo7050/guides/tree/machine-learning), [`distributed-systems`](https://github.com/seungwoo7050/guides/tree/distributed-systems), [`game-development`](https://github.com/seungwoo7050/guides/tree/game-development)
 - **일반적 후속 심화:** 없음
 
 **소유 범위**
@@ -780,7 +812,7 @@ MCU·메모리 배치·MMIO·interrupt·DMA·RTOS·driver·watchdog·firmware up
 
 - **필수 의존성:** [`cpp`](https://github.com/seungwoo7050/guides/tree/cpp), [`algorithms`](https://github.com/seungwoo7050/guides/tree/algorithms), [`computer-architecture`](https://github.com/seungwoo7050/guides/tree/computer-architecture)
 - **권장 기반:** [`operating-systems`](https://github.com/seungwoo7050/guides/tree/operating-systems)
-- **인접 연결:** 없음
+- **인접 연결:** [`game-development`](https://github.com/seungwoo7050/guides/tree/game-development)
 - **일반적 후속 심화:** 없음
 
 **소유 범위**

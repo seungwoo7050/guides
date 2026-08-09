@@ -50,12 +50,14 @@
         "distributed-systems",
         "machine-learning",
         "language-implementation",
-        "computer-graphics"
+        "computer-graphics",
+        "game-development"
       ],
       "continues_to": [
         "distributed-systems",
         "language-implementation",
-        "computer-graphics"
+        "computer-graphics",
+        "game-development"
       ],
       "owns": [
         "정확성 증명",
@@ -133,11 +135,13 @@
         "language-implementation",
         "computer-graphics",
         "database-systems",
-        "computer-networks"
+        "computer-networks",
+        "game-development"
       ],
       "continues_to": [
         "language-implementation",
-        "computer-graphics"
+        "computer-graphics",
+        "game-development"
       ],
       "owns": [
         "C++ 객체·수명·복사·이동",
@@ -371,7 +375,8 @@
         "web-app",
         "web-infra",
         "cybersecurity",
-        "distributed-systems"
+        "distributed-systems",
+        "game-development"
       ],
       "continues_to": [
         "web-infra",
@@ -579,7 +584,8 @@
         "distributed-systems",
         "data-engineering",
         "platform-engineering",
-        "agentic-systems"
+        "agentic-systems",
+        "game-development"
       ],
       "continues_to": [
         "distributed-systems",
@@ -666,7 +672,8 @@
       "connects": [
         "platform-engineering",
         "agentic-systems",
-        "embedded-systems"
+        "embedded-systems",
+        "game-development"
       ],
       "continues_to": [
         "platform-engineering"
@@ -743,7 +750,8 @@
         "data-engineering",
         "agentic-systems",
         "computer-architecture",
-        "platform-engineering"
+        "platform-engineering",
+        "game-development"
       ],
       "continues_to": [
         "data-engineering"
@@ -910,7 +918,8 @@
       "connects": [
         "agentic-systems",
         "machine-learning",
-        "distributed-systems"
+        "distributed-systems",
+        "game-development"
       ],
       "continues_to": [],
       "owns": [
@@ -1018,7 +1027,9 @@
       "recommends": [
         "operating-systems"
       ],
-      "connects": [],
+      "connects": [
+        "game-development"
+      ],
       "continues_to": [],
       "owns": [
         "좌표계·camera·projection",
@@ -1039,6 +1050,53 @@
         "frame-time과 자원 수명을 측정·진단한다"
       ],
       "url": "https://github.com/seungwoo7050/guides/tree/computer-graphics",
+      "status": "stable"
+    },
+    {
+      "id": "game-development",
+      "title": "게임 시스템과 엔진 기반 개발",
+      "kind": "field-entry",
+      "summary": "게임 루프·시간·입력·장면·엔티티·자산·물리·애니메이션·오디오·네트워크 경계를 연결해 게임 코드베이스에 진입한다.",
+      "requires": [],
+      "recommends": [
+        "algorithms",
+        "cpp",
+        "operating-systems",
+        "computer-networks"
+      ],
+      "connects": [
+        "computer-graphics",
+        "distributed-services",
+        "machine-learning",
+        "cybersecurity",
+        "platform-engineering"
+      ],
+      "continues_to": [
+        "computer-graphics",
+        "distributed-services",
+        "machine-learning",
+        "cybersecurity"
+      ],
+      "owns": [
+        "고정·가변 시간 단계와 game loop",
+        "입력·카메라·장면·엔티티·컴포넌트의 상태 경계",
+        "자산 로딩·직렬화·resource lifetime과 editor workflow",
+        "물리·애니메이션·오디오·렌더링 하위 시스템의 게임 계층 통합",
+        "게임플레이 기능의 상태 전이·저장·재현·테스트",
+        "frame budget·profiling·client/server authoritative 경계의 게임 맥락"
+      ],
+      "excludes": [
+        "GPU 렌더링 파이프라인과 shader 내부구조",
+        "운영체제·네트워크 프로토콜·분산 합의의 일반 원리",
+        "특정 상용 엔진 API 전체",
+        "게임 기획·아트·사운드 제작 직무 교육"
+      ],
+      "exit_capabilities": [
+        "기존 엔진 프로젝트의 update·render·asset·tool 경계를 복원한다",
+        "입력부터 상태·표현·저장까지 이어지는 작은 게임플레이 기능을 구현한다",
+        "frame·resource·simulation 실패를 재현하고 profiling 근거로 수정한다"
+      ],
+      "url": "https://github.com/seungwoo7050/guides/tree/game-development",
       "status": "stable"
     }
   ]

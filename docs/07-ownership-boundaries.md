@@ -20,6 +20,10 @@
 - `distributed-systems`: 복제·합의로 시스템 상태를 수렴시킨다.
 - `web-infra`: 한 서비스를 공개 운영한다.
 - `platform-engineering`: 여러 팀의 운영 경로를 플랫폼으로 제공한다.
+- `game-development`: game loop·게임플레이 상태·자산·에디터·엔진 하위 시스템을 게임 제품 맥락에서 연결한다.
+- `computer-graphics`: rasterization·shader·GPU resource·동기화처럼 렌더링 파이프라인 자체를 구현한다.
+
+`game-development`와 `computer-graphics`는 겹쳐 보이지만 종료 결과가 다르다. 전자는 기존 엔진 프로젝트에서 게임 기능과 시스템 통합을 완성하는 진입점이고, 후자는 software renderer와 GPU pipeline을 구현·진단하는 전문 경로다.
 
 ## 별도 브랜치가 되지 않는 것
 
@@ -36,6 +40,7 @@
 - `devops`는 독립 브랜치로 두지 않는다. 단일 서비스 운영은 `web-infra`, 여러 팀의 self-service 플랫폼은 `platform-engineering`이 소유한다.
 - Kotlin·Swift·Dart를 모바일 진입 전에 모두 별도 언어 브랜치로 만들지 않는다. `mobile-app`이 필요한 네이티브 경계를 다루고, 독립 네이티브 프로젝트 수요가 커질 때만 후속 브랜치를 검토한다.
 - Kubernetes·Terraform은 `platform-engineering`의 구현 수단이지 현재 구조에서 독립 목적이 아니다.
+- Unity·Unreal·Godot 같은 특정 엔진 API 전체를 각각 별도 진입 브랜치로 만들지 않는다. `game-development`가 엔진에 공통으로 남는 상태·수명·실패 모델을 소유하고, 특정 엔진은 실제 프로젝트 또는 선택 구현 프로필에서 다룬다.
 
 브랜치 종류는 공통 기반, 언어 진입, 분야 진입, 심화의 네 가지다. 둘 이상의 기반을 결합하는 교차 확장은 별도 종류가 아니라 어떤 종류에도 적용될 수 있는 특성이다. 종류와 관계없이 위의 고유한 소유권 조건을 만족해야 한다.
 
@@ -53,6 +58,7 @@
 - `cybersecurity`는 TCP 전체를 다시 설명하지 않고 공격 경로에서 DNS·TCP·TLS 증거를 어떻게 사용하며 어떤 오판을 막는지 다룬다.
 - `agentic-systems`는 retry 일반론을 다시 쓰지 않고 모델 호출·도구 실행·외부 효과에서 retry가 어떤 중복과 비용을 만드는지 다룬다.
 - `data-engineering`은 DB index 전체를 다시 다루지 않고 source·sink·partition·backfill에서 질의와 저장 구조가 어떤 제약을 만드는지 다룬다.
+- `game-development`는 렌더링 수학과 GPU pipeline을 다시 구현하지 않고 해당 하위 시스템을 장면·자산·게임 상태·frame budget에 어떻게 연결하는지 다룬다.
 
 ## 내부 브랜치와 외부 범위의 구분
 

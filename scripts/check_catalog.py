@@ -15,9 +15,11 @@ BRANCH_FIELDS = {
     'continues_to', 'owns', 'excludes', 'exit_capabilities', 'url', 'status'
 }
 TRACK_FIELDS = {
-    'id', 'title', 'summary', 'common', 'required', 'required_any',
-    'recommended', 'advanced', 'exit_capabilities'
+    'id', 'title', 'group', 'summary', 'common', 'required', 'required_any',
+    'recommended', 'advanced', 'linear_paths', 'exit_capabilities'
 }
+TRACK_GROUPS = {'common', 'web', 'infra-security', 'mobile', 'ai-data', 'systems', 'game'}
+PATH_FIELDS = {'id', 'title', 'branches'}
 
 
 def fail(message: str, errors: list[str]) -> None:
@@ -31,6 +33,18 @@ def check_nonempty_strings(value: object, field: str, owner: str, errors: list[s
     for index, item in enumerate(value):
         if not isinstance(item, str) or not item.strip():
             fail(f'{owner}.{field}[{index}]: non-empty string required', errors)
+
+
+def load_document(path: Path, label: str, errors: list[str]) -> dict | None:
+    try:
+        document = json.loads(path.read_text(encoding='utf-8'))
+    except (OSError, json.JSONDecodeError) as exc:
+        fail(f'{label}: cannot read valid JSON ({exc})', errors)
+        return None
+    if not isinstance(document, dict):
+        fail(f'{label}: top-level object required', errors)
+        return None
+    return document
 
 
 def detect_cycles(branch_by_id: dict[str, dict], errors: list[str]) -> None:
@@ -53,7 +67,7 @@ def detect_cycles(branch_by_id: dict[str, dict], errors: list[str]) -> None:
                 # Unknown references are reported by the field validator. Skipping
                 # them here keeps cycle detection from hiding that useful error
                 # behind an implementation-level KeyError.
-                if dep in branch_by_id:
+                if isinstance(dep, str) and dep in branch_by_id:
                     visit(dep)
         stack.pop()
         visiting.remove(node)
@@ -65,13 +79,21 @@ def detect_cycles(branch_by_id: dict[str, dict], errors: list[str]) -> None:
 
 def main() -> int:
     errors: list[str] = []
-    branches_doc = json.loads((ROOT / 'catalog' / 'branches.json').read_text(encoding='utf-8'))
-    tracks_doc = json.loads((ROOT / 'catalog' / 'tracks.json').read_text(encoding='utf-8'))
+    branches_doc = load_document(
+        ROOT / 'catalog' / 'branches.json', 'branches catalog', errors
+    )
+    tracks_doc = load_document(
+        ROOT / 'catalog' / 'tracks.json', 'tracks catalog', errors
+    )
+    if branches_doc is None or tracks_doc is None:
+        for error in errors:
+            print(f'ERROR: {error}', file=sys.stderr)
+        return 1
 
     if branches_doc.get('schema_version') != 1:
         fail('branches schema_version must be 1', errors)
-    if tracks_doc.get('schema_version') != 1:
-        fail('tracks schema_version must be 1', errors)
+    if tracks_doc.get('schema_version') != 2:
+        fail('tracks schema_version must be 2', errors)
 
     branches = branches_doc.get('branches')
     tracks = tracks_doc.get('tracks')
@@ -82,7 +104,10 @@ def main() -> int:
         fail('tracks must be a non-empty list', errors)
         tracks = []
 
-    branch_ids = [b.get('id') for b in branches if isinstance(b, dict)]
+    branch_ids = [
+        b.get('id') for b in branches
+        if isinstance(b, dict) and isinstance(b.get('id'), str)
+    ]
     for branch_id, count in Counter(branch_ids).items():
         if count > 1:
             fail(f'duplicate branch id: {branch_id}', errors)
@@ -120,9 +145,15 @@ def main() -> int:
             if not isinstance(refs, list):
                 fail(f'{owner}.{field}: list required', errors)
                 continue
-            if len(refs) != len(set(refs)):
+            valid_refs: list[str] = []
+            for index, ref in enumerate(refs):
+                if not isinstance(ref, str):
+                    fail(f'{owner}.{field}[{index}]: branch id string required', errors)
+                else:
+                    valid_refs.append(ref)
+            if len(valid_refs) != len(set(valid_refs)):
                 fail(f'{owner}.{field}: duplicate references', errors)
-            for ref in refs:
+            for ref in valid_refs:
                 if ref not in branch_by_id:
                     fail(f'{owner}.{field}: unknown branch {ref}', errors)
                 if ref == branch_id:
@@ -131,7 +162,10 @@ def main() -> int:
     if branch_by_id:
         detect_cycles(branch_by_id, errors)
 
-    track_ids = [t.get('id') for t in tracks if isinstance(t, dict)]
+    track_ids = [
+        t.get('id') for t in tracks
+        if isinstance(t, dict) and isinstance(t.get('id'), str)
+    ]
     for track_id, count in Counter(track_ids).items():
         if count > 1:
             fail(f'duplicate track id: {track_id}', errors)
@@ -154,19 +188,31 @@ def main() -> int:
         for field in ('title', 'summary'):
             if not isinstance(t.get(field), str) or not t[field].strip():
                 fail(f'{owner}.{field}: non-empty string required', errors)
+        if t.get('group') not in TRACK_GROUPS:
+            fail(f'{owner}.group: invalid group {t.get("group")!r}', errors)
+        track_refs: dict[str, list[str]] = {}
         for field in ('common', 'required', 'recommended', 'advanced'):
             refs = t.get(field)
             if not isinstance(refs, list):
                 fail(f'{owner}.{field}: list required', errors)
+                track_refs[field] = []
                 continue
-            if len(refs) != len(set(refs)):
+            valid_refs: list[str] = []
+            for index, ref in enumerate(refs):
+                if not isinstance(ref, str):
+                    fail(f'{owner}.{field}[{index}]: branch id string required', errors)
+                else:
+                    valid_refs.append(ref)
+            track_refs[field] = valid_refs
+            if len(valid_refs) != len(set(valid_refs)):
                 fail(f'{owner}.{field}: duplicate references', errors)
-            for ref in refs:
+            for ref in valid_refs:
                 if ref not in branch_by_id:
                     fail(f'{owner}.{field}: unknown branch {ref}', errors)
                 else:
                     used_branches.add(ref)
         groups = t.get('required_any')
+        valid_groups: list[list[str]] = []
         if not isinstance(groups, list):
             fail(f'{owner}.required_any: list required', errors)
         else:
@@ -174,13 +220,115 @@ def main() -> int:
                 if not isinstance(group, list) or not group:
                     fail(f'{owner}.required_any[{index}]: non-empty list required', errors)
                     continue
-                if len(group) != len(set(group)):
+                valid_group: list[str] = []
+                for ref_index, ref in enumerate(group):
+                    if not isinstance(ref, str):
+                        fail(
+                            f'{owner}.required_any[{index}][{ref_index}]: '
+                            'branch id string required',
+                            errors,
+                        )
+                    else:
+                        valid_group.append(ref)
+                valid_groups.append(valid_group)
+                if len(valid_group) != len(set(valid_group)):
                     fail(f'{owner}.required_any[{index}]: duplicate references', errors)
-                for ref in group:
+                for ref in valid_group:
                     if ref not in branch_by_id:
                         fail(f'{owner}.required_any[{index}]: unknown branch {ref}', errors)
                     else:
                         used_branches.add(ref)
+        paths = t.get('linear_paths')
+        if not isinstance(paths, list) or not paths:
+            fail(f'{owner}.linear_paths: non-empty list required', errors)
+        else:
+            path_ids: list[str] = []
+            for index, path in enumerate(paths):
+                path_owner = f'{owner}.linear_paths[{index}]'
+                if not isinstance(path, dict):
+                    fail(f'{path_owner}: object required', errors)
+                    continue
+                missing_path = PATH_FIELDS - set(path)
+                extra_path = set(path) - PATH_FIELDS
+                if missing_path:
+                    fail(f'{path_owner}: missing fields {sorted(missing_path)}', errors)
+                if extra_path:
+                    fail(f'{path_owner}: unexpected fields {sorted(extra_path)}', errors)
+                path_id = path.get('id')
+                if not isinstance(path_id, str) or not ID_RE.fullmatch(path_id):
+                    fail(f'{path_owner}.id: invalid path id', errors)
+                else:
+                    path_ids.append(path_id)
+                if not isinstance(path.get('title'), str) or not path['title'].strip():
+                    fail(f'{path_owner}.title: non-empty string required', errors)
+                refs = path.get('branches')
+                if not isinstance(refs, list) or not refs:
+                    fail(f'{path_owner}.branches: non-empty list required', errors)
+                    continue
+                valid_refs: list[str] = []
+                for ref_index, ref in enumerate(refs):
+                    if not isinstance(ref, str):
+                        fail(
+                            f'{path_owner}.branches[{ref_index}]: '
+                            'branch id string required',
+                            errors,
+                        )
+                    else:
+                        valid_refs.append(ref)
+                if len(valid_refs) != len(set(valid_refs)):
+                    fail(f'{path_owner}.branches: duplicate references', errors)
+                for ref in valid_refs:
+                    if ref not in branch_by_id:
+                        fail(f'{path_owner}.branches: unknown branch {ref}', errors)
+                    else:
+                        used_branches.add(ref)
+                positions = {ref: position for position, ref in enumerate(valid_refs)}
+                required_in_path = set(track_refs['common']) | set(track_refs['required'])
+                missing_from_path = sorted(required_in_path - set(positions))
+                if missing_from_path:
+                    fail(
+                        f'{path_owner}.branches: common/required branches missing '
+                        f'{missing_from_path}',
+                        errors,
+                    )
+                for group_index, group in enumerate(valid_groups):
+                    if group and not (set(group) & set(positions)):
+                        fail(
+                            f'{path_owner}.branches: required_any[{group_index}] '
+                            'has no represented choice',
+                            errors,
+                        )
+                advanced_in_path = sorted(set(track_refs['advanced']) & set(positions))
+                if advanced_in_path:
+                    fail(
+                        f'{path_owner}.branches: advanced branches belong after '
+                        f'track completion {advanced_in_path}',
+                        errors,
+                    )
+                for ref in valid_refs:
+                    branch = branch_by_id.get(ref)
+                    if not branch:
+                        continue
+                    dependencies = branch.get('requires')
+                    if not isinstance(dependencies, list):
+                        continue
+                    for dependency in dependencies:
+                        if not isinstance(dependency, str):
+                            continue
+                        if dependency not in positions:
+                            fail(
+                                f'{path_owner}.branches: {ref} requires missing {dependency}',
+                                errors,
+                            )
+                        elif positions[dependency] >= positions[ref]:
+                            fail(
+                                f'{path_owner}.branches: {dependency} must precede {ref}',
+                                errors,
+                            )
+            for path_id, count in Counter(path_ids).items():
+                if count > 1:
+                    fail(f'{owner}.linear_paths: duplicate path id {path_id}', errors)
+
         check_nonempty_strings(t.get('exit_capabilities'), 'exit_capabilities', owner, errors)
 
     unused = sorted(set(branch_by_id) - used_branches)

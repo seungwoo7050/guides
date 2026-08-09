@@ -34,6 +34,7 @@
 | [`language-implementation`](https://github.com/seungwoo7050/guides/tree/language-implementation) | [`cpp`](https://github.com/seungwoo7050/guides/tree/cpp), [`algorithms`](https://github.com/seungwoo7050/guides/tree/algorithms), [`computer-architecture`](https://github.com/seungwoo7050/guides/tree/computer-architecture) | [`operating-systems`](https://github.com/seungwoo7050/guides/tree/operating-systems) |
 | [`embedded-systems`](https://github.com/seungwoo7050/guides/tree/embedded-systems) | [`c`](https://github.com/seungwoo7050/guides/tree/c), [`computer-architecture`](https://github.com/seungwoo7050/guides/tree/computer-architecture), [`operating-systems`](https://github.com/seungwoo7050/guides/tree/operating-systems) | [`cybersecurity`](https://github.com/seungwoo7050/guides/tree/cybersecurity) |
 | [`computer-graphics`](https://github.com/seungwoo7050/guides/tree/computer-graphics) | [`cpp`](https://github.com/seungwoo7050/guides/tree/cpp), [`algorithms`](https://github.com/seungwoo7050/guides/tree/algorithms), [`computer-architecture`](https://github.com/seungwoo7050/guides/tree/computer-architecture) | [`operating-systems`](https://github.com/seungwoo7050/guides/tree/operating-systems) |
+| [`game-development`](https://github.com/seungwoo7050/guides/tree/game-development) | 없음 | [`algorithms`](https://github.com/seungwoo7050/guides/tree/algorithms), [`cpp`](https://github.com/seungwoo7050/guides/tree/cpp), [`operating-systems`](https://github.com/seungwoo7050/guides/tree/operating-systems), [`computer-networks`](https://github.com/seungwoo7050/guides/tree/computer-networks) |
 
 ## 전체 graph
 
@@ -69,6 +70,7 @@ flowchart LR
   language_implementation["language-implementation"]
   embedded_systems["embedded-systems"]
   computer_graphics["computer-graphics"]
+  game_development["game-development"]
   web_app --> web_front_react_nextjs
   java --> backend_spring_boot
   web_app --> backend_spring_boot
@@ -121,6 +123,7 @@ flowchart LR
   class language_implementation specialization;
   class embedded_systems specialization;
   class computer_graphics specialization;
+  class game_development entry;
 ```
 
 ## 분야별 흐름
@@ -244,9 +247,84 @@ flowchart LR
   operating_systems -.-> computer_graphics
 ```
 
+### 게임 개발
+
+```mermaid
+flowchart LR
+  c["c"]
+  cpp["cpp"]
+  python["python"]
+  java["java"]
+  algorithms["algorithms"]
+  computer_architecture["computer-architecture"]
+  operating_systems["operating-systems"]
+  computer_networks["computer-networks"]
+  web_app["web-app"]
+  backend_spring_boot["backend-spring-boot"]
+  database_systems["database-systems"]
+  distributed_services["distributed-services"]
+  web_infra["web-infra"]
+  game_development["game-development"]
+  computer_graphics["computer-graphics"]
+  data_engineering["data-engineering"]
+  machine_learning["machine-learning"]
+  cybersecurity["cybersecurity"]
+  platform_engineering["platform-engineering"]
+  c -.-> cpp
+  python -.-> algorithms
+  cpp -.-> algorithms
+  algorithms -.-> computer_architecture
+  c -.-> computer_architecture
+  python -.-> computer_architecture
+  algorithms -.-> operating_systems
+  python -.-> operating_systems
+  c -.-> operating_systems
+  computer_architecture -.-> operating_systems
+  operating_systems -.-> computer_networks
+  java --> backend_spring_boot
+  web_app --> backend_spring_boot
+  database_systems -.-> backend_spring_boot
+  web_app -.-> database_systems
+  algorithms -.-> database_systems
+  operating_systems -.-> database_systems
+  java --> distributed_services
+  web_app --> distributed_services
+  database_systems -.-> distributed_services
+  backend_spring_boot -.-> distributed_services
+  computer_networks -.-> web_infra
+  web_app -.-> web_infra
+  algorithms -.-> game_development
+  cpp -.-> game_development
+  operating_systems -.-> game_development
+  computer_networks -.-> game_development
+  cpp --> computer_graphics
+  algorithms --> computer_graphics
+  computer_architecture --> computer_graphics
+  operating_systems -.-> computer_graphics
+  python --> data_engineering
+  database_systems --> data_engineering
+  distributed_services -.-> data_engineering
+  python --> machine_learning
+  algorithms -.-> machine_learning
+  computer_networks --> cybersecurity
+  web_app -.-> cybersecurity
+  operating_systems -.-> cybersecurity
+  web_infra -.-> cybersecurity
+  python -.-> cybersecurity
+  c -.-> cybersecurity
+  computer_architecture -.-> cybersecurity
+  web_infra --> platform_engineering
+  distributed_services -.-> platform_engineering
+  cybersecurity -.-> platform_engineering
+  computer_networks -.-> platform_engineering
+  data_engineering -.-> platform_engineering
+```
+
+업무 분야별 실제 선형 순서는 `docs/03-career-tracks.md`를 따른다.
+
 ## 해석 규칙
 
 - 필수 의존성은 브랜치 전체를 무조건 다시 공부하라는 뜻이 아니다. roadmap과 종료 검사를 이용해 이미 가진 능력을 확인한다.
 - 권장 관계는 프로젝트 성격에 따라 순서가 달라질 수 있다.
-- 업무 트랙의 핵심 목록은 직접 의존성을 생략할 수 있으므로 `docs/03-career-tracks.md`의 “공통·핵심 브랜치와 직접 의존성 순서”를 함께 본다.
+- 업무 트랙은 `docs/03-career-tracks.md`의 권장 선형 경로를 먼저 따르고, 엄밀한 필수 관계는 이 문서의 직접 의존성 표에서 확인한다.
 - graph에 없더라도 `connects` 관계는 실제 협업에서 중요하다. 상세 내용은 `docs/01-branch-catalog.md`를 본다.

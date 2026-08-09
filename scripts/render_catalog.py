@@ -19,6 +19,16 @@ KIND_TITLES = {
 }
 KIND_ORDER = ['common-foundation', 'language-entry', 'field-entry', 'specialization']
 
+TRACK_GROUPS = [
+    ('common', '공통 시작점', '목표 직무를 아직 정하지 않았을 때 구현 언어 하나와 변경·검증 기반을 선택한다.'),
+    ('web', '웹 개발', '프런트엔드·백엔드·풀스택은 책임 범위가 다르므로 직무별 선형 경로를 제공한다.'),
+    ('infra-security', '인프라·플랫폼·보안', '서비스 운영, 내부 플랫폼, 공격·방어는 인접하지만 서로 다른 상태와 실패를 소유한다.'),
+    ('mobile', '모바일 애플리케이션', '웹·React 기반을 모바일 수명 주기·오프라인·기기 기능·배포로 확장한다.'),
+    ('ai-data', 'AI·데이터', '모델 학습, 에이전틱 시스템, 데이터 파이프라인을 독립적인 결과물 기준으로 분리한다.'),
+    ('systems', '시스템·저수준·개발 도구', '운영체제·하드웨어·DBMS·컴파일러·그래픽스·임베디드 내부구조를 구현 수준으로 확장한다.'),
+    ('game', '게임회사 개발 직군', '게임회사 전체에 공통인 단일 기술 경로는 없다. 클라이언트·엔진·렌더링·서버·도구·데이터·보안 중 목표 개발 직군 하나를 선택한다. 기획·아트·사운드·사업 직군은 이 저장소의 범위가 아니다.'),
+]
+
 FIELD_FLOW_GROUPS = [
     (
         '웹·데이터·분산·플랫폼',
@@ -47,6 +57,17 @@ FIELD_FLOW_GROUPS = [
             'language-implementation', 'computer-graphics',
         ],
     ),
+    (
+        '게임 개발',
+        [
+            'c', 'cpp', 'python', 'java', 'algorithms',
+            'computer-architecture', 'operating-systems',
+            'computer-networks', 'web-app', 'backend-spring-boot',
+            'database-systems', 'distributed-services', 'web-infra',
+            'game-development', 'computer-graphics', 'data-engineering',
+            'machine-learning', 'cybersecurity', 'platform-engineering',
+        ],
+    ),
 ]
 
 
@@ -62,6 +83,10 @@ def link(branch_id: str, title_by_id: dict[str, str]) -> str:
 
 def join_links(ids: list[str], title_by_id: dict[str, str]) -> str:
     return ', '.join(link(i, title_by_id) for i in ids) if ids else '없음'
+
+
+def arrow_links(ids: list[str], title_by_id: dict[str, str]) -> str:
+    return ' → '.join(link(i, title_by_id) for i in ids)
 
 
 def render_branch_catalog(branches: list[dict]) -> str:
@@ -83,30 +108,33 @@ def render_branch_catalog(branches: list[dict]) -> str:
         '|---|---|---|',
     ]
     for kind in KIND_ORDER:
-        for b in grouped.get(kind, []):
-            lines.append(f"| {link(b['id'], title_by_id)} | {KIND_TITLES[kind]} | {b['summary']} |")
+        for branch in grouped.get(kind, []):
+            lines.append(
+                f"| {link(branch['id'], title_by_id)} | "
+                f"{KIND_TITLES[kind]} | {branch['summary']} |"
+            )
 
     for kind in KIND_ORDER:
-        lines.extend(['', f"## {KIND_TITLES[kind]}", ''])
-        for b in grouped.get(kind, []):
+        lines.extend(['', f'## {KIND_TITLES[kind]}', ''])
+        for branch in grouped.get(kind, []):
             lines.extend([
-                f"### `{b['id']}` — {b['title']}",
+                f"### `{branch['id']}` — {branch['title']}",
                 '',
-                b['summary'],
+                branch['summary'],
                 '',
-                f"- **필수 의존성:** {join_links(b['requires'], title_by_id)}",
-                f"- **권장 기반:** {join_links(b['recommends'], title_by_id)}",
-                f"- **인접 연결:** {join_links(b['connects'], title_by_id)}",
-                f"- **일반적 후속 심화:** {join_links(b['continues_to'], title_by_id)}",
+                f"- **필수 의존성:** {join_links(branch['requires'], title_by_id)}",
+                f"- **권장 기반:** {join_links(branch['recommends'], title_by_id)}",
+                f"- **인접 연결:** {join_links(branch['connects'], title_by_id)}",
+                f"- **일반적 후속 심화:** {join_links(branch['continues_to'], title_by_id)}",
                 '',
                 '**소유 범위**',
                 '',
             ])
-            lines.extend([f"- {item}" for item in b['owns']])
+            lines.extend([f"- {item}" for item in branch['owns']])
             lines.extend(['', '**비소유 범위**', ''])
-            lines.extend([f"- {item}" for item in b['excludes']])
+            lines.extend([f"- {item}" for item in branch['excludes']])
             lines.extend(['', '**종료 능력**', ''])
-            lines.extend([f"- {item}" for item in b['exit_capabilities']])
+            lines.extend([f"- {item}" for item in branch['exit_capabilities']])
             lines.append('')
     return '\n'.join(lines).rstrip() + '\n'
 
@@ -130,12 +158,100 @@ def transitive_requires(branch_ids: list[str], branch_by_id: dict[str, dict]) ->
     return ordered
 
 
-def summary_core(track: dict) -> str:
-    parts = [f"`{branch_id}`" for branch_id in track['common'] + track['required']]
-    for group in track['required_any']:
-        choices = ' / '.join(f"`{branch_id}`" for branch_id in group)
-        parts.append(f'({choices} 중 하나)')
-    return ', '.join(parts) if parts else '없음'
+def render_tracks(branches: list[dict], tracks: list[dict]) -> str:
+    title_by_id = {b['id']: b['title'] for b in branches}
+    branch_by_id = {b['id']: b for b in branches}
+    grouped: dict[str, list[dict]] = defaultdict(list)
+    for track in tracks:
+        grouped[track['group']].append(track)
+
+    lines = [
+        '# 업무 분야별 트랙',
+        '',
+        '> 이 문서는 `catalog/tracks.json`과 브랜치 의존성에서 생성된다. 직접 수정하지 않는다.',
+        '',
+        '트랙은 모든 브랜치를 나열하는 커리큘럼이 아니다. 목표 업무에 필요한 **핵심 경로**, 인접 협업에 필요한 **권장 폭**, 이후 전문화를 위한 **심화 경로**를 구분한다.',
+        '',
+        '`권장 선형 경로`는 처음 시작하는 사람이 순서대로 진행할 실제 학습 경로다. 엄밀한 필수 의존성만 뜻하지 않으며, 직무 진입에 유용한 권장 기반을 포함할 수 있다.',
+        '',
+        '## 트랙 요약',
+        '',
+        '| 분야 | 트랙 | 권장 경로 | 목표 |',
+        '|---|---|---|---|',
+    ]
+    for group_id, group_title, _ in TRACK_GROUPS:
+        for track in grouped.get(group_id, []):
+            if len(track['linear_paths']) == 1:
+                path_branches = track['linear_paths'][0]['branches']
+                path_text = ' → '.join(f'`{branch_id}`' for branch_id in path_branches)
+            else:
+                path_titles = ' / '.join(path['title'] for path in track['linear_paths'])
+                path_text = f"{len(track['linear_paths'])}개 — {path_titles}"
+            lines.append(
+                f"| {group_title} | [{track['title']}](#{track['id']}) | "
+                f"{path_text} | {track['summary']} |"
+            )
+
+    for group_id, group_title, group_description in TRACK_GROUPS:
+        group_tracks = grouped.get(group_id, [])
+        if not group_tracks:
+            continue
+        lines.extend(['', f'## {group_title}', '', group_description, ''])
+        for track in group_tracks:
+            direct_core = track['common'] + track['required']
+            expanded = transitive_requires(direct_core, branch_by_id)
+            lines.extend([
+                f"### {track['title']}",
+                '',
+                f"<a id=\"{track['id']}\"></a>",
+                '',
+                track['summary'],
+                '',
+                '**권장 선형 경로**',
+                '',
+            ])
+            for index, path in enumerate(track['linear_paths'], start=1):
+                lines.append(
+                    f"{index}. **{path['title']}** — "
+                    f"{arrow_links(path['branches'], title_by_id)}"
+                )
+            lines.extend([
+                '',
+                f"- **공통:** {join_links(track['common'], title_by_id)}",
+                f"- **핵심 브랜치:** {join_links(track['required'], title_by_id)}",
+            ])
+            if track['required_any']:
+                rendered_groups = []
+                for group in track['required_any']:
+                    rendered_groups.append(join_links(group, title_by_id) + ' 중 하나')
+                lines.append('- **택일 필수:** ' + ' / '.join(rendered_groups))
+            else:
+                lines.append('- **택일 필수:** 없음')
+            lines.append(
+                '- **공통·핵심 브랜치와 직접 의존성 순서:** '
+                + join_links(expanded, title_by_id)
+            )
+            if track['required_any']:
+                lines.append('- **택일 선택별 추가 의존성 순서:**')
+                multiple_groups = len(track['required_any']) > 1
+                for group_index, group in enumerate(track['required_any'], start=1):
+                    for choice in group:
+                        choice_path = transitive_requires([choice], branch_by_id)
+                        group_label = f'그룹 {group_index}, ' if multiple_groups else ''
+                        lines.append(
+                            f"  - {group_label}{link(choice, title_by_id)} 선택: "
+                            f"{join_links(choice_path, title_by_id)}"
+                        )
+            lines.extend([
+                f"- **권장 인접 지식:** {join_links(track['recommended'], title_by_id)}",
+                f"- **후속 심화:** {join_links(track['advanced'], title_by_id)}",
+                '',
+                '**트랙 종료 능력**',
+                '',
+            ])
+            lines.extend([f"- {item}" for item in track['exit_capabilities']])
+            lines.append('')
+    return '\n'.join(lines).rstrip() + '\n'
 
 
 def mermaid_id(branch_id: str) -> str:
@@ -161,72 +277,6 @@ def render_field_flow(branch_by_id: dict[str, dict], branch_ids: list[str]) -> l
     return lines
 
 
-def render_tracks(branches: list[dict], tracks: list[dict]) -> str:
-    title_by_id = {b['id']: b['title'] for b in branches}
-    branch_by_id = {b['id']: b for b in branches}
-    lines = [
-        '# 업무 분야별 트랙',
-        '',
-        '> 이 문서는 `catalog/tracks.json`과 브랜치 의존성에서 생성된다. 직접 수정하지 않는다.',
-        '',
-        '트랙은 모든 브랜치를 나열하는 커리큘럼이 아니다. 목표 업무에 필요한 **핵심 경로**, 인접 협업에 필요한 **권장 폭**, 이후 전문화를 위한 **심화 경로**를 구분한다.',
-        '',
-        '## 트랙 요약',
-        '',
-        '| 트랙 | 핵심 브랜치 | 목표 |',
-        '|---|---|---|',
-    ]
-    for t in tracks:
-        lines.append(f"| [{t['title']}](#{t['id']}) | {summary_core(t)} | {t['summary']} |")
-
-    for t in tracks:
-        direct_core = t['common'] + t['required']
-        expanded = transitive_requires(direct_core, branch_by_id)
-        lines.extend([
-            '',
-            f"## {t['title']}",
-            '',
-            f"<a id=\"{t['id']}\"></a>",
-            '',
-            t['summary'],
-            '',
-            f"- **공통:** {join_links(t['common'], title_by_id)}",
-            f"- **핵심 브랜치:** {join_links(t['required'], title_by_id)}",
-        ])
-        if t['required_any']:
-            rendered_groups = []
-            for group in t['required_any']:
-                rendered_groups.append(join_links(group, title_by_id) + ' 중 하나')
-            lines.append('- **택일 필수:** ' + ' / '.join(rendered_groups))
-        else:
-            lines.append('- **택일 필수:** 없음')
-        lines.append(
-            f"- **공통·핵심 브랜치와 직접 의존성 순서:** "
-            f"{join_links(expanded, title_by_id)}"
-        )
-        if t['required_any']:
-            lines.append('- **택일 선택별 추가 의존성 순서:**')
-            multiple_groups = len(t['required_any']) > 1
-            for group_index, group in enumerate(t['required_any'], start=1):
-                for choice in group:
-                    choice_path = transitive_requires([choice], branch_by_id)
-                    group_label = f'그룹 {group_index}, ' if multiple_groups else ''
-                    lines.append(
-                        f"  - {group_label}{link(choice, title_by_id)} 선택: "
-                        f"{join_links(choice_path, title_by_id)}"
-                    )
-        lines.extend([
-            f"- **권장 인접 지식:** {join_links(t['recommended'], title_by_id)}",
-            f"- **후속 심화:** {join_links(t['advanced'], title_by_id)}",
-            '',
-            '**트랙 종료 능력**',
-            '',
-        ])
-        lines.extend([f"- {item}" for item in t['exit_capabilities']])
-        lines.append('')
-    return '\n'.join(lines).rstrip() + '\n'
-
-
 def render_dependency_map(branches: list[dict]) -> str:
     title_by_id = {b['id']: b['title'] for b in branches}
     branch_by_id = {b['id']: b for b in branches}
@@ -242,8 +292,12 @@ def render_dependency_map(branches: list[dict]) -> str:
         '| 브랜치 | 직접 필수 의존성 | 권장 기반 |',
         '|---|---|---|',
     ]
-    for b in branches:
-        lines.append(f"| {link(b['id'], title_by_id)} | {join_links(b['requires'], title_by_id)} | {join_links(b['recommends'], title_by_id)} |")
+    for branch in branches:
+        lines.append(
+            f"| {link(branch['id'], title_by_id)} | "
+            f"{join_links(branch['requires'], title_by_id)} | "
+            f"{join_links(branch['recommends'], title_by_id)} |"
+        )
 
     lines.extend([
         '',
@@ -256,20 +310,23 @@ def render_dependency_map(branches: list[dict]) -> str:
         '  classDef entry fill:#ffe,stroke:#665;',
         '  classDef specialization fill:#fee,stroke:#655;',
     ])
-    for b in branches:
-        label = b['id']
-        lines.append(f"  {mermaid_id(b['id'])}[\"{label}\"]")
-    for b in branches:
-        for dep in b['requires']:
-            lines.append(f"  {mermaid_id(dep)} --> {mermaid_id(b['id'])}")
+    for branch in branches:
+        lines.append(f"  {mermaid_id(branch['id'])}[\"{branch['id']}\"]")
+    for branch in branches:
+        for dependency in branch['requires']:
+            lines.append(
+                f"  {mermaid_id(dependency)} --> {mermaid_id(branch['id'])}"
+            )
     kind_class = {
         'common-foundation': 'foundation',
         'language-entry': 'language',
         'field-entry': 'entry',
         'specialization': 'specialization',
     }
-    for b in branches:
-        lines.append(f"  class {mermaid_id(b['id'])} {kind_class[b['kind']]};")
+    for branch in branches:
+        lines.append(
+            f"  class {mermaid_id(branch['id'])} {kind_class[branch['kind']]};"
+        )
     lines.extend(['```', ''])
 
     lines.extend([
@@ -284,11 +341,13 @@ def render_dependency_map(branches: list[dict]) -> str:
         lines.append('')
 
     lines.extend([
+        '업무 분야별 실제 선형 순서는 `docs/03-career-tracks.md`를 따른다.',
+        '',
         '## 해석 규칙',
         '',
         '- 필수 의존성은 브랜치 전체를 무조건 다시 공부하라는 뜻이 아니다. roadmap과 종료 검사를 이용해 이미 가진 능력을 확인한다.',
         '- 권장 관계는 프로젝트 성격에 따라 순서가 달라질 수 있다.',
-        '- 업무 트랙의 핵심 목록은 직접 의존성을 생략할 수 있으므로 `docs/03-career-tracks.md`의 “공통·핵심 브랜치와 직접 의존성 순서”를 함께 본다.',
+        '- 업무 트랙은 `docs/03-career-tracks.md`의 권장 선형 경로를 먼저 따르고, 엄밀한 필수 관계는 이 문서의 직접 의존성 표에서 확인한다.',
         '- graph에 없더라도 `connects` 관계는 실제 협업에서 중요하다. 상세 내용은 `docs/01-branch-catalog.md`를 본다.',
     ])
     return '\n'.join(lines).rstrip() + '\n'
@@ -315,7 +374,10 @@ def main() -> int:
         ROOT / 'docs' / '03-career-tracks.md': render_tracks(branches, tracks),
         ROOT / 'docs' / '04-dependency-map.md': render_dependency_map(branches),
     }
-    ok = all(write_or_check(path, content, args.check) for path, content in outputs.items())
+    ok = all(
+        write_or_check(path, content, args.check)
+        for path, content in outputs.items()
+    )
     return 0 if ok else 1
 
 
