@@ -211,9 +211,9 @@ reference와 완료한 skeleton은 contract가 통과해야 한다. 최초 skele
 
 Android와 iOS 각각에서 다음을 기록한다.
 
-1. 설치된 development build를 종료한 뒤 `fieldnotes://records/forest-edge`로 cold start한다.
-2. app가 열린 상태에서 `fieldnotes://records/ridge-marker/edit`를 전달해 warm 경로를 확인한다.
-3. malformed URL과 `fieldnotes://records/no-longer-present`를 열어 invalid/stale 결과를 구분한다.
+1. 설치된 development build를 종료한 뒤 development profile의 resolved scheme인 `fieldnotes-development://records/forest-edge`로 cold start한다.
+2. app가 열린 상태에서 `fieldnotes-development://records/ridge-marker/edit`를 전달해 warm 경로를 확인한다.
+3. malformed URL과 `fieldnotes-development://records/no-longer-present`를 열어 invalid/stale 결과를 구분한다. preview는 `fieldnotes-preview`, production은 `fieldnotes`를 사용하며, 설치한 profile과 다른 scheme은 `unexpected-scheme`으로 거부되어야 한다.
 4. 같은 link를 두 번 전달해 stack·draft·screen effect가 반복되지 않는지 본다.
 5. dirty edit에서 Android system back과 iOS back gesture를 수행한다.
 6. process를 실제로 종료하고 launcher/restoration 후보로 다시 시작해 memory-only edit가 fixture로 초기화되는지 확인한다.

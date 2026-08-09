@@ -38,9 +38,9 @@ local fault server는 host `127.0.0.1:3104`에만 bind한다. app 실행 환경�
 | iOS simulator | `http://127.0.0.1:3104/commands` | simulator evidence로만 기록 |
 | Android emulator | `http://10.0.2.2:3104/commands` | Android emulator host alias |
 | Android physical device | `http://127.0.0.1:3104/commands` | `adb reverse tcp:3104 tcp:3104`, 종료 뒤 `adb reverse --remove tcp:3104` |
-| iOS physical device | 허가된 격리 HTTPS endpoint 또는 `미검사` | 이 저장소는 loopback reverse bridge를 제공하지 않음 |
+| iOS physical device | local DNS가 연결한 `https://<name>.test/commands` 또는 `미검사` | reference가 허용하는 reserved `.test`; device DNS·local CA trust·격리 owner 필요, bridge는 제공하지 않음 |
 
-전체 명령, 안전 경계와 정리 절차는 [fault server README](../exercises/field-notes/fault-server/README.md#app-실행-환경별-endpoint)를 따른다. iOS device를 연결하려고 unauthenticated test control endpoint를 LAN이나 공개 tunnel에 노출하지 않는다. platform cleartext policy를 production 전역에서 낮추지 말고, 안전한 HTTPS test endpoint가 없다면 실제 device network fault 항목을 `미검사`로 둔다.
+전체 명령, 안전 경계와 정리 절차는 [fault server README](../exercises/field-notes/fault-server/README.md#app-실행-환경별-endpoint)를 따른다. 일반 public/production hostname은 reference transport가 거부한다. iOS device를 연결하려고 unauthenticated test control endpoint를 LAN이나 공개 tunnel에 노출하지 않는다. platform cleartext policy를 production 전역에서 낮추지 말고, DNS·local CA trust·격리 owner가 있는 `.test` HTTPS endpoint가 없다면 실제 device network fault 항목을 `미검사`로 둔다.
 
 ## compatible package 설치
 

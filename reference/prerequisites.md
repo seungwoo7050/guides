@@ -77,7 +77,7 @@
 
 - Git
 - Node.js `24.19.0`과 npm `11.17.0`
-- Python 3: repository 검사 script용
+- Python `3.11` 이상: repository 검사 script 지원 하한
 - 충분한 저장 공간과 dependency를 내려받을 network
 - text editor와 terminal
 

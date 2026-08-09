@@ -59,6 +59,7 @@ HTML·CSS·TypeScript·React·HTTP의 일반 원리는 [`web-app`](https://githu
 |---|---|---|
 | Node.js | `24.19.0` (`.nvmrc`) | 재현을 위한 repository pin |
 | npm | `11.17.0` (`packageManager`와 lockfile) | 재현을 위한 repository pin |
+| Python | `3.11` 이상 | prepare/verify script 지원 하한 |
 | Expo SDK | `57` | 학습·dependency 기준 |
 | React Native / React | `0.86` / `19.2.3` | Expo SDK 57 compatibility |
 | Expo가 요구하는 최소 Node | `22.13.x` | SDK 지원 하한이며 이 저장소의 pin과 다름 |

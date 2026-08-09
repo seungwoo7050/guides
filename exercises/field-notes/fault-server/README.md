@@ -39,7 +39,7 @@ HTTP server는 의도적으로 host loopback에만 bind한다. 실행 환경에�
 | iOS simulator | `http://127.0.0.1:3104/commands` | simulator가 host network를 공유하는 개발 evidence다. 실제 iPhone evidence가 아니다. |
 | Android emulator | `http://10.0.2.2:3104/commands` | Android emulator의 host-loopback alias다. 다른 emulator 제품은 자체 정본을 확인한다. |
 | Android physical development device | `http://127.0.0.1:3104/commands` | 아래 `adb reverse`가 성공한 현재 USB device에서만 사용한다. |
-| iOS physical device | 허가된 격리 HTTPS test endpoint 또는 `미검사` | 이 저장소는 host loopback server를 iPhone에 노출하는 bridge를 제공하지 않는다. |
+| iOS physical device | local DNS가 연결한 `https://<name>.test/commands` 또는 `미검사` | reference transport는 reserved `.test` HTTPS만 허용한다. device DNS, local CA trust, endpoint owner·격리 근거가 모두 필요하며 이 저장소는 bridge나 certificate를 제공하지 않는다. |
 
 Android physical device에서는 server를 loopback bind 그대로 둔 채 USB reverse를 명시적으로 열고, 실습 뒤 제거한다.
 
@@ -57,7 +57,7 @@ EXPO_PUBLIC_FIELD_NOTES_SYNC_URL=http://10.0.2.2:3104/commands \
   npm run start:dev-client --workspace=@field-notes/reference
 ```
 
-local cleartext HTTP가 platform policy에 거부되면 production 전체의 transport policy를 낮추지 않는다. 허가된 HTTPS test endpoint를 사용하거나 해당 device 항목을 `미검사`로 남긴다. iOS physical device를 위해 server를 `0.0.0.0`에 bind하거나 unauthenticated `/__test/*` control endpoint를 LAN·tunnel·공개 host에 노출하지 않는다. 외부 test endpoint가 필요하면 command API와 test control plane을 분리하고 owner·인증·격리·정리 근거를 제출한다.
+local cleartext HTTP가 platform policy에 거부되면 production 전체의 transport policy를 낮추지 않는다. 허가된 reserved `.test` HTTPS endpoint를 사용하거나 해당 device 항목을 `미검사`로 남긴다. `.test` 이름만 붙였다고 안전한 것이 아니며 device가 쓰는 DNS, local CA trust, test data·endpoint owner와 정리 근거가 필요하다. reference transport는 일반 public/production hostname을 의도적으로 거부한다. iOS physical device를 위해 server를 `0.0.0.0`에 bind하거나 unauthenticated `/__test/*` control endpoint를 LAN·tunnel·공개 host에 노출하지 않는다. 외부 test endpoint가 필요하면 command API와 test control plane을 분리하고 owner·인증·격리·정리 근거를 제출한다.
 
 ## in-process API
 
