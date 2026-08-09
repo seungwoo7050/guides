@@ -19,6 +19,7 @@
 - `skeleton/quality-plan.json`
 - `skeleton/reconciliation.md`
 - `skeleton/runbook.md`
+- `skeleton/evidence.json`
 - `skeleton/submission.json`
 
 `skeleton/`은 작성 형식을 보여 주는 빈 작업 출발점이다. 완성된 reference 구현은 제공하지 않는다.
@@ -28,7 +29,7 @@
 ./scripts/check-workspace.sh exercises/06-capstones/01-batch-data-product
 ```
 
-두 번째 명령은 필수 artifact와 JSON 구조만 검사한다. 실제 pipeline의 정확성은 `workspace/submission.json`의 `verify_command`와 별도 failure fixture로 증명한다.
+두 번째 명령은 각 Markdown template의 필수 section에 보이는 구체적 본문이 있는지, `submission.json`과 `evidence.json`의 run/input/code/output identity가 일치하는지, rubric의 모든 필수 시나리오가 각각 물리적으로 고유한 `evidence/` 파일을 가리키는지 검사한다. 학습자가 적은 `run_command`와 `verify_command`는 신뢰할 수 없는 임의 명령이므로 root checker가 실행하지 않는다.
 
 ## 완료 기준
 
@@ -43,16 +44,24 @@
 
 최소한 다음 fixture 또는 실행 시나리오를 준비한다.
 
-- 정상 입력
-- duplicate와 입력 순서 변경
-- 필수 필드 또는 schema 오류
-- 중간 단계 종료와 재시작
-- 같은 interval 또는 offset replay
-- correction/delete/late data 중 해당 경로의 핵심 사건
-- publish 직전과 직후 실패
-- source와 sink reconciliation 불일치
+- `normal`: 고정 manifest의 정상 실행과 publish
+- `input-order-permutation`: file/row 순서 변경
+- `duplicate-manifest-file`: manifest의 같은 file 중복
+- `duplicate-payment-event`: 여러 file의 같은 payment event 중복
+- `transform-crash`: transform 중간 종료와 재시작
+- `quality-gate-failure`: staging 뒤 quality gate 실패
+- `pre-publish-commit-failure`: metadata commit 직전 실패
+- `post-publish-retry`: commit 뒤 응답 유실과 같은 run 재시도
+- `concurrent-publish`: 같은 interval 동시 publish
+- `missing-reference-snapshot`: 과거 reference snapshot 누락
+- `late-refund-boundary`: correction window 안/밖 refund
+- `partial-or-mutable-input`: partial file 또는 mutable object version
+- `conflicting-payment-event`: 같은 ID의 다른 payload
+- `backfill-live-contention`: backfill과 live capacity·freshness 충돌
+- `semantic-canary-mismatch`: 같은 schema의 다른 metric 의미
+- `reconciliation-mismatch`: source와 snapshot 대사 불일치
 
-root 검증은 산출물 template과 rubric의 구조만 확인한다. 실제 pipeline의 정확성과 운영 가능성은 학습자가 선택한 runtime에서 별도 검사해야 한다.
+root 검증은 빈 section, placeholder, scenario 누락·중복, 경로 탈출, identity 불일치와 비어 있는 evidence를 거부한다. 실제 pipeline의 정확성, evidence가 실제 실행에서 생성됐는지와 운영 가능성은 학습자가 선택한 runtime의 명령 실행 및 사람 검토로 확인해야 한다.
 
 ## 제출 전 질문
 

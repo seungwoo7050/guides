@@ -76,6 +76,7 @@ REQUIRED_IGNORE_RULES = {
     "exercises/**/workspace/",
     "exercises/**/workspace.tmp.*/",
 }
+PLACEHOLDER_TOKENS = ("TODO", "TBD", "PLACEHOLDER")
 
 
 def fail(message: str) -> None:
@@ -224,6 +225,33 @@ def safe_relative(value: object, *, prefix: str | None = None) -> PurePosixPath:
     return path
 
 
+def read_json(path: Path, *, label: str) -> object:
+    try:
+        return json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, UnicodeError, json.JSONDecodeError) as exc:
+        fail(f"{label} JSON을 읽을 수 없습니다: {exc}")
+
+
+def json_path(value: object, raw: object, *, label: str) -> object:
+    if (
+        not isinstance(raw, str)
+        or not raw
+        or raw != raw.strip()
+        or any(part in {"", ".", ".."} for part in raw.split("."))
+    ):
+        fail(f"{label}: 잘못된 JSON path {raw!r}")
+    current = value
+    for part in raw.split("."):
+        if not isinstance(current, dict) or part not in current:
+            fail(f"{label}: template에 JSON path가 없습니다: {raw}")
+        current = current[part]
+    return current
+
+
+def placeholder_text(value: object) -> bool:
+    return isinstance(value, str) and any(token in value.upper() for token in PLACEHOLDER_TOKENS)
+
+
 def load_manifest() -> dict[str, object]:
     path = ROOT / "exercises/manifest.json"
     try:
@@ -297,17 +325,119 @@ def check_exercises(manifest: dict[str, object]) -> None:
             rubric_path = path / "rubric.json"
             if not lstat_regular(rubric_path):
                 fail(f"{path_text}: rubric.json 누락")
-            rubric = json.loads(rubric_path.read_text(encoding="utf-8"))
+            rubric = read_json(rubric_path, label=f"{path_text}/rubric.json")
+            if not isinstance(rubric, dict):
+                fail(f"{path_text}: capstone rubric root는 object여야 합니다.")
             required = rubric.get("required_artifacts")
             criteria = rubric.get("criteria")
-            if not isinstance(required, list) or not required:
+            capstone_id = rubric.get("capstone_id")
+            required_scenarios = rubric.get("required_scenarios")
+            required_nonempty_json = rubric.get("required_nonempty_json")
+            if rubric.get("version") != 2:
+                fail(f"{path_text}: capstone rubric version은 2여야 합니다.")
+            if not isinstance(required, list) or not required or not all(isinstance(value, str) for value in required):
                 fail(f"{path_text}: required_artifacts 누락")
-            if not isinstance(criteria, list) or not criteria:
+            if len(required) != len(set(required)) or not {"submission.json", "evidence.json"}.issubset(required):
+                fail(f"{path_text}: required_artifacts는 고유해야 하며 submission.json과 evidence.json을 포함해야 합니다.")
+            if (
+                not isinstance(criteria, list)
+                or not criteria
+                or not all(isinstance(value, str) and value.strip() == value and value for value in criteria)
+            ):
                 fail(f"{path_text}: criteria 누락")
+            if (
+                not isinstance(capstone_id, str)
+                or not capstone_id
+                or any(character not in "abcdefghijklmnopqrstuvwxyz0123456789-" for character in capstone_id)
+            ):
+                fail(f"{path_text}: capstone_id 형식 오류")
+            if (
+                not isinstance(required_scenarios, list)
+                or not required_scenarios
+                or not all(isinstance(value, str) and value.strip() == value and value for value in required_scenarios)
+                or len(required_scenarios) != len(set(required_scenarios))
+            ):
+                fail(f"{path_text}: required_scenarios 형식 오류")
+            if not isinstance(required_nonempty_json, dict):
+                fail(f"{path_text}: required_nonempty_json 형식 오류")
+            templates: dict[str, object] = {}
             for artifact in required:
                 artifact_path = safe_relative(artifact)
-                if not lstat_regular(path / "skeleton" / Path(*artifact_path.parts)):
+                template_path = path / "skeleton" / Path(*artifact_path.parts)
+                if not lstat_regular(template_path):
                     fail(f"{path_text}: capstone template 누락 {artifact}")
+                if template_path.suffix == ".json":
+                    templates[artifact] = read_json(
+                        template_path, label=f"{path_text}/skeleton/{artifact}"
+                    )
+            for artifact, json_paths in required_nonempty_json.items():
+                if not isinstance(artifact, str) or artifact not in required or not artifact.endswith(".json"):
+                    fail(f"{path_text}: required_nonempty_json artifact 오류 {artifact!r}")
+                if (
+                    not isinstance(json_paths, list)
+                    or not json_paths
+                    or not all(isinstance(value, str) for value in json_paths)
+                    or len(json_paths) != len(set(json_paths))
+                ):
+                    fail(f"{path_text}: required_nonempty_json path 오류 {artifact!r}")
+                for value in json_paths:
+                    json_path(templates[artifact], value, label=f"{path_text}/{artifact}")
+            submission = templates.get("submission.json")
+            if (
+                not isinstance(submission, dict)
+                or submission.get("capstone_id") != capstone_id
+                or submission.get("evidence_manifest") != "evidence.json"
+            ):
+                fail(f"{path_text}: submission template identity 오류")
+            for field in (
+                "run_id",
+                "implementation_profile",
+                "run_command",
+                "verify_command",
+                "input_fixture",
+                "input_identity",
+                "code_identity",
+                "output_location",
+                "output_identity",
+            ):
+                if not placeholder_text(submission.get(field)):
+                    fail(f"{path_text}: submission template field 오류 {field}")
+            known_limits = submission.get("known_limits")
+            if (
+                not isinstance(known_limits, list)
+                or not known_limits
+                or not all(placeholder_text(value) for value in known_limits)
+            ):
+                fail(f"{path_text}: submission template known_limits 오류")
+            evidence = templates.get("evidence.json")
+            if (
+                not isinstance(evidence, dict)
+                or type(evidence.get("schema_version")) is not int
+                or evidence.get("schema_version") != 1
+                or evidence.get("capstone_id") != capstone_id
+            ):
+                fail(f"{path_text}: evidence template identity 오류")
+            template_scenarios = evidence.get("scenarios")
+            if (
+                not isinstance(template_scenarios, list)
+                or not all(isinstance(value, dict) for value in template_scenarios)
+                or [value.get("id") for value in template_scenarios] != required_scenarios
+            ):
+                fail(f"{path_text}: evidence template scenario가 rubric과 다릅니다.")
+            for field in (
+                "run_id",
+                "input_fixture",
+                "input_identity",
+                "code_identity",
+                "output_location",
+                "output_identity",
+            ):
+                if not placeholder_text(evidence.get(field)):
+                    fail(f"{path_text}: evidence template field 오류 {field}")
+            for scenario in template_scenarios:
+                for field in ("status", "fixture", "expected", "observed", "evidence"):
+                    if not placeholder_text(scenario.get(field)):
+                        fail(f"{path_text}: evidence template scenario field 오류 {scenario.get('id')}.{field}")
             if rubric.get("reference_implementation") is not False:
                 fail(f"{path_text}: capstone은 reference 구현을 제공하지 않아야 합니다.")
         else:

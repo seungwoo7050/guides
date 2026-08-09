@@ -56,7 +56,8 @@ quality_status
 5. `quality-plan.json`
 6. `reconciliation.md`
 7. `runbook.md`
-8. `submission.json` — 구현 profile, 실행·검증 명령과 알려진 한계
+8. `evidence.json` — run/input/code/output identity와 capstone별 필수 시나리오의 관측 파일
+9. `submission.json` — 구현 profile, 실행·검증 명령과 알려진 한계
 
 템플릿은 [`exercises/06-capstones/01-batch-data-product`](../../exercises/06-capstones/01-batch-data-product/README.md)에 있다.
 
@@ -72,10 +73,10 @@ quality_status
 | storage와 publish | `pipeline-design.md`: partition/file target, staging, validation gate, atomic metadata pointer와 previous snapshot |
 | orchestration과 backfill | `runbook.md`: run state, 90일 dry-run, live quota, pause/resume/abort/rollback |
 | quality와 reconciliation | `quality-plan.json`·`reconciliation.md`: hard/statistical rule, sticky quarantine, count·amount·key/detail diff |
-| lineage·freshness·cost·access | `submission.json`·`runbook.md`: input/output/code/schema/quality lineage, source/pipeline delay, unit cost, 최소 권한 |
+| lineage·freshness·cost·access | `evidence.json`·`submission.json`·`runbook.md`: input/output/code/schema/quality lineage, source/pipeline delay, unit cost, 최소 권한 |
 | evolution과 consumer cutover | `data-contract.md`·`runbook.md`: old/new matrix, shadow result, canary consumer, migration, deprecation와 rollback/roll-forward |
 
-Artifact가 존재하는 것만으로 evidence가 되지는 않는다. 각 결정은 fixture, 실행 결과, manifest/snapshot ID, diff 또는 사람 sign-off로 뒷받침한다.
+Artifact가 존재하는 것만으로 evidence가 되지는 않는다. `evidence.json`의 각 시나리오는 고유한 `evidence/` 파일과 run/input/code/output identity를 가리키며, 각 결정은 fixture, 실행 결과, manifest/snapshot ID, diff 또는 사람 sign-off로 뒷받침한다. Root checker는 이 연결과 본문 충실도를 정적으로 검사하지만 학습자가 적은 임의 명령은 실행하지 않는다.
 
 ## 상태와 경계
 
@@ -131,18 +132,22 @@ consumer는 `PUBLISHED` snapshot만 읽어야 한다.
 
 ## 필수 실패 시나리오
 
-1. 같은 file이 input manifest에 두 번 등록됨
-2. 같은 payment event가 다른 file에 중복됨
-3. transform 중간에 process 종료
-4. staging은 완료됐지만 quality가 실패
-5. quality 통과 뒤 metadata commit 직전 failure
-6. 같은 interval의 두 run이 동시에 publish 시도
-7. 과거 account snapshot이 누락됨
-8. late refund가 correction window 안/밖에 도착
-9. complete marker 전 partial file 또는 같은 object key의 mutable version을 발견
-10. 같은 payment event ID에 서로 다른 payload가 도착
-11. backfill이 live source·warehouse capacity를 압박해 freshness SLO를 위협
-12. old/new metric은 schema가 같지만 의미가 달라 canary consumer 결과가 어긋남
+- `normal`: 고정 manifest와 version의 정상 실행·검증·publish
+- `input-order-permutation`: 같은 입력 집합의 file/row 순서를 바꾼 재실행
+- `duplicate-manifest-file`: 같은 file이 input manifest에 두 번 등록됨
+- `duplicate-payment-event`: 같은 payment event가 다른 file에 중복됨
+- `transform-crash`: transform 중간에 process 종료
+- `quality-gate-failure`: staging은 완료됐지만 quality가 실패
+- `pre-publish-commit-failure`: quality 통과 뒤 metadata commit 직전 failure
+- `post-publish-retry`: metadata commit 뒤 응답 유실로 같은 run을 재시도
+- `concurrent-publish`: 같은 interval의 두 run이 동시에 publish 시도
+- `missing-reference-snapshot`: 과거 account snapshot이 누락됨
+- `late-refund-boundary`: late refund가 correction window 안/밖에 도착
+- `partial-or-mutable-input`: complete marker 전 partial file 또는 같은 object key의 mutable version을 발견
+- `conflicting-payment-event`: 같은 payment event ID에 서로 다른 payload가 도착
+- `backfill-live-contention`: backfill이 live source·warehouse capacity를 압박해 freshness SLO를 위협
+- `semantic-canary-mismatch`: old/new metric은 schema가 같지만 의미가 달라 canary consumer 결과가 어긋남
+- `reconciliation-mismatch`: source와 published snapshot의 key·count·amount가 어긋남
 
 각 시나리오에서 다음을 기록한다.
 
@@ -171,7 +176,7 @@ consumer는 `PUBLISHED` snapshot만 읽어야 한다.
 
 ## 사람·runtime 검토 evidence
 
-Root validator는 artifact와 JSON 구조만 확인한다. 완료를 주장하려면 선택한 runtime에서 다음을 별도로 남긴다.
+Root validator는 필수 section의 보이는 본문, submission/evidence identity, rubric의 모든 필수 시나리오와 고유한 `evidence/` 파일의 정적 연결을 검사한다. 명령 실행 결과의 진실성과 다음 의미 판단은 선택 runtime과 사람이 별도로 확인한다.
 
 - 동일 manifest·version의 두 실행이 만든 canonical row digest와 snapshot ID
 - transform/publish 지점의 failure injection 뒤 consumer-visible pointer와 cleanup 결과

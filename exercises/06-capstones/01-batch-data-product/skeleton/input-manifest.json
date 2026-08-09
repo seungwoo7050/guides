@@ -4,8 +4,19 @@
     "start": "TODO",
     "end": "TODO"
   },
-  "sources": [],
+  "sources": [
+    {
+      "uri": "TODO",
+      "object_version": "TODO",
+      "checksum": "TODO",
+      "complete_marker": "TODO"
+    }
+  ],
   "transform_revision": "TODO",
-  "schema_versions": {},
-  "reference_versions": {}
+  "schema_versions": {
+    "payments": "TODO"
+  },
+  "reference_versions": {
+    "accounts": "TODO"
+  }
 }

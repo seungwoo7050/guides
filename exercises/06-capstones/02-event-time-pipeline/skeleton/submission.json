@@ -1,8 +1,14 @@
 {
+  "capstone_id": "event-time-pipeline",
+  "evidence_manifest": "evidence.json",
+  "run_id": "TODO",
   "implementation_profile": "TODO",
   "run_command": "TODO",
   "verify_command": "TODO",
   "input_fixture": "TODO",
+  "input_identity": "TODO",
+  "code_identity": "TODO",
   "output_location": "TODO",
-  "known_limits": []
+  "output_identity": "TODO",
+  "known_limits": ["TODO"]
 }

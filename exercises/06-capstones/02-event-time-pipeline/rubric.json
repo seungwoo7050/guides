@@ -1,5 +1,6 @@
 {
-  "version": 1,
+  "version": 2,
+  "capstone_id": "event-time-pipeline",
   "title": "Event-time stream capstone",
   "required_artifacts": [
     "event-contract.md",
@@ -10,8 +11,27 @@
     "failure-matrix.md",
     "reconciliation.md",
     "runbook.md",
+    "evidence.json",
     "submission.json"
   ],
+  "required_scenarios": [
+    "normal",
+    "arrival-order-permutation",
+    "sink-write-before-checkpoint-crash",
+    "checkpoint-before-source-commit-crash",
+    "dedup-ttl-boundary",
+    "late-window-correction",
+    "late-session-merge",
+    "idle-partition-watermark",
+    "sink-backpressure",
+    "state-schema-restore",
+    "conflicting-event-id",
+    "poison-event-retry-storm",
+    "insufficient-recovery-capacity",
+    "incompatible-result-state-schema",
+    "batch-reconciliation-mismatch"
+  ],
+  "required_nonempty_json": {},
   "criteria": [
     "event time, ingestion time, processing time이 분리됨",
     "window, watermark, trigger, allowed lateness 계약이 명시됨",

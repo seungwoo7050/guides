@@ -1,0 +1,140 @@
+{
+  "schema_version": 1,
+  "capstone_id": "cdc-analytics-platform",
+  "run_id": "TODO",
+  "input_fixture": "TODO",
+  "input_identity": "TODO",
+  "code_identity": "TODO",
+  "output_location": "TODO",
+  "output_identity": "TODO",
+  "scenarios": [
+    {
+      "id": "normal",
+      "status": "TODO",
+      "fixture": "TODO",
+      "expected": "TODO",
+      "observed": "TODO",
+      "evidence": "evidence/TODO-normal.txt"
+    },
+    {
+      "id": "snapshot-log-gap-overlap",
+      "status": "TODO",
+      "fixture": "TODO",
+      "expected": "TODO",
+      "observed": "TODO",
+      "evidence": "evidence/TODO-snapshot-log-gap-overlap.txt"
+    },
+    {
+      "id": "snapshot-crash",
+      "status": "TODO",
+      "fixture": "TODO",
+      "expected": "TODO",
+      "observed": "TODO",
+      "evidence": "evidence/TODO-snapshot-crash.txt"
+    },
+    {
+      "id": "log-retention-risk",
+      "status": "TODO",
+      "fixture": "TODO",
+      "expected": "TODO",
+      "observed": "TODO",
+      "evidence": "evidence/TODO-log-retention-risk.txt"
+    },
+    {
+      "id": "sink-write-before-checkpoint-crash",
+      "status": "TODO",
+      "fixture": "TODO",
+      "expected": "TODO",
+      "observed": "TODO",
+      "evidence": "evidence/TODO-sink-write-before-checkpoint-crash.txt"
+    },
+    {
+      "id": "missing-delete-event",
+      "status": "TODO",
+      "fixture": "TODO",
+      "expected": "TODO",
+      "observed": "TODO",
+      "evidence": "evidence/TODO-missing-delete-event.txt"
+    },
+    {
+      "id": "stale-replay",
+      "status": "TODO",
+      "fixture": "TODO",
+      "expected": "TODO",
+      "observed": "TODO",
+      "evidence": "evidence/TODO-stale-replay.txt"
+    },
+    {
+      "id": "catalog-commit-failure",
+      "status": "TODO",
+      "fixture": "TODO",
+      "expected": "TODO",
+      "observed": "TODO",
+      "evidence": "evidence/TODO-catalog-commit-failure.txt"
+    },
+    {
+      "id": "compaction-live-merge-conflict",
+      "status": "TODO",
+      "fixture": "TODO",
+      "expected": "TODO",
+      "observed": "TODO",
+      "evidence": "evidence/TODO-compaction-live-merge-conflict.txt"
+    },
+    {
+      "id": "retention-exceeded-outage",
+      "status": "TODO",
+      "fixture": "TODO",
+      "expected": "TODO",
+      "observed": "TODO",
+      "evidence": "evidence/TODO-retention-exceeded-outage.txt"
+    },
+    {
+      "id": "schema-decoding-failure",
+      "status": "TODO",
+      "fixture": "TODO",
+      "expected": "TODO",
+      "observed": "TODO",
+      "evidence": "evidence/TODO-schema-decoding-failure.txt"
+    },
+    {
+      "id": "deletion-propagation",
+      "status": "TODO",
+      "fixture": "TODO",
+      "expected": "TODO",
+      "observed": "TODO",
+      "evidence": "evidence/TODO-deletion-propagation.txt"
+    },
+    {
+      "id": "conflicting-source-position",
+      "status": "TODO",
+      "fixture": "TODO",
+      "expected": "TODO",
+      "observed": "TODO",
+      "evidence": "evidence/TODO-conflicting-source-position.txt"
+    },
+    {
+      "id": "deletion-remnant-after-repair",
+      "status": "TODO",
+      "fixture": "TODO",
+      "expected": "TODO",
+      "observed": "TODO",
+      "evidence": "evidence/TODO-deletion-remnant-after-repair.txt"
+    },
+    {
+      "id": "semantic-consumer-mismatch",
+      "status": "TODO",
+      "fixture": "TODO",
+      "expected": "TODO",
+      "observed": "TODO",
+      "evidence": "evidence/TODO-semantic-consumer-mismatch.txt"
+    },
+    {
+      "id": "reconciliation-mismatch",
+      "status": "TODO",
+      "fixture": "TODO",
+      "expected": "TODO",
+      "observed": "TODO",
+      "evidence": "evidence/TODO-reconciliation-mismatch.txt"
+    }
+  ]
+}

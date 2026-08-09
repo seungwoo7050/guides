@@ -45,7 +45,8 @@ incident runbook
 7. `security-retention.md`
 8. `failure-matrix.md`
 9. `incident-runbook.md`
-10. `submission.json` — 구현 profile, 실행·검증 명령과 알려진 한계
+10. `evidence.json` — run/input/code/output identity와 capstone별 필수 시나리오의 관측 파일
+11. `submission.json` — 구현 profile, 실행·검증 명령과 알려진 한계
 
 템플릿은 [`exercises/06-capstones/03-cdc-analytics-platform`](../../exercises/06-capstones/03-cdc-analytics-platform/README.md)에 있다.
 
@@ -59,8 +60,10 @@ incident runbook
 | storage와 publish | `table-layout.md`: partition/spec/schema, compaction base snapshot, staging/catalog commit, orphan/retention 정책 |
 | orchestration과 backfill | `incident-runbook.md`: job/run/attempt/output identity, re-snapshot, shadow rebuild, live quota, pause/resume/rollback |
 | quality와 reconciliation | `quality-reconciliation.md`: hard/statistical rule, sticky quarantine, position·count·key·aggregate/detail diff |
-| lineage·freshness·cost·access | `security-retention.md`·`submission.json`: run/input/output/code/schema/quality provenance, lag/unit cost, access·deletion evidence |
+| lineage·freshness·cost·access | `security-retention.md`·`evidence.json`·`submission.json`: run/input/output/code/schema/quality provenance, lag/unit cost, access·deletion evidence |
 | evolution과 consumer cutover | `schema-change-plan.md`·`incident-runbook.md`: reader/writer matrix, dual/shadow table, canary, migration, deprecation와 cleanup |
+
+`evidence.json`의 scenario는 고유한 `evidence/` 파일과 같은 run/input/code/output identity를 가리킨다. Root checker는 빈 section, scenario 누락, 경로 탈출과 identity 불일치를 거부하지만 `run_command`나 `verify_command`를 실행하지 않으며, 실제 connector·table runtime과 보안·consumer 판단은 사람 검토로 남긴다.
 
 ## source 계약
 
@@ -143,19 +146,22 @@ raw는 무제한 보존을 의미하지 않는다. classification과 retention�
 
 ## failure 시나리오
 
-1. snapshot 40%에서 connector crash
-2. source log retention 임박
-3. sink write 성공 뒤 checkpoint 실패
-4. delete event 누락
-5. stale replay가 최신 row 뒤에 도착
-6. catalog commit 전/후 failure
-7. compaction과 live merge 충돌
-8. connector outage가 retention을 초과
-9. source schema change로 decoding 실패
-10. 개인정보 삭제 요청이 old snapshot과 derived aggregate에 영향
-11. 같은 source position/key에 서로 다른 payload 또는 transaction sequence가 도착
-12. quarantine repair 뒤 old snapshot·raw log·backup에 삭제 대상이 남음
-13. shadow table은 맞지만 old consumer가 새 enum/field 의미를 잘못 해석
+- `normal`: 고정 snapshot과 source position에서 정상 CDC projection·table publish
+- `snapshot-log-gap-overlap`: snapshot cutoff와 change log 사이 gap/overlap
+- `snapshot-crash`: snapshot 40%에서 connector crash
+- `log-retention-risk`: source log retention 임박
+- `sink-write-before-checkpoint-crash`: sink write 성공 뒤 checkpoint 실패
+- `missing-delete-event`: delete event 누락
+- `stale-replay`: stale replay가 최신 row 뒤에 도착
+- `catalog-commit-failure`: catalog commit 전/후 failure
+- `compaction-live-merge-conflict`: compaction과 live merge 충돌
+- `retention-exceeded-outage`: connector outage가 retention을 초과
+- `schema-decoding-failure`: source schema change로 decoding 실패
+- `deletion-propagation`: 개인정보 삭제 요청이 old snapshot과 derived aggregate에 영향
+- `conflicting-source-position`: 같은 source position/key에 서로 다른 payload 또는 transaction sequence가 도착
+- `deletion-remnant-after-repair`: quarantine repair 뒤 old snapshot·raw log·backup에 삭제 대상이 남음
+- `semantic-consumer-mismatch`: shadow table은 맞지만 old consumer가 새 enum/field 의미를 잘못 해석
+- `reconciliation-mismatch`: source/current/aggregate/consumer key·count·amount가 어긋남
 
 ## reconciliation
 
@@ -208,7 +214,7 @@ raw는 무제한 보존을 의미하지 않는다. classification과 retention�
 
 ## 사람·runtime 검토 evidence
 
-Root validator는 artifact와 JSON 구조만 확인한다. 완료를 주장하려면 선택 runtime에서 다음을 별도로 남긴다.
+Root validator는 필수 section의 보이는 본문, submission/evidence identity, rubric의 모든 필수 시나리오와 고유한 `evidence/` 파일의 정적 연결을 검사한다. 명령 실행 결과의 진실성과 다음 의미 판단은 선택 runtime과 사람이 별도로 확인한다.
 
 - snapshot/log gap·overlap, insert/update/delete/key change와 conflicting position fixture
 - sink/checkpoint/catalog/compaction failure 전후의 active snapshot과 orphan 목록

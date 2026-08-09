@@ -1,7 +1,20 @@
 {
   "contract_version": 1,
-  "checks": [],
-  "freshness": {},
-  "publish_gate": {},
-  "owners": []
+  "checks": [
+    {
+      "id": "TODO",
+      "severity": "TODO",
+      "condition": "TODO",
+      "owner": "TODO"
+    }
+  ],
+  "freshness": {
+    "source_delay_slo": "TODO",
+    "pipeline_delay_slo": "TODO"
+  },
+  "publish_gate": {
+    "required_status": "TODO",
+    "on_failure": "TODO"
+  },
+  "owners": ["TODO"]
 }

@@ -31,7 +31,7 @@ late event와 backfill을 처리한다
 - 개념: [`데이터 제품과 소유권`](../docs/01-contracts-and-records/01-data-products-and-ownership.md), [`schema evolution과 호환성`](../docs/01-contracts-and-records/02-schema-evolution-and-compatibility.md), [`identity·시간·correction`](../docs/01-contracts-and-records/03-identity-time-and-corrections.md), [`분석 모델과 역사`](../docs/01-contracts-and-records/04-analytical-modeling-and-history.md)
 - 단계 evidence: [`schema evolution`](../exercises/01-contracts-and-records/01-schema-evolution/README.md)에서 old/new reader 방향, key와 semantic change를 구분한다.
 - 대표 실패: physical schema는 통과하지만 unit/time 의미가 바뀜, default가 거짓 사실을 만듦, grain mismatch, old/new reader 혼합과 consumer shadow dependency.
-- 누적 evidence: Batch capstone의 `data-contract.md`, Stream capstone의 `event-contract.md`, CDC capstone의 `source-contract.md`와 `schema-change-plan.md`.
+- 누적 evidence: Batch capstone의 `data-contract.md`, Stream capstone의 `event-contract.md`, CDC capstone의 `source-contract.md`와 `schema-change-plan.md`; 각 capstone의 `evidence.json`이 같은 run/input/code/output identity와 scenario 관측 파일을 연결한다.
 - 연결되는 종료 능력: 모든 input/output identity와 판본을 재현 가능하게 만들고, late correction의 의미와 quality/freshness owner를 고정한다.
 
 ## Owns 2: batch·stream 처리
@@ -39,7 +39,7 @@ late event와 backfill을 처리한다
 - 개념: [`replay-safe batch`](../docs/02-batch-processing/01-bounded-data-and-replay-safe-batch.md), [`partition·shuffle·join`](../docs/02-batch-processing/02-partition-shuffle-join-and-aggregation.md), [`columnar layout`](../docs/02-batch-processing/03-columnar-files-and-table-layout.md), [`unbounded data와 event time`](../docs/03-stream-processing/01-unbounded-data-and-event-time.md), [`window·watermark·trigger`](../docs/03-stream-processing/02-windows-watermarks-and-triggers.md), [`state·dedup·delivery`](../docs/03-stream-processing/03-state-deduplication-and-delivery.md)
 - 단계 evidence: [`replay-safe batch`](../exercises/02-batch-processing/01-replay-safe-batch/README.md), [`partitioned join`](../exercises/02-batch-processing/02-partitioned-join/README.md), [`event-time windows`](../exercises/03-stream-processing/01-event-time-windows/README.md), [`stateful dedup`](../exercises/03-stream-processing/02-stateful-dedup/README.md).
 - 대표 실패: duplicate/conflicting event, input permutation, partial publish, many-to-many fan-out와 hot key, checkpoint/sink failure, retry storm과 backlog가 allowed lateness를 넘김.
-- 누적 evidence: [`Batch 데이터 제품`](../docs/06-capstones/01-batch-data-product.md)의 manifest·staged publish·backfill과 [`Event-time pipeline`](../docs/06-capstones/02-event-time-pipeline.md)의 state·sink·batch reconciliation.
+- 누적 evidence: [`Batch 데이터 제품`](../docs/06-capstones/01-batch-data-product.md)의 manifest·staged publish·backfill과 [`Event-time pipeline`](../docs/06-capstones/02-event-time-pipeline.md)의 state·sink·batch reconciliation. 두 capstone은 각 문서의 정상·순서 변경·duplicate/conflict·restart/publish·reconciliation 경계를 rubric과 `evidence.json`의 같은 ID로 고정한다.
 - 연결되는 종료 능력: 동일 input/version의 재실행이 같은 logical output으로 수렴하고, late/duplicate/restart를 정상 입력으로 처리한다.
 
 ## Owns 3: event time·window·late data
@@ -47,7 +47,7 @@ late event와 backfill을 처리한다
 - 개념: [`identity·시간·correction`](../docs/01-contracts-and-records/03-identity-time-and-corrections.md), [`unbounded data와 event time`](../docs/03-stream-processing/01-unbounded-data-and-event-time.md), [`window·watermark·trigger`](../docs/03-stream-processing/02-windows-watermarks-and-triggers.md), [`state·dedup·delivery`](../docs/03-stream-processing/03-state-deduplication-and-delivery.md).
 - 단계 evidence: [`event-time windows`](../exercises/03-stream-processing/01-event-time-windows/README.md)와 [`stateful dedup`](../exercises/03-stream-processing/02-stateful-dedup/README.md)에서 boundary, watermark, allowed lateness, dedup TTL, stale/delete/conflict를 검사한다.
 - 대표 실패: processing-time 집계, watermark를 완전성 보장으로 오해, late drop 무기록, idle partition, TTL 이후 duplicate, late update가 새 state를 덮음.
-- 누적 evidence: Stream capstone의 `window-policy.md`, `state-and-checkpoint.md`, `sink-contract.md`, `quality-and-lateness.md`, `reconciliation.md`와 failure evidence.
+- 누적 evidence: Stream capstone의 `window-policy.md`, `state-and-checkpoint.md`, `sink-contract.md`, `quality-and-lateness.md`, `reconciliation.md`와 `evidence.json`의 고유 failure trace.
 - 연결되는 종료 능력: late event를 correction/quarantine/batch replay 중 명시한 경로로 처리하고 backfill 결과와 key/window별로 대사한다.
 
 ## Owns 4: CDC·warehouse·lake
@@ -55,7 +55,7 @@ late event와 backfill을 처리한다
 - 개념: [`CDC snapshot과 log position`](../docs/04-ingestion-and-storage/01-cdc-snapshots-and-log-position.md), [`warehouse·lake·table format`](../docs/04-ingestion-and-storage/02-warehouse-lake-and-table-formats.md), [`evolution·compaction·maintenance`](../docs/04-ingestion-and-storage/03-evolution-compaction-and-maintenance.md).
 - 단계 evidence: [`CDC snapshot merge`](../exercises/04-ingestion-and-storage/01-cdc-snapshot-merge/README.md)와 [`compaction planner`](../exercises/04-ingestion-and-storage/02-compaction-planner/README.md).
 - 대표 실패: snapshot/log gap, equal position/key conflict, stale replay after delete, retention loss, file write without table commit, compaction/live writer conflict, expiration이 reader/backfill을 깨뜨림.
-- 누적 evidence: [`CDC analytics platform`](../docs/06-capstones/03-cdc-to-analytics-platform.md)의 snapshot-stream protocol, envelope, table layout, schema change, reconciliation, security-retention과 incident runbook.
+- 누적 evidence: [`CDC analytics platform`](../docs/06-capstones/03-cdc-to-analytics-platform.md)의 snapshot-stream protocol, envelope, table layout, schema change, reconciliation, security-retention, incident runbook과 같은 identity를 공유하는 `evidence.json`.
 - 연결되는 종료 능력: snapshot/position/version을 고정해 CDC projection을 재구축하고, table snapshot과 source/current/aggregate 대사로 결과를 증명한다.
 
 ## Owns 5: orchestration·quality·lineage·backfill
@@ -63,7 +63,7 @@ late event와 backfill을 처리한다
 - 개념: [`orchestration·data interval`](../docs/05-orchestration-and-operations/01-orchestration-data-intervals-and-idempotency.md), [`backfill·replay·reconciliation`](../docs/05-orchestration-and-operations/02-backfill-replay-and-reconciliation.md), [`quality·lineage·freshness`](../docs/05-orchestration-and-operations/03-quality-lineage-freshness-and-observability.md), [`security·governance·retention`](../docs/05-orchestration-and-operations/04-security-governance-and-retention.md).
 - 단계 evidence: [`backfill plan`](../exercises/05-orchestration-and-operations/01-backfill-plan/README.md), [`quality and lineage`](../exercises/05-orchestration-and-operations/02-quality-and-lineage/README.md), [`run ledger`](../exercises/05-orchestration-and-operations/03-run-ledger-backfill/README.md), [`quality reconciliation`](../exercises/05-orchestration-and-operations/04-quality-reconciliation/README.md).
 - 대표 실패: task success/data failure 혼동, active run 중복, invalid state transition, live/backfill conflict, count-only reconciliation, conflicting ID 재승인, quality failure 뒤 publish, stale lineage와 freshness.
-- 누적 evidence: 세 capstone의 failure matrix, reconciliation, runbook과 submission metadata를 [`시스템 종합 검토`](../docs/90-system-review.md)에서 함께 검사한다.
+- 누적 evidence: 세 capstone의 failure matrix, reconciliation, runbook, submission metadata와 scenario evidence manifest를 [`시스템 종합 검토`](../docs/90-system-review.md)에서 함께 검사한다.
 - 연결되는 종료 능력: run/input/output/code/schema/quality identity를 연결하고, canary·stop·resume·rollback·consumer cutover와 freshness/lineage evidence를 운영한다.
 
 ## Exit capability evidence
@@ -83,7 +83,7 @@ late event와 backfill을 처리한다
 
 ## Human review
 
-자동 검사는 reference의 공개 행동, skeleton/known-wrong 거부, link와 artifact 구조를 검증할 수 있다. 다음 판단은 사람과 선택 runtime의 evidence가 필요하다.
+자동 검사는 reference의 공개 행동, skeleton/known-wrong 거부, link, capstone 필수 section, identity와 scenario evidence의 정적 연결을 검증할 수 있다. evidence가 실제 runtime 실행에서 생성됐는지와 다음 판단은 사람과 선택 runtime의 검토가 필요하다.
 
 - 설명이 실제 source·engine·table format의 semantics와 일치하는가?
 - failure injection이 consumer-visible state, cleanup과 recovery를 실제로 증명하는가?

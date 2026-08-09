@@ -201,10 +201,15 @@ class WorkspaceToolTests(unittest.TestCase):
     def test_capstone_template_and_completed_submission_are_distinct(self) -> None:
         capstone = self.root / "exercises/capstone"
         capstone.mkdir(parents=True)
+        scenarios = ["normal", "restart"]
         (capstone / "rubric.json").write_text(
             json.dumps(
                 {
-                    "required_artifacts": ["design.md", "submission.json"],
+                    "version": 2,
+                    "capstone_id": "sample-capstone",
+                    "required_artifacts": ["design.md", "quality.json", "evidence.json", "submission.json"],
+                    "required_scenarios": scenarios,
+                    "required_nonempty_json": {"quality.json": ["checks"]},
                     "criteria": ["human review"],
                     "reference_implementation": False,
                 }
@@ -213,16 +218,51 @@ class WorkspaceToolTests(unittest.TestCase):
         )
         template = capstone / "skeleton"
         template.mkdir()
-        (template / "design.md").write_text("# Design\n", encoding="utf-8")
+        (template / "design.md").write_text("# Design\n\n## Contract\n", encoding="utf-8")
+        (template / "quality.json").write_text(
+            json.dumps({"contract_version": 1, "checks": ["TODO"]}), encoding="utf-8"
+        )
+        (template / "evidence.json").write_text(
+            json.dumps(
+                {
+                    "schema_version": 1,
+                    "capstone_id": "sample-capstone",
+                    "run_id": "TODO",
+                    "input_fixture": "TODO",
+                    "input_identity": "TODO",
+                    "code_identity": "TODO",
+                    "output_location": "TODO",
+                    "output_identity": "TODO",
+                    "scenarios": [
+                        {
+                            "id": scenario,
+                            "status": "TODO",
+                            "fixture": "TODO",
+                            "expected": "TODO",
+                            "observed": "TODO",
+                            "evidence": f"evidence/TODO-{scenario}.txt",
+                        }
+                        for scenario in scenarios
+                    ],
+                }
+            ),
+            encoding="utf-8",
+        )
         (template / "submission.json").write_text(
             json.dumps(
                 {
+                    "capstone_id": "sample-capstone",
+                    "evidence_manifest": "evidence.json",
+                    "run_id": "TODO",
                     "implementation_profile": "TODO",
                     "run_command": "TODO",
                     "verify_command": "TODO",
                     "input_fixture": "TODO",
+                    "input_identity": "TODO",
+                    "code_identity": "TODO",
                     "output_location": "TODO",
-                    "known_limits": [],
+                    "output_identity": "TODO",
+                    "known_limits": ["TODO"],
                 }
             ),
             encoding="utf-8",
@@ -232,17 +272,79 @@ class WorkspaceToolTests(unittest.TestCase):
         with self.assertRaises(exercise_tool.ExerciseError):
             exercise_tool.capstone_check(capstone, template, template=False)
 
+        malformed_template = capstone / "malformed-template"
+        shutil.copytree(template, malformed_template)
+        malformed_submission = json.loads(
+            (malformed_template / "submission.json").read_text(encoding="utf-8")
+        )
+        malformed_submission["run_command"] = {"value": "TODO"}
+        (malformed_template / "submission.json").write_text(
+            json.dumps(malformed_submission), encoding="utf-8"
+        )
+        with self.assertRaises(exercise_tool.ExerciseError):
+            exercise_tool.capstone_check(capstone, malformed_template, template=True)
+
         complete = capstone / "complete"
         shutil.copytree(template, complete)
+        (complete / "design.md").write_text(
+            "# Design\n\n## Contract\n\n"
+            "The pipeline pins an immutable input fixture and code revision before execution. "
+            "It publishes only a validated snapshot and retains the previous pointer for rollback.\n",
+            encoding="utf-8",
+        )
+        (complete / "quality.json").write_text(
+            json.dumps({"contract_version": 1, "checks": ["row-count"]}), encoding="utf-8"
+        )
         (complete / "submission.json").write_text(
             json.dumps(
                 {
+                    "capstone_id": "sample-capstone",
+                    "evidence_manifest": "evidence.json",
+                    "run_id": "run-20260810-001",
                     "implementation_profile": "local-python",
                     "run_command": "python pipeline.py",
                     "verify_command": "python verify.py",
                     "input_fixture": "fixtures/input.json",
+                    "input_identity": "sha256:input",
+                    "code_identity": "git:abc123",
                     "output_location": "output/snapshot",
+                    "output_identity": "sha256:output",
                     "known_limits": ["local model only"],
+                }
+            ),
+            encoding="utf-8",
+        )
+        evidence_directory = complete / "evidence"
+        evidence_directory.mkdir()
+        evidence_scenarios = []
+        for scenario in scenarios:
+            relative = f"evidence/{scenario}.txt"
+            complete.joinpath(relative).write_text(
+                f"scenario={scenario} expected state matched observed state with stable digest abc123\n",
+                encoding="utf-8",
+            )
+            evidence_scenarios.append(
+                {
+                    "id": scenario,
+                    "status": "pass",
+                    "fixture": f"fixtures/{scenario}.json",
+                    "expected": "stable logical state",
+                    "observed": "stable logical state digest abc123",
+                    "evidence": relative,
+                }
+            )
+        (complete / "evidence.json").write_text(
+            json.dumps(
+                {
+                    "schema_version": 1,
+                    "capstone_id": "sample-capstone",
+                    "run_id": "run-20260810-001",
+                    "input_fixture": "fixtures/input.json",
+                    "input_identity": "sha256:input",
+                    "code_identity": "git:abc123",
+                    "output_location": "output/snapshot",
+                    "output_identity": "sha256:output",
+                    "scenarios": evidence_scenarios,
                 }
             ),
             encoding="utf-8",
@@ -251,6 +353,123 @@ class WorkspaceToolTests(unittest.TestCase):
             exercise_tool.capstone_check(capstone, complete, template=False)
         with self.assertRaises(exercise_tool.ExerciseError):
             exercise_tool.capstone_check(capstone, complete, template=True)
+
+        title_only = capstone / "title-only"
+        shutil.copytree(complete, title_only)
+        (title_only / "design.md").write_text("# Design\n\n## Contract\n\nlooks good\n", encoding="utf-8")
+        with self.assertRaises(exercise_tool.ExerciseError):
+            exercise_tool.capstone_check(capstone, title_only, template=False)
+
+        comment_only = capstone / "comment-only"
+        shutil.copytree(complete, comment_only)
+        (comment_only / "design.md").write_text(
+            "# Design\n\n## Contract\n\n<!-- this hidden explanation has enough characters to fool a naive counter -->\n",
+            encoding="utf-8",
+        )
+        with self.assertRaises(exercise_tool.ExerciseError):
+            exercise_tool.capstone_check(capstone, comment_only, template=False)
+
+        unclosed_comment_only = capstone / "unclosed-comment-only"
+        shutil.copytree(complete, unclosed_comment_only)
+        (unclosed_comment_only / "design.md").write_text(
+            "# Design\n\n## Contract\n\n<!-- this hidden explanation never closes but is still not rendered\n",
+            encoding="utf-8",
+        )
+        with self.assertRaises(exercise_tool.ExerciseError):
+            exercise_tool.capstone_check(capstone, unclosed_comment_only, template=False)
+
+        missing_scenario = capstone / "missing-scenario"
+        shutil.copytree(complete, missing_scenario)
+        manifest = json.loads((missing_scenario / "evidence.json").read_text(encoding="utf-8"))
+        manifest["scenarios"].pop()
+        (missing_scenario / "evidence.json").write_text(json.dumps(manifest), encoding="utf-8")
+        with self.assertRaises(exercise_tool.ExerciseError):
+            exercise_tool.capstone_check(capstone, missing_scenario, template=False)
+
+        escaped_evidence = capstone / "escaped-evidence"
+        shutil.copytree(complete, escaped_evidence)
+        outside_evidence = capstone / "outside.txt"
+        outside_evidence.write_text("owner sentinel\n", encoding="utf-8")
+        manifest = json.loads((escaped_evidence / "evidence.json").read_text(encoding="utf-8"))
+        manifest["scenarios"][0]["evidence"] = "evidence/../../outside.txt"
+        (escaped_evidence / "evidence.json").write_text(json.dumps(manifest), encoding="utf-8")
+        with self.assertRaises(exercise_tool.ExerciseError):
+            exercise_tool.capstone_check(capstone, escaped_evidence, template=False)
+        self.assertEqual(outside_evidence.read_text(encoding="utf-8"), "owner sentinel\n")
+
+        linked_evidence = capstone / "linked-evidence"
+        shutil.copytree(complete, linked_evidence)
+        linked_restart = linked_evidence / "evidence/restart.txt"
+        linked_restart.unlink()
+        os.link(linked_evidence / "evidence/normal.txt", linked_restart)
+        with self.assertRaises(exercise_tool.ExerciseError):
+            exercise_tool.capstone_check(capstone, linked_evidence, template=False)
+
+        mismatched_identity = capstone / "mismatched-identity"
+        shutil.copytree(complete, mismatched_identity)
+        manifest = json.loads((mismatched_identity / "evidence.json").read_text(encoding="utf-8"))
+        manifest["output_location"] = "output/other"
+        (mismatched_identity / "evidence.json").write_text(json.dumps(manifest), encoding="utf-8")
+        with self.assertRaises(exercise_tool.ExerciseError):
+            exercise_tool.capstone_check(capstone, mismatched_identity, template=False)
+
+        mismatched_code_identity = capstone / "mismatched-code-identity"
+        shutil.copytree(complete, mismatched_code_identity)
+        submission = json.loads(
+            (mismatched_code_identity / "submission.json").read_text(encoding="utf-8")
+        )
+        submission["code_identity"] = "git:different"
+        (mismatched_code_identity / "submission.json").write_text(
+            json.dumps(submission), encoding="utf-8"
+        )
+        with self.assertRaises(exercise_tool.ExerciseError):
+            exercise_tool.capstone_check(capstone, mismatched_code_identity, template=False)
+
+        boolean_schema_version = capstone / "boolean-schema-version"
+        shutil.copytree(complete, boolean_schema_version)
+        manifest = json.loads((boolean_schema_version / "evidence.json").read_text(encoding="utf-8"))
+        manifest["schema_version"] = True
+        (boolean_schema_version / "evidence.json").write_text(json.dumps(manifest), encoding="utf-8")
+        with self.assertRaises(exercise_tool.ExerciseError):
+            exercise_tool.capstone_check(capstone, boolean_schema_version, template=False)
+
+        float_schema_version = capstone / "float-schema-version"
+        shutil.copytree(complete, float_schema_version)
+        manifest = json.loads((float_schema_version / "evidence.json").read_text(encoding="utf-8"))
+        manifest["schema_version"] = 1.0
+        (float_schema_version / "evidence.json").write_text(json.dumps(manifest), encoding="utf-8")
+        with self.assertRaises(exercise_tool.ExerciseError):
+            exercise_tool.capstone_check(capstone, float_schema_version, template=False)
+
+        wrong_scalar_type = capstone / "wrong-scalar-type"
+        shutil.copytree(complete, wrong_scalar_type)
+        quality = json.loads((wrong_scalar_type / "quality.json").read_text(encoding="utf-8"))
+        quality["contract_version"] = "one"
+        (wrong_scalar_type / "quality.json").write_text(json.dumps(quality), encoding="utf-8")
+        with self.assertRaises(exercise_tool.ExerciseError):
+            exercise_tool.capstone_check(capstone, wrong_scalar_type, template=False)
+
+        null_list_element = capstone / "null-list-element"
+        shutil.copytree(complete, null_list_element)
+        quality = json.loads((null_list_element / "quality.json").read_text(encoding="utf-8"))
+        quality["checks"] = [None]
+        (null_list_element / "quality.json").write_text(json.dumps(quality), encoding="utf-8")
+        with self.assertRaises(exercise_tool.ExerciseError):
+            exercise_tool.capstone_check(capstone, null_list_element, template=False)
+
+        empty_required_json = capstone / "empty-required-json"
+        shutil.copytree(complete, empty_required_json)
+        (empty_required_json / "quality.json").write_text(
+            json.dumps({"contract_version": 1, "checks": []}), encoding="utf-8"
+        )
+        with self.assertRaises(exercise_tool.ExerciseError):
+            exercise_tool.capstone_check(capstone, empty_required_json, template=False)
+
+        invalid_rubric = self.root / "exercises/invalid-rubric"
+        invalid_rubric.mkdir()
+        (invalid_rubric / "rubric.json").write_text("[]\n", encoding="utf-8")
+        with self.assertRaises(exercise_tool.ExerciseError):
+            exercise_tool.capstone_check(invalid_rubric, template, template=True)
 
     def test_check_workspace_rejects_extra_argument(self) -> None:
         wrapper = Path(__file__).with_name("check-workspace.sh")

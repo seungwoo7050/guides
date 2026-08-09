@@ -1,5 +1,6 @@
 {
-  "version": 1,
+  "version": 2,
+  "capstone_id": "batch-data-product",
   "title": "Batch 데이터 제품 capstone",
   "required_artifacts": [
     "data-contract.md",
@@ -9,8 +10,31 @@
     "quality-plan.json",
     "reconciliation.md",
     "runbook.md",
+    "evidence.json",
     "submission.json"
   ],
+  "required_scenarios": [
+    "normal",
+    "input-order-permutation",
+    "duplicate-manifest-file",
+    "duplicate-payment-event",
+    "transform-crash",
+    "quality-gate-failure",
+    "pre-publish-commit-failure",
+    "post-publish-retry",
+    "concurrent-publish",
+    "missing-reference-snapshot",
+    "late-refund-boundary",
+    "partial-or-mutable-input",
+    "conflicting-payment-event",
+    "backfill-live-contention",
+    "semantic-canary-mismatch",
+    "reconciliation-mismatch"
+  ],
+  "required_nonempty_json": {
+    "input-manifest.json": ["sources", "schema_versions", "reference_versions"],
+    "quality-plan.json": ["checks", "freshness", "publish_gate", "owners"]
+  },
   "criteria": [
     "grain, stable key, event time, correction policy가 명시됨",
     "input manifest와 transform/reference/schema version이 고정됨",

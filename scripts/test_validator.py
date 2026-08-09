@@ -128,7 +128,82 @@ def main() -> int:
         path.write_text(json.dumps(manifest, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
 
     expect_rejection("duplicate-success-marker", duplicate_success_marker, "success_marker가 중복")
-    print("VALIDATOR MUTANTS: PASS (9/9)")
+
+    batch_capstone = Path("exercises/06-capstones/01-batch-data-product")
+
+    def rubric_root_array(root: Path) -> None:
+        (root / batch_capstone / "rubric.json").write_text("[]\n", encoding="utf-8")
+
+    expect_rejection("capstone-rubric-root", rubric_root_array, "rubric root는 object")
+
+    def invalid_criteria(root: Path) -> None:
+        path = root / batch_capstone / "rubric.json"
+        rubric = json.loads(path.read_text(encoding="utf-8"))
+        rubric["criteria"] = [42]
+        path.write_text(json.dumps(rubric, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+
+    expect_rejection("capstone-criteria-type", invalid_criteria, "criteria 누락")
+
+    def missing_required_json_path(root: Path) -> None:
+        path = root / batch_capstone / "rubric.json"
+        rubric = json.loads(path.read_text(encoding="utf-8"))
+        rubric["required_nonempty_json"]["input-manifest.json"].append("does.not.exist")
+        path.write_text(json.dumps(rubric, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+
+    expect_rejection(
+        "capstone-required-json-path",
+        missing_required_json_path,
+        "template에 JSON path가 없습니다",
+    )
+
+    def non_normalized_required_json_path(root: Path) -> None:
+        path = root / batch_capstone / "rubric.json"
+        rubric = json.loads(path.read_text(encoding="utf-8"))
+        rubric["required_nonempty_json"]["input-manifest.json"].append("sources..uri")
+        path.write_text(json.dumps(rubric, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+
+    expect_rejection(
+        "capstone-required-json-path-spelling",
+        non_normalized_required_json_path,
+        "잘못된 JSON path",
+    )
+
+    def wrong_evidence_identity(root: Path) -> None:
+        path = root / batch_capstone / "skeleton/evidence.json"
+        evidence = json.loads(path.read_text(encoding="utf-8"))
+        evidence["capstone_id"] = "wrong-capstone"
+        path.write_text(json.dumps(evidence, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+
+    expect_rejection("capstone-evidence-identity", wrong_evidence_identity, "evidence template identity 오류")
+
+    def boolean_evidence_schema(root: Path) -> None:
+        path = root / batch_capstone / "skeleton/evidence.json"
+        evidence = json.loads(path.read_text(encoding="utf-8"))
+        evidence["schema_version"] = True
+        path.write_text(json.dumps(evidence, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+
+    expect_rejection("capstone-evidence-schema-type", boolean_evidence_schema, "evidence template identity 오류")
+
+    def missing_submission_identity(root: Path) -> None:
+        path = root / batch_capstone / "skeleton/submission.json"
+        submission = json.loads(path.read_text(encoding="utf-8"))
+        submission.pop("run_id")
+        path.write_text(json.dumps(submission, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+
+    expect_rejection("capstone-submission-field", missing_submission_identity, "submission template field 오류 run_id")
+
+    def completed_evidence_template_field(root: Path) -> None:
+        path = root / batch_capstone / "skeleton/evidence.json"
+        evidence = json.loads(path.read_text(encoding="utf-8"))
+        evidence["scenarios"][0]["status"] = "pass"
+        path.write_text(json.dumps(evidence, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+
+    expect_rejection(
+        "capstone-evidence-template-field",
+        completed_evidence_template_field,
+        "evidence template scenario field 오류 normal.status",
+    )
+    print("VALIDATOR MUTANTS: PASS (17/17)")
     return 0
 
 

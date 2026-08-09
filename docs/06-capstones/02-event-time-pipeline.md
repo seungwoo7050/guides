@@ -56,7 +56,8 @@ unique user 계산은 exact 또는 approximate 중 선택하되 보장과 오차
 6. `failure-matrix.md`
 7. `reconciliation.md` — batch replay와 stream 결과 비교
 8. `runbook.md`
-9. `submission.json` — 구현 profile, 실행·검증 명령과 알려진 한계
+9. `evidence.json` — run/input/code/output identity와 capstone별 필수 시나리오의 관측 파일
+10. `submission.json` — 구현 profile, 실행·검증 명령과 알려진 한계
 
 템플릿은 [`exercises/06-capstones/02-event-time-pipeline`](../../exercises/06-capstones/02-event-time-pipeline/README.md)에 있다.
 
@@ -70,7 +71,7 @@ unique user 계산은 exact 또는 approximate 중 선택하되 보장과 오차
 | delivery와 publish | `sink-contract.md`: stable result key/version, pane finality, checkpoint 전후 retry와 consumer update 규칙 |
 | orchestration과 recovery | `runbook.md`: job/run/attempt/output identity, backpressure propagation, retry storm, backlog recovery와 batch replay |
 | quality와 reconciliation | `quality-and-lateness.md`·`reconciliation.md`: sticky conflict quarantine, late/drop, key/window batch diff |
-| lineage·freshness·cost·access | `submission.json`·`runbook.md`: input/output/code/state/quality lineage, oldest-event age, source/pipeline delay와 unit cost |
+| lineage·freshness·cost·access | `evidence.json`·`submission.json`·`runbook.md`: input/output/code/state/quality lineage, oldest-event age, source/pipeline delay와 unit cost |
 | evolution과 consumer cutover | `failure-matrix.md`·`runbook.md`: state/sink schema shadow restore, canary consumer, rollback/roll-forward와 deprecation |
 
 ## 필수 정책
@@ -115,18 +116,21 @@ unique user 계산은 exact 또는 approximate 중 선택하되 보장과 오차
 
 ## 필수 실패 시나리오
 
-1. sink write 성공 뒤 checkpoint 전 crash
-2. checkpoint 성공 뒤 source commit 전 crash
-3. duplicate event가 TTL 안/밖에 도착
-4. 늦은 event가 이미 on-time인 window를 수정
-5. session window를 사용한다면 late event가 두 session을 merge
-6. 한 partition이 idle하거나 지연돼 watermark를 막음
-7. sink가 10분간 느려져 backpressure 발생
-8. state schema를 변경한 새 version으로 restore
-9. 같은 event ID에 서로 다른 payload가 도착하고 이후 첫 payload가 다시 전송
-10. poison event retry가 한 partition을 막고 retry storm이 sink recovery를 방해
-11. recovery capacity가 live rate와 같아 backlog와 oldest-event age가 줄지 않음
-12. 새 result/state schema를 old consumer/checkpoint가 읽지 못함
+- `normal`: 고정 offset 범위의 정상 window 계산·checkpoint·sink publish
+- `arrival-order-permutation`: 같은 event 집합의 도착 순서와 duplicate 위치를 변경
+- `sink-write-before-checkpoint-crash`: sink write 성공 뒤 checkpoint 전 crash
+- `checkpoint-before-source-commit-crash`: checkpoint 성공 뒤 source commit 전 crash
+- `dedup-ttl-boundary`: duplicate event가 TTL 안/밖에 도착
+- `late-window-correction`: 늦은 event가 이미 on-time인 window를 수정
+- `late-session-merge`: session window를 사용한다면 late event가 두 session을 merge하고, 사용하지 않으면 선택한 window의 동등한 late 경계를 증명
+- `idle-partition-watermark`: 한 partition이 idle하거나 지연돼 watermark를 막음
+- `sink-backpressure`: sink가 10분간 느려져 backpressure 발생
+- `state-schema-restore`: state schema를 변경한 새 version으로 restore
+- `conflicting-event-id`: 같은 event ID에 서로 다른 payload가 도착하고 이후 첫 payload가 다시 전송
+- `poison-event-retry-storm`: poison event retry가 한 partition을 막고 retry storm이 sink recovery를 방해
+- `insufficient-recovery-capacity`: recovery capacity가 live rate와 같아 backlog와 oldest-event age가 줄지 않음
+- `incompatible-result-state-schema`: 새 result/state schema를 old consumer/checkpoint가 읽지 못함
+- `batch-reconciliation-mismatch`: 같은 offset 범위의 batch와 closed stream 결과가 key/window별로 어긋남
 
 ## 품질과 관측
 
@@ -155,7 +159,7 @@ unique user 계산은 exact 또는 approximate 중 선택하되 보장과 오차
 
 ## 사람·runtime 검토 evidence
 
-Root validator는 artifact 구조만 검사한다. 선택 runtime에서 다음 증거를 별도로 남긴다.
+Root validator는 필수 section의 보이는 본문, submission/evidence identity, rubric의 모든 필수 시나리오와 고유한 `evidence/` 파일의 정적 연결을 검사한다. 명령 실행 결과의 진실성과 다음 의미 판단은 선택 runtime과 사람이 별도로 확인한다.
 
 - arrival permutation, duplicate/conflict와 TTL 경계 fixture의 closed result digest
 - sink 성공/checkpoint 전 crash와 restore 뒤 source·state·sink 상태

@@ -1,0 +1,132 @@
+{
+  "schema_version": 1,
+  "capstone_id": "event-time-pipeline",
+  "run_id": "TODO",
+  "input_fixture": "TODO",
+  "input_identity": "TODO",
+  "code_identity": "TODO",
+  "output_location": "TODO",
+  "output_identity": "TODO",
+  "scenarios": [
+    {
+      "id": "normal",
+      "status": "TODO",
+      "fixture": "TODO",
+      "expected": "TODO",
+      "observed": "TODO",
+      "evidence": "evidence/TODO-normal.txt"
+    },
+    {
+      "id": "arrival-order-permutation",
+      "status": "TODO",
+      "fixture": "TODO",
+      "expected": "TODO",
+      "observed": "TODO",
+      "evidence": "evidence/TODO-arrival-order-permutation.txt"
+    },
+    {
+      "id": "sink-write-before-checkpoint-crash",
+      "status": "TODO",
+      "fixture": "TODO",
+      "expected": "TODO",
+      "observed": "TODO",
+      "evidence": "evidence/TODO-sink-write-before-checkpoint-crash.txt"
+    },
+    {
+      "id": "checkpoint-before-source-commit-crash",
+      "status": "TODO",
+      "fixture": "TODO",
+      "expected": "TODO",
+      "observed": "TODO",
+      "evidence": "evidence/TODO-checkpoint-before-source-commit-crash.txt"
+    },
+    {
+      "id": "dedup-ttl-boundary",
+      "status": "TODO",
+      "fixture": "TODO",
+      "expected": "TODO",
+      "observed": "TODO",
+      "evidence": "evidence/TODO-dedup-ttl-boundary.txt"
+    },
+    {
+      "id": "late-window-correction",
+      "status": "TODO",
+      "fixture": "TODO",
+      "expected": "TODO",
+      "observed": "TODO",
+      "evidence": "evidence/TODO-late-window-correction.txt"
+    },
+    {
+      "id": "late-session-merge",
+      "status": "TODO",
+      "fixture": "TODO",
+      "expected": "TODO",
+      "observed": "TODO",
+      "evidence": "evidence/TODO-late-session-merge.txt"
+    },
+    {
+      "id": "idle-partition-watermark",
+      "status": "TODO",
+      "fixture": "TODO",
+      "expected": "TODO",
+      "observed": "TODO",
+      "evidence": "evidence/TODO-idle-partition-watermark.txt"
+    },
+    {
+      "id": "sink-backpressure",
+      "status": "TODO",
+      "fixture": "TODO",
+      "expected": "TODO",
+      "observed": "TODO",
+      "evidence": "evidence/TODO-sink-backpressure.txt"
+    },
+    {
+      "id": "state-schema-restore",
+      "status": "TODO",
+      "fixture": "TODO",
+      "expected": "TODO",
+      "observed": "TODO",
+      "evidence": "evidence/TODO-state-schema-restore.txt"
+    },
+    {
+      "id": "conflicting-event-id",
+      "status": "TODO",
+      "fixture": "TODO",
+      "expected": "TODO",
+      "observed": "TODO",
+      "evidence": "evidence/TODO-conflicting-event-id.txt"
+    },
+    {
+      "id": "poison-event-retry-storm",
+      "status": "TODO",
+      "fixture": "TODO",
+      "expected": "TODO",
+      "observed": "TODO",
+      "evidence": "evidence/TODO-poison-event-retry-storm.txt"
+    },
+    {
+      "id": "insufficient-recovery-capacity",
+      "status": "TODO",
+      "fixture": "TODO",
+      "expected": "TODO",
+      "observed": "TODO",
+      "evidence": "evidence/TODO-insufficient-recovery-capacity.txt"
+    },
+    {
+      "id": "incompatible-result-state-schema",
+      "status": "TODO",
+      "fixture": "TODO",
+      "expected": "TODO",
+      "observed": "TODO",
+      "evidence": "evidence/TODO-incompatible-result-state-schema.txt"
+    },
+    {
+      "id": "batch-reconciliation-mismatch",
+      "status": "TODO",
+      "fixture": "TODO",
+      "expected": "TODO",
+      "observed": "TODO",
+      "evidence": "evidence/TODO-batch-reconciliation-mismatch.txt"
+    }
+  ]
+}

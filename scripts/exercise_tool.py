@@ -7,6 +7,7 @@ import errno
 import hashlib
 import json
 import os
+import re
 import shutil
 import signal
 import stat
@@ -136,6 +137,10 @@ def resolve_registered(raw: str, items: dict[str, dict]) -> tuple[str, Path, dic
 
 
 PLACEHOLDER_TOKENS = ("TODO", "TBD", "PLACEHOLDER")
+MIN_MARKDOWN_SECTION_CHARS = 20
+MIN_MARKDOWN_BODY_CHARS = 80
+MIN_EVIDENCE_CHARS = 20
+HTML_COMMENT_RE = re.compile(r"<!--.*?(?:-->|$)", re.DOTALL)
 
 
 def _contains_placeholder(value: object) -> bool:
@@ -149,16 +154,234 @@ def _contains_placeholder(value: object) -> bool:
     return False
 
 
+def _require_text(value: object, *, label: str) -> str:
+    if not isinstance(value, str) or not value.strip() or value != value.strip() or "\n" in value:
+        raise ExerciseError(f"{label}는 앞뒤 공백이나 줄바꿈 없는 비어 있지 않은 문자열이어야 합니다.")
+    if _contains_placeholder(value):
+        raise ExerciseError(f"{label}에 TODO/TBD/PLACEHOLDER를 사용할 수 없습니다.")
+    return value
+
+
+def _meaningful_chars(lines: list[str]) -> int:
+    body: list[str] = []
+    visible_content = HTML_COMMENT_RE.sub("", "\n".join(lines))
+    for line in visible_content.splitlines():
+        stripped = line.strip()
+        if not stripped or stripped.startswith("#"):
+            continue
+        if stripped.startswith("|") and not stripped.replace("|", "").replace(":", "").replace("-", "").strip():
+            continue
+        body.append(stripped)
+    return sum(1 for character in "\n".join(body) if character.isalnum())
+
+
+def _markdown_sections(content: str, *, artifact: str) -> dict[str, list[str]]:
+    sections: dict[str, list[str]] = {}
+    current: str | None = None
+    for line in content.splitlines():
+        if line.startswith("## "):
+            heading = line[3:].strip()
+            if not heading or heading in sections:
+                raise ExerciseError(f"capstone Markdown의 section heading이 비었거나 중복됩니다: {artifact}")
+            sections[heading] = []
+            current = heading
+        elif current is not None:
+            sections[current].append(line)
+    return sections
+
+
+def _validate_completed_markdown(path: Path, artifact: str, content: str) -> None:
+    template_file = contained_path(path / "skeleton", artifact, label="capstone template artifact", expect="file")
+    template_content = template_file.read_text(encoding="utf-8")
+    required_sections = _markdown_sections(template_content, artifact=artifact)
+    actual_sections = _markdown_sections(content, artifact=artifact)
+    missing = sorted(set(required_sections) - set(actual_sections))
+    if missing:
+        raise ExerciseError(f"capstone Markdown 필수 section이 없습니다: {artifact}: {missing}")
+    for heading in required_sections:
+        if _meaningful_chars(actual_sections[heading]) < MIN_MARKDOWN_SECTION_CHARS:
+            raise ExerciseError(
+                f"capstone Markdown section에 구체적인 근거가 부족합니다: {artifact} ## {heading}"
+            )
+    if _meaningful_chars(content.splitlines()) < MIN_MARKDOWN_BODY_CHARS:
+        raise ExerciseError(f"capstone Markdown 본문 근거가 부족합니다: {artifact}")
+
+
+def _validate_json_shape(template: object, actual: object, *, label: str, location: str = "$") -> None:
+    if isinstance(template, dict):
+        if not isinstance(actual, dict):
+            raise ExerciseError(f"{label}의 JSON object 구조가 template과 다릅니다: {location}")
+        missing = sorted(set(template) - set(actual))
+        if missing:
+            raise ExerciseError(f"{label}의 JSON key가 누락됐습니다: {location}: {missing}")
+        for key, value in template.items():
+            _validate_json_shape(value, actual[key], label=label, location=f"{location}.{key}")
+    elif isinstance(template, list):
+        if not isinstance(actual, list):
+            raise ExerciseError(f"{label}의 JSON array 구조가 template과 다릅니다: {location}")
+        if template:
+            for index, value in enumerate(actual):
+                _validate_json_shape(template[0], value, label=label, location=f"{location}[{index}]")
+    elif type(actual) is not type(template):
+        raise ExerciseError(f"{label}의 JSON scalar type이 template과 다릅니다: {location}")
+
+
+def _json_path(value: object, raw: str, *, label: str) -> object:
+    if (
+        not isinstance(raw, str)
+        or not raw
+        or raw != raw.strip()
+        or any(part in {"", ".", ".."} for part in raw.split("."))
+    ):
+        raise ExerciseError(f"{label}의 JSON path가 잘못됐습니다: {raw!r}")
+    current = value
+    for part in raw.split("."):
+        if not isinstance(current, dict) or part not in current:
+            raise ExerciseError(f"{label}의 JSON path가 없습니다: {raw}")
+        current = current[part]
+    return current
+
+
+def _meaningful_json_value(value: object) -> bool:
+    if value is None:
+        return False
+    if isinstance(value, str):
+        return bool(value.strip()) and not _contains_placeholder(value)
+    if isinstance(value, list):
+        return bool(value) and all(_meaningful_json_value(item) for item in value)
+    if isinstance(value, dict):
+        return bool(value) and all(
+            isinstance(key, str) and bool(key.strip()) and _meaningful_json_value(item)
+            for key, item in value.items()
+        )
+    return True
+
+
+def _validate_capstone_evidence(
+    target: Path,
+    *,
+    capstone_id: str,
+    required_scenarios: list[str],
+    submission: dict,
+) -> int:
+    evidence_path = contained_path(target, "evidence.json", label="capstone evidence manifest", expect="file")
+    evidence = json.loads(evidence_path.read_text(encoding="utf-8"))
+    if (
+        not isinstance(evidence, dict)
+        or type(evidence.get("schema_version")) is not int
+        or evidence.get("schema_version") != 1
+    ):
+        raise ExerciseError("capstone evidence.json schema_version은 1이어야 합니다.")
+    if evidence.get("capstone_id") != capstone_id:
+        raise ExerciseError("capstone evidence.json의 capstone_id가 rubric과 다릅니다.")
+    for field in ("run_id", "input_fixture", "input_identity", "code_identity", "output_location", "output_identity"):
+        _require_text(evidence.get(field), label=f"evidence.{field}")
+    for field in (
+        "run_id",
+        "input_fixture",
+        "input_identity",
+        "code_identity",
+        "output_location",
+        "output_identity",
+    ):
+        if evidence[field] != submission[field]:
+            raise ExerciseError(f"submission과 evidence의 {field}가 다릅니다.")
+
+    scenarios = evidence.get("scenarios")
+    if not isinstance(scenarios, list) or not scenarios:
+        raise ExerciseError("capstone evidence.scenarios는 비어 있지 않은 배열이어야 합니다.")
+    by_id: dict[str, dict] = {}
+    evidence_files: set[str] = set()
+    evidence_file_identities: set[tuple[int, int]] = set()
+    for scenario in scenarios:
+        if not isinstance(scenario, dict):
+            raise ExerciseError("capstone evidence scenario는 object여야 합니다.")
+        scenario_id = _require_text(scenario.get("id"), label="evidence.scenario.id")
+        if scenario_id in by_id:
+            raise ExerciseError(f"capstone evidence scenario가 중복됩니다: {scenario_id}")
+        by_id[scenario_id] = scenario
+        if scenario.get("status") != "pass":
+            raise ExerciseError(f"capstone evidence scenario status는 pass여야 합니다: {scenario_id}")
+        for field in ("fixture", "expected", "observed", "evidence"):
+            _require_text(scenario.get(field), label=f"evidence.scenario[{scenario_id}].{field}")
+        relative_evidence = scenario["evidence"]
+        if not relative_evidence.startswith("evidence/"):
+            raise ExerciseError(f"scenario evidence는 evidence/ 아래여야 합니다: {scenario_id}")
+        if relative_evidence in evidence_files:
+            raise ExerciseError(f"scenario별 evidence file은 고유해야 합니다: {relative_evidence}")
+        evidence_files.add(relative_evidence)
+        evidence_file = contained_path(target, relative_evidence, label="scenario evidence", expect="file")
+        file_stat = evidence_file.stat()
+        file_identity = (file_stat.st_dev, file_stat.st_ino)
+        if file_identity in evidence_file_identities:
+            raise ExerciseError(f"scenario별 evidence file은 물리적으로 고유해야 합니다: {relative_evidence}")
+        evidence_file_identities.add(file_identity)
+        evidence_content = evidence_file.read_text(encoding="utf-8")
+        if _contains_placeholder(evidence_content) or _meaningful_chars(evidence_content.splitlines()) < MIN_EVIDENCE_CHARS:
+            raise ExerciseError(f"scenario evidence file의 관측 근거가 부족합니다: {relative_evidence}")
+
+    missing = sorted(set(required_scenarios) - set(by_id))
+    unexpected = sorted(set(by_id) - set(required_scenarios))
+    if missing or unexpected:
+        raise ExerciseError(
+            f"capstone evidence scenario 집합이 rubric과 다릅니다: missing={missing} unexpected={unexpected}"
+        )
+    return len(scenarios)
+
+
 def capstone_check(path: Path, target: Path, *, template: bool) -> None:
     reject_symlinks(target)
     rubric_path = contained_path(path, "rubric.json", label="capstone rubric", expect="file")
     rubric = json.loads(rubric_path.read_text(encoding="utf-8"))
+    if not isinstance(rubric, dict):
+        raise ExerciseError("capstone rubric root는 object여야 합니다.")
     required = rubric.get("required_artifacts")
     criteria = rubric.get("criteria")
-    if not isinstance(required, list) or not required:
+    capstone_id = rubric.get("capstone_id")
+    required_scenarios = rubric.get("required_scenarios")
+    required_nonempty_json = rubric.get("required_nonempty_json")
+    if rubric.get("version") != 2:
+        raise ExerciseError("capstone rubric version은 2여야 합니다.")
+    if not isinstance(required, list) or not required or not all(isinstance(x, str) for x in required):
         raise ExerciseError("capstone required_artifacts가 없습니다.")
-    if not isinstance(criteria, list) or not criteria or not all(isinstance(x, str) and x.strip() for x in criteria):
+    if len(required) != len(set(required)) or "submission.json" not in required or "evidence.json" not in required:
+        raise ExerciseError("capstone required_artifacts는 고유해야 하며 submission.json과 evidence.json을 포함해야 합니다.")
+    if (
+        not isinstance(criteria, list)
+        or not criteria
+        or not all(isinstance(x, str) and x.strip() == x and x for x in criteria)
+    ):
         raise ExerciseError("capstone human-review criteria가 없습니다.")
+    if not isinstance(capstone_id, str) or not capstone_id or any(
+        character not in "abcdefghijklmnopqrstuvwxyz0123456789-" for character in capstone_id
+    ):
+        raise ExerciseError("capstone_id는 소문자 영숫자와 하이픈으로 구성해야 합니다.")
+    if (
+        not isinstance(required_scenarios, list)
+        or not required_scenarios
+        or not all(isinstance(x, str) and x.strip() == x and x for x in required_scenarios)
+        or len(required_scenarios) != len(set(required_scenarios))
+    ):
+        raise ExerciseError("capstone required_scenarios는 고유한 비어 있지 않은 문자열 배열이어야 합니다.")
+    if not isinstance(required_nonempty_json, dict):
+        raise ExerciseError("capstone required_nonempty_json은 object여야 합니다.")
+    for artifact, json_paths in required_nonempty_json.items():
+        if not isinstance(artifact, str) or artifact not in required or not artifact.endswith(".json"):
+            raise ExerciseError(f"required_nonempty_json artifact가 required_artifacts의 JSON이 아닙니다: {artifact!r}")
+        if (
+            not isinstance(json_paths, list)
+            or not json_paths
+            or not all(isinstance(value, str) for value in json_paths)
+            or len(json_paths) != len(set(json_paths))
+        ):
+            raise ExerciseError(f"required_nonempty_json path 목록이 잘못됐습니다: {artifact}")
+        template_json = json.loads(
+            contained_path(
+                path / "skeleton", artifact, label="required_nonempty_json template", expect="file"
+            ).read_text(encoding="utf-8")
+        )
+        for json_path in json_paths:
+            _json_path(template_json, json_path, label=artifact)
     if rubric.get("reference_implementation") is not False:
         raise ExerciseError("capstone은 자동 완성 판정용 reference를 제공하지 않습니다.")
     placeholder_artifacts: set[str] = set()
@@ -175,24 +398,123 @@ def capstone_check(path: Path, target: Path, *, template: bool) -> None:
                 raise ExerciseError(f"capstone artifact에 TODO/TBD/PLACEHOLDER가 남아 있습니다: {artifact}")
             if not template and value in ({}, []):
                 raise ExerciseError(f"capstone JSON artifact가 비어 있습니다: {artifact}")
+            if not template:
+                template_file = contained_path(
+                    path / "skeleton", artifact, label="capstone JSON template artifact", expect="file"
+                )
+                template_value = json.loads(template_file.read_text(encoding="utf-8"))
+                _validate_json_shape(template_value, value, label=artifact)
+                for json_path in required_nonempty_json.get(artifact, []):
+                    required_value = _json_path(value, json_path, label=artifact)
+                    if not _meaningful_json_value(required_value):
+                        raise ExerciseError(f"capstone JSON 필수 값이 비었습니다: {artifact}: {json_path}")
         else:
             if _contains_placeholder(content):
                 placeholder_artifacts.add(artifact)
             if not template and _contains_placeholder(content):
                 raise ExerciseError(f"capstone artifact에 TODO/TBD/PLACEHOLDER가 남아 있습니다: {artifact}")
+            if not template:
+                _validate_completed_markdown(path, artifact, content)
     if template and "submission.json" not in placeholder_artifacts:
         raise ExerciseError("capstone template submission.json은 의도적인 TODO placeholder를 포함해야 합니다.")
+    if template and "evidence.json" not in placeholder_artifacts:
+        raise ExerciseError("capstone template evidence.json은 의도적인 TODO placeholder를 포함해야 합니다.")
+    if template:
+        submission = json.loads(
+            contained_path(target, "submission.json", label="capstone submission template", expect="file").read_text(
+                encoding="utf-8"
+            )
+        )
+        evidence = json.loads(
+            contained_path(target, "evidence.json", label="capstone evidence template", expect="file").read_text(
+                encoding="utf-8"
+            )
+        )
+        if (
+            not isinstance(submission, dict)
+            or submission.get("capstone_id") != capstone_id
+            or submission.get("evidence_manifest") != "evidence.json"
+        ):
+            raise ExerciseError("capstone submission template identity가 rubric과 다릅니다.")
+        for field in (
+            "run_id",
+            "implementation_profile",
+            "run_command",
+            "verify_command",
+            "input_fixture",
+            "input_identity",
+            "code_identity",
+            "output_location",
+            "output_identity",
+        ):
+            value = submission.get(field)
+            if not isinstance(value, str) or not _contains_placeholder(value):
+                raise ExerciseError(f"capstone submission template field는 의도적으로 미완성이어야 합니다: {field}")
+        known_limits = submission.get("known_limits")
+        if (
+            not isinstance(known_limits, list)
+            or not known_limits
+            or not all(isinstance(value, str) and _contains_placeholder(value) for value in known_limits)
+        ):
+            raise ExerciseError("capstone submission template known_limits는 의도적으로 미완성이어야 합니다.")
+        if (
+            not isinstance(evidence, dict)
+            or type(evidence.get("schema_version")) is not int
+            or evidence.get("schema_version") != 1
+            or evidence.get("capstone_id") != capstone_id
+        ):
+            raise ExerciseError("capstone evidence template identity가 rubric과 다릅니다.")
+        template_scenarios = evidence.get("scenarios")
+        if (
+            not isinstance(template_scenarios, list)
+            or not all(isinstance(item, dict) for item in template_scenarios)
+            or [item.get("id") for item in template_scenarios] != required_scenarios
+        ):
+            raise ExerciseError("capstone evidence template scenario 순서가 rubric과 다릅니다.")
+        for field in ("run_id", "input_fixture", "input_identity", "code_identity", "output_location", "output_identity"):
+            value = evidence.get(field)
+            if not isinstance(value, str) or not _contains_placeholder(value):
+                raise ExerciseError(f"capstone evidence template field는 의도적으로 미완성이어야 합니다: {field}")
+        for scenario in template_scenarios:
+            for field in ("status", "fixture", "expected", "observed", "evidence"):
+                value = scenario.get(field)
+                if not isinstance(value, str) or not _contains_placeholder(value):
+                    raise ExerciseError(
+                        f"capstone evidence template scenario field는 의도적으로 미완성이어야 합니다: "
+                        f"{scenario.get('id')}.{field}"
+                    )
     if not template:
         submission_path = contained_path(target, "submission.json", label="submission", expect="file")
         submission = json.loads(submission_path.read_text(encoding="utf-8"))
-        for field in ("implementation_profile", "run_command", "verify_command", "input_fixture", "output_location"):
-            value = submission.get(field)
-            if not isinstance(value, str) or not value.strip() or value.strip().upper() == "TODO":
-                raise ExerciseError(f"submission.{field}를 작성해야 합니다.")
-        if not isinstance(submission.get("known_limits"), list):
-            raise ExerciseError("submission.known_limits는 배열이어야 합니다.")
+        if not isinstance(submission, dict) or submission.get("capstone_id") != capstone_id:
+            raise ExerciseError("submission.capstone_id가 rubric과 다릅니다.")
+        if submission.get("evidence_manifest") != "evidence.json":
+            raise ExerciseError("submission.evidence_manifest는 evidence.json이어야 합니다.")
+        for field in (
+            "run_id",
+            "implementation_profile",
+            "run_command",
+            "verify_command",
+            "input_fixture",
+            "input_identity",
+            "code_identity",
+            "output_location",
+            "output_identity",
+        ):
+            _require_text(submission.get(field), label=f"submission.{field}")
+        known_limits = submission.get("known_limits")
+        if not isinstance(known_limits, list) or not known_limits:
+            raise ExerciseError("submission.known_limits는 하나 이상의 알려진 한계를 포함해야 합니다.")
+        for index, value in enumerate(known_limits):
+            _require_text(value, label=f"submission.known_limits[{index}]")
+        scenario_count = _validate_capstone_evidence(
+            target,
+            capstone_id=capstone_id,
+            required_scenarios=required_scenarios,
+            submission=submission,
+        )
         print(
-            "OK capstone submission structure; "
+            f"OK capstone evidence structure scenarios={scenario_count}; "
             f"human review required for {len(criteria)} rubric criteria and runtime evidence."
         )
     else:

@@ -1,5 +1,6 @@
 {
-  "version": 1,
+  "version": 2,
+  "capstone_id": "cdc-analytics-platform",
   "title": "CDC analytics platform capstone",
   "required_artifacts": [
     "source-contract.md",
@@ -11,8 +12,28 @@
     "security-retention.md",
     "failure-matrix.md",
     "incident-runbook.md",
+    "evidence.json",
     "submission.json"
   ],
+  "required_scenarios": [
+    "normal",
+    "snapshot-log-gap-overlap",
+    "snapshot-crash",
+    "log-retention-risk",
+    "sink-write-before-checkpoint-crash",
+    "missing-delete-event",
+    "stale-replay",
+    "catalog-commit-failure",
+    "compaction-live-merge-conflict",
+    "retention-exceeded-outage",
+    "schema-decoding-failure",
+    "deletion-propagation",
+    "conflicting-source-position",
+    "deletion-remnant-after-repair",
+    "semantic-consumer-mismatch",
+    "reconciliation-mismatch"
+  ],
+  "required_nonempty_json": {},
   "criteria": [
     "snapshot 시작·종료와 source log position 연결이 설명됨",
     "insert/update/delete와 transaction/source position이 보존됨",

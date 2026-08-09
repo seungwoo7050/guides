@@ -1,0 +1,140 @@
+{
+  "schema_version": 1,
+  "capstone_id": "batch-data-product",
+  "run_id": "TODO",
+  "input_fixture": "TODO",
+  "input_identity": "TODO",
+  "code_identity": "TODO",
+  "output_location": "TODO",
+  "output_identity": "TODO",
+  "scenarios": [
+    {
+      "id": "normal",
+      "status": "TODO",
+      "fixture": "TODO",
+      "expected": "TODO",
+      "observed": "TODO",
+      "evidence": "evidence/TODO-normal.txt"
+    },
+    {
+      "id": "input-order-permutation",
+      "status": "TODO",
+      "fixture": "TODO",
+      "expected": "TODO",
+      "observed": "TODO",
+      "evidence": "evidence/TODO-input-order-permutation.txt"
+    },
+    {
+      "id": "duplicate-manifest-file",
+      "status": "TODO",
+      "fixture": "TODO",
+      "expected": "TODO",
+      "observed": "TODO",
+      "evidence": "evidence/TODO-duplicate-manifest-file.txt"
+    },
+    {
+      "id": "duplicate-payment-event",
+      "status": "TODO",
+      "fixture": "TODO",
+      "expected": "TODO",
+      "observed": "TODO",
+      "evidence": "evidence/TODO-duplicate-payment-event.txt"
+    },
+    {
+      "id": "transform-crash",
+      "status": "TODO",
+      "fixture": "TODO",
+      "expected": "TODO",
+      "observed": "TODO",
+      "evidence": "evidence/TODO-transform-crash.txt"
+    },
+    {
+      "id": "quality-gate-failure",
+      "status": "TODO",
+      "fixture": "TODO",
+      "expected": "TODO",
+      "observed": "TODO",
+      "evidence": "evidence/TODO-quality-gate-failure.txt"
+    },
+    {
+      "id": "pre-publish-commit-failure",
+      "status": "TODO",
+      "fixture": "TODO",
+      "expected": "TODO",
+      "observed": "TODO",
+      "evidence": "evidence/TODO-pre-publish-commit-failure.txt"
+    },
+    {
+      "id": "post-publish-retry",
+      "status": "TODO",
+      "fixture": "TODO",
+      "expected": "TODO",
+      "observed": "TODO",
+      "evidence": "evidence/TODO-post-publish-retry.txt"
+    },
+    {
+      "id": "concurrent-publish",
+      "status": "TODO",
+      "fixture": "TODO",
+      "expected": "TODO",
+      "observed": "TODO",
+      "evidence": "evidence/TODO-concurrent-publish.txt"
+    },
+    {
+      "id": "missing-reference-snapshot",
+      "status": "TODO",
+      "fixture": "TODO",
+      "expected": "TODO",
+      "observed": "TODO",
+      "evidence": "evidence/TODO-missing-reference-snapshot.txt"
+    },
+    {
+      "id": "late-refund-boundary",
+      "status": "TODO",
+      "fixture": "TODO",
+      "expected": "TODO",
+      "observed": "TODO",
+      "evidence": "evidence/TODO-late-refund-boundary.txt"
+    },
+    {
+      "id": "partial-or-mutable-input",
+      "status": "TODO",
+      "fixture": "TODO",
+      "expected": "TODO",
+      "observed": "TODO",
+      "evidence": "evidence/TODO-partial-or-mutable-input.txt"
+    },
+    {
+      "id": "conflicting-payment-event",
+      "status": "TODO",
+      "fixture": "TODO",
+      "expected": "TODO",
+      "observed": "TODO",
+      "evidence": "evidence/TODO-conflicting-payment-event.txt"
+    },
+    {
+      "id": "backfill-live-contention",
+      "status": "TODO",
+      "fixture": "TODO",
+      "expected": "TODO",
+      "observed": "TODO",
+      "evidence": "evidence/TODO-backfill-live-contention.txt"
+    },
+    {
+      "id": "semantic-canary-mismatch",
+      "status": "TODO",
+      "fixture": "TODO",
+      "expected": "TODO",
+      "observed": "TODO",
+      "evidence": "evidence/TODO-semantic-canary-mismatch.txt"
+    },
+    {
+      "id": "reconciliation-mismatch",
+      "status": "TODO",
+      "fixture": "TODO",
+      "expected": "TODO",
+      "observed": "TODO",
+      "evidence": "evidence/TODO-reconciliation-mismatch.txt"
+    }
+  ]
+}
