@@ -1,0 +1,14 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: denied-tag
+  namespace: platform-lab
+spec:
+  replicas: 1
+  selector: {matchLabels: {app: denied-tag}}
+  template:
+    metadata: {labels: {app: denied-tag}}
+    spec:
+      containers:
+        - name: app
+          image: example.invalid/app:latest

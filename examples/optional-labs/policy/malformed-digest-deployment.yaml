@@ -1,0 +1,14 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: denied-malformed-digest
+  namespace: platform-lab
+spec:
+  replicas: 1
+  selector: {matchLabels: {app: denied-malformed-digest}}
+  template:
+    metadata: {labels: {app: denied-malformed-digest}}
+    spec:
+      containers:
+        - name: app
+          image: example.invalid/app@sha256:not-a-digest

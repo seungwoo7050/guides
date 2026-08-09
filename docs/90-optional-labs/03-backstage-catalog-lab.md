@@ -9,6 +9,41 @@ Software catalog와 portal이 platform API·control plane과 다른 책임을 �
 - template가 repository 시작점을 만들 뿐 지속적인 runtime state를 소유하지 않음을 확인합니다.
 - portal이 없어도 platform API를 사용할 수 있는 경계를 설계합니다.
 
+## 필수 local 판정
+
+Backstage가 없어도 다음 검사는 owner reference 형식, profile version과 HTTPS status API 계약의 정상·대표 실패를 비교합니다.
+
+```sh
+python3 examples/optional-labs/check_profiles.py
+```
+
+`catalog/owned-component`는 통과하고 `catalog/missing-owner`는 거부돼야 합니다. 이 결과는 Backstage schema, catalog processor, database와 plugin 동작을 검증하지 않습니다.
+
+## 기존 local Backstage에 연결하는 선택 profile
+
+이 단계는 이미 폐기 가능한 local Backstage 개발 환경을 가진 경우에만 실행합니다. 새 application 생성과 package download는 이 가이드의 자동 검증 범위가 아닙니다. 먼저 실제 version과 기존 entity 위치를 기록합니다.
+
+```sh
+node --version
+npm --version
+test -f package.json
+test -f app-config.yaml
+```
+
+두 fixture를 local catalog location에 복사하거나 `app-config.local.yaml`의 `catalog.locations`에서 file target으로 등록합니다.
+
+```text
+examples/catalog/component.yaml
+examples/optional-labs/catalog/component-invalid.yaml
+```
+
+개발 server를 기존 프로젝트의 documented command로 시작한 뒤 catalog API/UI에서 다음을 기록합니다.
+
+- 정상 component의 owner, system, profile version과 status link
+- `missing-team` reference의 unresolved 관계 또는 ingestion error
+- portal을 중지했을 때도 별도 platform status API가 유지되는지 여부
+- template 실행 뒤 생성된 repository와 runtime state의 writer가 다른지 여부
+
 ## 기본 흐름
 
 1. local Backstage 개발 환경을 준비합니다.
@@ -30,4 +65,4 @@ Software catalog와 portal이 platform API·control plane과 다른 책임을 �
 
 ## Cleanup
 
-개발 환경과 생성된 test repository/resource를 제거합니다. Catalog backend의 local data를 재사용한다면 test entity가 남지 않았는지 확인합니다.
+추가한 local location, fixture entity와 생성된 test repository/resource를 제거합니다. Catalog backend의 local data를 재사용한다면 `checkout-invalid-owner`와 test entity가 남지 않았는지 API/UI에서 확인합니다. 제거 실패 시 catalog owner가 cleanup 책임자입니다.

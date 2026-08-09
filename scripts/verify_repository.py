@@ -174,6 +174,19 @@ def check_exercises() -> tuple[int, int]:
     return accepted, rejected
 
 
+def check_optional_profiles() -> int:
+    checker = ROOT / 'examples/optional-labs/check_profiles.py'
+    result = subprocess.run(
+        [sys.executable, str(checker)], cwd=ROOT, capture_output=True, text=True,
+    )
+    if result.returncode != 0:
+        fail(f'선택 실습 결정적 검사가 실패했습니다.\n{result.stdout}{result.stderr}')
+    match = re.search(r'PROFILE SUMMARY: PASS cases=(\d+)', result.stdout)
+    if not match:
+        fail(f'선택 실습 결정적 검사 summary를 찾을 수 없습니다.\n{result.stdout}')
+    return int(match.group(1))
+
+
 def check_prepared_fingerprint() -> None:
     marker_path = ROOT / '.guide/platform-engineering/prepared.json'
     if not marker_path.is_file():
@@ -201,11 +214,15 @@ def main() -> int:
     check_json()
     check_shell_and_modes()
     accepted, rejected = check_exercises()
+    profiles = check_optional_profiles()
     if args.full:
         check_prepared_fingerprint()
 
     mode = 'full' if args.full else 'quick'
-    print(f'OK mode={mode} files={len(relative_files())} references={accepted} skeletons_rejected={rejected}')
+    print(
+        f'OK mode={mode} files={len(relative_files())} references={accepted} '
+        f'skeletons_rejected={rejected} optional_profiles={profiles}'
+    )
     return 0
 
 

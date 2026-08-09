@@ -1,0 +1,6 @@
+{
+  "service": "checkout",
+  "environment": "staging",
+  "revision": "manual:hotfix",
+  "artifactDigest": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+}

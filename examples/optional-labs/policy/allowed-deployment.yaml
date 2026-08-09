@@ -1,0 +1,14 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: allowed-digest
+  namespace: platform-lab
+spec:
+  replicas: 1
+  selector: {matchLabels: {app: allowed-digest}}
+  template:
+    metadata: {labels: {app: allowed-digest}}
+    spec:
+      containers:
+        - name: app
+          image: example.invalid/app@sha256:0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef

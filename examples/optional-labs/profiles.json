@@ -1,0 +1,247 @@
+{
+  "schemaVersion": 1,
+  "iac": [
+    {
+      "id": "normal-state",
+      "configuration": {"externalId": "env/checkout-staging", "version": "v1"},
+      "state": {"externalId": "env/checkout-staging", "version": "v1"},
+      "actual": {"externalId": "env/checkout-staging", "version": "v1"},
+      "expected": "in-sync"
+    },
+    {
+      "id": "out-of-band-drift",
+      "configuration": {"externalId": "env/checkout-staging", "version": "v1"},
+      "state": {"externalId": "env/checkout-staging", "version": "v1"},
+      "actual": {"externalId": "env/checkout-staging", "version": "manual-v2"},
+      "expected": "drift"
+    }
+  ],
+  "catalog": [
+    {
+      "id": "owned-component",
+      "component": {
+        "kind": "Component",
+        "owner": "group:default/team-checkout",
+        "statusUrl": "https://platform.example/v1/services/checkout",
+        "profileVersion": "stateless-http/3.2.0"
+      },
+      "expected": "accepted"
+    },
+    {
+      "id": "missing-owner",
+      "component": {
+        "kind": "Component",
+        "owner": "unknown",
+        "statusUrl": "https://platform.example/v1/services/checkout",
+        "profileVersion": "stateless-http/3.2.0"
+      },
+      "expected": "rejected"
+    }
+  ],
+  "gitops": [
+    {
+      "id": "observed-revision",
+      "desired": {
+        "service": "checkout",
+        "environment": "staging",
+        "revision": "git:desired-v1",
+        "artifactDigest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+      },
+      "live": {
+        "service": "checkout",
+        "environment": "staging",
+        "revision": "git:desired-v1",
+        "artifactDigest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+      },
+      "expected": "in-sync"
+    },
+    {
+      "id": "unaudited-drift",
+      "desired": {
+        "service": "checkout",
+        "environment": "staging",
+        "revision": "git:desired-v1",
+        "artifactDigest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+      },
+      "live": {
+        "service": "checkout",
+        "environment": "staging",
+        "revision": "manual:hotfix",
+        "artifactDigest": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+      },
+      "expected": "reconcile"
+    },
+    {
+      "id": "bounded-break-glass",
+      "desired": {
+        "service": "checkout",
+        "environment": "staging",
+        "revision": "git:desired-v1",
+        "artifactDigest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+      },
+      "live": {
+        "service": "checkout",
+        "environment": "staging",
+        "revision": "manual:hotfix",
+        "artifactDigest": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+      },
+      "evaluatedAt": "2026-08-10T00:00:00Z",
+      "emergency": {
+        "ticket": "INC-2042",
+        "owner": "team-platform-oncall",
+        "expiresAt": "2026-08-11T00:00:00Z"
+      },
+      "expected": "break-glass"
+    },
+    {
+      "id": "revision-only-drift",
+      "desired": {
+        "service": "checkout",
+        "environment": "staging",
+        "revision": "git:desired-v2",
+        "artifactDigest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+      },
+      "live": {
+        "service": "checkout",
+        "environment": "staging",
+        "revision": "git:desired-v1",
+        "artifactDigest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+      },
+      "expected": "reconcile"
+    },
+    {
+      "id": "expired-break-glass",
+      "desired": {
+        "service": "checkout",
+        "environment": "staging",
+        "revision": "git:desired-v1",
+        "artifactDigest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+      },
+      "live": {
+        "service": "checkout",
+        "environment": "staging",
+        "revision": "manual:hotfix",
+        "artifactDigest": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+      },
+      "evaluatedAt": "2026-08-12T00:00:00Z",
+      "emergency": {
+        "ticket": "INC-2042",
+        "owner": "team-platform-oncall",
+        "expiresAt": "2026-08-11T00:00:00Z"
+      },
+      "expected": "reconcile"
+    },
+    {
+      "id": "overlong-break-glass",
+      "desired": {
+        "service": "checkout",
+        "environment": "staging",
+        "revision": "git:desired-v1",
+        "artifactDigest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+      },
+      "live": {
+        "service": "checkout",
+        "environment": "staging",
+        "revision": "manual:hotfix",
+        "artifactDigest": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+      },
+      "evaluatedAt": "2026-08-10T00:00:00Z",
+      "emergency": {
+        "ticket": "INC-2042",
+        "owner": "team-platform-oncall",
+        "expiresAt": "2026-08-12T00:00:01Z"
+      },
+      "expected": "reconcile"
+    },
+    {
+      "id": "malformed-expiry",
+      "desired": {
+        "service": "checkout",
+        "environment": "staging",
+        "revision": "git:desired-v1",
+        "artifactDigest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+      },
+      "live": {
+        "service": "checkout",
+        "environment": "staging",
+        "revision": "manual:hotfix",
+        "artifactDigest": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+      },
+      "evaluatedAt": "2026-08-10T00:00:00Z",
+      "emergency": {
+        "ticket": "INC-2042",
+        "owner": "team-platform-oncall",
+        "expiresAt": "not-a-timestamp"
+      },
+      "expected": "reconcile"
+    },
+    {
+      "id": "target-identity-mismatch",
+      "desired": {
+        "service": "checkout",
+        "environment": "staging",
+        "revision": "git:desired-v1",
+        "artifactDigest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+      },
+      "live": {
+        "service": "catalog",
+        "environment": "staging",
+        "revision": "git:desired-v1",
+        "artifactDigest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+      },
+      "expected": "invalid"
+    },
+    {
+      "id": "malformed-digest",
+      "desired": {
+        "service": "checkout",
+        "environment": "staging",
+        "revision": "git:desired-v1",
+        "artifactDigest": "sha256:not-a-digest"
+      },
+      "live": {
+        "service": "checkout",
+        "environment": "staging",
+        "revision": "git:desired-v1",
+        "artifactDigest": "sha256:not-a-digest"
+      },
+      "expected": "invalid"
+    },
+    {
+      "id": "missing-digest",
+      "desired": {
+        "service": "checkout",
+        "environment": "staging",
+        "revision": "git:desired-v1"
+      },
+      "live": {
+        "service": "checkout",
+        "environment": "staging",
+        "revision": "git:desired-v1"
+      },
+      "expected": "invalid"
+    }
+  ],
+  "policy": [
+    {
+      "id": "production-digest-allowed",
+      "request": {"environmentClass": "production", "releaseDigest": "sha256:0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"},
+      "expected": "allow"
+    },
+    {
+      "id": "production-tag-denied",
+      "request": {"environmentClass": "production", "releaseDigest": "checkout:latest"},
+      "expected": "deny"
+    },
+    {
+      "id": "production-malformed-digest-denied",
+      "request": {"environmentClass": "production", "releaseDigest": "sha256:not-a-digest"},
+      "expected": "deny"
+    },
+    {
+      "id": "staging-tag-out-of-scope",
+      "request": {"environmentClass": "staging", "releaseDigest": "checkout:preview"},
+      "expected": "allow"
+    }
+  ]
+}

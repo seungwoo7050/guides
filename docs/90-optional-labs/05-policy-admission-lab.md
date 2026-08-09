@@ -20,6 +20,34 @@ Local cluster에서 policy를 audit/warn/deny 단계로 적용하고, 정상 wor
 
 모든 정책을 한 번에 강제하지 않습니다. 하나를 선택해 lifecycle을 완성합니다.
 
+## 외부 controller 없는 결정적 경로
+
+```sh
+python3 examples/optional-labs/check_profiles.py
+```
+
+`policy/production-digest-allowed`, `policy/production-tag-denied`, `policy/production-malformed-digest-denied`, `policy/staging-tag-out-of-scope`가 선언한 allow/deny와 일치해야 합니다. 이 검사는 JSON request에 대한 작은 판정이며 Kubernetes admission, CEL type checking, webhook timeout이나 기존 workload migration을 증명하지 않습니다.
+
+## Kubernetes CEL profile
+
+[Local Kubernetes 실습](01-kind-kubernetes-lab.md)의 `kind-platform-guide` context와 `platform-lab` namespace만 사용합니다. 먼저 context, namespace, API 지원과 고정 실습 이름의 충돌 여부를 확인합니다. 첫 다섯 명령 중 하나라도 실패하면 기존 객체를 덮어쓰지 말고 이 profile을 `SKIP`으로 남깁니다.
+
+```sh
+test "$(kubectl config current-context)" = kind-platform-guide
+kubectl --context kind-platform-guide get namespace platform-lab
+kubectl --context kind-platform-guide api-resources --api-group=admissionregistration.k8s.io | grep ValidatingAdmissionPolicy
+test -z "$(kubectl --context kind-platform-guide get validatingadmissionpolicy platform-guide-image-digest --ignore-not-found -o name)"
+test -z "$(kubectl --context kind-platform-guide get validatingadmissionpolicybinding platform-guide-image-digest --ignore-not-found -o name)"
+kubectl --context kind-platform-guide apply -f examples/optional-labs/policy/admission-policy.yaml
+kubectl --context kind-platform-guide apply --dry-run=server -f examples/optional-labs/policy/allowed-deployment.yaml
+kubectl --context kind-platform-guide apply --dry-run=server -f examples/optional-labs/policy/denied-deployment.yaml
+kubectl --context kind-platform-guide apply --dry-run=server -f examples/optional-labs/policy/malformed-digest-deployment.yaml
+```
+
+정상 fixture는 server dry-run에 통과하고 tag 및 malformed digest fixture는 `platform-lab workload image에는 immutable sha256 digest가 필요합니다.` 메시지로 거부돼야 합니다. `--dry-run=server`이므로 workload와 image pull은 생성하지 않습니다. 두 거부가 성공처럼 무시되지 않도록 각각의 exit status와 stderr를 evidence로 기록합니다.
+
+정책을 `Deny`로 적용하기 전 실제 조직에서는 `Audit`/`Warn` inventory, 대표 workload, owner, remediation, exception과 migration deadline이 필요합니다. 이 local fixture는 새 요청 세 개만 비교합니다.
+
 ## 기본 흐름
 
 1. 위반 workload와 정상 workload fixture를 작성합니다.
@@ -39,3 +67,13 @@ Local cluster에서 policy를 audit/warn/deny 단계로 적용하고, 정상 wor
 - Exception이 전체 namespace 또는 cluster에 과도하게 적용되지 않습니까?
 - Policy controller 장애가 모든 deployment를 막아야 합니까?
 - Policy change 자체가 version·review·canary·rollback을 가집니까?
+
+## Cleanup
+
+```sh
+test "$(kubectl config current-context)" = kind-platform-guide
+kubectl --context kind-platform-guide delete -f examples/optional-labs/policy/admission-policy.yaml --ignore-not-found=true
+kubectl --context kind-platform-guide get validatingadmissionpolicies,validatingadmissionpolicybindings
+```
+
+정책과 dry-run 외의 test resource가 남지 않았는지 확인합니다. 실제 webhook/controller profile을 사용했다면 deployment, service, CRD, cluster role과 webhook configuration을 별도로 inventory하고 제거합니다.

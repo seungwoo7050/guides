@@ -4,6 +4,7 @@
 
 ## 공통 원칙
 
+- 실행 전에 [`선택 실습 안전 계약`](../../reference/safe-lab-policy.md)을 적용합니다.
 - 개인 sandbox 또는 폐기 가능한 로컬 환경만 사용합니다.
 - 설치 전 공식 문서에서 현재 지원 version과 host 요구사항을 확인합니다.
 - image·module·chart·action은 가능한 한 version 또는 digest를 고정합니다.
@@ -23,6 +24,16 @@
 | [Admission policy](05-policy-admission-lab.md) | audit/warn/deny, exception과 실제 enforcement | local cluster, CEL/Kyverno/Gatekeeper 중 하나 |
 
 모든 실습을 수행할 필요는 없습니다. 목표 프로젝트에서 사용하는 구현 profile 한두 개를 선택합니다.
+
+## 외부 도구가 없는 필수 대체 경로
+
+다음 명령은 Python 3.10 이상만 사용하며 network·credential·container·외부 resource를 만들지 않습니다.
+
+```sh
+python3 examples/optional-labs/check_profiles.py
+```
+
+이 검사는 configuration/state/actual drift, catalog owner, desired/live revision과 production digest policy의 공개 판정을 정상·known-bad fixture로 비교합니다. 실제 Kubernetes scheduling, provider state locking, Backstage ingestion, controller reconciliation 또는 admission enforcement는 증명하지 않습니다. 실제 profile을 생략했다면 `SKIP: <tool> unavailable`과 관찰하지 못한 경계를 evidence에 남깁니다.
 
 ## 공통 evidence
 

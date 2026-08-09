@@ -1,0 +1,12 @@
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: checkout-invalid-owner
+  annotations:
+    northstar.dev/platform-profile: stateless-http/3.2.0
+    northstar.dev/status-api: https://platform.example/v1/services/checkout
+spec:
+  type: service
+  lifecycle: experimental
+  owner: group:default/missing-team
+  system: commerce

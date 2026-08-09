@@ -1,0 +1,6 @@
+{
+  "service": "checkout",
+  "environment": "staging",
+  "revision": "git:desired-v1",
+  "artifactDigest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+}

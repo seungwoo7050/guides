@@ -1,0 +1,25 @@
+terraform {
+  required_version = ">= 1.4.0"
+}
+
+variable "desired_version" {
+  type    = string
+  default = "v2"
+}
+
+moved {
+  from = terraform_data.platform_state
+  to   = terraform_data.environment_state
+}
+
+resource "terraform_data" "environment_state" {
+  input = {
+    external_id     = "env/checkout-staging"
+    desired_version = var.desired_version
+    observed_sha256 = filesha256("${path.module}/observed.txt")
+  }
+}
+
+output "state_contract" {
+  value = terraform_data.environment_state.output
+}
