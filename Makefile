@@ -1,4 +1,4 @@
-.PHONY: prepare check verify fixtures example clean
+.PHONY: prepare check verify fixtures example workspace clean
 
 prepare:
 	./prepare.sh
@@ -15,7 +15,9 @@ fixtures:
 example:
 	python3 examples/fixed-step-replay/sim.py --verify --pretty
 
+workspace:
+	@test -n "$(DEST)" || (echo "usage: make workspace DEST=/absolute/new/path" >&2; exit 2)
+	./scripts/new-workspace.sh "$(DEST)"
+
 clean:
-	rm -rf .guide
-	find . -type d -name __pycache__ -prune -exec rm -rf {} +
-	find . -type f \( -name '*.pyc' -o -name '*.pyo' \) -delete
+	python3 scripts/cleanup.py

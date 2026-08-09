@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import subprocess
 import sys
 from pathlib import Path
 
@@ -42,11 +43,19 @@ for path in sorted(root.rglob("*"), key=lambda p: p.as_posix()):
 
 marker = root / ".guide/game-development/prepared.json"
 marker.parent.mkdir(parents=True, exist_ok=True)
+head = subprocess.run(
+    ["git", "rev-parse", "HEAD"],
+    cwd=root,
+    text=True,
+    capture_output=True,
+    check=False,
+)
 marker.write_text(
     json.dumps(
         {
             "guide": "game-development",
             "python": ".".join(map(str, sys.version_info[:3])),
+            "git_head": head.stdout.strip() if head.returncode == 0 else None,
             "source_sha256": digest.hexdigest(),
         },
         ensure_ascii=False,
