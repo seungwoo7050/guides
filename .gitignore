@@ -1,0 +1,12 @@
+.guide/
+node_modules/
+.expo/
+dist/
+coverage/
+artifacts/
+*.tsbuildinfo
+*.log
+.DS_Store
+android/
+ios/
+exercises/field-notes/workspace/
