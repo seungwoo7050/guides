@@ -1,0 +1,74 @@
+{
+  "schema_version": 1,
+  "validator": "scripts/verify_capstone.py",
+  "rubric_path": "projects/internal-developer-platform/rubric.md",
+  "scenario_identifiers_path": "projects/internal-developer-platform/scenario/identifiers.json",
+  "required_files": [
+    "01-product.md",
+    "02-ownership.md",
+    "03-api-status.md",
+    "04-iac-runtime.md",
+    "05-delivery.md",
+    "06-security-catalog.md",
+    "07-slo-capacity.md",
+    "08-migration-runbook.md",
+    "09-evidence.md",
+    "evidence-manifest.json",
+    "evidence/platform-model-report.json"
+  ],
+  "required_headings": {
+    "01-product.md": ["공통 식별자", "사용자와 문제", "Golden path", "비범위와 다음 경로"],
+    "02-ownership.md": ["공통 식별자", "Single-writer ownership", "Failure ownership", "지원과 Escalation"],
+    "03-api-status.md": ["공통 식별자", "Resource와 상태", "Operation과 Evidence", "정상·경계·실패"],
+    "04-iac-runtime.md": ["공통 식별자", "IaC State와 Drift", "Kubernetes Runtime", "Tenant Isolation과 Cleanup"],
+    "05-delivery.md": ["공통 식별자", "Build Once와 Promotion", "GitOps Reconciliation", "Rollback과 Partial Effect"],
+    "06-security-catalog.md": ["공통 식별자", "Identity와 Secret", "Policy와 Break-glass", "Catalog와 Developer Feedback"],
+    "07-slo-capacity.md": ["공통 식별자", "Journey SLO", "Capacity와 Fairness", "Cost와 Support"],
+    "08-migration-runbook.md": ["공통 식별자", "Migration Waves", "Runbook", "Retirement"],
+    "09-evidence.md": [
+      "공통 식별자",
+      "실패 시나리오",
+      "FS-01 — Idempotency payload conflict",
+      "FS-02 — Evidence-free Ready와 partial effect",
+      "FS-03 — Tenant quota와 queue isolation",
+      "FS-04 — Drift와 bounded break-glass",
+      "FS-05 — Static credential fallback",
+      "FS-06 — Migration wave abort",
+      "FS-07 — Downstream partial provisioning",
+      "FS-08 — Service retirement cleanup",
+      "Model Evidence",
+      "Human Review와 한계"
+    ]
+  },
+  "identifiers": {
+    "service_id": "svc-payments",
+    "resource_id": "env-payments-staging",
+    "operation_id": "op-payments-staging-v3",
+    "tenant_id": "tenant-checkout",
+    "artifact_id": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "profile_id": "stateless-http/v3"
+  },
+  "owns": {
+    "OWN-1": "플랫폼 사용자와 golden path",
+    "OWN-2": "Infrastructure as Code와 drift",
+    "OWN-3": "컨테이너 오케스트레이션",
+    "OWN-4": "재사용 가능한 CI/CD·GitOps",
+    "OWN-5": "identity·secret·관측·catalog·multi-tenancy"
+  },
+  "exit_capabilities": {
+    "EXIT-1": "self-service 서비스 경로를 설계한다",
+    "EXIT-2": "정책·배포·관측을 플랫폼 계약으로 자동화한다",
+    "EXIT-3": "플랫폼 SLO·용량·업그레이드를 운영한다"
+  },
+  "failure_scenarios": ["FS-01", "FS-02", "FS-03", "FS-04", "FS-05", "FS-06", "FS-07", "FS-08"],
+  "model": {
+    "report_path": "evidence/platform-model-report.json",
+    "report_sha256": "a405fa1cf0e42c32aad7033716372a3a3d77c1bcb7769f447782e069132746c3",
+    "implementation_path": "exercises/13-platform-control-plane/reference/platform_model.py",
+    "implementation_sha256": "26fcd8e5337bc398f270622c744f74dbe0a19e11e110a9906171e119612aa0ea",
+    "contract_path": "exercises/13-platform-control-plane/contract.json",
+    "contract_sha256": "37650aecef42526ed4ca27f5f89c02fc6c44f3d2da5bf2dd741c70f75717a27e",
+    "check_ids": ["PE-001", "PE-002", "PE-003", "PE-004", "PE-005", "PE-006", "PE-007", "PE-008", "PE-009", "PE-010"]
+  },
+  "forbidden_tokens": ["TODO", "TBD", "작성하세요", "미정", "placeholder", "CHANGEME"]
+}

@@ -1,0 +1,12 @@
+{
+  "schema_version": 1,
+  "identifiers": {
+    "service_id": "svc-payments",
+    "resource_id": "env-payments-staging",
+    "operation_id": "op-payments-staging-v3",
+    "tenant_id": "tenant-checkout",
+    "artifact_id": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "profile_id": "stateless-http/v3"
+  },
+  "status": "TODO: replace this manifest with complete OWN, EXIT, failure-scenario and model evidence references"
+}

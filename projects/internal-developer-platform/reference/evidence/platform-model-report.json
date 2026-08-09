@@ -1,0 +1,166 @@
+{
+  "checks": [
+    {
+      "id": "PE-001",
+      "kind": "normal",
+      "message": "contract satisfied",
+      "observed": {
+        "condition": "Ready",
+        "evidence_count": 1
+      },
+      "status": "pass",
+      "title": "request and evidenced reconcile reach Ready"
+    },
+    {
+      "id": "PE-002",
+      "kind": "boundary",
+      "message": "contract satisfied",
+      "observed": {
+        "conflict": "IDEMPOTENCY_CONFLICT",
+        "environment_count": 1
+      },
+      "status": "pass",
+      "title": "idempotency retry reuses and changed payload conflicts"
+    },
+    {
+      "id": "PE-003",
+      "kind": "failure",
+      "message": "contract satisfied",
+      "observed": {
+        "condition": "Degraded",
+        "external_effect_count": 1
+      },
+      "status": "pass",
+      "title": "evidence-free Ready is denied and partial effects stay visible"
+    },
+    {
+      "id": "PE-004",
+      "kind": "isolation",
+      "message": "contract satisfied",
+      "observed": {
+        "quota_rejected": true,
+        "tenant_a": "Progressing",
+        "tenant_b": "Ready"
+      },
+      "status": "pass",
+      "title": "tenant quota and queue progress are isolated"
+    },
+    {
+      "id": "PE-005",
+      "kind": "drift",
+      "message": "contract satisfied",
+      "observed": {
+        "converged": true,
+        "status": "Reconciled"
+      },
+      "status": "pass",
+      "title": "ordinary drift converges to desired state"
+    },
+    {
+      "id": "PE-006",
+      "kind": "break-glass",
+      "message": "contract satisfied",
+      "observed": {
+        "exception_status": "Open",
+        "rejected_unbounded": true
+      },
+      "status": "pass",
+      "title": "emergency drift requires owner expiry and evidence"
+    },
+    {
+      "id": "PE-007",
+      "kind": "identity",
+      "message": "contract satisfied",
+      "observed": {
+        "mode": "workload-identity",
+        "static_denied": true
+      },
+      "status": "pass",
+      "title": "static credential fallback is prohibited"
+    },
+    {
+      "id": "PE-008",
+      "kind": "migration",
+      "message": "contract satisfied",
+      "observed": {
+        "aborted": true,
+        "statuses": [
+          "Completed",
+          "Failed",
+          "Pending"
+        ]
+      },
+      "status": "pass",
+      "title": "failed migration wave aborts later waves"
+    },
+    {
+      "id": "PE-009",
+      "kind": "retirement",
+      "message": "contract satisfied",
+      "observed": {
+        "other_environment_retained": true,
+        "retired": "svc-a"
+      },
+      "status": "pass",
+      "title": "retirement cleans active state and retains evidence"
+    },
+    {
+      "id": "PE-010",
+      "kind": "evidence",
+      "message": "contract satisfied",
+      "observed": {
+        "deep_copy": true,
+        "deterministic": true,
+        "redacted": true
+      },
+      "status": "pass",
+      "title": "snapshot is deterministic private and detached"
+    }
+  ],
+  "contract": {
+    "check_ids": [
+      "PE-001",
+      "PE-002",
+      "PE-003",
+      "PE-004",
+      "PE-005",
+      "PE-006",
+      "PE-007",
+      "PE-008",
+      "PE-009",
+      "PE-010"
+    ],
+    "path": "exercises/13-platform-control-plane/contract.json",
+    "sha256": "37650aecef42526ed4ca27f5f89c02fc6c44f3d2da5bf2dd741c70f75717a27e"
+  },
+  "execution": {
+    "child_process": true,
+    "external_resources_created": false,
+    "file_writes_denied_in_learner": true,
+    "network_denied_by_python_audit": true,
+    "network_required": false,
+    "os_sandboxed": false,
+    "timeout_seconds": 5
+  },
+  "guide": "platform-engineering",
+  "implementation": {
+    "path": "exercises/13-platform-control-plane/reference/platform_model.py",
+    "sha256": "26fcd8e5337bc398f270622c744f74dbe0a19e11e110a9906171e119612aa0ea"
+  },
+  "lab": "13-platform-control-plane",
+  "limitations": [
+    "The Python audit hook is not an operating-system sandbox.",
+    "The contract does not verify real IAM, networks, Kubernetes, providers, concurrency, crashes, or physical deletion.",
+    "A passing synthetic model still requires human review before a production claim."
+  ],
+  "schema_version": 1,
+  "summary": {
+    "error_ids": [],
+    "errors": 0,
+    "failed": 0,
+    "failed_ids": [],
+    "passed": 10,
+    "result": "PASS",
+    "total": 10
+  }
+}

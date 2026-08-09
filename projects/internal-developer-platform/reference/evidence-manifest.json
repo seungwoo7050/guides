@@ -1,0 +1,155 @@
+{
+  "schema_version": 1,
+  "identifiers": {
+    "service_id": "svc-payments",
+    "resource_id": "env-payments-staging",
+    "operation_id": "op-payments-staging-v3",
+    "tenant_id": "tenant-checkout",
+    "artifact_id": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "profile_id": "stateless-http/v3"
+  },
+  "owns": {
+    "OWN-1": {
+      "catalog_text": "플랫폼 사용자와 golden path",
+      "evidence": [
+        {"file": "01-product.md", "heading": "Golden path"},
+        {"file": "evidence/platform-model-report.json", "json_pointer": "/checks/0"}
+      ]
+    },
+    "OWN-2": {
+      "catalog_text": "Infrastructure as Code와 drift",
+      "evidence": [
+        {"file": "04-iac-runtime.md", "heading": "IaC State와 Drift"},
+        {"file": "evidence/platform-model-report.json", "json_pointer": "/checks/4"}
+      ]
+    },
+    "OWN-3": {
+      "catalog_text": "컨테이너 오케스트레이션",
+      "evidence": [
+        {"file": "04-iac-runtime.md", "heading": "Kubernetes Runtime"},
+        {"file": "evidence/platform-model-report.json", "json_pointer": "/checks/3"}
+      ]
+    },
+    "OWN-4": {
+      "catalog_text": "재사용 가능한 CI/CD·GitOps",
+      "evidence": [
+        {"file": "05-delivery.md", "heading": "GitOps Reconciliation"},
+        {"file": "evidence/platform-model-report.json", "json_pointer": "/checks/2"}
+      ]
+    },
+    "OWN-5": {
+      "catalog_text": "identity·secret·관측·catalog·multi-tenancy",
+      "evidence": [
+        {"file": "06-security-catalog.md", "heading": "Identity와 Secret"},
+        {"file": "evidence/platform-model-report.json", "json_pointer": "/checks/6"}
+      ]
+    }
+  },
+  "exit_capabilities": {
+    "EXIT-1": {
+      "catalog_text": "self-service 서비스 경로를 설계한다",
+      "evidence": [
+        {"file": "03-api-status.md", "heading": "Operation과 Evidence"},
+        {"file": "evidence/platform-model-report.json", "json_pointer": "/checks/0"}
+      ]
+    },
+    "EXIT-2": {
+      "catalog_text": "정책·배포·관측을 플랫폼 계약으로 자동화한다",
+      "evidence": [
+        {"file": "06-security-catalog.md", "heading": "Policy와 Break-glass"},
+        {"file": "evidence/platform-model-report.json", "json_pointer": "/checks/5"}
+      ]
+    },
+    "EXIT-3": {
+      "catalog_text": "플랫폼 SLO·용량·업그레이드를 운영한다",
+      "evidence": [
+        {"file": "08-migration-runbook.md", "heading": "Migration Waves"},
+        {"file": "evidence/platform-model-report.json", "json_pointer": "/checks/7"}
+      ]
+    }
+  },
+  "failure_scenarios": [
+    {
+      "id": "FS-01",
+      "title": "Idempotency payload conflict",
+      "evidence": [
+        {"file": "09-evidence.md", "heading": "FS-01 — Idempotency payload conflict"},
+        {"file": "evidence/platform-model-report.json", "json_pointer": "/checks/1"}
+      ]
+    },
+    {
+      "id": "FS-02",
+      "title": "Evidence-free Ready와 partial effect",
+      "evidence": [
+        {"file": "09-evidence.md", "heading": "FS-02 — Evidence-free Ready와 partial effect"},
+        {"file": "evidence/platform-model-report.json", "json_pointer": "/checks/2"}
+      ]
+    },
+    {
+      "id": "FS-03",
+      "title": "Tenant quota와 queue isolation",
+      "evidence": [
+        {"file": "09-evidence.md", "heading": "FS-03 — Tenant quota와 queue isolation"},
+        {"file": "evidence/platform-model-report.json", "json_pointer": "/checks/3"}
+      ]
+    },
+    {
+      "id": "FS-04",
+      "title": "Drift와 bounded break-glass",
+      "evidence": [
+        {"file": "09-evidence.md", "heading": "FS-04 — Drift와 bounded break-glass"},
+        {"file": "evidence/platform-model-report.json", "json_pointer": "/checks/5"}
+      ]
+    },
+    {
+      "id": "FS-05",
+      "title": "Static credential fallback",
+      "evidence": [
+        {"file": "09-evidence.md", "heading": "FS-05 — Static credential fallback"},
+        {"file": "evidence/platform-model-report.json", "json_pointer": "/checks/6"}
+      ]
+    },
+    {
+      "id": "FS-06",
+      "title": "Migration wave abort",
+      "evidence": [
+        {"file": "09-evidence.md", "heading": "FS-06 — Migration wave abort"},
+        {"file": "evidence/platform-model-report.json", "json_pointer": "/checks/7"}
+      ]
+    },
+    {
+      "id": "FS-07",
+      "title": "Downstream partial provisioning",
+      "evidence": [
+        {"file": "09-evidence.md", "heading": "FS-07 — Downstream partial provisioning"},
+        {"file": "evidence/platform-model-report.json", "json_pointer": "/checks/2"}
+      ]
+    },
+    {
+      "id": "FS-08",
+      "title": "Service retirement cleanup",
+      "evidence": [
+        {"file": "09-evidence.md", "heading": "FS-08 — Service retirement cleanup"},
+        {"file": "evidence/platform-model-report.json", "json_pointer": "/checks/8"}
+      ]
+    }
+  ],
+  "model_report": {
+    "path": "evidence/platform-model-report.json",
+    "sha256": "a405fa1cf0e42c32aad7033716372a3a3d77c1bcb7769f447782e069132746c3",
+    "implementation": {
+      "path": "exercises/13-platform-control-plane/reference/platform_model.py",
+      "sha256": "26fcd8e5337bc398f270622c744f74dbe0a19e11e110a9906171e119612aa0ea"
+    },
+    "contract": {
+      "path": "exercises/13-platform-control-plane/contract.json",
+      "sha256": "37650aecef42526ed4ca27f5f89c02fc6c44f3d2da5bf2dd741c70f75717a27e"
+    },
+    "check_ids": ["PE-001", "PE-002", "PE-003", "PE-004", "PE-005", "PE-006", "PE-007", "PE-008", "PE-009", "PE-010"]
+  },
+  "human_review": {
+    "rubric": "projects/internal-developer-platform/rubric.md",
+    "required_decisions": ["EXIT-1", "EXIT-2", "EXIT-3"],
+    "limitations_heading": {"file": "09-evidence.md", "heading": "Human Review와 한계"}
+  }
+}
