@@ -1,9 +1,32 @@
+# 준비 상태와 검증 출력
 .guide/
-workspace/
-**/workspace/
+*.log
+*.pid
+*.tmp
+
+# 학습자 작업 공간과 atomic staging
+exercises/**/workspace/
+# 이전 draft tooling과 현재 exclusive-publish tooling의 임시 경로
+exercises/**/workspace.tmp.*/
+exercises/**/.workspace-staging-*/
+exercises/**/.workspace-create.lock
+
+# Python과 분석 도구 생성물
 __pycache__/
 *.py[cod]
+.venv/
 .pytest_cache/
+.mypy_cache/
+.ruff_cache/
 .coverage
-*.log
+htmlcov/
+
+# 환경 변수와 비밀값
+.env
+.env.*
+!.env.example
+
+# 편집기와 운영체제
+*.swp
+*.swo
 .DS_Store
