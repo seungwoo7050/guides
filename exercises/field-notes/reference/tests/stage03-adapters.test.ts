@@ -8,6 +8,7 @@ import {
 } from "../src/device/ExpoImagePickerAdapters";
 import {
   ExpoForegroundLocationAdapter,
+  normalizeForegroundLocation,
   type ExpoLocationApi,
 } from "../src/device/ExpoForegroundLocationAdapter";
 import {
@@ -200,6 +201,26 @@ describe("Stage 03 Expo adapter mapping", () => {
       expect.objectContaining({ kind: "unavailable" }),
     );
     expect(permissionQuery).not.toHaveBeenCalled();
+  });
+
+  it("rejects finite timestamps outside the Date range without throwing", () => {
+    const raw = {
+      coords: {
+        latitude: 37.5,
+        longitude: 127,
+        altitude: null,
+        accuracy: 8,
+        altitudeAccuracy: null,
+        heading: null,
+        speed: null,
+      },
+      timestamp: Number.MAX_VALUE,
+    } as Awaited<ReturnType<ExpoLocationApi["getCurrentPositionAsync"]>>;
+
+    expect(() => normalizeForegroundLocation(raw)).not.toThrow();
+    expect(normalizeForegroundLocation(raw)).toEqual(
+      expect.objectContaining({ kind: "failed", reason: expect.stringContaining("invalid") }),
+    );
   });
 
   it("keeps the public not-required state distinct from limited", () => {

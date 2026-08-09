@@ -28,6 +28,7 @@ export function normalizeForegroundLocation(
   raw: RawLocationObject,
 ): LocationMeasurementResult {
   const { latitude, longitude, accuracy } = raw.coords;
+  const measuredAt = new Date(raw.timestamp);
   if (
     !Number.isFinite(latitude) ||
     latitude < -90 ||
@@ -38,7 +39,8 @@ export function normalizeForegroundLocation(
     accuracy === null ||
     !Number.isFinite(accuracy) ||
     accuracy < 0 ||
-    !Number.isFinite(raw.timestamp)
+    !Number.isFinite(raw.timestamp) ||
+    !Number.isFinite(measuredAt.getTime())
   ) {
     return { kind: "failed", reason: "location provider returned invalid values" };
   }
@@ -47,7 +49,7 @@ export function normalizeForegroundLocation(
     latitude,
     longitude,
     accuracyMeters: accuracy,
-    measuredAt: new Date(raw.timestamp).toISOString(),
+    measuredAt: measuredAt.toISOString(),
   };
 }
 
