@@ -1,0 +1,224 @@
+{
+  "checks": [
+    {
+      "evidence_sha256": "d02d84f9a85170dd0e01fe802b9f619569a82fe3f6d8e4c9afc16d3df7fb1249",
+      "id": "CM-001",
+      "kind": "normal-safety",
+      "message": "contract satisfied",
+      "observed": {
+        "all_private": true,
+        "resource_count": 2
+      },
+      "status": "pass",
+      "title": "stateful resources are private"
+    },
+    {
+      "evidence_sha256": "d02d84f9a85170dd0e01fe802b9f619569a82fe3f6d8e4c9afc16d3df7fb1249",
+      "id": "CM-002",
+      "kind": "boundary",
+      "message": "contract satisfied",
+      "observed": {
+        "active_plan": "starter",
+        "unchanged": true
+      },
+      "status": "pass",
+      "title": "tenant provisioning rejects invalid transitions"
+    },
+    {
+      "evidence_sha256": "d8d8403a5009dcdb6a8d33a18e0f2cc215f1b65ce9666e1502d2af07548d7969",
+      "id": "CM-003",
+      "kind": "normal-boundary",
+      "message": "contract satisfied",
+      "observed": {
+        "active_document_count": 2,
+        "owner_read": "updated"
+      },
+      "status": "pass",
+      "title": "owner update preserves active document capacity"
+    },
+    {
+      "evidence_sha256": "5fdb899f17b6aff2516014ca8d5001d0ed979233445bce0faeb46fcc6c35fbe7",
+      "id": "CM-004",
+      "kind": "failure-isolation",
+      "message": "contract satisfied",
+      "observed": {
+        "foreign_denied": true,
+        "missing_denied": true,
+        "unchanged": true
+      },
+      "status": "pass",
+      "title": "foreign and missing reads are denied"
+    },
+    {
+      "evidence_sha256": "d8d8403a5009dcdb6a8d33a18e0f2cc215f1b65ce9666e1502d2af07548d7969",
+      "id": "CM-005",
+      "kind": "boundary-failure",
+      "message": "contract satisfied",
+      "observed": {
+        "active_document_count": 2,
+        "capacity": 2,
+        "partial_write": false
+      },
+      "status": "pass",
+      "title": "active document quota rejection is atomic"
+    },
+    {
+      "evidence_sha256": "5231fd34850837cfd0c56763ec87a03831f5d0a2b3f24639fd1275fe3a50c44b",
+      "id": "CM-006",
+      "kind": "delivery-failure",
+      "message": "contract satisfied",
+      "observed": {
+        "output_count": 2,
+        "statuses": [
+          "processed",
+          "duplicate",
+          "processed"
+        ],
+        "usage": 2
+      },
+      "status": "pass",
+      "title": "duplicates have one effect and distinct events have distinct outputs"
+    },
+    {
+      "evidence_sha256": "355113f8dc9ba1a24fcbf8249dd36608b4bd6c5f8fea0d5d0b331af3bc95d7dc",
+      "id": "CM-007",
+      "kind": "delivery-boundary",
+      "message": "contract satisfied",
+      "observed": {
+        "statuses": [
+          "processed",
+          "processed"
+        ],
+        "tenant_a_usage": 1,
+        "tenant_b_usage": 1
+      },
+      "status": "pass",
+      "title": "event identity is tenant scoped and payload stable"
+    },
+    {
+      "evidence_sha256": "3f89b568ad5c8a1561a0657050cb05837221b9e893f1c7f9511e11d8b3f92f39",
+      "id": "CM-008",
+      "kind": "failure-boundary",
+      "message": "contract satisfied",
+      "observed": {
+        "attempts": 2,
+        "dead_letter_count": 1,
+        "usage": 0
+      },
+      "status": "pass",
+      "title": "retry and dead-letter attempt bounds are exact"
+    },
+    {
+      "evidence_sha256": "08fd3b2904620a73373cbefbd72e58ab5873d91d7dd299ac00bbbfe3b8afde89",
+      "id": "CM-009",
+      "kind": "failure-isolation",
+      "message": "contract satisfied",
+      "observed": {
+        "dead_letter_count": 1,
+        "output_count": 0,
+        "usage": 0
+      },
+      "status": "pass",
+      "title": "event processing enforces document tenant"
+    },
+    {
+      "evidence_sha256": "0341517c7c214d7b1d10088d52977f990ae3c98a710f9d6862e2ea16f21fa568",
+      "id": "CM-010",
+      "kind": "failure-safety",
+      "message": "contract satisfied",
+      "observed": {
+        "attempts": 1,
+        "bound_reported": true,
+        "pending_count": 1
+      },
+      "status": "pass",
+      "title": "bounded drain reports remaining work"
+    },
+    {
+      "evidence_sha256": "744521c8424b011eb91e262fe979bce46fafeb78bf4adfc5c58600cdc40a5b12",
+      "id": "CM-011",
+      "kind": "cleanup",
+      "message": "contract satisfied",
+      "observed": {
+        "active_state_cleared": true,
+        "tombstone": "DELETED",
+        "usage_retained": 1
+      },
+      "status": "pass",
+      "title": "tenant deletion clears active state and retains evidence"
+    },
+    {
+      "evidence_sha256": "f75e5d019bbfc34b74e4c8c18d1c5ca4bab49929fd976dd0f75dd09d8e6bee3c",
+      "id": "CM-012",
+      "kind": "lifecycle-boundary",
+      "message": "contract satisfied",
+      "observed": {
+        "idempotent": true,
+        "reuse_rejected": true
+      },
+      "status": "pass",
+      "title": "deleted tenant identity is terminal"
+    },
+    {
+      "evidence_sha256": "5fdb899f17b6aff2516014ca8d5001d0ed979233445bce0faeb46fcc6c35fbe7",
+      "id": "CM-013",
+      "kind": "evidence",
+      "message": "contract satisfied",
+      "observed": {
+        "content_exposed": false,
+        "deep_copy": true,
+        "deterministic": true
+      },
+      "status": "pass",
+      "title": "evidence snapshot is safe and deterministic"
+    }
+  ],
+  "contract": {
+    "check_ids": [
+      "CM-001",
+      "CM-002",
+      "CM-003",
+      "CM-004",
+      "CM-005",
+      "CM-006",
+      "CM-007",
+      "CM-008",
+      "CM-009",
+      "CM-010",
+      "CM-011",
+      "CM-012",
+      "CM-013"
+    ],
+    "path": "exercises/07-local-cloud-model/tests/contract.py",
+    "sha256": "b328e8cd733654d53aa145d8ecd41484f4398e84f2355874f7bd9e15d58521ba"
+  },
+  "execution": {
+    "captured_stderr_bytes": 0,
+    "captured_stdout_bytes": 0,
+    "external_resources_created": false,
+    "network_required": false,
+    "os_sandboxed": false,
+    "timeout_seconds": 5
+  },
+  "exercise_id": "07-local-cloud-model",
+  "guide_id": "cloud-computing",
+  "implementation": {
+    "path": "exercises/07-local-cloud-model/reference/cloud_model.py",
+    "sha256": "f1199b2e46d3f7a66f8b6af9ca8ed15f1dbba4cfa17d297c46803c0e4b45f22f"
+  },
+  "limitations": [
+    "합성 in-process 상태 모델이며 실제 cloud provider emulator가 아닙니다.",
+    "실제 IAM·network·queue·billing·physical deletion을 검증하지 않습니다.",
+    "분산 transaction, process crash와 concurrent writer 원자성을 검증하지 않습니다.",
+    "학습자 Python은 제한 시간의 child process에서 실행되지만 OS sandbox가 아닙니다."
+  ],
+  "schema_version": 1,
+  "summary": {
+    "errors": 0,
+    "failed": 0,
+    "failed_ids": [],
+    "passed": 13,
+    "result": "PASS",
+    "total": 13
+  }
+}

@@ -1,4 +1,47 @@
 {
+  "schema_version": 2,
+  "project_id": "multitenant-document-processing-saas",
+  "workspace_source": "template",
+  "validator": "scripts/check_artifact.py",
+  "check_ids": [
+    "CAP-001",
+    "CAP-002",
+    "CAP-003",
+    "CAP-004",
+    "CAP-005",
+    "CAP-006",
+    "CAP-007",
+    "CAP-008",
+    "CAP-009",
+    "CAP-010",
+    "CAP-011"
+  ],
+  "expected_starter_failures": [
+    "CAP-001",
+    "CAP-002",
+    "CAP-003",
+    "CAP-004",
+    "CAP-005",
+    "CAP-006",
+    "CAP-007",
+    "CAP-008",
+    "CAP-009",
+    "CAP-010",
+    "CAP-011"
+  ],
+  "check_file_map": {
+    "CAP-001": "01-responsibility-matrix.md",
+    "CAP-002": "02-resource-and-state-inventory.md",
+    "CAP-003": "03-identity-network-and-tenant-boundaries.md",
+    "CAP-004": "04-failure-and-recovery-plan.md",
+    "CAP-005": "05-event-and-idempotency-contract.md",
+    "CAP-006": "06-cost-quota-and-metering.md",
+    "CAP-007": "07-portability-exit-and-deletion.md",
+    "CAP-008": "08-release-review.md",
+    "CAP-009": "09-isolated-experiment.md",
+    "CAP-010": "evidence-manifest.json",
+    "CAP-011": "evidence/local-model-report.json"
+  },
   "required_files": [
     "01-responsibility-matrix.md",
     "02-resource-and-state-inventory.md",
@@ -7,27 +50,51 @@
     "05-event-and-idempotency-contract.md",
     "06-cost-quota-and-metering.md",
     "07-portability-exit-and-deletion.md",
-    "08-release-review.md"
+    "08-release-review.md",
+    "09-isolated-experiment.md",
+    "evidence-manifest.json",
+    "evidence/local-model-report.json"
   ],
   "forbidden_tokens": ["TODO", "<작성>", "TBD"],
   "minimum_bytes": {
-    "01-responsibility-matrix.md": 900,
-    "02-resource-and-state-inventory.md": 900,
-    "03-identity-network-and-tenant-boundaries.md": 900,
-    "04-failure-and-recovery-plan.md": 900,
-    "05-event-and-idempotency-contract.md": 900,
-    "06-cost-quota-and-metering.md": 900,
-    "07-portability-exit-and-deletion.md": 900,
-    "08-release-review.md": 900
+    "01-responsibility-matrix.md": 2400,
+    "02-resource-and-state-inventory.md": 2400,
+    "03-identity-network-and-tenant-boundaries.md": 2400,
+    "04-failure-and-recovery-plan.md": 2400,
+    "05-event-and-idempotency-contract.md": 2400,
+    "06-cost-quota-and-metering.md": 2400,
+    "07-portability-exit-and-deletion.md": 2400,
+    "08-release-review.md": 2400,
+    "09-isolated-experiment.md": 2400,
+    "evidence-manifest.json": 3000,
+    "evidence/local-model-report.json": 1200
   },
   "required_headings": {
-    "01-responsibility-matrix.md": ["## Scope", "## Stage 1 — IaaS", "## Stage 4 — SaaS", "## Evidence와 한계", "## Open risks와 owner"],
-    "02-resource-and-state-inventory.md": ["## Scope", "## Stage 1 — IaaS", "## Stage 4 — SaaS", "## Evidence와 한계", "## Open risks와 owner"],
-    "03-identity-network-and-tenant-boundaries.md": ["## Scope", "## Stage 1 — IaaS", "## Stage 4 — SaaS", "## Evidence와 한계", "## Open risks와 owner"],
-    "04-failure-and-recovery-plan.md": ["## Scope", "## Stage 1 — IaaS", "## Stage 4 — SaaS", "## Evidence와 한계", "## Open risks와 owner"],
-    "05-event-and-idempotency-contract.md": ["## Scope", "## Stage 1 — IaaS", "## Stage 4 — SaaS", "## Evidence와 한계", "## Open risks와 owner"],
-    "06-cost-quota-and-metering.md": ["## Scope", "## Stage 1 — IaaS", "## Stage 4 — SaaS", "## Evidence와 한계", "## Open risks와 owner"],
-    "07-portability-exit-and-deletion.md": ["## Scope", "## Stage 1 — IaaS", "## Stage 4 — SaaS", "## Evidence와 한계", "## Open risks와 owner"],
-    "08-release-review.md": ["## Scope", "## Stage 1 — IaaS", "## Stage 4 — SaaS", "## Evidence와 한계", "## Open risks와 owner"]
+    "01-responsibility-matrix.md": ["# responsibility matrix", "## Scope", "## Stage 1 — IaaS", "## Stage 2 — Managed platform", "## Stage 3 — FaaS", "## Stage 4 — SaaS", "## Evidence와 한계", "## Open risks와 owner"],
+    "02-resource-and-state-inventory.md": ["# resource and state inventory", "## Scope", "## Stage 1 — IaaS", "## Stage 2 — Managed platform", "## Stage 3 — FaaS", "## Stage 4 — SaaS", "## Evidence와 한계", "## Open risks와 owner"],
+    "03-identity-network-and-tenant-boundaries.md": ["# identity network and tenant boundaries", "## Scope", "## Stage 1 — IaaS", "## Stage 2 — Managed platform", "## Stage 3 — FaaS", "## Stage 4 — SaaS", "## Evidence와 한계", "## Open risks와 owner"],
+    "04-failure-and-recovery-plan.md": ["# failure and recovery plan", "## Scope", "## Stage 1 — IaaS", "## Stage 2 — Managed platform", "## Stage 3 — FaaS", "## Stage 4 — SaaS", "## Evidence와 한계", "## Open risks와 owner"],
+    "05-event-and-idempotency-contract.md": ["# event and idempotency contract", "## Scope", "## Stage 1 — IaaS", "## Stage 2 — Managed platform", "## Stage 3 — FaaS", "## Stage 4 — SaaS", "## Evidence와 한계", "## Open risks와 owner"],
+    "06-cost-quota-and-metering.md": ["# cost quota and metering", "## Scope", "## Stage 1 — IaaS", "## Stage 2 — Managed platform", "## Stage 3 — FaaS", "## Stage 4 — SaaS", "## Evidence와 한계", "## Open risks와 owner"],
+    "07-portability-exit-and-deletion.md": ["# portability exit and deletion", "## Scope", "## Stage 1 — IaaS", "## Stage 2 — Managed platform", "## Stage 3 — FaaS", "## Stage 4 — SaaS", "## Evidence와 한계", "## Open risks와 owner"],
+    "08-release-review.md": ["# release review", "## Scope", "## Stage 1 — IaaS", "## Stage 2 — Managed platform", "## Stage 3 — FaaS", "## Stage 4 — SaaS", "## Evidence와 한계", "## Open risks와 owner"],
+    "09-isolated-experiment.md": ["# isolated experiment", "## Scope", "## Stage 1 — IaaS", "## Stage 2 — Managed platform", "## Stage 3 — FaaS", "## Stage 4 — SaaS", "## Evidence와 한계", "## Open risks와 owner"]
+  },
+  "required_phrases": {
+    "01-responsibility-matrix.md": ["공급자", "소비자", "business owner", "runtime owner", "data owner", "cost owner"],
+    "02-resource-and-state-inventory.md": ["authoritative", "derived", "ephemeral", "evidence", "commercial", "expiry"],
+    "03-identity-network-and-tenant-boundaries.md": ["human", "workload", "automation", "control plane", "data plane", "tenant context"],
+    "04-failure-and-recovery-plan.md": ["RPO 15분", "RTO 60분", "zone", "reconciliation", "2,000"],
+    "05-event-and-idempotency-contract.md": ["event_id", "idempotency", "timeout", "dead-letter", "tenant", "2,000"],
+    "06-cost-quota-and-metering.md": ["starter", "100건/월", "pro", "10,000건/월", "budget", "metering", "unmeasured"],
+    "07-portability-exit-and-deletion.md": ["24시간", "7일", "checksum", "retention", "final inventory", "unknown"],
+    "08-release-review.md": ["APPROVE_WITH_CONDITIONS", "owner", "due", "verification", "rollback", "unmeasured"],
+    "09-isolated-experiment.md": ["budget=0", "credential", "human identity", "workload identity", "before inventory", "after inventory", "cleanup", "실제 provider"],
+    "evidence-manifest.json": ["iaas", "managed-platform", "faas", "saas", "OWN-1", "OWN-6", "EXIT-1", "EXIT-4", "release_conditions", "implementation_owner_handoffs"],
+    "evidence/local-model-report.json": ["CM-001", "CM-013", "f1199b2e46d3f7a66f8b6af9ca8ed15f1dbba4cfa17d297c46803c0e4b45f22f", "b328e8cd733654d53aa145d8ecd41484f4398e84f2355874f7bd9e15d58521ba"]
+  },
+  "json_required_keys": {
+    "evidence-manifest.json": ["schema_version", "project_id", "ordered_stages", "owns", "exit_capabilities", "local_experiment", "release_conditions", "implementation_owner_handoffs"],
+    "evidence/local-model-report.json": ["schema_version", "guide_id", "exercise_id", "implementation", "contract", "execution", "checks", "summary", "limitations"]
   }
 }

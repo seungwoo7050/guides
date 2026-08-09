@@ -1,0 +1,215 @@
+{
+  "schema_version": 1,
+  "project_id": "multitenant-document-processing-saas",
+  "workload": "B2B tenant 문서 upload·비동기 처리·결과 전달",
+  "ordered_stages": [
+    {
+      "id": "iaas",
+      "order": 1,
+      "heading": "## Stage 1 — IaaS",
+      "focus": "VM·network·database·object·worker를 소비자가 운영하는 기준선",
+      "evidence_refs": [
+        {"file": "01-responsibility-matrix.md", "heading": "## Stage 1 — IaaS"},
+        {"file": "02-resource-and-state-inventory.md", "heading": "## Stage 1 — IaaS"},
+        {"file": "03-identity-network-and-tenant-boundaries.md", "heading": "## Stage 1 — IaaS"},
+        {"file": "04-failure-and-recovery-plan.md", "heading": "## Stage 1 — IaaS"},
+        {"file": "05-event-and-idempotency-contract.md", "heading": "## Stage 1 — IaaS"},
+        {"file": "06-cost-quota-and-metering.md", "heading": "## Stage 1 — IaaS"},
+        {"file": "07-portability-exit-and-deletion.md", "heading": "## Stage 1 — IaaS"},
+        {"file": "08-release-review.md", "heading": "## Stage 1 — IaaS"},
+        {"file": "09-isolated-experiment.md", "heading": "## Stage 1 — IaaS"}
+      ]
+    },
+    {
+      "id": "managed-platform",
+      "order": 2,
+      "heading": "## Stage 2 — Managed platform",
+      "focus": "runtime·database·queue 운영 일부가 이동해도 data·identity·limit·restore·exit 책임은 남는 전환",
+      "evidence_refs": [
+        {"file": "01-responsibility-matrix.md", "heading": "## Stage 2 — Managed platform"},
+        {"file": "02-resource-and-state-inventory.md", "heading": "## Stage 2 — Managed platform"},
+        {"file": "03-identity-network-and-tenant-boundaries.md", "heading": "## Stage 2 — Managed platform"},
+        {"file": "04-failure-and-recovery-plan.md", "heading": "## Stage 2 — Managed platform"},
+        {"file": "05-event-and-idempotency-contract.md", "heading": "## Stage 2 — Managed platform"},
+        {"file": "06-cost-quota-and-metering.md", "heading": "## Stage 2 — Managed platform"},
+        {"file": "07-portability-exit-and-deletion.md", "heading": "## Stage 2 — Managed platform"},
+        {"file": "08-release-review.md", "heading": "## Stage 2 — Managed platform"},
+        {"file": "09-isolated-experiment.md", "heading": "## Stage 2 — Managed platform"}
+      ]
+    },
+    {
+      "id": "faas",
+      "order": 3,
+      "heading": "## Stage 3 — FaaS",
+      "focus": "event source·delivery·timeout·concurrency·idempotency·DLQ와 downstream limit",
+      "evidence_refs": [
+        {"file": "01-responsibility-matrix.md", "heading": "## Stage 3 — FaaS"},
+        {"file": "02-resource-and-state-inventory.md", "heading": "## Stage 3 — FaaS"},
+        {"file": "03-identity-network-and-tenant-boundaries.md", "heading": "## Stage 3 — FaaS"},
+        {"file": "04-failure-and-recovery-plan.md", "heading": "## Stage 3 — FaaS"},
+        {"file": "05-event-and-idempotency-contract.md", "heading": "## Stage 3 — FaaS"},
+        {"file": "06-cost-quota-and-metering.md", "heading": "## Stage 3 — FaaS"},
+        {"file": "07-portability-exit-and-deletion.md", "heading": "## Stage 3 — FaaS"},
+        {"file": "08-release-review.md", "heading": "## Stage 3 — FaaS"},
+        {"file": "09-isolated-experiment.md", "heading": "## Stage 3 — FaaS"}
+      ]
+    },
+    {
+      "id": "saas",
+      "order": 4,
+      "heading": "## Stage 4 — SaaS",
+      "focus": "tenant·membership·plan·quota·usage·export·deletion을 고객 계약으로 결합",
+      "evidence_refs": [
+        {"file": "01-responsibility-matrix.md", "heading": "## Stage 4 — SaaS"},
+        {"file": "02-resource-and-state-inventory.md", "heading": "## Stage 4 — SaaS"},
+        {"file": "03-identity-network-and-tenant-boundaries.md", "heading": "## Stage 4 — SaaS"},
+        {"file": "04-failure-and-recovery-plan.md", "heading": "## Stage 4 — SaaS"},
+        {"file": "05-event-and-idempotency-contract.md", "heading": "## Stage 4 — SaaS"},
+        {"file": "06-cost-quota-and-metering.md", "heading": "## Stage 4 — SaaS"},
+        {"file": "07-portability-exit-and-deletion.md", "heading": "## Stage 4 — SaaS"},
+        {"file": "08-release-review.md", "heading": "## Stage 4 — SaaS"},
+        {"file": "09-isolated-experiment.md", "heading": "## Stage 4 — SaaS"}
+      ]
+    }
+  ],
+  "owns": [
+    {
+      "id": "OWN-1",
+      "evidence_refs": [
+        {"file": "01-responsibility-matrix.md", "heading": "## Stage 2 — Managed platform"},
+        {"file": "08-release-review.md", "heading": "## Evidence와 한계"}
+      ]
+    },
+    {
+      "id": "OWN-2",
+      "evidence_refs": [
+        {"file": "02-resource-and-state-inventory.md", "heading": "## Stage 1 — IaaS"},
+        {"file": "03-identity-network-and-tenant-boundaries.md", "heading": "## Stage 1 — IaaS"},
+        {"file": "04-failure-and-recovery-plan.md", "heading": "## Evidence와 한계"}
+      ]
+    },
+    {
+      "id": "OWN-3",
+      "evidence_refs": [
+        {"file": "01-responsibility-matrix.md", "heading": "## Stage 3 — FaaS"},
+        {"file": "08-release-review.md", "heading": "## Stage 4 — SaaS"}
+      ]
+    },
+    {
+      "id": "OWN-4",
+      "evidence_refs": [
+        {"file": "05-event-and-idempotency-contract.md", "heading": "## Stage 3 — FaaS"},
+        {"file": "04-failure-and-recovery-plan.md", "heading": "## Stage 3 — FaaS"},
+        {"file": "09-isolated-experiment.md", "heading": "## Evidence와 한계"}
+      ]
+    },
+    {
+      "id": "OWN-5",
+      "evidence_refs": [
+        {"file": "03-identity-network-and-tenant-boundaries.md", "heading": "## Stage 4 — SaaS"},
+        {"file": "05-event-and-idempotency-contract.md", "heading": "## Stage 4 — SaaS"},
+        {"file": "06-cost-quota-and-metering.md", "heading": "## Stage 4 — SaaS"},
+        {"file": "07-portability-exit-and-deletion.md", "heading": "## Stage 4 — SaaS"}
+      ]
+    },
+    {
+      "id": "OWN-6",
+      "evidence_refs": [
+        {"file": "04-failure-and-recovery-plan.md", "heading": "## Evidence와 한계"},
+        {"file": "06-cost-quota-and-metering.md", "heading": "## Evidence와 한계"},
+        {"file": "07-portability-exit-and-deletion.md", "heading": "## Evidence와 한계"},
+        {"file": "08-release-review.md", "heading": "## Evidence와 한계"}
+      ]
+    }
+  ],
+  "exit_capabilities": [
+    {
+      "id": "EXIT-1",
+      "owns": ["OWN-1", "OWN-3"],
+      "evidence_refs": [
+        {"file": "01-responsibility-matrix.md", "heading": "## Stage 4 — SaaS"},
+        {"file": "08-release-review.md", "heading": "## Scope"}
+      ]
+    },
+    {
+      "id": "EXIT-2",
+      "owns": ["OWN-2", "OWN-3", "OWN-4", "OWN-6"],
+      "evidence_refs": [
+        {"file": "04-failure-and-recovery-plan.md", "heading": "## Stage 3 — FaaS"},
+        {"file": "05-event-and-idempotency-contract.md", "heading": "## Stage 3 — FaaS"},
+        {"file": "06-cost-quota-and-metering.md", "heading": "## Stage 3 — FaaS"},
+        {"file": "08-release-review.md", "heading": "## Open risks와 owner"}
+      ]
+    },
+    {
+      "id": "EXIT-3",
+      "owns": ["OWN-5"],
+      "evidence_refs": [
+        {"file": "03-identity-network-and-tenant-boundaries.md", "heading": "## Stage 4 — SaaS"},
+        {"file": "06-cost-quota-and-metering.md", "heading": "## Stage 4 — SaaS"},
+        {"file": "07-portability-exit-and-deletion.md", "heading": "## Stage 4 — SaaS"}
+      ]
+    },
+    {
+      "id": "EXIT-4",
+      "owns": ["OWN-1", "OWN-2", "OWN-6"],
+      "evidence_refs": [
+        {"file": "09-isolated-experiment.md", "heading": "## Evidence와 한계"},
+        {"file": "evidence/local-model-report.json", "json_pointer": "/summary"},
+        {"file": "evidence-manifest.json", "json_pointer": "/local_experiment"}
+      ]
+    }
+  ],
+  "local_experiment": {
+    "budget": 0,
+    "credential_required": false,
+    "network_required": false,
+    "external_resources_created": false,
+    "report": "evidence/local-model-report.json",
+    "report_sha256": "95cc028d74360a274d6a63c2942182af1f69ff5d7a295cc0d1a24f0cb4fbe33e",
+    "implementation_sha256": "f1199b2e46d3f7a66f8b6af9ca8ed15f1dbba4cfa17d297c46803c0e4b45f22f",
+    "contract_sha256": "b328e8cd733654d53aa145d8ecd41484f4398e84f2355874f7bd9e15d58521ba"
+  },
+  "release_conditions": [
+    {
+      "id": "RC-1",
+      "status": "open",
+      "owner": "runtime owner + security owner",
+      "due": "before the first provider-backed pilot",
+      "verification": "선택 provider에서 workload identity 최소 권한, private data path와 control-plane audit를 재실행한다.",
+      "rollback": "provider trigger와 ingress를 비활성화하고 local-only 설계 검토 상태로 돌아간다."
+    },
+    {
+      "id": "RC-2",
+      "status": "open",
+      "owner": "data owner",
+      "due": "before committing to a managed data service",
+      "verification": "100 GB 합성 export의 throughput·checksum·duration·egress를 측정하고 24시간 목표를 외삽한다.",
+      "rollback": "commitment 전환을 중단하고 공급자 중립 export와 기존 source retention을 유지한다."
+    },
+    {
+      "id": "RC-3",
+      "status": "open",
+      "owner": "runtime owner + data owner",
+      "due": "before production readiness review",
+      "verification": "database failover와 isolated restore drill로 RPO 15분·RTO 60분을 측정한다.",
+      "rollback": "release를 보류하고 이전 검증된 backup·runtime 경로를 유지한다."
+    },
+    {
+      "id": "RC-4",
+      "status": "open",
+      "owner": "product owner + data owner",
+      "due": "before accepting the first customer tenant",
+      "verification": "active data 7일 삭제, backup retention 고지, export 24시간 계약을 정책·rehearsal과 대조한다.",
+      "rollback": "onboarding을 중단하고 deletion wording과 subsystem별 owner가 승인될 때까지 tenant 생성을 막는다."
+    }
+  ],
+  "implementation_owner_handoffs": [
+    {"branch": "web-infra", "owns": "단일 호스트·container·DNS·TLS·배포·backup 운영 구현"},
+    {"branch": "web-app", "owns": "organization membership·authentication·session·API authorization과 tenant context 생성"},
+    {"branch": "database-systems", "owns": "tenant 관계 schema·constraint·transaction·query isolation 구현"},
+    {"branch": "distributed-services", "owns": "일반 retry·idempotency·Outbox·Saga·DLQ와 부분 실패 수렴 구현"},
+    {"branch": "cybersecurity", "owns": "credential 위협·취약점 검증·공격 탐지·incident recovery"},
+    {"branch": "platform-engineering", "owns": "여러 내부 팀·workload를 위한 Kubernetes·IaC module·golden path·self-service tenancy"}
+  ]
+}

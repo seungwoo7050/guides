@@ -1,0 +1,46 @@
+{
+  "schema_version": 1,
+  "project_id": "multitenant-document-processing-saas",
+  "workload": "TODO: system brief의 workload와 tenant를 한 문장으로 고정",
+  "ordered_stages": [
+    {"id": "iaas", "order": 1, "heading": "## Stage 1 — IaaS", "evidence_refs": []},
+    {"id": "managed-platform", "order": 2, "heading": "## Stage 2 — Managed platform", "evidence_refs": []},
+    {"id": "faas", "order": 3, "heading": "## Stage 3 — FaaS", "evidence_refs": []},
+    {"id": "saas", "order": 4, "heading": "## Stage 4 — SaaS", "evidence_refs": []}
+  ],
+  "owns": [
+    {"id": "OWN-1", "evidence_refs": ["TODO: file + heading"]},
+    {"id": "OWN-2", "evidence_refs": ["TODO: file + heading"]},
+    {"id": "OWN-3", "evidence_refs": ["TODO: file + heading"]},
+    {"id": "OWN-4", "evidence_refs": ["TODO: file + heading"]},
+    {"id": "OWN-5", "evidence_refs": ["TODO: file + heading"]},
+    {"id": "OWN-6", "evidence_refs": ["TODO: file + heading"]}
+  ],
+  "exit_capabilities": [
+    {"id": "EXIT-1", "owns": ["OWN-1", "OWN-3"], "evidence_refs": ["TODO: 판정 근거"]},
+    {"id": "EXIT-2", "owns": ["OWN-2", "OWN-3", "OWN-4", "OWN-6"], "evidence_refs": ["TODO: 판정 근거"]},
+    {"id": "EXIT-3", "owns": ["OWN-5"], "evidence_refs": ["TODO: 판정 근거와 구현 handoff"]},
+    {"id": "EXIT-4", "owns": ["OWN-1", "OWN-2", "OWN-6"], "evidence_refs": ["TODO: local report와 실험 근거"]}
+  ],
+  "local_experiment": {
+    "budget": 0,
+    "credential_required": false,
+    "network_required": false,
+    "external_resources_created": false,
+    "report": "evidence/local-model-report.json",
+    "report_sha256": "TODO: generated report의 exact file SHA-256",
+    "implementation_sha256": "TODO: generated report의 exact SHA-256",
+    "contract_sha256": "TODO: generated report의 exact SHA-256"
+  },
+  "release_conditions": [
+    {"id": "RC-1", "status": "open", "owner": "TODO", "due": "TODO", "verification": "TODO", "rollback": "TODO"}
+  ],
+  "implementation_owner_handoffs": [
+    {"branch": "web-infra", "owns": "TODO: 단일 서비스 운영 구현 접점"},
+    {"branch": "web-app", "owns": "TODO: API·authorization 구현 접점"},
+    {"branch": "database-systems", "owns": "TODO: schema·constraint 구현 접점"},
+    {"branch": "distributed-services", "owns": "TODO: retry·idempotency 일반 구현 접점"},
+    {"branch": "cybersecurity", "owns": "TODO: 위협·공격·incident 구현 접점"},
+    {"branch": "platform-engineering", "owns": "TODO: 내부 self-service platform 후속 접점"}
+  ]
+}

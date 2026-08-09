@@ -1,0 +1,34 @@
+{
+  "schema_version": 1,
+  "guide_id": "cloud-computing",
+  "exercise_id": "07-local-cloud-model",
+  "implementation": {
+    "path": "TODO: 검증한 workspace implementation 경로",
+    "sha256": "TODO: validator가 기록한 exact SHA-256"
+  },
+  "contract": {
+    "path": "exercises/07-local-cloud-model/tests/contract.py",
+    "sha256": "TODO: validator가 기록한 exact SHA-256",
+    "check_ids": []
+  },
+  "execution": {
+    "captured_stdout_bytes": 0,
+    "captured_stderr_bytes": 0,
+    "timeout_seconds": 5,
+    "network_required": false,
+    "external_resources_created": false,
+    "os_sandboxed": false
+  },
+  "checks": [],
+  "summary": {
+    "total": 0,
+    "passed": 0,
+    "failed": 0,
+    "errors": 0,
+    "failed_ids": [],
+    "result": "TODO: 실제 validator report로 이 파일 전체를 교체"
+  },
+  "limitations": [
+    "TODO: report가 검증하지 않는 실제 cloud·동시성·보안 범위를 보존"
+  ]
+}

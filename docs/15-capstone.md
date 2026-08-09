@@ -11,6 +11,8 @@ Stage 4  Multi-tenant SaaS
 
 완성 application 전체를 구현하는 것이 필수는 아닙니다. 그러나 architecture 문서가 추상적인 그림에 머물지 않도록 local cloud model의 불변식과 구체적인 failure evidence를 포함해야 합니다.
 
+Capstone은 `OWN-1..6`을 네 단계에 누적하고 `EXIT-1..4`를 사람이 판정할 수 있는 architecture dossier, evidence manifest와 격리 실험 report를 만듭니다. 자동 검사는 이 연결의 일부만 확인하며 production readiness를 승인하지 않습니다.
+
 ## 1. System brief
 
 사용자는 문서를 업로드하고 변환 결과를 받습니다.
@@ -34,6 +36,21 @@ Stage 4  Multi-tenant SaaS
 - quota 초과는 부분 document를 남기지 않습니다.
 - tenant 종료 뒤 active data와 pending job이 남지 않습니다.
 - resource owner·budget·cleanup evidence가 있습니다.
+
+고정 workload와 제품 계약:
+
+| 입력 | 값 | 먼저 계산할 bound |
+|---|---:|---|
+| upload | 정상 `2/s`, peak `50/s` | 평균 4초이면 평균 in-flight `2 × 4 = 8` |
+| 처리 지연 | 평균 `4s`, p99 `40s` | peak와 p99를 함께 적용한 보수적 stress bound `50 × 40 = 2,000` |
+| object | 평균 `8 MB`, 최대 `100 MB` | peak ingress `400 MB/s`; 전부 최대 object인 stress bound `5 GB/s` |
+| 실패 | invalid `1%`, transient `2%` | terminal reject와 bounded retry를 분리 |
+| tenant 편중 | 한 tenant가 전체 `30%` | tenant fairness·concurrency·cost attribution을 검토 |
+| recovery | RPO `15분`, RTO `60분` | restore·rebuild로 측정 |
+| quota | starter `100건/월`, pro `10,000건/월` | active capacity와 commercial quota를 분리 |
+| lifecycle | export `24시간`, active deletion `7일` | backup retention과 final inventory를 별도 기록 |
+
+이는 산술 입력과 stress bound이지 실제 capacity 보장이 아닙니다. compression, metadata overhead, 공급자 quota·price·SLA와 실제 p99 동시성은 측정 전까지 `unmeasured/unknown`으로 기록합니다.
 
 자세한 입력은 [`projects/multitenant-document-processing-saas/inputs/system-brief.md`](../projects/multitenant-document-processing-saas/inputs/system-brief.md)에 있습니다.
 
@@ -174,9 +191,19 @@ Capstone workspace는 다음 파일을 완성합니다.
 06-cost-quota-and-metering.md
 07-portability-exit-and-deletion.md
 08-release-review.md
+09-isolated-experiment.md
+evidence-manifest.json
+evidence/local-model-report.json
 ```
 
-각 파일의 목적은 project README와 rubric에 정의돼 있습니다.
+01~09는 모두 `Scope`, `Stage 1 — IaaS`, `Stage 2 — Managed platform`, `Stage 3 — FaaS`, `Stage 4 — SaaS`, `Evidence와 한계`, `Open risks와 owner`를 가집니다. 각 파일의 고유 질문은 [project README](../projects/multitenant-document-processing-saas/README.md)와 [rubric](../projects/multitenant-document-processing-saas/rubric.md)에 정의돼 있습니다.
+
+`evidence-manifest.json`은 다음을 기계적으로 읽을 수 있게 연결합니다.
+
+- `iaas → managed-platform → faas → saas`의 고정 순서
+- `OWN-1..6`과 `EXIT-1..4`의 file+heading 근거
+- open release condition의 owner·due·verification·rollback
+- `web-app`, `database-systems`, `distributed-services`, `cybersecurity`, `platform-engineering` 구현 handoff
 
 ## 7. Local model 연결
 
@@ -190,9 +217,23 @@ Capstone workspace는 다음 파일을 완성합니다.
 
 실제 provider profile을 선택했다면 같은 불변식을 provider resource와 integration test로 어떻게 검증할지 추가합니다.
 
+필수 reference 실험은 budget `0`, cloud credential 없음, network 없음, 외부 resource 없음으로 다음 command를 실행합니다.
+
+```sh
+report_dir="$(mktemp -d)"
+python3 scripts/verify_cloud_model.py \
+  --implementation exercises/07-local-cloud-model/reference/cloud_model.py \
+  --report "$report_dir/local-model-report.json"
+python3 -m json.tool "$report_dir/local-model-report.json"
+```
+
+현재 reference 근거는 `CM-001..CM-013` 13/13 PASS이며 implementation SHA-256은 `f1199b2e46d3f7a66f8b6af9ca8ed15f1dbba4cfa17d297c46803c0e4b45f22f`, contract SHA-256은 `b328e8cd733654d53aa145d8ecd41484f4398e84f2355874f7bd9e15d58521ba`입니다. `09-isolated-experiment.md`에는 exact command, human/workload identity, before/after inventory, 관찰, cleanup과 한계를 기록합니다.
+
+이 model은 실제 IAM·network·queue·billing·physical deletion, distributed transaction, process crash와 concurrent writer를 검증하지 않습니다.
+
 ## 8. 선택 provider profile
 
-실제 계정 실험은 한 provider만 선택해도 됩니다.
+실제 계정 실험은 선택 사항이며 필수 local model evidence를 대체하지 않습니다. 실행한다면 한 provider만 선택해도 됩니다.
 
 필수 evidence:
 
@@ -255,6 +296,10 @@ REJECT
 ```
 
 조건에는 owner, due date, verification과 rollback이 필요합니다.
+
+리뷰어는 [사람 검토 가이드](../reference/manual-review-guide.md)에 따라 `EXIT-1..4` 각각을 `충족`, `보완 필요`, `범위 밖`으로 판정합니다. 실제 provider에서만 확인할 수 있는 항목은 `범위 밖`일 수 있지만 구현 owner와 verification condition이 없으면 `보완 필요`입니다.
+
+자동화는 파일·heading·phrase·JSON key, 미완성 token과 local model 공개 행동을 확인할 뿐 설명의 정확성, 최신 provider 계약, 실제 price·capacity·RPO/RTO·export/deletion 시간, 법적 retention 또는 production readiness를 판단하지 않습니다.
 
 ## 11. Capstone 이후
 
