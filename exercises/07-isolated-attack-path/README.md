@@ -2,6 +2,8 @@
 
 이 실습은 `LedgerLab`의 합성 상태를 사용해 **권한이 넓어지는 사건을 재현하고, 원인을 수정한 뒤 같은 시도가 차단·탐지되는지** 확인합니다. 외부 네트워크, 실제 credential, 관리자 권한과 container가 필요하지 않습니다.
 
+`check.py`는 학습자가 작성한 Python module을 현재 process에 import하며 OS sandbox가 아닙니다. 저장소가 제공한 skeleton/reference 또는 직접 검토한 자신의 구현만 실행하고, 구현에 network·subprocess·저장소 밖 파일 접근을 추가하지 않습니다. 여기서 “격리”는 합성 state와 무해한 oracle에 한정됩니다.
+
 여기서 권한 상승은 다른 사용자의 report를 읽는 수평 권한 상승이고, 내부 이동은 한 job의 worker credential이 다른 job object에 접근하는 capability 확장입니다. OS `root` 획득이나 exploit payload는 범위 밖입니다.
 
 ## 시작 상태와 미완성 부분
@@ -41,7 +43,7 @@ detect(events) -> list[dict]
 구현 모양은 자유롭지만 다음 상태를 보존해야 합니다.
 
 - owner의 completed report read와 현재 job credential의 object read는 허용됩니다.
-- foreign owner·tenant, unknown resource, 누락 context, expired·revoked credential, cross-job과 prefix 혼동은 거절됩니다.
+- foreign owner·tenant, unknown report, 누락 context, expired·revoked credential, cross-job과 prefix 혼동은 거절됩니다. 합성 object model은 inventory 존재 여부가 아니라 exact tenant·job prefix 범위만 판정합니다.
 - policy context를 확인할 수 없으면 fail closed합니다.
 - authorization 판정은 report/object state를 바꾸지 않습니다.
 - 모든 판정은 actor·effective actor·credential·tenant·job·action·resource·decision·reason·correlation·policy version을 조사 가능한 event로 남깁니다.
@@ -54,7 +56,7 @@ detect(events) -> list[dict]
 |---|---|---|
 | 정상 | owner가 자신의 completed report를 읽음 | allow, 상태 불변, 완전한 audit event |
 | 정상 | job-81 credential이 job-81 prefix를 읽음 | allow |
-| 경계 | `job-9`와 `job-9x`, expiry 직전·직후 | path segment와 시간 경계에 맞는 결정 |
+| 경계 | `job-81`과 `job-81x`, credential 유효 시간·정확한 expiry·직후 | path segment와 시간 경계에 맞는 결정 |
 | 실패 | user-b가 user-a report를 요청 | deny, resource 내용·상태 비노출 |
 | 실패 | job-81 credential이 job-9 object를 요청 | deny와 cross-scope event |
 | 실패 | policy unavailable, revoked credential | fail closed |

@@ -57,7 +57,7 @@ def implementation_hash(path: Path) -> str:
     return hashlib.sha256(path.read_bytes()).hexdigest()
 
 
-def check_event(result: object) -> list[str]:
+def check_event(result: object, req: dict) -> list[str]:
     failures: list[str] = []
     if not isinstance(result, dict):
         return ["result-not-object"]
@@ -71,6 +71,18 @@ def check_event(result: object) -> list[str]:
         failures.append("event-fields")
     if not isinstance(result.get("reason"), str) or not result.get("reason"):
         failures.append("reason-missing")
+    if isinstance(event, dict):
+        for field in REQUIRED_EVENT_FIELDS - {"event_type", "decision", "reason", "policy_version"}:
+            if event.get(field) != req.get(field):
+                failures.append(f"event-value-{field}")
+        if event.get("event_type") != "authorization.decision":
+            failures.append("event-type")
+        if event.get("decision") != result.get("decision"):
+            failures.append("event-decision")
+        if event.get("reason") != result.get("reason"):
+            failures.append("event-reason")
+        if not isinstance(event.get("policy_version"), str) or not event.get("policy_version"):
+            failures.append("event-policy-version")
     return failures
 
 
@@ -83,8 +95,8 @@ def run_secure(module, state: dict) -> tuple[list[dict], list[dict]]:
         before = state_hash(current)
         result = getattr(module, function_name)(current, req)
         after = state_hash(current)
-        errors = check_event(result)
-        if result.get("decision") != expected:
+        errors = check_event(result, req)
+        if not isinstance(result, dict) or result.get("decision") != expected:
             errors.append(f"expected-{expected}")
         if before != after:
             errors.append("state-mutated")
@@ -106,14 +118,57 @@ def run_secure(module, state: dict) -> tuple[list[dict], list[dict]]:
         event_id="EV-LAB-003", actor_id="user-a", effective_actor_id="user-a",
         action="report.read", resource_id="report-pending",
     ))
+    execute("LAB-DENY-UNKNOWN-REPORT", "authorize_report", "deny", request(
+        event_id="EV-LAB-016", actor_id="user-a", effective_actor_id="user-a",
+        action="report.read", resource_id="report-missing",
+    ))
+    execute("LAB-DENY-FOREIGN-TENANT", "authorize_report", "deny", request(
+        event_id="EV-LAB-017", actor_id="user-c", effective_actor_id="user-c",
+        tenant_id="tenant-42", action="report.read", resource_id="report-a",
+    ))
+    report_tenant_drift = copy.deepcopy(state)
+    report_tenant_drift["reports"]["report-a"]["tenant_id"] = "tenant-99"
+    execute("LAB-DENY-REPORT-STATE-TENANT", "authorize_report", "deny", request(
+        event_id="EV-LAB-018", actor_id="user-a", effective_actor_id="user-a",
+        tenant_id="tenant-42", action="report.read", resource_id="report-a",
+    ), report_tenant_drift)
+    execute("LAB-DENY-DELEGATED-REPORT-ACTOR", "authorize_report", "deny", request(
+        event_id="EV-LAB-019", actor_id="user-a", effective_actor_id="user-b",
+        action="report.read", resource_id="report-a",
+    ))
     policy_down = copy.deepcopy(state)
     policy_down["policy_available"] = False
     execute("LAB-DENY-POLICY-UNAVAILABLE", "authorize_report", "deny", request(
         event_id="EV-LAB-004", actor_id="user-a", effective_actor_id="user-a",
         action="report.read", resource_id="report-a",
     ), policy_down)
+    execute("LAB-DENY-MISSING-REPORT-CONTEXT", "authorize_report", "deny", request(
+        event_id="EV-LAB-010", actor_id="user-a", effective_actor_id="user-a",
+        tenant_id=None, action="report.read", resource_id="report-a",
+    ))
+    execute("LAB-DENY-REPORT-ACTION", "authorize_report", "deny", request(
+        event_id="EV-LAB-011", actor_id="user-a", effective_actor_id="user-a",
+        action=None, resource_id="report-a",
+    ))
     normal_object = execute("LAB-NORMAL-JOB", "authorize_object", "allow", request(
         event_id="EV-LAB-005", actor_id="id-report-worker", effective_actor_id="id-report-worker",
+        credential_id="cred-job-81", job_id="job-81", action="object.read",
+        resource_id="synthetic/tenant-42/job-81/input.json",
+    ))
+    execute("LAB-DENY-OBJECT-POLICY-UNAVAILABLE", "authorize_object", "deny", request(
+        event_id="EV-LAB-020", actor_id="id-report-worker", effective_actor_id="id-report-worker",
+        credential_id="cred-job-81", job_id="job-81", action="object.read",
+        resource_id="synthetic/tenant-42/job-81/input.json",
+    ), policy_down)
+    credential_tenant_drift = copy.deepcopy(state)
+    credential_tenant_drift["credentials"]["cred-job-81"]["tenant_id"] = "tenant-99"
+    execute("LAB-DENY-CREDENTIAL-STATE-TENANT", "authorize_object", "deny", request(
+        event_id="EV-LAB-021", actor_id="id-report-worker", effective_actor_id="id-report-worker",
+        credential_id="cred-job-81", tenant_id="tenant-42", job_id="job-81", action="object.read",
+        resource_id="synthetic/tenant-42/job-81/input.json",
+    ), credential_tenant_drift)
+    execute("LAB-DENY-DELEGATED-OBJECT-ACTOR", "authorize_object", "deny", request(
+        event_id="EV-LAB-022", actor_id="id-report-worker", effective_actor_id="id-other-worker",
         credential_id="cred-job-81", job_id="job-81", action="object.read",
         resource_id="synthetic/tenant-42/job-81/input.json",
     ))
@@ -137,21 +192,77 @@ def run_secure(module, state: dict) -> tuple[list[dict], list[dict]]:
         credential_id="cred-revoked", job_id="job-81", action="object.read",
         resource_id="synthetic/tenant-42/job-81/input.json",
     ))
+    execute("LAB-DENY-AT-EXPIRY", "authorize_object", "deny", request(
+        event_id="EV-LAB-012", actor_id="id-report-worker", effective_actor_id="id-report-worker",
+        credential_id="cred-at-expiry", job_id="job-81", action="object.read",
+        resource_id="synthetic/tenant-42/job-81/input.json",
+    ))
+    execute("LAB-DENY-CREDENTIAL-ACTOR", "authorize_object", "deny", request(
+        event_id="EV-LAB-013", actor_id="id-other-worker", effective_actor_id="id-other-worker",
+        credential_id="cred-job-81", job_id="job-81", action="object.read",
+        resource_id="synthetic/tenant-42/job-81/input.json",
+    ))
+    execute("LAB-DENY-MISSING-JOB-CONTEXT", "authorize_object", "deny", request(
+        event_id="EV-LAB-014", actor_id="id-report-worker", effective_actor_id="id-report-worker",
+        credential_id="cred-job-81", job_id=None, action="object.read",
+        resource_id="synthetic/tenant-42/job-81/input.json",
+    ))
 
-    benign = [owner["event"], normal_object["event"]]
-    positive = [cross_job["event"], foreign["event"], copy.deepcopy(cross_job["event"])]
+    def result_event(result: object) -> dict | None:
+        event = result.get("event") if isinstance(result, dict) else None
+        return event if isinstance(event, dict) else None
+
+    owner_event = result_event(owner)
+    normal_event = result_event(normal_object)
+    foreign_event = result_event(foreign)
+    cross_job_event = result_event(cross_job)
+    benign = [event for event in (owner_event, normal_event, copy.deepcopy(owner_event)) if event is not None]
+    positive = [event for event in (cross_job_event, foreign_event, copy.deepcopy(cross_job_event)) if event is not None]
     positive.reverse()
     benign_alerts = module.detect(benign)
     positive_alerts = module.detect(positive)
-    checks.append({"id": "LAB-DETECT-BENIGN", "passed": benign_alerts == [], "errors": [] if benign_alerts == [] else ["unexpected-alert"], "observed": len(benign_alerts)})
+    benign_ok = isinstance(benign_alerts, list) and benign_alerts == []
+    checks.append({
+        "id": "LAB-DETECT-BENIGN",
+        "passed": benign_ok,
+        "errors": [] if benign_ok else ["unexpected-alert"],
+        "observed": len(benign_alerts) if isinstance(benign_alerts, list) else None,
+    })
     alert_errors: list[str] = []
-    if not isinstance(positive_alerts, list) or len(positive_alerts) != 1:
+    if not isinstance(positive_alerts, list) or len(positive_alerts) != 1 or not isinstance(positive_alerts[0], dict):
         alert_errors.append("alert-count")
     else:
-        evidence_ids = positive_alerts[0].get("evidence_event_ids", [])
+        alert = positive_alerts[0]
+        evidence_ids = alert.get("evidence_event_ids", [])
         if set(evidence_ids) != {"EV-LAB-002", "EV-LAB-006"}:
             alert_errors.append("alert-evidence")
+        if alert.get("correlation_id") != "CORR-LAB-1":
+            alert_errors.append("alert-correlation")
+        if set(alert.get("actor_ids", [])) != {"user-b", "id-report-worker"}:
+            alert_errors.append("alert-actors")
+        if set(alert.get("credential_ids", [])) != {"cred-job-81"}:
+            alert_errors.append("alert-credentials")
     checks.append({"id": "LAB-DETECT-POSITIVE", "passed": not alert_errors, "errors": alert_errors, "observed": len(positive_alerts) if isinstance(positive_alerts, list) else None})
+    unrelated = copy.deepcopy(foreign_event) if foreign_event is not None else None
+    if unrelated is not None:
+        unrelated["event_id"] = "EV-LAB-015"
+        unrelated["correlation_id"] = "CORR-OTHER"
+    separated = module.detect(positive + ([unrelated] if unrelated is not None else []))
+    separated_ids = {
+        alert.get("correlation_id"): set(alert.get("evidence_event_ids", []))
+        for alert in separated if isinstance(alert, dict)
+    } if isinstance(separated, list) else {}
+    correlation_ok = (
+        len(separated_ids) == 2
+        and separated_ids.get("CORR-LAB-1") == {"EV-LAB-002", "EV-LAB-006"}
+        and separated_ids.get("CORR-OTHER") == {"EV-LAB-015"}
+    )
+    checks.append({
+        "id": "LAB-DETECT-CORRELATION",
+        "passed": correlation_ok,
+        "errors": [] if correlation_ok else ["unrelated-events-merged"],
+        "observed": len(separated_ids),
+    })
     return checks, emitted
 
 
@@ -166,8 +277,8 @@ def run_vulnerable(module, state: dict) -> list[dict]:
         resource_id="synthetic/tenant-42/job-9/input.json",
     ))
     return [
-        {"id": "LAB-VULN-CROSS-OWNER", "passed": cross_owner.get("decision") == "allow", "observed": cross_owner.get("decision")},
-        {"id": "LAB-VULN-CROSS-JOB", "passed": cross_job.get("decision") == "allow", "observed": cross_job.get("decision")},
+        {"id": "LAB-VULN-CROSS-OWNER", "passed": isinstance(cross_owner, dict) and cross_owner.get("decision") == "allow", "observed": cross_owner.get("decision") if isinstance(cross_owner, dict) else None},
+        {"id": "LAB-VULN-CROSS-JOB", "passed": isinstance(cross_job, dict) and cross_job.get("decision") == "allow", "observed": cross_job.get("decision") if isinstance(cross_job, dict) else None},
     ]
 
 
@@ -216,6 +327,7 @@ def main() -> int:
         "events": events,
         "limitations": [
             "합성 in-memory policy model만 검사합니다.",
+            "checker는 learner Python module을 현재 process에 import하며 OS sandbox를 제공하지 않습니다.",
             "실제 cloud IAM, OS isolation, network path와 production telemetry를 보장하지 않습니다."
         ],
     }
