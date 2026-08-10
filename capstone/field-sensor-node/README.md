@@ -350,3 +350,67 @@ capstone을 거대한 제품으로 계속 확장하지 않습니다. 다음 중 
 - embedded open-source issue 재현과 patch
 
 같은 하위 시스템에서 반복 기여하며 실제 전문성을 만듭니다.
+
+## 제공되는 deterministic host profile
+
+이 디렉터리는 위 설계를 작은 실행 가능한 **설계·모델 완료** profile로 고정합니다. [12개 fixture](fixtures/)는 interrupt status/W1C, driver request generation, DMA buffer ownership, bounded event queue, persistent commit, upload의 `UNKNOWN`, sleep/wakeup, watchdog/crash evidence, update trial/confirm/revert를 하나의 공개 상태 계약으로 연결합니다.
+
+이 profile은 Python 3.10+ 표준 라이브러리만 사용하며 외부 서비스, 장비, 네트워크와 실제 flash를 변경하지 않습니다. 같은 이유로 다음 항목을 보장하지 않습니다.
+
+- MCU의 실제 MMIO ordering, ISR latency, DMA cache coherency와 bus timing
+- flash program/erase의 전기적 power-cut behavior
+- watchdog clock 독립성, 저전력 current와 wake 회로
+- bootloader slot metadata의 vendor-specific atomicity
+- target ELF/map, stack watermark, HIL fixture와 production safety
+
+### 빠른 실행
+
+저장소 루트에서 실행합니다.
+
+```sh
+python3 capstone/field-sensor-node/check.py \
+  --submission capstone/field-sensor-node/reference
+
+python3 capstone/field-sensor-node/check.py \
+  --submission capstone/field-sensor-node/reference \
+  --json
+```
+
+하나의 사건 trace를 읽으려면 다음처럼 실행합니다.
+
+```sh
+python3 capstone/field-sensor-node/reference/model.py \
+  capstone/field-sensor-node/fixtures/S01-normal-cycle.json \
+  --check --trace
+```
+
+checker의 공개 CLI 계약은 다음과 같습니다.
+
+| 종료 코드 | 뜻 |
+|---:|---|
+| `0` | 12개 deterministic host-model 검사가 통과함. 실제 보드 완료를 뜻하지 않음 |
+| `1` | submission은 실행됐지만 공개 상태·불변식·기대 결과를 위반함 |
+| `2` | submission/`model.py`가 없거나 import/output 계약 또는 bundled fixture가 유효하지 않음 |
+
+submission은 디렉터리 또는 Python 파일이며 `run_fixture(fixture) -> (result, trace)`를 공개합니다. `result`와 `trace`는 JSON으로 직렬화 가능해야 하고, 같은 fixture에서 항상 같은 값을 내야 합니다. fixture 입력을 수정하지 않습니다.
+
+### starter와 negative controls
+
+[starter/model.py](starter/model.py)는 핵심 전이가 미완성인 실행 가능한 출발점이며 검사 실패가 정상입니다. 다음 negative control도 각각 잘못된 정책이 실제로 거부되는지를 확인하기 위해 의도적으로 `1`을 반환해야 합니다.
+
+```sh
+python3 capstone/field-sensor-node/check.py \
+  --submission capstone/field-sensor-node/starter
+python3 capstone/field-sensor-node/check.py \
+  --submission capstone/field-sensor-node/known-wrong/unbounded-queue.py
+python3 capstone/field-sensor-node/check.py \
+  --submission capstone/field-sensor-node/known-wrong/delete-on-unknown.py
+python3 capstone/field-sensor-node/check.py \
+  --submission capstone/field-sensor-node/known-wrong/early-confirm.py
+```
+
+- `unbounded-queue.py`: burst가 declared queue capacity를 넘습니다.
+- `delete-on-unknown.py`: remote 적용 여부가 불명인 record를 지웁니다.
+- `early-confirm.py`: health proof나 power-fail-safe metadata 없이 trial을 confirmed로 취급합니다.
+
+checker의 `automated.status=PASS`와 별개로 `human_review.status`는 항상 `NOT_TESTED`입니다. [완료 기준](acceptance.md)의 target timing/electrical/power/HIL 항목은 사람이 raw evidence를 검토하기 전까지 완료로 표시하지 않습니다.

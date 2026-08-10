@@ -1,0 +1,24 @@
+{
+  "fixture_id": "S11",
+  "acceptance_scenario": 11,
+  "failure_matrix": ["F33"],
+  "required_evidence": ["self-test gate", "confirmation power cut", "deterministic boot selection"],
+  "events": [
+    {"op": "BOOT"},
+    {"op": "UPDATE_DOWNLOAD", "version": "v2", "schema": 1, "supports": [1]},
+    {"op": "UPDATE_TRIAL"},
+    {"op": "SELF_TEST_OK"},
+    {"op": "POWER_LOSS", "point": "confirm"},
+    {"op": "BOOT"}
+  ],
+  "expected": {
+    "device_state": "OPERATIONAL",
+    "firmware_mode": "CONFIRMED",
+    "current_image": "v1",
+    "confirmed_image": "v1",
+    "trial_attempts": 1,
+    "power_losses": 1,
+    "rollback_reason": "confirm_power_loss_revert",
+    "violations": []
+  }
+}

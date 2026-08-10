@@ -1,0 +1,26 @@
+{
+  "fixture_id": "S07",
+  "acceptance_scenario": 7,
+  "failure_matrix": ["F17", "F18"],
+  "required_evidence": ["stable record ID", "UNKNOWN state", "attempt counter", "durable ACK"],
+  "events": [
+    {"op": "BOOT"},
+    {"op": "REQUEST_SAMPLE", "generation": 1, "deadline": 10},
+    {"op": "MMIO_RAISE", "generation": 1, "status": 1, "timestamp": 2, "sample": 23},
+    {"op": "ISR"}, {"op": "WORK"}, {"op": "COMMIT"},
+    {"op": "UPLOAD_START"},
+    {"op": "UPLOAD_RESULT", "result": "UNKNOWN"},
+    {"op": "UPLOAD_START"},
+    {"op": "UPLOAD_RESULT", "result": "ACK"}
+  ],
+  "expected": {
+    "record_ids": ["R1"],
+    "record_states": ["ACKNOWLEDGED"],
+    "committed_ids": ["R1"],
+    "acked_ids": ["R1"],
+    "upload_attempts": {"R1": 2},
+    "upload_unknown": 1,
+    "records_integral": true,
+    "violations": []
+  }
+}

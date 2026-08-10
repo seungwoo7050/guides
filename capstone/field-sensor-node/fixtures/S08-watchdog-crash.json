@@ -1,0 +1,20 @@
+{
+  "fixture_id": "S08",
+  "acceptance_scenario": 8,
+  "failure_matrix": ["F23", "F24", "F25"],
+  "required_evidence": ["per-service liveness", "withheld feed", "integral crash record", "build ID"],
+  "events": [
+    {"op": "BOOT"},
+    {"op": "HANG", "service": "sensor"},
+    {"op": "WATCHDOG_TICK", "last_progress": "sample-generation-7"},
+    {"op": "BOOT"}
+  ],
+  "expected": {
+    "device_state": "OPERATIONAL",
+    "watchdog_feeds": 0,
+    "reset_count": 1,
+    "crash_reasons": ["watchdog:sensor"],
+    "build_id": "field-node-model-v1",
+    "violations": []
+  }
+}

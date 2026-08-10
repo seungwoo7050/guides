@@ -1,0 +1,25 @@
+{
+  "fixture_id": "S10",
+  "acceptance_scenario": 10,
+  "failure_matrix": ["F31", "F34"],
+  "required_evidence": ["validated candidate", "trial state", "post-self-test confirmation", "crash revert"],
+  "events": [
+    {"op": "BOOT"},
+    {"op": "UPDATE_DOWNLOAD", "version": "v2", "schema": 1, "supports": [1]},
+    {"op": "UPDATE_TRIAL"},
+    {"op": "SELF_TEST_OK"},
+    {"op": "CONFIRM"},
+    {"op": "UPDATE_DOWNLOAD", "version": "v3", "schema": 1, "supports": [1]},
+    {"op": "UPDATE_TRIAL"},
+    {"op": "TRIAL_CRASH"}
+  ],
+  "expected": {
+    "firmware_mode": "CONFIRMED",
+    "current_image": "v2",
+    "confirmed_image": "v2",
+    "previous_image": null,
+    "trial_attempts": 2,
+    "rollback_reason": "trial_crash_revert",
+    "violations": []
+  }
+}

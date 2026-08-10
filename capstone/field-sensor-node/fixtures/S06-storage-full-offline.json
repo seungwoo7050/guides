@@ -1,0 +1,30 @@
+{
+  "fixture_id": "S06",
+  "acceptance_scenario": 6,
+  "failure_matrix": ["F15", "F16"],
+  "storage_capacity": 2,
+  "required_evidence": ["persistent capacity", "record states", "offline retention", "full counter"],
+  "events": [
+    {"op": "BOOT"},
+    {"op": "REQUEST_SAMPLE", "generation": 1, "deadline": 10},
+    {"op": "MMIO_RAISE", "generation": 1, "status": 1, "timestamp": 1, "sample": 20},
+    {"op": "ISR"}, {"op": "WORK"}, {"op": "COMMIT"},
+    {"op": "REQUEST_SAMPLE", "generation": 2, "deadline": 20},
+    {"op": "MMIO_RAISE", "generation": 2, "status": 1, "timestamp": 2, "sample": 21},
+    {"op": "ISR"}, {"op": "WORK"}, {"op": "COMMIT"},
+    {"op": "SET_UPLOADER", "online": false},
+    {"op": "UPLOAD_START"},
+    {"op": "REQUEST_SAMPLE", "generation": 3, "deadline": 30},
+    {"op": "MMIO_RAISE", "generation": 3, "status": 1, "timestamp": 3, "sample": 22},
+    {"op": "ISR"}, {"op": "WORK"}, {"op": "COMMIT"}
+  ],
+  "expected": {
+    "storage_capacity": 2,
+    "record_ids": ["R1", "R2"],
+    "record_states": ["PENDING_UPLOAD", "PENDING_UPLOAD"],
+    "records_integral": true,
+    "storage_full": 1,
+    "uploader_offline_attempts": 1,
+    "violations": []
+  }
+}

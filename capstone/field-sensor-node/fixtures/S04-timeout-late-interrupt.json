@@ -1,0 +1,24 @@
+{
+  "fixture_id": "S04",
+  "acceptance_scenario": 4,
+  "failure_matrix": ["F04", "F06"],
+  "required_evidence": ["deadline trace", "generation token", "stale completion counter"],
+  "events": [
+    {"op": "BOOT"},
+    {"op": "REQUEST_SAMPLE", "generation": 7, "deadline": 5},
+    {"op": "TIMEOUT", "now": 5},
+    {"op": "MMIO_RAISE", "generation": 7, "status": 1, "timestamp": 6, "sample": 99},
+    {"op": "ISR"},
+    {"op": "WORK"},
+    {"op": "COMMIT"}
+  ],
+  "expected": {
+    "active_generation": null,
+    "stale_events": 1,
+    "event_depth": 0,
+    "record_ids": [],
+    "mmio_status": 0,
+    "buffer_owners": {},
+    "violations": []
+  }
+}

@@ -45,6 +45,34 @@
 | F39 | test fixture cable failure | HIL | product regression 판정 | FIXTURE_FAIL/INCONCLUSIVE | probe/power/loopback evidence |
 | F40 | brownout/noisy reset | system | reset cause 소실 | retained cause + boot policy | power/reset capture |
 
+## bundled fixture 연결
+
+다음 fixture는 표의 일부 행을 deterministic host state로 재현합니다. 실제 peripheral timing과 전기적 fault injection을 대체하지 않습니다.
+
+| fixture | acceptance | 적용 행 | 실행 결과 |
+|---|---:|---|---|
+| [S01](fixtures/S01-normal-cycle.json) | 1 | F07, F12, F17, F26 | 정상 pipeline에서 같은 불변식의 baseline |
+| [S02](fixtures/S02-identity-mismatch.json) | 2 | F02 | wrong identity → degraded |
+| [S03](fixtures/S03-burst-overflow.json) | 3 | F07, F09 | bounded overflow/drop |
+| [S04](fixtures/S04-timeout-late-interrupt.json) | 4 | F04, F06 | timeout 뒤 stale generation drop |
+| [S05](fixtures/S05-persistence-power-loss.json) | 5 | F12, F13 | partial/torn staging 미복구 |
+| [S06](fixtures/S06-storage-full-offline.json) | 6 | F15, F16 | full/offline pressure에서 unacked 보존 |
+| [S07](fixtures/S07-upload-unknown-retry.json) | 7 | F17, F18 | UNKNOWN 뒤 stable-ID retry |
+| [S08](fixtures/S08-watchdog-crash.json) | 8 | F23, F24, F25 | per-service hang, reset, integral crash evidence |
+| [S09](fixtures/S09-sleep-entry-race.json) | 9 | F26, F27 | entry race와 restore |
+| [S10](fixtures/S10-trial-crash-revert.json) | 10 | F31, F34 | confirmed 보존과 trial revert |
+| [S11](fixtures/S11-confirm-power-loss.json) | 11 | F33 | confirmation cut에서 결정적 이전 image 선택 |
+| [S12](fixtures/S12-schema-rollback.json) | 12 | F35 | incompatible rollback 차단/recovery |
+
+저장소 루트에서 전체 host 검사를 실행합니다.
+
+```sh
+python3 capstone/field-sensor-node/check.py \
+  --submission capstone/field-sensor-node/reference
+```
+
+결과가 `0`이어도 이 표의 raw target evidence 열은 자동으로 PASS가 되지 않습니다. checker는 별도의 `human_review: NOT_TESTED`를 출력합니다.
+
 ## 작성 방법
 
 각 구현은 표에 다음 열을 추가해도 됩니다.

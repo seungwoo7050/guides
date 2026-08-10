@@ -1,0 +1,34 @@
+{
+  "fixture_id": "S01",
+  "acceptance_scenario": 1,
+  "failure_matrix": ["F07", "F12", "F17", "F26"],
+  "event_capacity": 2,
+  "storage_capacity": 2,
+  "required_evidence": ["W1C status clear", "DMA ownership trace", "commit marker", "durable ACK", "sleep transition"],
+  "events": [
+    {"op": "BOOT", "identity": "SENSOR-42"},
+    {"op": "REQUEST_SAMPLE", "generation": 1, "deadline": 10},
+    {"op": "MMIO_RAISE", "generation": 1, "status": 1, "timestamp": 5, "sample": 21},
+    {"op": "ISR"},
+    {"op": "WORK"},
+    {"op": "COMMIT"},
+    {"op": "UPLOAD_START"},
+    {"op": "UPLOAD_RESULT", "result": "ACK"},
+    {"op": "RECLAIM"},
+    {"op": "SLEEP_REQUEST"},
+    {"op": "SLEEP_COMMIT"}
+  ],
+  "expected": {
+    "device_state": "OPERATIONAL",
+    "power_state": "SLEEP",
+    "mmio_status": 0,
+    "w1c_writes": [1],
+    "dma_transfers": 1,
+    "max_event_depth": 1,
+    "committed_ids": ["R1"],
+    "acked_ids": ["R1"],
+    "reclaimed_ids": ["R1"],
+    "record_ids": [],
+    "violations": []
+  }
+}

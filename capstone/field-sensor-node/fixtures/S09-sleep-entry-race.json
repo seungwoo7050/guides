@@ -1,0 +1,19 @@
+{
+  "fixture_id": "S09",
+  "acceptance_scenario": 9,
+  "failure_matrix": ["F26", "F27"],
+  "required_evidence": ["sleep check", "latched wake event", "sleep abort", "driver restore"],
+  "events": [
+    {"op": "BOOT"},
+    {"op": "SLEEP_REQUEST"},
+    {"op": "WAKE_EVENT"},
+    {"op": "SLEEP_COMMIT"}
+  ],
+  "expected": {
+    "power_state": "ACTIVE",
+    "sleep_aborts": 1,
+    "driver_ready": true,
+    "record_ids": [],
+    "violations": []
+  }
+}

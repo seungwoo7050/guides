@@ -1,0 +1,28 @@
+{
+  "fixture_id": "S03",
+  "acceptance_scenario": 3,
+  "failure_matrix": ["F07", "F09"],
+  "event_capacity": 2,
+  "required_evidence": ["queue high-water mark", "overflow counter", "non-blocking ISR handoff"],
+  "events": [
+    {"op": "BOOT"},
+    {"op": "REQUEST_SAMPLE", "generation": 1, "deadline": 10},
+    {"op": "MMIO_RAISE", "generation": 1, "status": 1, "timestamp": 1, "sample": 10},
+    {"op": "ISR"},
+    {"op": "REQUEST_SAMPLE", "generation": 2, "deadline": 20},
+    {"op": "MMIO_RAISE", "generation": 2, "status": 1, "timestamp": 2, "sample": 11},
+    {"op": "ISR"},
+    {"op": "REQUEST_SAMPLE", "generation": 3, "deadline": 30},
+    {"op": "MMIO_RAISE", "generation": 3, "status": 1, "timestamp": 3, "sample": 12},
+    {"op": "ISR"}
+  ],
+  "expected": {
+    "event_capacity": 2,
+    "event_depth": 2,
+    "max_event_depth": 2,
+    "event_dropped": 1,
+    "dma_transfers": 2,
+    "mmio_status": 0,
+    "violations": []
+  }
+}

@@ -1,0 +1,19 @@
+{
+  "fixture_id": "S02",
+  "acceptance_scenario": 2,
+  "failure_matrix": ["F02"],
+  "required_evidence": ["raw sensor identity", "semantic probe result", "rejected request counter"],
+  "events": [
+    {"op": "BOOT", "identity": "SENSOR-99"},
+    {"op": "REQUEST_SAMPLE", "generation": 1, "deadline": 10}
+  ],
+  "expected": {
+    "device_state": "DEGRADED",
+    "driver_ready": false,
+    "sensor_identity": "SENSOR-99",
+    "rejected_requests": 1,
+    "dma_transfers": 0,
+    "record_ids": [],
+    "violations": []
+  }
+}

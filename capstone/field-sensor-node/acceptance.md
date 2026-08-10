@@ -107,6 +107,35 @@
 11. confirmation write 중 power loss
 12. new schema 때문에 previous image가 읽지 못하는 경우
 
+### 실행 fixture 추적표
+
+각 fixture는 위 번호와 [failure matrix](failure-matrix.md)의 행을 동시에 고정합니다. checker는 이 매핑 자체도 검사하므로 fixture 이름만 바꿔 결과를 우회할 수 없습니다.
+
+| 시나리오 | fixture ID와 파일 | failure matrix | 자동 판정의 핵심 |
+|---:|---|---|---|
+| 1 | `S01` — [normal cycle](fixtures/S01-normal-cycle.json) | F07, F12, F17, F26 | W1C, DMA handoff, commit, durable ACK/reclaim, sleep |
+| 2 | `S02` — [identity mismatch](fixtures/S02-identity-mismatch.json) | F02 | raw identity 불일치, degraded, request 거부 |
+| 3 | `S03` — [burst overflow](fixtures/S03-burst-overflow.json) | F07, F09 | capacity 2, high-water 2, explicit drop 1 |
+| 4 | `S04` — [timeout/late IRQ](fixtures/S04-timeout-late-interrupt.json) | F04, F06 | deadline 뒤 generation 7 stale drop, commit 없음 |
+| 5 | `S05` — [persistence power loss](fixtures/S05-persistence-power-loss.json) | F12, F13 | staging discard, partial record 미복구 |
+| 6 | `S06` — [storage full/offline](fixtures/S06-storage-full-offline.json) | F15, F16 | unacked 2개 보존, 세 번째 거부, bounded backlog |
+| 7 | `S07` — [upload UNKNOWN](fixtures/S07-upload-unknown-retry.json) | F17, F18 | 같은 `R1`로 2회, UNKNOWN 뒤 보존, ACK 뒤만 reclaim 가능 |
+| 8 | `S08` — [watchdog/crash](fixtures/S08-watchdog-crash.json) | F23, F24, F25 | hung service가 feed를 막고 build-linked crash record를 먼저 기록 |
+| 9 | `S09` — [sleep race](fixtures/S09-sleep-entry-race.json) | F26, F27 | wake latch, sleep abort, driver readiness 복원 |
+| 10 | `S10` — [trial crash/revert](fixtures/S10-trial-crash-revert.json) | F31, F34 | self-test 뒤 v2 confirm, 다음 v3 trial crash에서 v2 revert |
+| 11 | `S11` — [confirm power loss](fixtures/S11-confirm-power-loss.json) | F33 | torn confirm을 success로 확대하지 않고 v1 선택 |
+| 12 | `S12` — [schema rollback](fixtures/S12-schema-rollback.json) | F35 | schema 2를 못 읽는 v1 rollback 차단, recovery 선택 |
+
+전체 suite는 다음 누적 연결이 한 번 이상 실제 trace에 나타나는지도 검사합니다.
+
+```text
+driver → MMIO/W1C → DMA ownership → bounded queue
+→ persistent commit → upload UNKNOWN/ACK
+→ sleep/wakeup → watchdog/crash → update trial/confirm/revert
+```
+
+자동 판정 결과의 `required_evidence`는 실제 target evidence의 **요구 목록**이지 그 evidence 자체가 아닙니다. JSON 출력의 `human_review.status=NOT_TESTED`는 board trace, timing, power-cut, current와 HIL 판정이 남았음을 뜻합니다.
+
 ## 합격 수준
 
 ### 설계·모델 완료

@@ -1,0 +1,24 @@
+{
+  "fixture_id": "S05",
+  "acceptance_scenario": 5,
+  "failure_matrix": ["F12", "F13"],
+  "required_evidence": ["power cut point", "discarded staging record", "post-boot integrity result"],
+  "events": [
+    {"op": "BOOT"},
+    {"op": "REQUEST_SAMPLE", "generation": 1, "deadline": 10},
+    {"op": "MMIO_RAISE", "generation": 1, "status": 1, "timestamp": 4, "sample": 21},
+    {"op": "ISR"},
+    {"op": "WORK"},
+    {"op": "POWER_LOSS", "point": "record_program"},
+    {"op": "BOOT"}
+  ],
+  "expected": {
+    "device_state": "OPERATIONAL",
+    "staging": null,
+    "record_ids": [],
+    "committed_ids": [],
+    "power_losses": 1,
+    "reset_count": 1,
+    "violations": []
+  }
+}
