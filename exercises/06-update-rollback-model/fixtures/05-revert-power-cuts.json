@@ -1,0 +1,8 @@
+{
+  "events": [
+    {"op": "DOWNLOAD", "version": "v2"}, {"op": "MARK_PENDING"}, {"op": "RESET"},
+    {"op": "BEGIN_REVERT", "reason": "trial_failure"}, {"op": "POWER_LOSS", "point": "revert_before_commit"},
+    {"op": "BEGIN_REVERT", "reason": "trial_failure"}, {"op": "POWER_LOSS", "point": "revert_after_commit", "reason": "trial_failure"}
+  ],
+  "expected": {"mode": "CONFIRMED", "current": "A", "metadata": {"mode": "CONFIRMED", "current": "A"}}
+}

@@ -1,0 +1,9 @@
+{
+  "wrap_cases": [
+    {"old_sequence": 255, "new_sequence": 0, "expected": "new"},
+    {"old_sequence": 0, "new_sequence": 255, "expected": "old"},
+    {"old_sequence": 7, "new_sequence": 7, "expected": "old-slot-a"}
+  ],
+  "unsupported_schema": 2,
+  "supported_schemas": [1]
+}

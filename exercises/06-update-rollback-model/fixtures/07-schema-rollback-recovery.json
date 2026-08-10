@@ -1,0 +1,7 @@
+{
+  "events": [
+    {"op": "DOWNLOAD", "version": "v2", "schema_min": 1, "schema_max": 2}, {"op": "MARK_PENDING"},
+    {"op": "RESET"}, {"op": "COMMIT_SCHEMA", "schema": 2}, {"op": "SELF_TEST_FAIL"}
+  ],
+  "expected": {"mode": "RECOVERY", "current": null, "data_schema": 2, "last_reason": "self_test_failed_without_compatible_previous"}
+}

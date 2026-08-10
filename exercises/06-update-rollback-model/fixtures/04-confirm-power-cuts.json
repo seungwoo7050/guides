@@ -1,0 +1,8 @@
+{
+  "events": [
+    {"op": "DOWNLOAD", "version": "v2"}, {"op": "MARK_PENDING"}, {"op": "RESET"},
+    {"op": "BOOT_OK"}, {"op": "SELF_TEST_PASS"}, {"op": "POWER_LOSS", "point": "confirm_before_commit"},
+    {"op": "BOOT_OK"}, {"op": "SELF_TEST_PASS"}, {"op": "POWER_LOSS", "point": "confirm_after_commit"}
+  ],
+  "expected": {"mode": "CONFIRMED", "current": "B", "slots": {"B": {"confirmed": true}}, "metadata": {"committed": true, "mode": "CONFIRMED", "current": "B"}}
+}

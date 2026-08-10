@@ -17,6 +17,9 @@
       "op": "BOOT_OK"
     },
     {
+      "op": "SELF_TEST_PASS"
+    },
+    {
       "op": "CONFIRM"
     }
   ],

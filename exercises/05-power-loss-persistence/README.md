@@ -12,6 +12,39 @@ flash는 일반 RAM처럼 byte를 덮어쓰지 못하며 erase/program 단위와
 - wear, garbage collection와 schema migration의 범위를 구분합니다.
 - 모든 의미 있는 power cut를 결정적으로 주입합니다.
 
+## 제공 코드와 시작 방법
+
+이 실습은 hardware 없이 실행되는 256-byte, two-slot NOR model을
+제공합니다. `starter/persistence.py`의 공개 함수를 완성하고 같은
+checker로 reference와 자신의 구현을 검사합니다.
+
+```sh
+python3 check.py --submission reference
+python3 check.py --submission starter       # 초기 상태는 exit 1
+python3 check.py --submission workspace/implementation
+python3 check.py --submission reference --json
+```
+
+checker 종료 코드는 다음과 같습니다.
+
+- `0`: 모든 공개 행동·불변식 검사 통과
+- `1`: submission을 실행했지만 하나 이상의 행동 계약 실패
+- `2`: 경로·import·공개 interface가 잘못됨
+
+submission 디렉터리에는 `persistence.py`가 있어야 합니다. 공개 계약은
+`NorFlash`, `seed_image`, `apply_update`, `recover`, `operation_lengths`,
+`cut_points`와 두 예외 타입입니다. checker는 source 모양이 아니라 NOR
+bit transition, byte-boundary cut 뒤 recovery, corruption, sequence wrap와
+schema 분류를 관찰합니다.
+
+`known-wrong/commit-polarity`는 erased marker를 committed로 해석하는
+의도적 오답입니다. 다음 명령이 exit 1인지 확인하면 “commit 전에는 새
+record가 보이지 않는다”는 검사가 실제로 작동함을 확인할 수 있습니다.
+
+```sh
+python3 check.py --submission known-wrong/commit-polarity
+```
+
 ## 저장할 상태
 
 작은 configuration record를 사용합니다.
@@ -164,6 +197,14 @@ workspace/
 - retained RAM cache
 - encrypted/authenticated record의 lifecycle 경계
 - 실제 보드의 controllable power-cut fixture
+
+## 모델의 한계
+
+reference는 byte 단위로 진행하는 추상 NOR입니다. 실제 controller의
+word/page program, ECC, cache, voltage brownout, erase suspend, endurance와
+retention을 증명하지 않습니다. 실제 target 결과에는 part number,
+datasheet revision, program/erase geometry와 power-cut 장비 조건을 별도로
+기록해야 합니다.
 
 ## 검토 질문
 

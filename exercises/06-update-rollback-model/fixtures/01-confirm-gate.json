@@ -1,0 +1,7 @@
+{
+  "events": [
+    {"op": "DOWNLOAD", "version": "v2"}, {"op": "MARK_PENDING"}, {"op": "RESET"},
+    {"op": "BOOT_OK"}, {"op": "CONFIRM"}
+  ],
+  "expected": {"mode": "TRIAL", "current": "B", "errors": ["confirm_gates_incomplete"], "slots": {"B": {"confirmed": false}}}
+}

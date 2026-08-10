@@ -1,0 +1,5 @@
+{
+  "hardware_id": "board-v1",
+  "events": [{"op": "DOWNLOAD", "version": "v2", "hardware": "board-v2"}, {"op": "MARK_PENDING"}],
+  "expected": {"mode": "CONFIRMED", "current": "A", "pending": false, "errors": ["candidate_incompatible"]}
+}

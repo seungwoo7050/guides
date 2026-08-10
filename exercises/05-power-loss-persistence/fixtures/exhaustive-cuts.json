@@ -1,0 +1,8 @@
+{
+  "old_payload": "config-v1",
+  "new_payload": "config-v2",
+  "old_sequence": 41,
+  "new_sequence": 42,
+  "schema": 1,
+  "allowed_recovery_payloads": ["config-v1", "config-v2"]
+}

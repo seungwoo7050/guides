@@ -1,0 +1,7 @@
+{
+  "events": [
+    {"op": "DOWNLOAD", "version": "v2"}, {"op": "MARK_PENDING"}, {"op": "RESET"},
+    {"op": "BOOT_OK"}, {"op": "SELF_TEST_PASS"}, {"op": "CONFIRM"}
+  ],
+  "expected": {"mode": "CONFIRMED", "current": "B", "previous": null, "slots": {"B": {"confirmed": true}}, "metadata": {"mode": "CONFIRMED", "current": "B"}}
+}

@@ -1,0 +1,7 @@
+{
+  "cases": [
+    {"name": "payload-bit", "target": "new-payload", "expected_selected": "old"},
+    {"name": "magic-bit", "target": "new-header", "expected_selected": "old"},
+    {"name": "both-records", "target": "both-payloads", "expected_status": "recovery"}
+  ]
+}

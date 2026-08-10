@@ -8,6 +8,22 @@
 
 [`examples/update-state-model`](../../examples/update-state-model/README.md)을 실행합니다. 제공 모델은 핵심 상태만 포함하며 production bootloader가 아닙니다.
 
+이 디렉터리는 실행 가능한 `starter/`, 비교 기준인 `reference/`, 공개 failure
+fixture와 `check.py`를 함께 제공합니다. reference와 starter의 판정 polarity를
+먼저 확인한 뒤 starter를 별도 workspace에 복사해 구현합니다.
+
+```sh
+python3 exercises/06-update-rollback-model/check.py \
+  --submission exercises/06-update-rollback-model/reference
+python3 exercises/06-update-rollback-model/check.py \
+  --submission exercises/06-update-rollback-model/starter --json
+python3 examples/update-state-model/model.py \
+  examples/update-state-model/fixtures/confirm-power-loss-cuts.json --check --trace
+```
+
+checker는 통과 시 `0`, 실행된 submission의 계약 위반 시 `1`, submission
+경로나 checker fixture를 읽을 수 없으면 `2`를 반환합니다.
+
 ## image와 metadata
 
 최소 image metadata:
@@ -123,6 +139,13 @@ workspace/
 - power cut fixture마다 bootable/recovery 불변식을 검사합니다.
 - binary rollback와 data compatibility를 별도 항목으로 판정합니다.
 - 모델이 secure boot 또는 실제 flash atomicity를 증명하지 않는다고 기록합니다.
+
+자동 checker는 `BOOT_OK`와 `SELF_TEST_PASS` gate, trial 중 rollback slot 보존,
+dual-state metadata commit의 before/after cut, hardware/schema compatibility와
+bounded revert를 모델 수준에서 확인합니다. 실제 signature, flash program
+unit·erase endurance, MCUboot trailer/swap atomicity, brownout과 boot ROM은
+검증하지 않습니다. target evidence에서 사용하는 bootloader mode, release,
+partition, reset source와 raw flash dump를 별도로 남깁니다.
 
 ## 잘못된 완료
 

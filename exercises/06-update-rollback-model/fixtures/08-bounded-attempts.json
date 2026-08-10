@@ -1,0 +1,8 @@
+{
+  "max_trial_attempts": 2,
+  "events": [
+    {"op": "DOWNLOAD", "version": "v2"}, {"op": "MARK_PENDING"}, {"op": "RESET"},
+    {"op": "WATCHDOG_RESET"}, {"op": "WATCHDOG_RESET"}
+  ],
+  "expected": {"mode": "CONFIRMED", "current": "A", "trial_attempts": 0, "last_reason": "watchdog_trial_attempt_limit"}
+}

@@ -1,0 +1,7 @@
+{
+  "events": [
+    {"op": "DOWNLOAD", "version": "v2"}, {"op": "MARK_PENDING"}, {"op": "RESET"},
+    {"op": "DOWNLOAD", "version": "v3"}
+  ],
+  "expected": {"mode": "TRIAL", "previous": "A", "errors": ["download_blocked_during_trial"], "slots": {"A": {"version": "v1"}, "B": {"version": "v2"}}}
+}
