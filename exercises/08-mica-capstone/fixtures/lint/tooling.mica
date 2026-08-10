@@ -1,0 +1,10 @@
+fn main() -> Int {
+    let unused: Int = 1;
+    let value: Int = 1;
+    {
+        let value: Int = 2;
+        print_int(value);
+    }
+    return value;
+    print_int(value);
+}

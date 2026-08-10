@@ -1,0 +1,19 @@
+{
+  "kind": "Module",
+  "functions": [
+    {
+      "kind": "FunctionDecl",
+      "name": "main",
+      "parameters": [],
+      "return_type": "Int",
+      "body": {
+        "kind": "BlockStmt",
+        "statements": [
+          {"kind": "LetStmt", "name": "value", "mutable": false, "type": "Int", "initializer": {"kind": "IntLiteral", "value": 2}},
+          {"kind": "ExprStmt", "expression": {"kind": "NameExpr", "name": "value"}},
+          {"kind": "ReturnStmt", "value": {"kind": "NameExpr", "name": "value"}}
+        ]
+      }
+    }
+  ]
+}

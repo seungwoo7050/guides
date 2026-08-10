@@ -1,0 +1,14 @@
+[
+  {"kind": "FN", "channel": "syntax", "lexeme": "fn", "start": 0, "end": 2},
+  {"kind": "IDENTIFIER", "channel": "syntax", "lexeme": "main", "start": 3, "end": 7},
+  {"kind": "LEFT_PAREN", "channel": "syntax", "lexeme": "(", "start": 7, "end": 8},
+  {"kind": "RIGHT_PAREN", "channel": "syntax", "lexeme": ")", "start": 8, "end": 9},
+  {"kind": "ARROW", "channel": "syntax", "lexeme": "->", "start": 10, "end": 12},
+  {"kind": "IDENTIFIER", "channel": "syntax", "lexeme": "Int", "start": 13, "end": 16},
+  {"kind": "LEFT_BRACE", "channel": "syntax", "lexeme": "{", "start": 17, "end": 18},
+  {"kind": "RETURN", "channel": "syntax", "lexeme": "return", "start": 23, "end": 29},
+  {"kind": "INTEGER", "channel": "syntax", "lexeme": "42", "start": 30, "end": 32},
+  {"kind": "SEMICOLON", "channel": "syntax", "lexeme": ";", "start": 32, "end": 33},
+  {"kind": "RIGHT_BRACE", "channel": "syntax", "lexeme": "}", "start": 34, "end": 35},
+  {"kind": "EOF", "channel": "syntax", "lexeme": "", "start": 36, "end": 36}
+]

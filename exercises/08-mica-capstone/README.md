@@ -29,13 +29,15 @@ python3 exercises/08-mica-capstone/check_submission.py \
 2. [문법](spec/grammar.ebnf)
 3. [진단과 JSON](spec/diagnostics.md)
 4. [Conformance와 CLI](spec/conformance.md)
-5. VM 경로를 선택했다면 [bytecode 명세](spec/bytecode.md)
+5. [Normalized AST](spec/normalized-ast.md)
+6. VM 경로를 선택했다면 [bytecode 명세](spec/bytecode.md)
 
 Schema 파일은 구조화 출력의 최소 외부 형태를 정합니다.
 
 - [token schema](spec/token.schema.json)
 - [AST schema](spec/ast.schema.json)
 - [diagnostic schema](spec/diagnostic.schema.json)
+- [semantic summary schema](spec/semantic.schema.json)
 - [run result schema](spec/run-result.schema.json)
 
 JSON Schema 자체가 모든 의미를 표현하지는 않습니다. 예를 들어 span이 실제 source byte 범위 안에 있는지, AST 자식 범위가 부모 범위에 포함되는지, branch merge stack type이 같은지는 별도 invariant 검사 대상입니다.
@@ -175,6 +177,8 @@ python3 exercises/08-mica-capstone/check_submission.py \
 
 Formatter는 idempotence와 parse round-trip을 만족해야 합니다. Linter는 최소 세 rule의 code·severity·analysis dependency·fix safety를 기록합니다.
 
+`--stage format`은 formatter와 `lint --json`을 함께 검사합니다. Comment 보존, exact output, 고정점, normalized AST round-trip, unused·unreachable·shadowing code와 unsafe fix 거부가 공개 증거입니다.
+
 #### B. LSP subset
 
 공개 runner 대신 JSON-RPC transcript와 stale-version fixture를 제출합니다.
@@ -224,6 +228,7 @@ Runner는 command 뒤에 `lex`, `parse`, `check`, `run`, `format` 같은 하위 
 - `invalid`: compile phase와 stable diagnostic code
 - `runtime`: 정의된 runtime failure
 - `format`: canonical output과 idempotence
+- `lint`: stable lint diagnostic과 fix safety
 - `bytecode_invalid`: verifier가 거부해야 하는 모듈
 
 공개 fixture를 하드코딩하면 완료가 아닙니다. 다음을 추가합니다.
@@ -258,6 +263,7 @@ Runner는 command 뒤에 `lex`, `parse`, `check`, `run`, `format` 같은 하위 
 ## 완료 기준
 
 - 핵심 Stage 1–5를 모두 통과합니다.
+- IR/CFG analysis와 verifier-backed pass 증거를 제출합니다.
 - 실행 확장 하나와 tooling 확장 하나를 완료합니다.
 - 같은 source에서 반복 결과와 diagnostic 순서가 같습니다.
 - invalid input에서 host traceback, assertion text 또는 임의 crash를 사용자 결과로 노출하지 않습니다.
@@ -265,3 +271,5 @@ Runner는 command 뒤에 `lex`, `parse`, `check`, `run`, `format` 같은 하위 
 - 실제 compiler/interpreter/analyzer 저장소 하나에서 Mica phase와 대응하는 코드·test·issue 경계를 조사합니다.
 
 공개 runner는 구현의 완전성이나 type soundness를 증명하지 않습니다. 완료 기록에는 runner가 보장하는 것과 보장하지 않는 것을 분리해 적습니다.
+
+`scripts/testdata/conformance`의 positive adapter는 runner 자체를 검증하는 fixture-backed test double이며 learner compiler 답안이 아닙니다. `--stage all` 성공만으로 capstone 완료를 선언하지 않습니다.

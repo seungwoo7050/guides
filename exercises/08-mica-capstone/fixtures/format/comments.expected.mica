@@ -1,5 +1,4 @@
 fn main() -> Int {
-    while true {
-    }
+    // preserve me
     return 0;
 }

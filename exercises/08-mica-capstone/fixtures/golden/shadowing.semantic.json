@@ -1,0 +1,25 @@
+{
+  "symbols": [
+    {"name": "main", "kind": "function", "type": "fn() -> Int", "mutable": false, "declaration": {"kind": "FunctionDecl", "start": 0, "end": 150}},
+    {"name": "value", "kind": "local", "type": "Int", "mutable": false, "declaration": {"kind": "LetStmt", "start": 23, "end": 42}},
+    {"name": "value", "kind": "local", "type": "Int", "mutable": false, "declaration": {"kind": "LetStmt", "start": 57, "end": 76}}
+  ],
+  "references": [
+    {"reference": {"kind": "NameExpr", "start": 95, "end": 100}, "target_name": "value", "target_declaration_start": 57},
+    {"reference": {"kind": "NameExpr", "start": 123, "end": 128}, "target_name": "value", "target_declaration_start": 23},
+    {"reference": {"kind": "NameExpr", "start": 142, "end": 147}, "target_name": "value", "target_declaration_start": 23}
+  ],
+  "types": [
+    {"node": {"kind": "NameExpr", "start": 95, "end": 100}, "type": "Int"},
+    {"node": {"kind": "NameExpr", "start": 123, "end": 128}, "type": "Int"},
+    {"node": {"kind": "NameExpr", "start": 142, "end": 147}, "type": "Int"},
+    {"node": {"kind": "FunctionDecl", "start": 0, "end": 150}, "type": "fn() -> Int"},
+    {"node": {"kind": "IntLiteral", "start": 40, "end": 41}, "type": "Int"},
+    {"node": {"kind": "LetStmt", "start": 23, "end": 42}, "type": "Int"},
+    {"node": {"kind": "IntLiteral", "start": 74, "end": 75}, "type": "Int"},
+    {"node": {"kind": "LetStmt", "start": 57, "end": 76}, "type": "Int"}
+  ],
+  "functions": [
+    {"declaration_start": 0, "return_type": "Int", "all_paths_return": true}
+  ]
+}

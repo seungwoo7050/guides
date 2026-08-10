@@ -1,0 +1,63 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.invalid/mica/semantic.schema.json",
+  "title": "Mica normalized semantic summary",
+  "type": "object",
+  "required": ["symbols", "references", "types", "functions"],
+  "properties": {
+    "symbols": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "name", "kind", "type", "mutable", "declaration_node"],
+        "properties": {
+          "id": {"type": "string", "minLength": 1},
+          "name": {"type": "string", "minLength": 1},
+          "kind": {"type": "string", "minLength": 1},
+          "type": {"type": "string", "minLength": 1},
+          "mutable": {"type": "boolean"},
+          "declaration_node": {"type": "integer", "minimum": 0}
+        },
+        "additionalProperties": true
+      }
+    },
+    "references": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["node", "symbol"],
+        "properties": {
+          "node": {"type": "integer", "minimum": 0},
+          "symbol": {"type": "string", "minLength": 1}
+        },
+        "additionalProperties": false
+      }
+    },
+    "types": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["node", "type"],
+        "properties": {
+          "node": {"type": "integer", "minimum": 0},
+          "type": {"type": "string", "minLength": 1}
+        },
+        "additionalProperties": false
+      }
+    },
+    "functions": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["symbol", "return_type", "all_paths_return"],
+        "properties": {
+          "symbol": {"type": "string", "minLength": 1},
+          "return_type": {"type": "string", "minLength": 1},
+          "all_paths_return": {"type": "boolean"}
+        },
+        "additionalProperties": false
+      }
+    }
+  },
+  "additionalProperties": false
+}

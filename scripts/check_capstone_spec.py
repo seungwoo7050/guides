@@ -27,7 +27,7 @@ def main() -> int:
     spec_codes = set(re.findall(r"`(MICA[0-9]{4})`", (CAP / "spec/diagnostics.md").read_text(encoding="utf-8")))
     seen_files: set[str] = set()
     case_count = 0
-    for category in ("valid", "invalid", "runtime", "format", "bytecode_invalid"):
+    for category in ("valid", "invalid", "runtime", "format", "lint", "bytecode_invalid"):
         cases = manifest.get(category)
         if not isinstance(cases, list) or not cases:
             failures.append(f"manifest category missing/empty: {category}")
@@ -53,6 +53,16 @@ def main() -> int:
                 expected = CAP / "fixtures" / case.get("expected", "")
                 if not expected.is_file():
                     failures.append(f"format expected file missing: {case.get('expected')}")
+
+    integer_case = next((case for case in manifest.get("invalid", []) if case.get("file") == "invalid/integer-out-of-range.mica"), None)
+    if not integer_case or integer_case.get("stage") != "lex" or integer_case.get("codes") != ["MICA1004"]:
+        failures.append("integer-out-of-range must be a lex-stage MICA1004 case")
+    vm_cases = [case for case in [*manifest.get("valid", []), *manifest.get("runtime", [])] if case.get("vm")]
+    if len(vm_cases) < 3:
+        failures.append("manifest must include at least three VM differential cases")
+    for required in ("runtime/min-div-overflow.mica", "runtime/min-negation-overflow.mica"):
+        if required not in seen_files:
+            failures.append(f"runtime boundary fixture missing from manifest: {required}")
 
     for schema in sorted((CAP / "spec").glob("*.schema.json")):
         try:
@@ -80,9 +90,10 @@ def main() -> int:
     commands = [
         [sys.executable, str(runner), "--self-test"],
         [sys.executable, str(runner), "--workspace", str(CAP / "skeleton"), "--stage", "skeleton"],
+        [sys.executable, str(ROOT / "scripts/test_conformance_runner.py")],
     ]
     for command in commands:
-        proc = subprocess.run(command, cwd=ROOT, text=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, timeout=15)
+        proc = subprocess.run(command, cwd=ROOT, text=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, timeout=90)
         if proc.returncode != 0:
             failures.append(
                 f"capstone command failed: {' '.join(command)}\nstdout={proc.stdout}\nstderr={proc.stderr}"

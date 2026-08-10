@@ -24,6 +24,8 @@ REQUIRED = [
     "exercises/08-mica-capstone/spec/diagnostics.md",
     "exercises/08-mica-capstone/spec/conformance.md",
     "exercises/08-mica-capstone/spec/bytecode.md",
+    "exercises/08-mica-capstone/spec/normalized-ast.md",
+    "exercises/08-mica-capstone/spec/semantic.schema.json",
     "exercises/08-mica-capstone/fixtures/manifest.json",
     "exercises/08-mica-capstone/skeleton/src/mica/__main__.py",
     "exercises/08-mica-capstone/check_submission.py",
@@ -75,6 +77,9 @@ REQUIRED = [
     "examples/ir-pipeline/ir_pipeline.py",
     "examples/language-tools/tools.py",
     "scripts/run_labs.py",
+    "scripts/test_conformance_runner.py",
+    "scripts/testdata/conformance/README.md",
+    "scripts/testdata/conformance/adapter.py",
     "reference/sources.md",
     "reference/project-entry-map.md",
 ]

@@ -1,19 +1,19 @@
 {
   "schema_version": 1,
   "valid": [
-    {"file": "valid/literal-main.mica", "stage": "run", "exit": 0, "codes": [], "stdout": "", "return": {"type": "Int", "value": 42}},
-    {"file": "valid/arithmetic.mica", "stage": "run", "exit": 0, "codes": [], "stdout": "14\n", "return": {"type": "Int", "value": 14}},
+    {"file": "valid/literal-main.mica", "stage": "run", "exit": 0, "codes": [], "stdout": "", "return": {"type": "Int", "value": 42}, "golden": {"tokens": "golden/literal-main.tokens.json", "ast": "golden/literal-main.ast.json"}},
+    {"file": "valid/arithmetic.mica", "stage": "run", "exit": 0, "codes": [], "stdout": "14\n", "return": {"type": "Int", "value": 14}, "vm": true, "required_opcodes": ["CONST", "MUL_I64", "ADD_I64", "RETURN"], "golden": {"ast": "golden/arithmetic.ast.json"}},
     {"file": "valid/control-flow.mica", "stage": "run", "exit": 0, "codes": [], "stdout": "15\n", "return": {"type": "Int", "value": 15}},
-    {"file": "valid/functions.mica", "stage": "run", "exit": 0, "codes": [], "stdout": "120\n", "return": {"type": "Int", "value": 120}},
-    {"file": "valid/shadowing.mica", "stage": "run", "exit": 0, "codes": [], "stdout": "2\n1\n", "return": {"type": "Int", "value": 1}},
-    {"file": "valid/short-circuit.mica", "stage": "run", "exit": 0, "codes": [], "stdout": "ok\n", "return": {"type": "Int", "value": 0}},
+    {"file": "valid/functions.mica", "stage": "run", "exit": 0, "codes": [], "stdout": "120\n", "return": {"type": "Int", "value": 120}, "vm": true, "required_opcodes": ["CALL", "RETURN"]},
+    {"file": "valid/shadowing.mica", "stage": "run", "exit": 0, "codes": [], "stdout": "2\n1\n", "return": {"type": "Int", "value": 1}, "golden": {"semantic": "golden/shadowing.semantic.json"}},
+    {"file": "valid/short-circuit.mica", "stage": "run", "exit": 0, "codes": [], "stdout": "ok\n", "return": {"type": "Int", "value": 0}, "vm": true, "required_opcodes": ["JUMP_IF_FALSE", "RETURN"]},
     {"file": "valid/unicode-string.mica", "stage": "run", "exit": 0, "codes": [], "stdout": "한글과 🙂\n", "return": {"type": "Int", "value": 0}}
   ],
   "invalid": [
     {"file": "invalid/invalid-character.mica", "stage": "lex", "exit": 1, "codes": ["MICA1001"]},
     {"file": "invalid/unterminated-string.mica", "stage": "lex", "exit": 1, "codes": ["MICA1002"]},
     {"file": "invalid/invalid-escape.mica", "stage": "lex", "exit": 1, "codes": ["MICA1003"]},
-    {"file": "invalid/integer-out-of-range.mica", "stage": "check", "exit": 1, "codes": ["MICA1004"]},
+    {"file": "invalid/integer-out-of-range.mica", "stage": "lex", "exit": 1, "codes": ["MICA1004"]},
     {"file": "invalid/missing-semicolon.mica", "stage": "parse", "exit": 1, "codes": ["MICA2001"]},
     {"file": "invalid/unexpected-token.mica", "stage": "parse", "exit": 1, "codes": ["MICA2002"]},
     {"file": "invalid/duplicate-function.mica", "stage": "check", "exit": 1, "codes": ["MICA3001"]},
@@ -29,13 +29,19 @@
     {"file": "invalid/bad-main.mica", "stage": "check", "exit": 1, "codes": ["MICA3202"]}
   ],
   "runtime": [
-    {"file": "runtime/division-by-zero.mica", "stage": "run", "exit": 1, "codes": ["MICA4001"], "stdout": "", "return": null},
+    {"file": "runtime/division-by-zero.mica", "stage": "run", "exit": 1, "codes": ["MICA4001"], "stdout": "", "return": null, "vm": true, "required_opcodes": ["DIV_I64"]},
     {"file": "runtime/overflow.mica", "stage": "run", "exit": 1, "codes": ["MICA4002"], "stdout": "", "return": null},
     {"file": "runtime/recursion-limit.mica", "stage": "run", "exit": 1, "codes": ["MICA4003"], "stdout": "", "return": null},
-    {"file": "runtime/execution-limit.mica", "stage": "run", "exit": 1, "codes": ["MICA4004"], "return": null}
+    {"file": "runtime/execution-limit.mica", "stage": "run", "exit": 1, "codes": ["MICA4004"], "stdout": "", "return": null},
+    {"file": "runtime/min-div-overflow.mica", "stage": "run", "exit": 1, "codes": ["MICA4002"], "stdout": "", "return": null, "vm": true, "required_opcodes": ["DIV_I64"]},
+    {"file": "runtime/min-negation-overflow.mica", "stage": "run", "exit": 1, "codes": ["MICA4002"], "stdout": "", "return": null, "vm": true, "required_opcodes": ["NEG_I64"]}
   ],
   "format": [
-    {"file": "format/messy.mica", "expected": "format/messy.expected.mica"}
+    {"file": "format/messy.mica", "expected": "format/messy.expected.mica"},
+    {"file": "format/comments.mica", "expected": "format/comments.expected.mica"}
+  ],
+  "lint": [
+    {"file": "lint/tooling.mica", "exit": 0, "codes": ["MICA6001", "MICA6003", "MICA6002"], "unsafe_no_machine_fix": ["MICA6001", "MICA6002", "MICA6003"]}
   ],
   "bytecode_invalid": [
     {"file": "bytecode-invalid/bad-jump.json", "codes": ["MICA5002"]},

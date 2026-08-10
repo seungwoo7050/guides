@@ -253,6 +253,8 @@ Division:
 
 Unary minus of `MIN`도 overflow입니다.
 
+Decimal integer token 자체는 `0..MAX`만 허용하며 범위를 벗어난 literal은 lex 단계 `MICA1004`입니다. `MIN`은 특별한 음수 literal이 아니라 `-9223372036854775807 - 1`처럼 허용된 literal과 연산으로 구성합니다. 따라서 `MIN / -1`과 `-MIN` runtime 경계는 양의 out-of-range literal을 허용하지 않고도 관찰할 수 있습니다.
+
 ## 11. String semantics
 
 String은 immutable Unicode text입니다. `==`와 `!=`는 code point sequence equality를 사용합니다. Unicode normalization과 locale collation은 하지 않습니다.

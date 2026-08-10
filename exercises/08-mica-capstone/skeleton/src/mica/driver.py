@@ -13,7 +13,15 @@ from .source import SourceText, Span
 def _parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(prog="mica")
     sub = parser.add_subparsers(dest="command", required=True)
-    for name in ("lex", "parse", "check", "run"):
+    for name in ("lex", "parse", "check", "lint"):
+        command = sub.add_parser(name)
+        command.add_argument("file", type=Path)
+        command.add_argument("--json", action="store_true", dest="as_json")
+    run_command = sub.add_parser("run")
+    run_command.add_argument("file", type=Path)
+    run_command.add_argument("--engine", choices=("interpreter", "vm"), default="interpreter")
+    run_command.add_argument("--json", action="store_true", dest="as_json")
+    for name in ("verify-bytecode", "disassemble"):
         command = sub.add_parser(name)
         command.add_argument("file", type=Path)
         command.add_argument("--json", action="store_true", dest="as_json")

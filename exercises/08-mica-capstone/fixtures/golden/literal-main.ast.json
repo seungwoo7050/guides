@@ -1,0 +1,17 @@
+{
+  "kind": "Module",
+  "functions": [
+    {
+      "kind": "FunctionDecl",
+      "name": "main",
+      "parameters": [],
+      "return_type": "Int",
+      "body": {
+        "kind": "BlockStmt",
+        "statements": [
+          {"kind": "ReturnStmt", "value": {"kind": "IntLiteral", "value": 42}}
+        ]
+      }
+    }
+  ]
+}

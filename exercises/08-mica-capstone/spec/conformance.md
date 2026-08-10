@@ -42,13 +42,14 @@ Exit `0` 또는 lexical error면 `1`입니다. stdout JSON:
   "command": "lex",
   "source": {"id": "...", "byte_length": 12},
   "tokens": [
-    {"kind": "FN", "lexeme": "fn", "span": {"source_id": "...", "start": 0, "end": 2}}
+    {"kind": "FN", "channel": "syntax", "lexeme": "fn", "span": {"source_id": "...", "start": 0, "end": 2}}
   ],
   "diagnostics": []
 }
 ```
 
-- Token은 source 순서입니다.
+- Token은 `syntax` 또는 `trivia` channel을 명시하고 source 순서입니다.
+- EOF 이외 token의 `lexeme`는 UTF-8 source byte slice와 정확히 같습니다.
 - 마지막 token kind는 `EOF`이며 zero-width EOF span입니다.
 - Trivia token을 포함해도 되지만 `kind`와 span이 안정적이어야 합니다.
 - Lex error 뒤에도 EOF를 생성하고 가능한 token을 반환할 수 있습니다.
@@ -67,11 +68,11 @@ Exit `0` 또는 lexical/parse error면 `1`입니다. stdout JSON:
 }
 ```
 
-Recovery AST를 출력할 수 있습니다. 모든 node에 `kind`, integer `id`, valid `span`이 있어야 하며 child node id는 한 dump 안에서 유일해야 합니다.
+Recovery AST를 출력할 수 있습니다. 모든 node에 `kind`, integer `id`, valid `span`이 있어야 하며 child node id는 한 dump 안에서 유일해야 합니다. 성공 결과의 `Module.functions`는 비어 있지 않으며 [normalized AST contract](normalized-ast.md)의 kind별 child field를 따릅니다.
 
 ### `check FILE --json`
 
-Exit `0` 또는 source error면 `1`입니다. stdout JSON에 `diagnostics`가 필요합니다. 추가로 symbol/type/flow summary를 제공할 수 있습니다.
+Exit `0` 또는 source error면 `1`입니다. stdout JSON에 `diagnostics`가 필요합니다. 성공 결과에는 normalized `ast`와 [semantic summary](semantic.schema.json)가 필수입니다. Summary는 declaration/reference SymbolId, expression type와 function all-path-return을 실제 AST node ID에 연결합니다.
 
 Compile phase가 앞에서 실패했으면 뒤 phase는 crash하지 않아야 합니다. 오류가 있는 AST에 semantic pass를 실행하지 않거나 error node/type/symbol을 사용합니다.
 
@@ -102,13 +103,19 @@ Formatter 경로를 선택한 구현만 필요합니다.
 - 같은 output을 다시 format하면 byte-for-byte 같습니다.
 - formatted source를 parse/check했을 때 원본과 같은 관찰 의미를 가져야 합니다.
 
-### `disassemble FILE`
+### `disassemble FILE --json`
 
-VM 경로의 선택 command입니다. Stable text 형식을 권장하며 runner는 필수 opcode 존재와 deterministic output만 검사합니다.
+VM 경로의 선택 command입니다. Envelope에 stable `text`와 재검증 가능한 JSON `module`을 반환합니다. Runner는 module을 별도 파일로 저장해 `verify-bytecode` 성공을 확인하고 필수 opcode, deterministic output과 interpreter/VM 결과를 비교합니다.
+
+### `lint FILE --json`
+
+Formatter+linter 경로의 command입니다. Warning은 exit `0`이고 `MICA6001..6003`, `phase: lint` diagnostic을 반환합니다. Effect를 지울 수 있는 unused/unreachable fix와 symbol-aware edit가 없는 shadowing rename은 `machine-applicable`로 표시하지 않습니다.
 
 ## 4. Exit와 timeout
 
 - command timeout 기본값은 5초입니다.
+- stdout와 stderr는 각각 1 MiB로 제한합니다.
+- runner는 새 process group에서 command를 실행하고 timeout/output flood 뒤 descendant까지 TERM, 이후 KILL로 정리합니다.
 - timeout은 runner 실패이며 implementation이 정의된 resource diagnostic을 내지 못했다는 뜻입니다.
 - exit `0`: 해당 command 성공
 - exit `1`: 정의된 source/runtime 오류
@@ -122,6 +129,7 @@ VM 경로의 선택 command입니다. Stable text 형식을 권장하며 runner�
 - NaN/Infinity를 사용하지 않습니다.
 - key order는 의미가 없지만 list order는 stable합니다.
 - span은 source byte boundary 안에 있습니다.
+- 모든 span의 `source_id`는 envelope source identity와 같고 start/end는 UTF-8 code-point boundary입니다.
 - error exit `1`에는 최소 하나의 `severity=error` diagnostic이 있습니다.
 - success exit `0`에는 error diagnostic이 없습니다.
 
@@ -134,6 +142,7 @@ valid
 invalid
 runtime
 format
+lint
 bytecode_invalid
 ```
 
@@ -146,6 +155,8 @@ bytecode_invalid
 - `stdout`: run envelope의 program output
 - `return`: typed return value
 - `notes`: 의도
+- `vm`, `required_opcodes`: VM differential opt-in과 disassembly 증거
+- `golden`: token/AST/semantic projection reference
 
 Runner는 diagnostic message 전문을 비교하지 않습니다. Code, severity, phase와 span validity를 확인합니다.
 
@@ -181,4 +192,8 @@ VM 경로의 공개 검사에는 다음 command를 제공합니다.
 mica verify-bytecode MODULE.json --json
 ```
 
-성공 envelope의 `command`는 `verify-bytecode`입니다. Malformed module은 exit `1`과 `MICA500x` code를 반환합니다. `--stage all`은 core Stage 1–5만 실행하며, VM과 formatter는 선택 경로이므로 각각 `--stage vm`, `--stage format`으로 검사합니다.
+성공 envelope의 `command`는 `verify-bytecode`입니다. Malformed module은 exit `1`과 `MICA500x` code를 반환합니다. `run FILE --engine interpreter|vm --json`은 동일 outcome projection을 제공합니다. `--stage all`은 core Stage 1–5만 실행하며 capstone 전체 완료 판정이 아닙니다. VM과 formatter+linter는 각각 `--stage vm`, `--stage format`으로 검사합니다.
+
+## 10. Runner의 보장 한계
+
+Public runner는 observable contract와 대표 mutant를 검사하지만 parser recovery 종료성 전체, type soundness, optimizer 의미 보존의 모든 입력, linter false positive/negative나 LSP 상호운용성을 증명하지 않습니다. Process group timeout과 output cap도 OS sandbox가 아닙니다. 신뢰하지 않는 제출물은 network와 host credential이 없는 container/VM에서 실행합니다.

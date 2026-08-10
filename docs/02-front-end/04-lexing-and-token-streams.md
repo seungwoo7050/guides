@@ -75,7 +75,7 @@ Contextual keyword는 lexer가 무조건 keyword로 만들지 않고 parser 또�
 
 `-42`를 하나의 signed literal token으로 만들면 binary subtraction과 precedence 처리가 복잡해집니다. Mica는 `-` token과 `42` token으로 나누고 parser가 unary expression을 만듭니다.
 
-정수 범위 초과를 lexer가 보고할 수도 있고 type/runtime phase가 보고할 수도 있습니다. Lexer가 arbitrary precision 임시 값을 읽고 target type 결정 뒤 검사하면 suffix와 context를 지원하기 쉽습니다. Mica core는 10진수만 허용하고 64-bit signed 범위 검사를 semantic constant 단계에서 수행합니다.
+정수 범위 초과를 lexer가 보고할 수도 있고 type/runtime phase가 보고할 수도 있습니다. Lexer가 arbitrary precision 임시 값을 읽고 target type 결정 뒤 검사하면 suffix와 context를 지원하기 쉽습니다. Mica core는 10진수만 허용하고 `0..INT64_MAX`를 벗어난 token을 lex 단계 `MICA1004`로 보고합니다.
 
 ## 문자열과 escape
 

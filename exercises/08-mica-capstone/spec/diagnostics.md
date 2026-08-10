@@ -186,6 +186,16 @@ JSON stdout에 progress, debug print 또는 traceback을 섞지 않습니다.
 | `MICA5005` | local/function/constant index 범위 오류 |
 | `MICA5006` | return stack/type contract 오류 |
 
+### Lint
+
+| Code | 의미 |
+|---|---|
+| `MICA6001` | unused local |
+| `MICA6002` | unreachable statement |
+| `MICA6003` | shadowing declaration |
+
+Lint code는 `phase: lint`, 기본 `severity: warning`입니다. Effect가 있는 initializer, effect가 있는 unreachable statement, symbol-aware rename이 필요한 shadowing에는 `machine-applicable` fix를 제공하지 않습니다.
+
 Code의 의미를 재사용하지 않습니다. 기존 code의 더 자세한 경우는 note/subcode를 추가하거나 새 code를 도입합니다.
 
 ## 8. Fix

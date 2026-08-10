@@ -3,9 +3,10 @@
   "$id": "https://example.invalid/mica/token.schema.json",
   "title": "Mica Token",
   "type": "object",
-  "required": ["kind", "lexeme", "span"],
+  "required": ["kind", "channel", "lexeme", "span"],
   "properties": {
     "kind": {"type": "string", "minLength": 1},
+    "channel": {"enum": ["syntax", "trivia"]},
     "lexeme": {"type": "string"},
     "span": {
       "type": "object",
