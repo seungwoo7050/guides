@@ -4,6 +4,16 @@
 
 완료 뒤 다음 기준으로 자신의 구현을 검토합니다.
 
+[`../skeleton/EVIDENCE.md`](../skeleton/EVIDENCE.md)에 아래 세 종료 능력의 산출물, 자동 증거와 사람 질문을 함께 기록합니다. 판정은 `충족`, `보완 필요`, `허용된 변형` 중 하나이며 미해결 `보완 필요`가 있으면 완료가 아닙니다.
+
+| 종료 능력 | 필수 산출물 | 자동 증거 | 사람 검토 질문 | 판정 |
+|---|---|---|---|---|
+| 작은 언어의 frontend를 만듭니다 | source/token/normalized AST와 recovery diagnostic | `--stage lex`, `--stage parse`, token/AST golden 및 failure mutant | 모든 recovery 경로가 전진·종료하고 source identity를 보존합니까? |  |
+| 정적 타입과 실행 모델을 구현합니다 | SymbolId/type/flow summary, tree-walk state와 runtime failure | `--stage check`, `--stage run`, semantic/runtime reference | ErrorType 보장 범위와 host runtime 의존성을 설명할 수 있습니까? |  |
+| 분석·진단·변환 도구를 확장합니다 | verified IR/CFG/fixed-point/pass, 실행 확장 하나, tooling 확장 하나 | Exercise 05–07 checker, VM/format 선택 runner, known-bad | pass 의미 보존과 analyzer false positive/negative, backend/LSP 한계가 무엇입니까? |  |
+
+자동 결과는 공개 행동의 대표 사례를 확인할 뿐 type soundness, 모든 parser 입력의 종료, optimizer의 전체 의미 보존이나 editor 상호운용성을 증명하지 않습니다.
+
 ## Source와 diagnostic
 
 - Source snapshot이 immutable인가?

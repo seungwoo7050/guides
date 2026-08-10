@@ -116,8 +116,10 @@ run_step 'workspace and timeout safety' 60 python3 scripts/test_infrastructure.p
 run_step 'repository structure' 60 python3 scripts/check_structure.py
 run_step 'Markdown links' 60 python3 scripts/check_links.py
 run_step 'concept documents' 60 python3 scripts/check_docs.py
+run_step 'learning contract traceability' 60 python3 scripts/check_learning_contract.py
 run_step 'Mica specification and conformance mutants' 120 python3 scripts/check_capstone_spec.py
 run_step 'observable examples' 60 python3 scripts/run_examples.py
+run_step 'stage lab evidence' 60 python3 scripts/run_labs.py
 
 python3 "$COPY_ROOT/scripts/repository_state.py" manifest --root "$COPY_ROOT" --output "$COPY_AFTER"
 if cmp -s "$COPY_BEFORE" "$COPY_AFTER"; then

@@ -43,6 +43,14 @@ EVIDENCE.md
 
 [templates](templates/)를 복사해 사용할 수 있습니다.
 
+## Workspace lifecycle과 복구
+
+- `make workspace WORKSPACE=.workspaces/<name>`은 기존 대상이 있으면 덮어쓰지 않고 실패합니다.
+- `make clean`은 `.workspaces`의 학습자 구현을 보존합니다.
+- `make purge-workspace WORKSPACE=.workspaces/<name>`은 명시한 workspace 하나만 영구 삭제하므로 먼저 백업합니다.
+- workspace가 손상되면 기존 디렉터리를 지우지 말고 다른 이름으로 새로 만든 뒤 필요한 변경을 옮깁니다.
+- 제출 runner의 timeout·출력 상한·process-group 정리는 OS sandbox가 아닙니다. 신뢰하지 않는 구현과 native/JIT/FFI는 network·credential·개인 파일이 차단된 container/VM에서 실행합니다.
+
 ## 구현 언어
 
 - Python 3.12 프로필이 저장소 runner의 기준입니다.

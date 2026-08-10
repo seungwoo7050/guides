@@ -28,6 +28,7 @@ REQUIRED = [
     "exercises/08-mica-capstone/spec/semantic.schema.json",
     "exercises/08-mica-capstone/fixtures/manifest.json",
     "exercises/08-mica-capstone/skeleton/src/mica/__main__.py",
+    "exercises/08-mica-capstone/skeleton/EVIDENCE.md",
     "exercises/08-mica-capstone/check_submission.py",
     "exercises/01-source-and-diagnostics/check.py",
     "exercises/01-source-and-diagnostics/fixtures/source-cases.json",
@@ -77,6 +78,7 @@ REQUIRED = [
     "examples/ir-pipeline/ir_pipeline.py",
     "examples/language-tools/tools.py",
     "scripts/run_labs.py",
+    "scripts/check_learning_contract.py",
     "scripts/test_conformance_runner.py",
     "scripts/testdata/conformance/README.md",
     "scripts/testdata/conformance/adapter.py",
@@ -128,7 +130,16 @@ def main() -> int:
     if license_path.is_file() and license_path.stat().st_size < 10_000:
         failures.append("CC-BY-4.0.txt가 canonical legal text보다 지나치게 짧음")
 
-    for relative in ("prepare.sh", "verify.sh", "scripts/new-workspace.sh", "scripts/run_labs.py", "exercises/08-mica-capstone/check_submission.py"):
+    for relative in (
+        "prepare.sh",
+        "verify.sh",
+        "scripts/new-workspace.sh",
+        "scripts/run_labs.py",
+        "scripts/check_learning_contract.py",
+        "scripts/test_conformance_runner.py",
+        "scripts/testdata/conformance/adapter.py",
+        "exercises/08-mica-capstone/check_submission.py",
+    ):
         path = ROOT / relative
         if path.exists() and not (path.stat().st_mode & 0o111):
             failures.append(f"실행 권한 없음: {relative}")

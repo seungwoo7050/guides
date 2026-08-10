@@ -15,13 +15,15 @@ UTF-8 source snapshot
 → symbol resolution
 → static type / flow check
 → tree-walk interpreter
+→ normalized IR / CFG verifier
+→ data-flow fixed point / meaning-preserving pass
 ```
 
 실행 확장 하나:
 
 ```text
 A. bytecode compiler + verifier + VM
-B. CFG/MIR + LLVM 또는 다른 target backend
+B. verified IR + LLVM 또는 다른 target backend
 ```
 
 도구 확장 하나:
@@ -108,6 +110,8 @@ print_string(String) -> Unit
 | [언어 명세](../exercises/08-mica-capstone/spec/language.md) | type, evaluation order, scope, runtime failure |
 | [문법](../exercises/08-mica-capstone/spec/grammar.ebnf) | token과 syntax structure |
 | [진단](../exercises/08-mica-capstone/spec/diagnostics.md) | stable code, JSON, exit status |
+| [Normalized AST](../exercises/08-mica-capstone/spec/normalized-ast.md) | 공개 node kind와 child field |
+| [Semantic summary schema](../exercises/08-mica-capstone/spec/semantic.schema.json) | SymbolId·type·flow와 AST 연결 |
 | [Bytecode](../exercises/08-mica-capstone/spec/bytecode.md) | VM 경로의 opcode·stack effect·frame |
 | [Conformance](../exercises/08-mica-capstone/spec/conformance.md) | CLI, fixture와 완료 판정 |
 
@@ -129,11 +133,12 @@ mica/
 ├── typecheck.py
 ├── flow.py
 ├── interpreter.py
-├── bytecode.py        선택 A
-├── compiler.py        선택 A
-├── vm.py              선택 A
-├── ir.py              선택 B
-├── backend.py         선택 B
+├── ir.py              필수 normalized IR/CFG
+├── optimizer.py       필수 analysis/pass
+├── bytecode.py        실행 선택 A
+├── compiler.py        실행 선택 A
+├── vm.py              실행 선택 A
+├── backend.py         실행 선택 B
 ├── formatter.py       도구 선택 A
 ├── lints.py           도구 선택 A
 ├── server.py          도구 선택 B
@@ -230,7 +235,29 @@ Semantic core가 CLI나 LSP JSON-RPC에 직접 의존하지 않게 합니다.
 - call-depth budget
 - runtime 오류 뒤 host traceback이 사용자 출력에 섞이지 않음
 
-## 단계 5A. Bytecode VM
+## 단계 5. IR, CFG, data-flow와 pass
+
+### 구현
+
+- typed AST→normalized IR lowering
+- basic block, terminator, value/type와 source origin
+- 실행 전 CFG/IR verifier
+- loop가 있는 data-flow fixed point
+- checked constant fold와 unreachable removal 등 pass 두 개 이상
+- pass가 무효화한 analysis 추적과 verifier 재실행
+
+### 완료 증거
+
+- normalized IR과 CFG edge dump
+- malformed target/terminator/definition-use를 거부하는 verifier
+- worklist convergence trace
+- pass 전후 IR과 `changed` 결과
+- 정상 result와 runtime diagnostic의 interpreter/IR differential
+- `x / x → 1`처럼 trap/effect를 지우는 known-bad pass 거부
+
+이 단계는 필수지만 공개 conformance runner가 교육적 완료를 자동 판정하지 않습니다. [`EVIDENCE.md`](../exercises/08-mica-capstone/skeleton/EVIDENCE.md)에 증거와 사람 판정을 남깁니다.
+
+## 단계 6A. Bytecode VM
 
 ### 구현
 
@@ -248,12 +275,12 @@ Semantic core가 CLI나 LSP JSON-RPC에 직접 의존하지 않게 합니다.
 - nested branch/loop/function call
 - runtime diagnostic code와 source origin 일치
 
-## 단계 5B. MIR/LLVM backend
+## 단계 6B. LLVM 또는 다른 target backend
 
 ### 구현
 
-- basic block, instruction, terminator와 verifier
-- short-circuit/control flow lowering
+- 필수 단계의 verified IR을 target contract에 맞게 lowering
+- short-circuit/control flow 의미 보존
 - typed value와 function declaration
 - LLVM 또는 선택 target emission
 - runtime builtin link
@@ -267,7 +294,7 @@ Semantic core가 CLI나 LSP JSON-RPC에 직접 의존하지 않게 합니다.
 - target/data layout 기록
 - unsupported feature의 명시적 diagnostic
 
-## 단계 6A. Formatter와 linter
+## 단계 7A. Formatter와 linter
 
 ### Formatter
 
@@ -285,7 +312,7 @@ Semantic core가 CLI나 LSP JSON-RPC에 직접 의존하지 않게 합니다.
 
 Fix는 effect와 source version을 보존할 수 있는 경우만 제공합니다.
 
-## 단계 6B. Language server
+## 단계 7B. Language server
 
 최소 method:
 
@@ -310,9 +337,11 @@ Completion, references와 rename은 선택입니다.
 python -m mica lex FILE --json
 python -m mica parse FILE --json
 python -m mica check FILE --json
-python -m mica run FILE
-python -m mica disassemble FILE       # VM 경로
-python -m mica format FILE            # formatter 경로
+python -m mica run FILE --engine interpreter|vm --json
+python -m mica verify-bytecode MODULE.json --json
+python -m mica disassemble FILE --json # VM 경로
+python -m mica format FILE             # formatter 경로
+python -m mica lint FILE --json        # formatter+linter 경로
 python -m mica serve                  # LSP 경로
 ```
 
@@ -332,8 +361,10 @@ Structured JSON을 요청한 command는 stdout에 JSON만 쓰고 log/renderer는
 - `IMPLEMENTATION.md`: phase 구조와 ownership
 - `DECISIONS.md`: 명세 해석과 trade-off
 - `LIMITATIONS.md`: 미구현·비보장 범위
+- `EVIDENCE.md`: core·필수 IR·선택 실행/tooling·known-bad·사람 판정
 - 테스트와 새 fixture
 - conformance 실행 로그
+- CFG/data-flow/pass trace와 의미 보존 결과
 - VM/LLVM 또는 tooling 선택 경로 설명
 
 ## 완료 판정
@@ -344,9 +375,12 @@ Structured JSON을 요청한 command는 stdout에 JSON만 쓰고 log/renderer는
 2. 학습자가 만든 정상 fixture 3개 이상을 추가합니다.
 3. 학습자가 만든 phase별 실패 fixture 5개 이상을 추가합니다.
 4. known-bad 변경 하나가 자신의 검사에 거부됨을 기록합니다.
-5. 같은 입력이 반복 실행에서 deterministic result를 냅니다.
-6. 구현하지 않은 언어 기능을 명시적으로 거부합니다.
-7. 실제 compiler/interpreter/tool 프로젝트 하나를 조사해 phase 대응표를 작성합니다.
+5. 필수 IR/CFG/data-flow/pass 증거와 verifier/differential을 제출합니다.
+6. VM/backend 실행 확장 하나와 formatter+linter/LSP 도구 확장 하나를 완료합니다.
+7. 같은 입력이 반복 실행에서 deterministic result를 냅니다.
+8. 구현하지 않은 언어 기능을 명시적으로 거부합니다.
+9. 실제 compiler/interpreter/tool 프로젝트 하나를 조사해 phase 대응표를 작성합니다.
+10. `EVIDENCE.md`의 사람 판정에 미해결 `보완 필요`가 없습니다.
 
 ## 검수할 위험
 

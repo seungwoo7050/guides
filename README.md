@@ -75,6 +75,8 @@ make check
 - [버전과 재현 기준](reference/version-baseline.md)
 - [공식 명세와 추가 자료](reference/sources.md)
 - [실제 프로젝트 진입 지도](reference/project-entry-map.md)
+- [기여 방법](CONTRIBUTING.md)
+- [문서·코드 라이선스](LICENSE.md)
 
 ## 실습과 capstone
 

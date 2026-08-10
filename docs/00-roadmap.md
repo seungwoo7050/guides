@@ -175,11 +175,11 @@ LSP의 diagnostics / hover / definition subset
 
 | 소유 범위 | 개념·단계 실습의 대표 실패 | Capstone 누적 근거 | 연결 종료 능력 |
 |---|---|---|---|
-| 문법·parser·AST | Part 2 / Exercise 02: longest-match, precedence, recovery 무진행, 잘못된 child span | `lex`·`parse` token/AST conformance | 작은 언어의 frontend |
-| scope·symbol·type checking·diagnostic | Parts 1·3 / Exercises 01·03: Unicode span, scope leak, duplicate/unknown name, type·flow 오류 | `check` semantic summary와 stable diagnostic | frontend, 정적 타입과 실행 모델 |
-| interpreter·VM·runtime | Part 4 / Exercise 04: short-circuit, overflow, frame·budget 실패 | tree-walk `run`, VM/backend differential | 정적 타입과 실행 모델 |
-| IR·CFG·data-flow·optimization | Part 5 / Exercise 05: malformed CFG, 잘못된 join, trap을 지우는 pass | 필수 CFG/analysis/pass trace와 의미 보존 기록 | 분석·진단·변환 도구 확장 |
-| formatter·linter·static analyzer·language server | Part 7 / Exercise 07: comment 손실, unsafe fix, stale version, UTF-16 위치 | formatter+linter 또는 LSP 선택 경로 | 분석·진단·변환 도구 확장 |
+| 문법·parser·AST | [Lexing](02-front-end/04-lexing-and-token-streams.md)·[parsing](02-front-end/05-grammar-recursive-descent-and-pratt.md) / [Exercise 02](../exercises/02-lexer-parser-and-ast/README.md): recovery 무진행·child span | [`lex`·`parse`와 normalized AST](../exercises/08-mica-capstone/spec/normalized-ast.md) | 작은 언어의 frontend |
+| scope·symbol·type checking·diagnostic | [Diagnostic](01-language-contract/03-diagnostics-errors-and-recovery.md)·[semantics](03-semantics/07-scopes-symbols-and-name-resolution.md) / [Exercises 01·03](../exercises/03-resolution-types-and-flow/README.md): Unicode·scope leak·type/flow | [`check` semantic schema](../exercises/08-mica-capstone/spec/semantic.schema.json)와 golden summary | frontend, 정적 타입과 실행 모델 |
+| interpreter·VM·runtime | [Execution](04-execution/10-tree-walk-interpreter-and-environments.md) / [Exercise 04](../exercises/04-interpreter-and-vm/README.md): short-circuit·overflow·budget | tree-walk `run`과 [VM differential](../exercises/06-backend-boundaries/reference/bytecode-trace.json) | 정적 타입과 실행 모델 |
+| IR·CFG·data-flow·optimization | [IR/CFG](05-ir-and-analysis/14-lowering-basic-blocks-and-cfg.md)·[data-flow](05-ir-and-analysis/15-dataflow-dominance-and-ssa.md) / [Exercise 05](../exercises/05-ir-analysis-and-passes/README.md): malformed CFG·trap 제거 | [필수 IR/pass trace](../exercises/05-ir-analysis-and-passes/reference/ir-pipeline.json)와 [capstone evidence](../exercises/08-mica-capstone/skeleton/EVIDENCE.md) | 분석·진단·변환 도구 확장 |
+| formatter·linter·static analyzer·language server | [Language tooling](07-language-tooling/20-formatters-linters-and-refactoring.md) / [Exercise 07](../exercises/07-language-tools/README.md): comment·unsafe fix·stale version | [formatter/lint](../exercises/07-language-tools/reference/lint.json) 또는 [LSP transcript](../exercises/07-language-tools/reference/lsp-transcript.json) | 분석·진단·변환 도구 확장 |
 
 Part 6은 IR·runtime 결과를 실행 artifact 경계에 적용하는 보조 경로이며 별도 소유 범위를 추가하지 않습니다. 각 행은 정상 결과뿐 아니라 표에 든 대표 실패가 검사 또는 사람 검토에서 거부되는 증거를 요구합니다.
 

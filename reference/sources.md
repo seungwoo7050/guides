@@ -1,8 +1,10 @@
 # 공식 명세와 추가 자료
 
-기준일: **2026-08-09**
+최종 확인일: **2026-08-10**
 
 이 목록은 문서의 소유권 경계를 확인하고 실제 프로젝트로 이동하기 위한 출발점입니다. 특정 버전의 동작을 구현할 때는 사용한 revision과 version을 별도로 기록합니다.
+
+아래 URL은 최종 확인일에 읽기 전용으로 확인했습니다. 로컬 `verify.sh`는 재현성과 offline 실행을 위해 외부 URL을 요청하지 않으며, 링크의 장기 가용성이나 외부 문서의 기술 정확성을 자동 보장하지 않습니다.
 
 ## Python 표준 라이브러리
 
@@ -20,6 +22,7 @@ Python의 AST나 bytecode를 Mica의 정답 형식으로 간주하지 않습니�
 - [LLVM Language Reference Manual](https://llvm.org/docs/LangRef.html)
 - [LLVM Programmer's Manual](https://llvm.org/docs/ProgrammersManual.html)
 - [Writing an LLVM New Pass](https://llvm.org/docs/WritingAnLLVMNewPMPass.html)
+- [ORC Design and Implementation](https://llvm.org/docs/ORCv2.html)
 - [Source Level Debugging with LLVM](https://llvm.org/docs/SourceLevelDebugging.html)
 
 Tutorial은 빠른 code generation 진입점이며 production software engineering 전체의 모범 답안은 아닙니다. Mica backend는 LangRef의 type·control-flow·poison/undefined behavior와 verifier 조건을 별도로 확인합니다.
@@ -40,6 +43,13 @@ Target 하나를 선택해 필요한 calling convention·object·relocation·deb
 - [JSON-RPC 2.0 specification](https://www.jsonrpc.org/specification)
 
 LSP adapter는 batch semantic core와 분리하며 lifecycle, document synchronization, capability negotiation, position encoding과 stale result를 실제 protocol transcript로 검사합니다.
+
+## JSON과 schema
+
+- [RFC 8259 — The JavaScript Object Notation Data Interchange Format](https://www.rfc-editor.org/rfc/rfc8259)
+- [JSON Schema Core 2020-12](https://json-schema.org/draft/2020-12/json-schema-core)
+
+Mica runner는 RFC 8259에 없는 `NaN`과 Infinity를 거부합니다. JSON Schema 2020-12는 문서화 형식이며, source identity·UTF-8 boundary·AST containment처럼 schema만으로 표현하기 어려운 invariant는 runner가 직접 검사합니다.
 
 ## Tree-sitter
 

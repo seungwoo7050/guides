@@ -21,6 +21,9 @@
 - 검사기는 소스 구조나 특정 함수 이름보다 CLI 계약과 관찰 가능한 결과를 확인합니다.
 - source span, diagnostic code, AST/IR schema처럼 외부 도구가 소비하는 형식을 바꿀 때 fixture와 호환성 설명을 함께 수정합니다.
 - 임시 파일과 workspace는 저장소 밖 또는 `.workspaces` 아래에 만들고 종료 경로마다 정리합니다.
+- 외부 설명·코드·fixture를 추가하면 URL, 확인 revision/version과 license를 [`reference/sources.md`](reference/sources.md)에 기록합니다.
+- 비밀정보, `.env`, credential, generated cache/build artifact, binary와 학습자 `.workspaces`를 stage하지 않습니다.
+- 신뢰하지 않는 구현을 host 사용자 권한으로 검사하지 않고 network·credential·개인 파일이 차단된 container/VM을 사용합니다.
 
 ## 변경 확인
 
