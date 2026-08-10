@@ -1,0 +1,20 @@
+{
+  "schema_version": 1,
+  "source_projection": ["+", 2, ["*", 3, 4]],
+  "constants": [
+    {"type": "Int", "value": 2},
+    {"type": "Int", "value": 3},
+    {"type": "Int", "value": 4}
+  ],
+  "instructions": [
+    ["CONST", 0],
+    ["CONST", 1],
+    ["CONST", 2],
+    ["MUL"],
+    ["ADD"],
+    ["RETURN"]
+  ],
+  "disassembly": "0000 CONST 0 ; Int(2)\n0001 CONST 1 ; Int(3)\n0002 CONST 2 ; Int(4)\n0003 MUL\n0004 ADD\n0005 RETURN\n",
+  "interpreter": {"type": "Int", "value": 14, "stdout": "", "diagnostic": null},
+  "vm": {"type": "Int", "value": 14, "stdout": "", "diagnostic": null}
+}

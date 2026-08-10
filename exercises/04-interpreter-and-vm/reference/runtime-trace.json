@@ -7,8 +7,8 @@
     {"name": "addition-overflow", "stdout": "", "return_value": null, "diagnostic": "MICA4002", "rhs_calls": 0},
     {"name": "min-div-overflow", "stdout": "", "return_value": null, "diagnostic": "MICA4002", "rhs_calls": 0},
     {"name": "min-negation-overflow", "stdout": "", "return_value": null, "diagnostic": "MICA4002", "rhs_calls": 0},
-    {"name": "step-budget", "stdout": "", "return_value": null, "diagnostic": "MICA4005", "rhs_calls": 0},
-    {"name": "call-depth", "stdout": "", "return_value": null, "diagnostic": "MICA4004", "rhs_calls": 0}
+    {"name": "step-budget", "stdout": "", "return_value": null, "diagnostic": "MICA4004", "rhs_calls": 0},
+    {"name": "call-depth", "stdout": "", "return_value": null, "diagnostic": "MICA4003", "rhs_calls": 0}
   ],
   "notes": [
     "INT64_MIN is a runtime value constructed as -INT64_MAX - 1, not a positive source literal.",

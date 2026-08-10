@@ -12,7 +12,9 @@ EXAMPLES = [
     ROOT / "examples/semantic-model/semantic_model.py",
     ROOT / "examples/runtime-semantics/runtime.py",
     ROOT / "examples/dataflow-fixed-point/dataflow.py",
+    ROOT / "examples/ir-pipeline/ir_pipeline.py",
     ROOT / "examples/bytecode-vm/vm.py",
+    ROOT / "examples/language-tools/tools.py",
 ]
 
 

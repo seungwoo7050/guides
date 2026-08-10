@@ -1,0 +1,8 @@
+{
+  "normal": [{"arguments": {}, "expected": 42}],
+  "division": [
+    {"arguments": {"x": 2}, "expected": 1},
+    {"arguments": {"x": 0}, "diagnostic": "MICA4001"}
+  ],
+  "invalid": ["instruction-after-terminator", "unknown-target", "undefined-value"]
+}

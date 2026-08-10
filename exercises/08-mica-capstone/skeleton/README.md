@@ -17,7 +17,9 @@ source.py / diagnostic.py
 → symbol.py / resolver.py
 → types.py / typecheck.py / flow.py
 → runtime.py / interpreter.py
-→ 선택 VM/backend/tooling
+→ ir.py / optimizer.py
+→ 선택 bytecode.py / vm.py
+→ 선택 formatter.py / lints.py 또는 server.py
 ```
 
 `SourceText`, `Span`, `Diagnostic`의 public field를 바꾸면 JSON adapter와 fixture를 함께 갱신합니다. Host traceback을 사용자 오류로 사용하지 않습니다.

@@ -1,0 +1,13 @@
+{
+  "schema_version": 1,
+  "position_encoding": "utf-16",
+  "uri": "file:///unicode.mica",
+  "events": [
+    {"event": "open", "version": 1, "text": "a🙂b"},
+    {"event": "position", "codepoint_offset": 2, "position": {"line": 0, "character": 3}},
+    {"event": "change", "version": 2, "text": "a🙂c"},
+    {"event": "publish", "version": 1, "published": false, "reason": "stale-version"},
+    {"event": "publish", "version": 2, "published": true}
+  ],
+  "review": ["JSON-RPC logs never use protocol stdout", "cancelled or stale work cannot publish", "large documents have a time and diagnostic budget"]
+}

@@ -1,0 +1,9 @@
+{
+  "schema_version": 1,
+  "diagnostics": [
+    {"code": "MICAL001", "severity": "warning", "phase": "lint", "span": {"start": 44, "end": 50}, "message": "unused local unused", "fix": null},
+    {"code": "MICAL003", "severity": "warning", "phase": "lint", "span": {"start": 70, "end": 75}, "message": "value shadows s0", "fix": null},
+    {"code": "MICAL002", "severity": "warning", "phase": "lint", "span": {"start": 90, "end": 103}, "message": "unreachable statement", "fix": null}
+  ],
+  "unsafe_fixes": ["remove effectful initializer", "remove effectful unreachable statement", "rename shadowing declaration without symbol-aware edits"]
+}

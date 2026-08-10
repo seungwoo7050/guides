@@ -55,13 +55,13 @@ class Budget:
     def tick(self) -> None:
         self.steps += 1
         if self.steps > self.max_steps:
-            raise RuntimeFault("MICA4005", "execution limit exceeded")
+            raise RuntimeFault("MICA4004", "execution limit exceeded")
 
     def enter(self) -> None:
         self.depth += 1
         if self.depth > self.max_depth:
             self.depth -= 1
-            raise RuntimeFault("MICA4004", "call depth exceeded")
+            raise RuntimeFault("MICA4003", "call depth exceeded")
 
     def leave(self) -> None:
         if self.depth <= 0:
@@ -121,8 +121,8 @@ def self_test() -> None:
     assert execute_case({"operation": "add", "args": [I64_MAX, 1]})["diagnostic"] == "MICA4002"
     assert execute_case({"operation": "div", "args": [I64_MIN, -1]})["diagnostic"] == "MICA4002"
     assert execute_case({"operation": "neg", "args": [I64_MIN]})["diagnostic"] == "MICA4002"
-    assert execute_case({"operation": "steps", "max_steps": 3, "ticks": 4})["diagnostic"] == "MICA4005"
-    assert execute_case({"operation": "depth", "max_depth": 2, "enters": 3})["diagnostic"] == "MICA4004"
+    assert execute_case({"operation": "steps", "max_steps": 3, "ticks": 4})["diagnostic"] == "MICA4004"
+    assert execute_case({"operation": "depth", "max_depth": 2, "enters": 3})["diagnostic"] == "MICA4003"
     print("PASS runtime semantics checked-i64 short-circuit step-budget call-depth")
 
 

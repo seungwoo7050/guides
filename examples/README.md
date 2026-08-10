@@ -9,6 +9,8 @@
 | [Semantic model](semantic-model/README.md) | lexical scope, stable SymbolId, type rule와 all-path return | `python3 examples/semantic-model/semantic_model.py --self-test` |
 | [Runtime semantics](runtime-semantics/README.md) | checked i64, short-circuit와 execution budget | `python3 examples/runtime-semantics/runtime.py --self-test` |
 | [Data-flow fixed point](dataflow-fixed-point/README.md) | CFG liveness의 join·transfer·worklist | `python3 examples/dataflow-fixed-point/dataflow.py --self-test` |
+| [IR pipeline](ir-pipeline/README.md) | CFG verifier, reachability, checked constant fold와 의미 보존 | `python3 examples/ir-pipeline/ir_pipeline.py --self-test` |
 | [Bytecode verifier와 VM](bytecode-vm/README.md) | stack type verification과 실행 상태 | `python3 examples/bytecode-vm/vm.py --self-test` |
+| [Language tools](language-tools/README.md) | formatter 고정점, semantic lint와 stale LSP 결과 폐기 | `python3 examples/language-tools/tools.py --self-test` |
 
-루트 `./verify.sh`는 여섯 예제의 self-test를 독립 process로 실행합니다.
+루트 `./verify.sh`는 여덟 예제의 self-test를 독립 process로 실행합니다.

@@ -1,0 +1,5 @@
+fn main() -> Int {
+    // keep this comment
+    let unused: Int = 1 + 2;
+    return 0;
+}

@@ -11,6 +11,9 @@ LABS = [
     ROOT / "exercises/02-lexer-parser-and-ast/check.py",
     ROOT / "exercises/03-resolution-types-and-flow/check.py",
     ROOT / "exercises/04-interpreter-and-vm/check.py",
+    ROOT / "exercises/05-ir-analysis-and-passes/check.py",
+    ROOT / "exercises/06-backend-boundaries/check.py",
+    ROOT / "exercises/07-language-tools/check.py",
 ]
 
 

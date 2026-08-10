@@ -4,6 +4,18 @@
 
 Compiler core의 syntax·symbol·type 정보를 formatter/linter 또는 language server에 연결합니다.
 
+## 실행 가능한 비교 근거
+
+```sh
+python3 exercises/07-language-tools/check.py
+python3 examples/language-tools/tools.py --self-test
+```
+
+- [`fixtures/messy-with-comment.mica`](fixtures/messy-with-comment.mica)와 [`reference/formatted.mica`](reference/formatted.mica)은 exact output, comment 보존, idempotence와 token projection을 고정합니다.
+- [`fixtures/lint-model.json`](fixtures/lint-model.json)과 [`reference/lint.json`](reference/lint.json)은 unused·unreachable·shadowing 진단의 stable code, 정렬과 unsafe fix 거부를 고정합니다.
+- [`reference/lsp-transcript.json`](reference/lsp-transcript.json)은 UTF-16 emoji 위치와 version 2 이후 version 1 결과 폐기를 보여 줍니다.
+- 작은 formatter의 token round-trip은 full parse/check 의미 동치를 대신하지 않습니다. capstone에서 실제 parser/type 결과도 비교하고 LSP 경로를 선택하면 JSON-RPC framing·cancellation을 사람 검토합니다.
+
 ## 경로 A: Formatter와 linter
 
 ### Formatter

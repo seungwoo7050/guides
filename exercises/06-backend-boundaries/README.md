@@ -4,6 +4,19 @@
 
 IR에서 target artifact로 이동할 때 data layout, call, object, runtime와 FFI의 계약을 문서화하고 선택 target에서 작은 프로그램을 실행합니다.
 
+## 실행 가능한 기본 경로
+
+Virtual ISA는 외부 compiler나 장비 없이 수행하는 기본 경로입니다.
+
+```sh
+python3 exercises/06-backend-boundaries/check.py
+python3 examples/bytecode-vm/vm.py --self-test
+```
+
+- [`reference/virtual-target.json`](reference/virtual-target.json)은 value representation, call/return, builtin ABI, 한계와 신뢰 경계를 고정합니다.
+- [`reference/bytecode-trace.json`](reference/bytecode-trace.json)은 valid compile, deterministic disassembly와 interpreter/VM differential 결과입니다.
+- LLVM은 선택 경로이며 설치되지 않았다는 이유로 Virtual ISA 검사를 skip하지 않습니다. 실제 object/JIT를 선택하면 판본·triple·data layout·cleanup 증거를 별도로 제출합니다.
+
 ## 공통 과제
 
 ### Target manifest

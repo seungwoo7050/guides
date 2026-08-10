@@ -1,0 +1,9 @@
+{
+  "symbols": [
+    {"id": "s1", "kind": "local", "name": "unused", "references": 0, "initializer_pure": false, "shadows": null, "span": {"start": 44, "end": 50}},
+    {"id": "s2", "kind": "local", "name": "value", "references": 1, "initializer_pure": true, "shadows": "s0", "span": {"start": 70, "end": 75}}
+  ],
+  "unreachable": [
+    {"effectful": true, "span": {"start": 90, "end": 103}}
+  ]
+}

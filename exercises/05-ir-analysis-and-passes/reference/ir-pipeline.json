@@ -1,0 +1,21 @@
+{
+  "schema_version": 1,
+  "analysis": {
+    "name": "reachable-blocks",
+    "iterations": [["entry"], ["entry", "exit"]],
+    "fixed_point": ["entry", "exit"]
+  },
+  "pass": {
+    "name": "checked-constant-fold+remove-unreachable",
+    "preconditions": ["verified input", "explicit checked arithmetic", "effect and trap operations retained"],
+    "changed": true,
+    "before_blocks": ["dead", "entry", "exit"],
+    "after_blocks": ["entry", "exit"],
+    "folded": {"op": "CONST", "result": "%sum", "value": 42},
+    "invalidates": ["reachability"]
+  },
+  "differential": [
+    {"case": "normal", "before": {"return": 42, "diagnostic": null}, "after": {"return": 42, "diagnostic": null}},
+    {"case": "x-div-x-at-zero", "before": {"return": null, "diagnostic": "MICA4001"}, "known_bad": {"return": 1, "diagnostic": null}}
+  ]
+}

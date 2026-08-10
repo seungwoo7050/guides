@@ -6,6 +6,18 @@ Typed AST를 explicit CFG로 낮추고 data-flow와 작은 optimization을 verif
 
 ## 과제
 
+### 실행 가능한 시작과 비교 근거
+
+```sh
+python3 exercises/05-ir-analysis-and-passes/check.py
+python3 examples/ir-pipeline/ir_pipeline.py --self-test
+```
+
+- [`fixtures/ir-cases.json`](fixtures/ir-cases.json)은 정상 실행, division trap과 invalid CFG를 고정합니다.
+- [`reference/ir-pipeline.json`](reference/ir-pipeline.json)은 reachability 고정점, pass 전후 normalized IR와 differential 결과입니다.
+- [`examples/ir-pipeline`](../../examples/ir-pipeline/README.md)은 verifier를 pass 전후 실행하고 checked fold만 허용합니다.
+- 검사기는 `x / x → 1` known-bad가 `x = 0`의 `MICA4001`을 없애는 것을 거부합니다. 작은 verifier가 dominance·phi의 완전성을 증명하지는 않습니다.
+
 ### 1. IR schema
 
 - Function, Block, Instruction, ValueId

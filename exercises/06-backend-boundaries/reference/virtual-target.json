@@ -1,0 +1,26 @@
+{
+  "schema_version": 1,
+  "target": "mica-vm-json-v1",
+  "data_layout": {
+    "Int": "signed checked i64",
+    "Bool": "tagged boolean",
+    "String": "immutable UTF-8 value with implementation-owned storage",
+    "Unit": "explicit tagged singleton"
+  },
+  "calling_convention": {
+    "arguments": "left-to-right onto caller operand stack",
+    "parameters": "local slots 0..n-1",
+    "return": "one tagged value pushed to caller",
+    "failure": "stable diagnostic code and source span"
+  },
+  "builtin": {
+    "symbol": "print_int",
+    "parameters": ["Int"],
+    "return": "Unit",
+    "ownership": "borrowed for call duration",
+    "error_channel": "runtime diagnostic",
+    "reentrant": false
+  },
+  "unsupported": ["native object emission", "FFI", "threads", "JIT"],
+  "trust_boundary": "The VM is not an OS sandbox; run untrusted artifacts in a container or VM."
+}
