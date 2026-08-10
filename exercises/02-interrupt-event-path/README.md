@@ -164,7 +164,7 @@ workspace/
 
 ## 실행 가능한 starter와 checker
 
-[`examples/interrupt-event-model/starter/model.py`](../../examples/interrupt-event-model/starter/model.py)는
+[`starter/model.py`](starter/model.py)는
 정상 event의 형태만 제공하며 W1C, bounded queue, generation과 reset 정책은 의도적으로
 미완성입니다. 파일을 작업 공간으로 복사해 `run_fixture(data)`가 `(result, trace)`를
 반환하도록 완성합니다. 고정 fixture는 다음 행동을 독립적으로 검사합니다.
@@ -180,7 +180,7 @@ workspace/
 
 ```sh
 python3 exercises/02-interrupt-event-path/check.py \
-  --submission examples/interrupt-event-model/starter/model.py
+  --submission exercises/02-interrupt-event-path/starter/model.py
 ```
 
 완성 제출은 exit `0`, 읽을 수 있지만 계약이 틀린 제출은 `1`, CLI·import·fixture를
@@ -190,13 +190,13 @@ python3 exercises/02-interrupt-event-path/check.py \
 
 ```sh
 python3 exercises/02-interrupt-event-path/check.py \
-  --submission examples/interrupt-event-model/reference/model.py
+  --submission exercises/02-interrupt-event-path/reference/model.py
 python3 exercises/02-interrupt-event-path/check.py \
-  --submission examples/interrupt-event-model/known-wrong/no-w1c.py
+  --submission exercises/02-interrupt-event-path/known-wrong/no-w1c.py
 python3 exercises/02-interrupt-event-path/check.py \
-  --submission examples/interrupt-event-model/known-wrong/unbounded-queue.py
+  --submission exercises/02-interrupt-event-path/known-wrong/unbounded-queue.py
 python3 exercises/02-interrupt-event-path/check.py \
-  --submission examples/interrupt-event-model/known-wrong/no-generation.py
+  --submission exercises/02-interrupt-event-path/known-wrong/no-generation.py
 ```
 
 reference만 통과해야 합니다. checker는 같은 fixture를 두 번 실행해 결정성을 비교하고,

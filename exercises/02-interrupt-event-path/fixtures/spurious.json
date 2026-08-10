@@ -1,0 +1,19 @@
+{
+  "capacity": 2,
+  "events": [
+    {
+      "op": "ENABLE"
+    },
+    {
+      "op": "ISR"
+    },
+    {
+      "op": "WORK"
+    }
+  ],
+  "expected": {
+    "spurious": 1,
+    "idle_work": 1,
+    "handled_samples": []
+  }
+}

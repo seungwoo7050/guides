@@ -1,0 +1,45 @@
+{
+  "capacity": 2,
+  "events": [
+    {
+      "op": "ENABLE"
+    },
+    {
+      "op": "RAISE",
+      "sample": 40,
+      "timestamp": 40
+    },
+    {
+      "op": "ISR"
+    },
+    {
+      "op": "RESET"
+    },
+    {
+      "op": "ENABLE"
+    },
+    {
+      "op": "RAISE",
+      "sample": 41,
+      "timestamp": 41
+    },
+    {
+      "op": "ISR"
+    },
+    {
+      "op": "WORK"
+    }
+  ],
+  "expected": {
+    "enabled": true,
+    "generation": 2,
+    "reset_count": 1,
+    "acknowledged": 2,
+    "handled_samples": [
+      41
+    ],
+    "status_register": 0,
+    "pending": [],
+    "queue": []
+  }
+}

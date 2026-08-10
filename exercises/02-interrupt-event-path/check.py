@@ -11,9 +11,8 @@ from pathlib import Path
 from typing import Any
 
 
-ROOT = Path(__file__).resolve().parents[2]
-MODEL_ROOT = ROOT / "examples" / "interrupt-event-model"
-FIXTURE_ROOT = MODEL_ROOT / "fixtures"
+EXERCISE_ROOT = Path(__file__).resolve().parent
+FIXTURE_ROOT = EXERCISE_ROOT / "fixtures"
 REQUIRED_FIXTURES = (
     "normal.json",
     "two-before-isr.json",

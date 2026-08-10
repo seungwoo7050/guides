@@ -1,0 +1,46 @@
+{
+  "capacity": 2,
+  "hardware_capacity": 2,
+  "events": [
+    {
+      "op": "ENABLE"
+    },
+    {
+      "op": "RAISE",
+      "sample": 1,
+      "timestamp": 1
+    },
+    {
+      "op": "RAISE",
+      "sample": 2,
+      "timestamp": 2
+    },
+    {
+      "op": "RAISE",
+      "sample": 3,
+      "timestamp": 3
+    },
+    {
+      "op": "ISR"
+    },
+    {
+      "op": "ISR"
+    },
+    {
+      "op": "WORK"
+    },
+    {
+      "op": "WORK"
+    }
+  ],
+  "expected": {
+    "hardware_overrun": 1,
+    "max_pending_depth": 2,
+    "handled_samples": [
+      1,
+      2
+    ],
+    "status_register": 0,
+    "pending": []
+  }
+}

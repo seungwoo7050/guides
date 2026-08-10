@@ -1,11 +1,13 @@
 #!/usr/bin/env python3
-"""Validate the embedded-systems guide layout and local Markdown links."""
+"""Validate guide layout, learning-kit structure, and local Markdown links."""
 
 from __future__ import annotations
 
 import argparse
 import json
+import os
 import re
+import stat
 import sys
 from pathlib import Path
 from urllib.parse import unquote
@@ -13,6 +15,18 @@ from urllib.parse import unquote
 MARKDOWN_LINK = re.compile(r"!?\[[^\]]*\]\(([^)]+)\)")
 HEADING = re.compile(r"^(#{1,6})\s+(.+?)\s*$", re.MULTILINE)
 DOC_PATTERN = re.compile(r"^(\d{2})-[a-z0-9-]+\.md$")
+SCENARIO_ITEM = re.compile(r"^\s*(\d+)\.\s+\S", re.MULTILINE)
+FAILURE_ROW = re.compile(r"^\|\s*F\d+\s*\|", re.MULTILINE)
+
+LABS = (
+    "01-image-and-memory-audit",
+    "02-interrupt-event-path",
+    "03-sensor-driver-state-machine",
+    "04-deadline-and-priority-review",
+    "05-power-loss-persistence",
+    "06-update-rollback-model",
+)
+LEARNING_PARTS = ("starter", "reference", "fixtures", "known-wrong")
 
 REQUIRED = [
     "README.md",
@@ -23,8 +37,13 @@ REQUIRED = [
     "prepare.sh",
     "verify.sh",
     "scripts/check_docs.py",
+    "scripts/check_external_links.py",
+    "scripts/check_learning_contracts.py",
     "scripts/source_fingerprint.py",
+    "scripts/run_with_timeout.py",
     "scripts/test_verifier.py",
+    "scripts/test_verify_safety.py",
+    "scripts/test_workspace_tools.py",
     "scripts/new-workspace.sh",
     "docs/00-roadmap.md",
     "docs/01-firmware-boundary/01-host-target-and-firmware-lifecycle.md",
@@ -48,12 +67,7 @@ REQUIRED = [
     "docs/05-portability-and-verification/19-simulation-unit-integration-and-hil.md",
     "docs/05-portability-and-verification/20-upstream-contribution-and-production-boundaries.md",
     "exercises/README.md",
-    "exercises/01-image-and-memory-audit/README.md",
-    "exercises/02-interrupt-event-path/README.md",
-    "exercises/03-sensor-driver-state-machine/README.md",
-    "exercises/04-deadline-and-priority-review/README.md",
-    "exercises/05-power-loss-persistence/README.md",
-    "exercises/06-update-rollback-model/README.md",
+    *(f"exercises/{name}/README.md" for name in LABS),
     "capstone/field-sensor-node/README.md",
     "capstone/field-sensor-node/acceptance.md",
     "capstone/field-sensor-node/failure-matrix.md",
@@ -81,11 +95,9 @@ class ValidationError(RuntimeError):
 
 
 def slugify_heading(text: str) -> str:
-    # Good enough for local guide anchors; GitHub's full algorithm is broader.
     text = re.sub(r"[`*_~]", "", text.strip().lower())
     text = re.sub(r"[^\w\-\s가-힣]", "", text, flags=re.UNICODE)
-    text = re.sub(r"\s+", "-", text)
-    return text
+    return re.sub(r"\s+", "-", text)
 
 
 def heading_slugs(path: Path) -> set[str]:
@@ -107,8 +119,7 @@ def resolve_local_link(source: Path, raw: str, root: Path) -> tuple[Path, str | 
     if raw.startswith("#"):
         return source, unquote(raw[1:])
     target_text, separator, fragment = raw.partition("#")
-    target_text = unquote(target_text)
-    target = (source.parent / target_text).resolve()
+    target = (source.parent / unquote(target_text)).resolve()
     try:
         target.relative_to(root)
     except ValueError as exc:
@@ -116,57 +127,132 @@ def resolve_local_link(source: Path, raw: str, root: Path) -> tuple[Path, str | 
     return target, unquote(fragment) if separator else None
 
 
+def substantive_length(text: str) -> int:
+    kept = []
+    in_fence = False
+    for line in text.splitlines():
+        if line.strip().startswith("```"):
+            in_fence = not in_fence
+            continue
+        if in_fence or line.lstrip().startswith("#"):
+            continue
+        if re.fullmatch(r"[\s|:\-]+", line):
+            continue
+        kept.append(line)
+    return len("".join(kept).strip())
+
+
+def content_files(directory: Path) -> list[Path]:
+    if not directory.is_dir() or directory.is_symlink():
+        return []
+    return sorted(
+        path for path in directory.rglob("*")
+        if path.is_file() and not path.is_symlink() and path.name != ".DS_Store"
+        and "__pycache__" not in path.parts and path.suffix != ".pyc"
+    )
+
+
+def validate_learning_unit(root: Path, directory: Path, *, capstone: bool = False) -> list[str]:
+    errors: list[str] = []
+    relative = directory.relative_to(root)
+    readme = directory / "README.md"
+    checker = directory / "check.py"
+    if not readme.is_file() or readme.is_symlink():
+        errors.append(f"학습 단위 README 누락: {relative}/README.md")
+    if not checker.is_file() or checker.is_symlink():
+        errors.append(f"학습 checker 누락: {relative}/check.py")
+    else:
+        mode = checker.stat().st_mode
+        if not mode & (stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH) or not os.access(checker, os.X_OK):
+            errors.append(f"실행 불가능한 checker: {relative}/check.py")
+        if not checker.read_text(encoding="utf-8").startswith("#!/usr/bin/env python3"):
+            errors.append(f"checker Python shebang 누락: {relative}/check.py")
+    for name in LEARNING_PARTS:
+        part = directory / name
+        files = content_files(part)
+        if not part.is_dir() or part.is_symlink():
+            errors.append(f"학습 계약 directory 누락 또는 symlink: {relative}/{name}")
+        elif not files:
+            errors.append(f"빈 학습 계약 directory: {relative}/{name}")
+        for path in files:
+            if path.suffix == ".json":
+                try:
+                    json.loads(path.read_text(encoding="utf-8"))
+                except (UnicodeError, json.JSONDecodeError) as exc:
+                    errors.append(f"JSON 오류 {path.relative_to(root)}: {exc}")
+    if readme.is_file():
+        text = readme.read_text(encoding="utf-8")
+        headings = HEADING.findall(text)
+        required_terms = ("문제", "결과물", "완료 조건") if not capstone else ("문제", "결과물", "불변식", "완료")
+        minimum = 1100 if not capstone else 1800
+        if (
+            substantive_length(text) < minimum
+            or len(headings) < (6 if not capstone else 10)
+            or any(term not in text for term in required_terms)
+            or any(term not in text for term in ("check.py", "starter", "reference"))
+        ):
+            label = "capstone" if capstone else "실습"
+            errors.append(f"교육 계약이 부족한 {label}: {readme.relative_to(root)}")
+    return errors
+
+
+def markdown_files(root: Path) -> list[Path]:
+    ignored = {".git", ".guide", "__pycache__", "workspace", "capstone-workspace", "build"}
+    return sorted(path for path in root.rglob("*.md") if not ignored.intersection(path.relative_to(root).parts))
+
+
+def section(text: str, heading: str) -> str | None:
+    match = re.search(
+        rf"^##\s+{re.escape(heading)}\s*$\n(.*?)(?=^##\s+|\Z)",
+        text,
+        flags=re.MULTILINE | re.DOTALL,
+    )
+    return None if match is None else match.group(1)
+
+
 def validate(root: Path) -> dict[str, int]:
     root = root.resolve()
     errors: list[str] = []
     for relative in REQUIRED:
         path = root / relative
-        if not path.is_file():
-            errors.append(f"필수 파일 누락: {relative}")
+        if not path.is_file() or path.is_symlink():
+            errors.append(f"필수 파일 누락 또는 symlink: {relative}")
         elif path.stat().st_size == 0:
             errors.append(f"빈 필수 파일: {relative}")
 
     docs = sorted((root / "docs").glob("[0-9][0-9]-*/*.md"))
-    numbers: list[int] = []
-    for path in docs:
-        match = DOC_PATTERN.match(path.name)
-        if match:
-            numbers.append(int(match.group(1)))
+    numbers = [int(match.group(1)) for path in docs if (match := DOC_PATTERN.match(path.name))]
     if numbers != EXPECTED_DOC_NUMBERS:
         errors.append(f"개념 문서 번호가 01..20과 다릅니다: {numbers}")
 
-    exercise_dirs = sorted(p for p in (root / "exercises").iterdir() if p.is_dir())
-    exercise_numbers: list[int] = []
-    for path in exercise_dirs:
-        match = re.match(r"^(\d{2})-", path.name)
-        if match:
-            exercise_numbers.append(int(match.group(1)))
-    if exercise_numbers != EXPECTED_EXERCISES:
-        errors.append(f"실습 번호가 01..06과 다릅니다: {exercise_numbers}")
-    for directory in exercise_dirs:
-        readme = directory / "README.md"
-        if not readme.is_file():
-            continue
-        text = readme.read_text(encoding="utf-8")
-        headings = HEADING.findall(text)
-        required_terms = ("문제", "결과물", "완료 조건")
-        failure_term = any(term in text for term in ("실패", "잘못된 완료", "failure"))
-        if len(text) < 1200 or len(headings) < 6 or not failure_term or any(term not in text for term in required_terms):
-            errors.append(f"교육 계약이 부족한 실습: {readme.relative_to(root)}")
+    exercise_dirs = sorted(path for path in (root / "exercises").iterdir() if path.is_dir() and re.match(r"^\d{2}-", path.name))
+    exercise_numbers = [int(path.name[:2]) for path in exercise_dirs]
+    if exercise_numbers != EXPECTED_EXERCISES or [path.name for path in exercise_dirs] != list(LABS):
+        errors.append(f"실습 directory가 계약과 다릅니다: {[path.name for path in exercise_dirs]}")
+    for name in LABS:
+        errors.extend(validate_learning_unit(root, root / "exercises" / name))
 
-    capstone_files = [
-        root / "capstone/field-sensor-node/README.md",
-        root / "capstone/field-sensor-node/acceptance.md",
-        root / "capstone/field-sensor-node/failure-matrix.md",
-    ]
-    for path in capstone_files:
-        if path.is_file() and len(path.read_text(encoding="utf-8")) < 1000:
-            errors.append(f"교육 계약이 부족한 capstone 문서: {path.relative_to(root)}")
+    capstone = root / "capstone/field-sensor-node"
+    errors.extend(validate_learning_unit(root, capstone, capstone=True))
+    acceptance = capstone / "acceptance.md"
+    if acceptance.is_file():
+        acceptance_text = acceptance.read_text(encoding="utf-8")
+        scenario_text = section(acceptance_text, "필수 시나리오")
+        scenarios = [] if scenario_text is None else [int(number) for number in SCENARIO_ITEM.findall(scenario_text)]
+        if substantive_length(acceptance_text) < 900:
+            errors.append("교육 계약이 부족한 capstone acceptance: capstone/field-sensor-node/acceptance.md")
+        if scenarios != list(range(1, 13)):
+            errors.append(f"capstone acceptance 필수 시나리오가 1..12와 다릅니다: {scenarios}")
+    failure_matrix = capstone / "failure-matrix.md"
+    if failure_matrix.is_file():
+        matrix_text = failure_matrix.read_text(encoding="utf-8")
+        if substantive_length(matrix_text) < 700 or len(FAILURE_ROW.findall(matrix_text)) < 12:
+            errors.append("교육 계약이 부족한 capstone failure matrix")
 
-    fixtures = sorted((root / "examples").glob("*/fixtures/*.json"))
-    if len(fixtures) < 8:
-        errors.append(f"상태 모델 fixture가 부족합니다: {len(fixtures)}")
-    for path in fixtures:
+    example_fixtures = sorted((root / "examples").glob("*/fixtures/*.json"))
+    if len(example_fixtures) < 8:
+        errors.append(f"상태 모델 fixture가 부족합니다: {len(example_fixtures)}")
+    for path in example_fixtures:
         try:
             data = json.loads(path.read_text(encoding="utf-8"))
         except json.JSONDecodeError as exc:
@@ -175,11 +261,17 @@ def validate(root: Path) -> dict[str, int]:
         if not isinstance(data, dict) or not isinstance(data.get("events"), list) or not isinstance(data.get("expected"), dict):
             errors.append(f"fixture 계약 오류: {path.relative_to(root)}")
 
-    markdown_files = sorted(root.rglob("*.md"))
+    markdown = markdown_files(root)
     slug_cache: dict[Path, set[str]] = {}
-    for path in markdown_files:
+    for path in markdown:
         text = path.read_text(encoding="utf-8")
-        if "TODO" in text or "TBD" in text or "FIXME" in text:
+        unfinished = [
+            line for line in text.splitlines()
+            if any(marker in line for marker in ("TODO", "TBD", "FIXME"))
+            and "starter" not in line.lower()
+            and "known-wrong" not in line.lower()
+        ]
+        if unfinished:
             errors.append(f"미완성 표식: {path.relative_to(root)}")
         for raw in MARKDOWN_LINK.findall(text):
             try:
@@ -192,26 +284,23 @@ def validate(root: Path) -> dict[str, int]:
             target, fragment = resolved
             if not target.exists():
                 errors.append(f"깨진 링크 {path.relative_to(root)} -> {raw}")
-                continue
-            if fragment and target.is_file() and target.suffix.lower() == ".md":
-                if target not in slug_cache:
-                    slug_cache[target] = heading_slugs(target)
+            elif fragment and target.is_file() and target.suffix.lower() == ".md":
+                slug_cache.setdefault(target, heading_slugs(target))
                 if fragment not in slug_cache[target]:
                     errors.append(f"없는 heading {path.relative_to(root)} -> {raw}")
 
     readme = (root / "README.md").read_text(encoding="utf-8")
     for number in EXPECTED_DOC_NUMBERS:
-        expected = f"/{number:02d}-"
-        if expected not in readme:
+        if f"/{number:02d}-" not in readme:
             errors.append(f"README에서 {number:02d}번 문서 링크를 찾지 못했습니다.")
-
     if errors:
         raise ValidationError("\n".join(errors))
     return {
-        "markdown": len(markdown_files),
+        "markdown": len(markdown),
         "documents": len(docs),
         "exercises": len(exercise_dirs),
-        "fixtures": len(fixtures),
+        "fixtures": len(example_fixtures),
+        "learning_units": len(LABS) + 1,
     }
 
 
@@ -219,17 +308,12 @@ def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--root", type=Path, default=Path(__file__).resolve().parents[1])
     args = parser.parse_args()
-    root = args.root.resolve()
     try:
-        counts = validate(root)
+        counts = validate(args.root.resolve())
     except (OSError, UnicodeError, ValidationError) as exc:
         print(f"ERROR: {exc}", file=sys.stderr)
         return 1
-    print(
-        "DOCS OK "
-        f"markdown={counts['markdown']} documents={counts['documents']} "
-        f"exercises={counts['exercises']} fixtures={counts['fixtures']}"
-    )
+    print("DOCS OK " + " ".join(f"{key}={value}" for key, value in counts.items()))
     return 0
 
 
