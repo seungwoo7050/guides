@@ -4,6 +4,7 @@
 
 ## 범위와 재현
 
+- [ ] main의 해당 `owns`와 `exit_capabilities`를 [계약 추적표](../docs/00-roadmap.md#main-계약-추적표)에서 찾아 정확한 개념 문서, 실습 fixture, capstone scenario와 evidence까지 연결했습니다.
 - [ ] 문제와 target/board/revision이 명확합니다.
 - [ ] exact build command, configuration와 toolchain을 남겼습니다.
 - [ ] failure를 작은 fixture로 재현합니다.
@@ -89,18 +90,36 @@
 ## verification
 
 - [ ] 정상·경계·실패 fixture가 있습니다.
+- [ ] 변경한 실습 또는 capstone에 reference, 실행 가능한 starter와 대표 known-wrong이 있습니다.
+- [ ] 공개 checker가 `--submission PATH [--json]`을 지원합니다.
+- [ ] reference `0`, starter·모든 known-wrong `1`, 존재하지 않는 submission `2`의 종료 코드 polarity를 확인했습니다.
 - [ ] 검사기는 source 모양이 아니라 결과 state를 판정합니다.
 - [ ] virtual time/event injection으로 race boundary를 고정합니다.
 - [ ] simulator가 빠뜨리는 hardware behavior를 기록합니다.
 - [ ] 실제 보드 결과에는 raw trace와 환경이 있습니다.
 - [ ] binary/RAM/stack/timing 영향이 있습니다.
 - [ ] cleanup 뒤 test가 known state를 복원합니다.
+- [ ] 6개 host 실습과 capstone 12개 필수 시나리오를 모두 실행했으며 선택 Zephyr/board slice를 대체재로 세지 않았습니다.
+- [ ] 자동 결과와 사람 판단을 분리했고 raw evidence 검토 전 상태는 `human_review: NOT_TESTED`(미검증)이며 자동 PASS 집계 밖입니다.
+
+## 안전과 복구
+
+- [ ] host 검사에 network, root 권한, 유료 cloud 자원이나 실제 서비스 변경이 필요하지 않습니다.
+- [ ] checker/helper가 submission, 학습자 workspace나 raw evidence를 덮어쓰거나 삭제하지 않습니다.
+- [ ] board의 전압, pin direction, current limit, 전원 source와 위험한 actuator를 확인하고 필요한 격리를 했습니다.
+- [ ] flash/update/power-cut 전에 factory 또는 last-known-good image와 calibration·identity를 백업했습니다.
+- [ ] probe 또는 recovery mode로 복구하는 절차를 시험 전에 확인했습니다.
+- [ ] 임시 wiring, 전원, probe, image와 설정을 정리하고 known state로 복원했습니다.
+- [ ] 복구하지 못한 상태와 실행하지 못한 필수 검사를 성공으로 표시하지 않았습니다.
 
 ## 기여와 운영
 
+- [ ] version 주장은 [공식 자료](sources.md)에 release/revision, URL과 확인일 2026-08-10을 기록했습니다.
+- [ ] Zephyr profile이라면 4.4.0, Python 3.12+, C17, SDK 1.0.1을 실제 도구 출력과 manifest로 확인했고 host Python 3.10+ 계약과 구분했습니다.
 - [ ] 문서와 sample/test를 함께 갱신했습니다.
 - [ ] release note가 필요한 compatibility 변화인지 검토했습니다.
 - [ ] exact ELF/map/configuration을 보존합니다.
 - [ ] 로그에 secret·개인정보·unbounded payload가 없습니다.
 - [ ] 현장 telemetry가 build ID와 연결됩니다.
 - [ ] 실제 production/security/safety 비보장 범위를 명시합니다.
+- [ ] 문서에는 [CC BY 4.0](../LICENSES/CC-BY-4.0.txt), 실행 코드에는 [MIT](../LICENSES/MIT.txt)를 적용하고 외부 자료의 저작자·원본·라이선스·변경 표시를 보존했습니다.

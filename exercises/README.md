@@ -1,19 +1,43 @@
 # 실습 안내
 
-이 디렉터리의 실습은 완성된 vendor project를 제공하지 않습니다. 각 과제는 문서에서 다룬 상태·실패·검증 계약을 실제 artifact로 바꾸기 위한 **설계 명세**입니다. hardware가 없어도 시작할 수 있으며, 선택한 Zephyr/QEMU/보드 환경으로 단계적으로 옮길 수 있습니다.
+이 디렉터리는 문서에서 다룬 상태·실패·검증 계약을 실행 가능한 artifact로 바꾸는 6개 필수 host 실습을 제공합니다. 각 실습에는 starter, 비교 reference, 정상·경계·실패 fixture와 공개 행동 checker가 있습니다. 완성된 vendor project는 아니며 hardware가 없어도 실행할 수 있습니다. Zephyr/QEMU/보드 경로는 host 계약을 통과한 뒤 선택적으로 옮기는 별도 profile입니다.
 
 ## 실습 목록
 
 | 순서 | 실습 | 중심 계약 | 기본 환경 |
 |---:|---|---|---|
-| 1 | [firmware image와 memory audit](01-image-and-memory-audit/README.md) | ELF·map·linker·startup·budget | 공개 또는 직접 만든 ELF/map |
-| 2 | [interrupt event 경로](02-interrupt-event-path/README.md) | ISR·ack·queue·deferred work·overflow | Python model 또는 host C |
-| 3 | [sensor driver 상태 기계](03-sensor-driver-state-machine/README.md) | bus/device/operation state, timeout·cancel | fake bus + optional target |
-| 4 | [deadline과 priority 검토](04-deadline-and-priority-review/README.md) | response time·blocking·jitter·measurement | worksheet + event trace |
-| 5 | [power-loss-safe persistence](05-power-loss-persistence/README.md) | erase/program cut point와 recovery | byte-array flash model |
-| 6 | [update와 rollback 모델](06-update-rollback-model/README.md) | candidate·trial·confirm·revert | 제공 state model 확장 |
+| 1 | [firmware image와 memory audit](01-image-and-memory-audit/README.md) | ELF·map·linker·startup·budget | manifest + JSON audit |
+| 2 | [interrupt event 경로](02-interrupt-event-path/README.md) | ISR·ack·queue·deferred work·overflow | 결정적 Python event model |
+| 3 | [sensor driver 상태 기계](03-sensor-driver-state-machine/README.md) | bus/device/operation state, timeout·cancel | fake bus + generated configuration |
+| 4 | [deadline과 priority 검토](04-deadline-and-priority-review/README.md) | response time·blocking·jitter·measurement | response-time/queue 분석 model |
+| 5 | [power-loss-safe persistence](05-power-loss-persistence/README.md) | erase/program cut point와 recovery | NOR byte-array model |
+| 6 | [update와 rollback 모델](06-update-rollback-model/README.md) | candidate·trial·confirm·revert | durable boot metadata model |
 
-마지막에는 [현장 센서 노드 capstone](../capstone/field-sensor-node/README.md)으로 상태를 연결합니다.
+여섯 실습을 모두 통과한 뒤 [현장 센서 노드 capstone](../capstone/field-sensor-node/README.md)의 12개 필수 시나리오로 상태를 연결합니다. 선택 경로를 수행해도 실습이나 capstone을 생략할 수 없습니다.
+
+## 공개 checker 계약
+
+저장소 루트에서 reference를 검사하는 명령은 다음과 같습니다.
+
+```sh
+python3 exercises/01-image-and-memory-audit/check.py --submission exercises/01-image-and-memory-audit/reference/submission.json --json
+python3 exercises/02-interrupt-event-path/check.py --submission exercises/02-interrupt-event-path/reference --json
+python3 exercises/03-sensor-driver-state-machine/check.py --submission exercises/03-sensor-driver-state-machine/reference --json
+python3 exercises/04-deadline-and-priority-review/check.py --submission exercises/04-deadline-and-priority-review/reference --json
+python3 exercises/05-power-loss-persistence/check.py --submission exercises/05-power-loss-persistence/reference --json
+python3 exercises/06-update-rollback-model/check.py --submission exercises/06-update-rollback-model/reference --json
+python3 capstone/field-sensor-node/check.py --submission capstone/field-sensor-node/reference --json
+```
+
+모든 checker의 공통 CLI는 `--submission PATH [--json]`입니다.
+
+| 종료 코드 | 의미 | 제공 artifact 기대값 |
+|---:|---|---|
+| `0` | 공개 행동과 불변식 통과 | reference |
+| `1` | 실행 가능한 submission의 의미 실패 | starter, 모든 known-wrong |
+| `2` | 인터페이스 불일치 또는 누락·손상 입력 | 존재하지 않는 submission |
+
+`--json`은 같은 판정을 기계가 읽을 수 있는 형태로 출력할 뿐 종료 코드를 바꾸지 않습니다. checker는 source 문구나 reference와의 텍스트 동일성을 요구하지 않고 fixture 결과, bounded resource, durable state 같은 공개 계약을 관찰합니다. `make exercises-check`는 6개 실습의 reference/starter/known-wrong/missing polarity를, `make capstone-check`는 capstone polarity와 12개 시나리오를 한꺼번에 검사합니다.
 
 ## 공통 작업 공간
 
@@ -82,9 +106,9 @@ simulator가 구현하지 않은 peripheral와 timing은 fake 또는 별도 targ
 7. **관찰 도구의 한계**와 실제 보드에서 미검증인 주장을 구분합니다.
 8. 구현하지 않은 범위를 숨기지 않습니다.
 
-## reference를 대신하는 검토 방식
+## 자동 판정과 사람 검토
 
-이 실습에는 전체 정답이 없을 수 있습니다. 다음 근거로 설계를 검토합니다.
+reference는 공개 계약을 만족하는 비교 구현이지 유일한 설계나 production 정답이 아닙니다. checker가 통과해도 아래 판단은 사람이 [evidence 템플릿](../reference/evidence-template.md)과 [firmware 검토표](../reference/firmware-review-checklist.md)로 확인합니다.
 
 - 문서의 불변식과 모순되지 않는가?
 - 실패 주입 뒤 허용되지 않은 중간 상태가 남지 않는가?
@@ -92,6 +116,16 @@ simulator가 구현하지 않은 peripheral와 timing은 fake 또는 별도 targ
 - timeout/cancel 뒤 늦은 completion을 처리하는가?
 - build, image, configuration와 evidence를 다시 연결할 수 있는가?
 - simulator와 실제 hardware의 보장 범위를 구분하는가?
+
+사람이 raw evidence와 설명을 실제로 읽기 전에는 제출 상태를 정확히 `human_review: NOT_TESTED`(미검증)로 두고 자동 PASS 집계에서 제외합니다. 자동 검사 성공을 교육적 완료, 실제 timing·electrical·power 보장, 보안·안전 인증으로 표현하지 않습니다.
+
+## 안전, cleanup과 복구
+
+- host 실습은 저장소 source를 수정하지 않는 임시 작업 공간에서 실행하고 network, root 권한, cloud 자원이나 실제 서비스 배포를 요구하지 않습니다.
+- checker 입력으로 학습자 경로를 받더라도 예고 없이 덮어쓰거나 삭제하지 않습니다. `workspace/`와 raw evidence는 사용자가 직접 관리합니다.
+- 실제 board를 선택하면 전압·pin direction·current limit, debug access, flash layout와 복구 가능한 programmer 경로를 먼저 확인합니다. 위험한 actuator와 외부 전원은 격리합니다.
+- power-cut/update 실험 전에는 factory image, calibration·identity 자료와 last-known-good slot의 복구 절차를 기록합니다. 시험 뒤에는 전원, probe, 임시 wiring와 test image를 정리하고 알려진 정상 상태로 복원합니다.
+- 회복하지 못한 board, 필수 검사를 실행하지 못한 환경 또는 잃어버린 raw evidence를 통과로 기록하지 않습니다.
 
 ## 제출 단위
 

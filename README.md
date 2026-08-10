@@ -38,7 +38,7 @@
 - 계획된 문서·실습·reference 구조
 - Markdown 내부 링크
 - 문서에서 참조하는 로컬 경로
-- interrupt event와 update rollback 상태 모델
+- 6개 host 실습과 capstone의 공개 행동·불변식·checker polarity
 - 준비·검증 중 source 비변경
 
 Zephyr, QEMU, cross compiler와 실제 보드는 선택 구현 프로필입니다. 설치되지 않았다는 이유로 문서 가이드 자체의 검증이 실패하지 않습니다.
@@ -94,7 +94,7 @@ Zephyr, QEMU, cross compiler와 실제 보드는 선택 구현 프로필입니�
 
 ## 실습과 capstone
 
-이 브랜치는 문서가 중심입니다. 실습은 대규모 정답 구현보다 **문제·입력·상태·실패·검증 계약**을 고정합니다.
+이 브랜치는 문서와 실행 가능한 host 상태 모델을 함께 제공합니다. 실습은 대규모 vendor 구현보다 **문제·입력·상태·실패·검증 계약**을 고정합니다.
 
 - [실습 전체 안내](exercises/README.md)
 - [firmware image와 memory audit](exercises/01-image-and-memory-audit/README.md)
@@ -104,6 +104,8 @@ Zephyr, QEMU, cross compiler와 실제 보드는 선택 구현 프로필입니�
 - [power-loss-safe persistence](exercises/05-power-loss-persistence/README.md)
 - [update와 rollback 모델](exercises/06-update-rollback-model/README.md)
 - [현장 센서 노드 capstone](capstone/field-sensor-node/README.md)
+
+6개 host 실습과 capstone의 12개 시나리오는 모두 필수입니다. 각 공개 checker는 `--submission PATH`와 선택적인 `--json`을 받고, `0`은 계약 통과, `1`은 의미 실패, `2`는 인터페이스 또는 입력을 사용할 수 없음을 뜻합니다. 제공 reference는 `0`, starter와 known-wrong은 `1`, 존재하지 않는 submission은 `2`여야 합니다. 자동 검사는 관찰 가능한 최소 계약만 판정하므로 사람 검토는 근거를 실제로 확인하기 전까지 `human_review: NOT_TESTED`(미검증)로 두며 자동 PASS에 포함하지 않습니다. 전체 연결은 [계약 추적표](docs/00-roadmap.md#main-계약-추적표), 실행 명령은 [실습 안내](exercises/README.md#공개-checker-계약)를 따릅니다.
 
 `examples/`에는 hardware 없이 실행할 수 있는 두 개의 작은 상태 모델만 제공합니다. 모델은 실제 interrupt controller, flash나 bootloader를 대체하지 않습니다. 문서의 상태 전이를 결정적으로 관찰하기 위한 도구입니다.
 
@@ -147,7 +149,13 @@ git → c → computer-architecture → operating-systems → embedded-systems
 
 ## 완료 후 가능한 일
 
-전체 과정을 마치면 다음을 수행할 수 있어야 합니다.
+main 카탈로그의 종료 능력은 다음 세 문장입니다.
+
+- 펌웨어의 메모리·시간·전력 경계를 설명한다.
+- interrupt와 task 사이 상태를 안전하게 전달한다.
+- 실패 복구와 update 상태 기계를 검증한다.
+
+전체 과정을 마치면 이 능력을 다음 작업으로 입증할 수 있어야 합니다.
 
 - 낯선 firmware 저장소에서 board·SoC·driver·application·build configuration 경계를 찾습니다.
 - ELF, map과 linker script에서 code, data, stack, heap, vector table과 flash partition을 추적합니다.

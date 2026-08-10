@@ -2,7 +2,18 @@
 
 이 가이드는 교육용 상태 모델과 실제 architecture·RTOS·SoC 보장을 구분합니다. 실제 프로젝트를 수정할 때는 아래 공식 자료와 사용하는 chip/board의 datasheet, reference manual, errata를 우선합니다.
 
-확인 기준일: **2026-08-09**
+확인 기준일: **2026-08-10**
+
+## 기준 version의 공식 근거
+
+| 이 가이드의 선택 profile | 공식 근거와 판단 |
+|---|---|
+| Zephyr 4.4.0 | [Zephyr Releases](https://docs.zephyrproject.org/latest/releases/index.html)가 4.4.0을 2026-04-14 release로 열거하고 [4.4 release notes](https://docs.zephyrproject.org/latest/releases/release-notes-4.4.html)가 해당 release의 변경을 기록합니다. 이 가이드는 확인일의 재현 기준으로 4.4.0을 고정하며 “항상 최신”을 주장하지 않습니다. |
+| Python 3.12 이상 | 공식 [4.4 migration guide](https://docs.zephyrproject.org/latest/releases/migration-guide-4.4.html)가 Zephyr 4.3에서 4.4로 이동할 때 최소 Python이 3.10에서 3.12로 바뀌었다고 명시합니다. 이 조건은 선택 Zephyr profile에만 적용합니다. 6개 host 실습과 capstone checker의 별도 최소 계약은 Python 3.10 이상입니다. |
+| C17 | 같은 migration guide가 Zephyr 4.4의 기본 C standard가 C17로 바뀌었음을 기록합니다. 일반 C 학습 범위나 모든 vendor toolchain이 C17이라는 뜻은 아닙니다. |
+| Zephyr SDK 1.0.1 | migration guide의 4.4 최소 SDK는 1.0.0이고, 공식 [Zephyr SDK 설치 문서](https://docs.zephyrproject.org/latest/develop/toolchains/zephyr_sdk.html)는 확인일에 권장하는 참조 SDK patch로 1.0.1을 제시합니다. 따라서 이 profile은 최소값이 아니라 재현 가능한 권장 patch인 1.0.1을 고정합니다. |
+
+version을 올릴 때 release note만 읽지 않고 반드시 이전 기준에서 새 기준으로 가는 migration guide를 확인합니다. 위 링크는 모두 Zephyr project의 공식 문서이며 실제 build에는 manifest와 설치된 `west`, Python, compiler와 SDK version을 함께 기록합니다.
 
 ## Zephyr project
 
@@ -10,6 +21,7 @@
 
 - [Zephyr Releases](https://docs.zephyrproject.org/latest/releases/index.html): stable/LTS release와 release note 진입점
 - [Zephyr 4.4 Release Notes](https://docs.zephyrproject.org/latest/releases/release-notes-4.4.html): C17 기본, subsystem와 API 변경
+- [Zephyr 4.4 Migration Guide](https://docs.zephyrproject.org/latest/releases/migration-guide-4.4.html): 4.3에서 4.4로 옮길 때의 Python, C standard, SDK와 API 변경
 - [Getting Started Guide](https://docs.zephyrproject.org/latest/develop/getting_started/index.html): workspace와 toolchain 준비
 - [Zephyr SDK](https://docs.zephyrproject.org/latest/develop/toolchains/zephyr_sdk.html): cross toolchain, QEMU와 host tool
 - [Build System](https://docs.zephyrproject.org/latest/build/cmake/index.html): configuration/build 단계와 generated target
@@ -28,7 +40,7 @@ hardware fact, software option와 runtime device readiness를 같은 개념으�
 ### interrupt, time, DMA와 power
 
 - [Interrupts](https://docs.zephyrproject.org/latest/kernel/services/interrupts.html)
-- [Timing Functions](https://docs.zephyrproject.org/latest/kernel/services/timing/functions.html)
+- [Timing Functions](https://docs.zephyrproject.org/latest/kernel/timing_functions/index.html)
 - [Timers](https://docs.zephyrproject.org/latest/kernel/services/timing/timers.html)
 - [Workqueue Threads](https://docs.zephyrproject.org/latest/kernel/services/threads/workqueue.html)
 - [DMA](https://docs.zephyrproject.org/latest/hardware/peripherals/dma.html)
@@ -67,7 +79,7 @@ simulator/emulator에서 지원하는 peripheral와 timing만 주장합니다.
 ## MCUboot
 
 - [MCUboot design](https://docs.mcuboot.com/design.html): image slot, swap/revert와 trailer state
-- [MCUboot Zephyr README](https://github.com/mcu-tools/mcuboot/blob/main/boot/zephyr/README.md): Zephyr integration
+- [MCUboot Zephyr README](https://github.com/mcu-tools/mcuboot/blob/main/docs/readme-zephyr.md): Zephyr integration
 - [MCUboot release notes](https://docs.mcuboot.com/release-notes.html): 사용 release의 behavior와 migration
 
 실제 update mode는 overwrite, swap, direct-XIP 등에서 다릅니다. signature validation과 functional rollback도 별도 계약입니다.
@@ -85,7 +97,7 @@ CPU core manual만으로 SoC peripheral, clock, reset와 memory map을 판단하
 
 - [RISC-V ISA Specifications](https://docs.riscv.org/reference/isa/)
 - [Unprivileged ISA](https://docs.riscv.org/reference/isa/unpriv/unpriv-index.html)
-- [Privileged Architecture](https://docs.riscv.org/reference/isa/priv/)
+- [Privileged Architecture](https://docs.riscv.org/reference/isa/priv/priv-index.html)
 - [RISC-V Debug Specification](https://docs.riscv.org/reference/debug/introduction.html)
 
 platform interrupt controller, timer, boot protocol와 memory map은 SoC/platform 문서를 확인합니다.

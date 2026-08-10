@@ -32,6 +32,7 @@ REQUIRED = [
     "README.md",
     "CONTRIBUTING.md",
     "LICENSE.md",
+    "LICENSES/CC-BY-4.0.txt",
     "LICENSES/MIT.txt",
     "Makefile",
     "prepare.sh",

@@ -1,6 +1,6 @@
 # 버전 기준과 구현 프로필
 
-확인 기준일: **2026-08-09**
+확인 기준일: **2026-08-10**
 
 이 문서는 가이드의 개념 계약과 선택 구현 환경을 분리합니다. 핵심 문서는 특정 RTOS release가 없어도 읽고 검증할 수 있습니다. 아래 버전은 예제·실습을 실제 firmware project로 옮길 때 사용할 **재현 기준**입니다.
 
@@ -29,7 +29,9 @@
 | Cortex-M/QEMU | `mps2/an521/cpu0` 또는 현재 문서에서 지원하는 동등 Cortex-M target |
 | build frontend | `west` + CMake/Ninja |
 
-Zephyr 4.4.0은 2026-04-14에 발표된 stable release이고, 4.4 release는 최소 Python을 3.12로 올리고 C17을 기본 C standard로 선택했으며 SDK 1.0 계열을 지원합니다. 재현 기준은 현재 공식 설치 문서의 patch release인 SDK 1.0.1까지 고정합니다. 이 가이드가 자동으로 최신 release로 이동하지는 않습니다. 다음 major/minor 또는 SDK patch로 올릴 때 문서·명령·generated artifact와 실습 가정을 다시 검토합니다.
+[공식 release 목록](https://docs.zephyrproject.org/latest/releases/index.html)은 Zephyr 4.4.0을 2026-04-14 release로 열거합니다. [4.4 migration guide](https://docs.zephyrproject.org/latest/releases/migration-guide-4.4.html)는 4.3에서 4.4로 이동할 때 최소 Python이 3.10에서 3.12로 바뀌고 기본 C standard가 C17이 되며 최소 SDK가 1.0.0이라고 기록합니다. [공식 SDK 문서](https://docs.zephyrproject.org/latest/develop/toolchains/zephyr_sdk.html)가 확인일에 권장하는 1.0.1을 재현 profile로 고정했습니다. 즉 SDK 1.0.1은 4.4의 최소값 주장이 아니라 이 가이드의 선택한 patch 기준입니다.
+
+Python 3.12, C17과 SDK 1.0.1은 **선택 Zephyr profile**의 묶음입니다. hardware와 Zephyr가 필요 없는 6개 host 실습과 capstone checker는 위 표처럼 Python 3.10 이상을 유지합니다. `prepare.sh`의 host 최소 조건을 Zephyr 조건과 혼동하지 않습니다. 이 가이드가 자동으로 최신 release로 이동하지도 않습니다. 다음 major/minor 또는 SDK patch로 올릴 때 문서·명령·generated artifact와 실습 가정을 다시 검토합니다.
 
 ## 선택 명령 예시
 
@@ -122,12 +124,13 @@ RISC-V라는 이름만으로 interrupt controller, timer, cache와 boot flow가 
 
 기준 version을 바꿀 때:
 
-1. release note에서 C standard, build, board naming, Kconfig/Devicetree, driver API와 test 변화 확인
-2. `reference/sources.md` 링크와 확인일 갱신
-3. 예제 명령을 clean environment에서 재실행
-4. generated `.config`, Devicetree와 ELF/map 비교
-5. state model 가정이 API semantics와 충돌하는지 검토
-6. `./prepare.sh && ./verify.sh` 실행
-7. 미지원 또는 변경된 profile을 문서화
+1. [release 목록](https://docs.zephyrproject.org/latest/releases/index.html)에서 exact release와 발표일 확인
+2. 이전 기준에서 새 기준으로 가는 공식 migration guide에서 Python, C standard, SDK, build, board naming, Kconfig/Devicetree, driver API와 test 변화 확인
+3. `reference/sources.md`의 공식 링크, 판단 근거와 확인일 갱신
+4. 예제 명령을 clean environment에서 재실행하고 exact `west`, Python, compiler와 SDK version 기록
+5. generated `.config`, Devicetree와 ELF/map 비교
+6. state model 가정이 API semantics와 충돌하는지 검토
+7. `./prepare.sh && ./verify.sh` 실행
+8. 미지원 또는 변경된 profile과 migration 결과를 문서화
 
 “최신”이라는 표현만 바꾸지 말고 재현 가능한 버전과 변경 근거를 남깁니다.
