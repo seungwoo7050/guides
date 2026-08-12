@@ -13,6 +13,7 @@ from .runner import exit_status, print_results, run_cases, validate_executable
 from .specification import load_cases
 
 
+# [Implementation 10] argparse 경계 하나가 지역화된 help와 usage error를 소유합니다.
 class KoreanArgumentParser(argparse.ArgumentParser):
     def format_usage(self) -> str:
         return super().format_usage().replace("usage:", "사용법:", 1)
@@ -31,6 +32,7 @@ class KoreanArgumentParser(argparse.ArgumentParser):
         self.exit(2, f"{self.prog}: 오류: {message}\n")
 
 
+# [Implementation 10-1] 외부 사용자가 의존할 CLI option과 command 경계를 선언합니다.
 def build_parser() -> argparse.ArgumentParser:
     parser = KoreanArgumentParser(
         prog="command-checker",
@@ -48,6 +50,7 @@ def build_parser() -> argparse.ArgumentParser:
     return parser
 
 
+# [Implementation 10-2] 부작용 전에 separator, worker 수와 빈 command를 정규화·거부합니다.
 def parse_arguments(argv: Sequence[str] | None = None) -> argparse.Namespace:
     parser = build_parser()
     arguments = parser.parse_args(argv)
@@ -60,13 +63,15 @@ def parse_arguments(argv: Sequence[str] | None = None) -> argparse.Namespace:
     return arguments
 
 
+# [Implementation 10-3] 명세·실행·보고를 조립하고 실패 category를 0·1·2 상태로 바꿉니다.
 def main(argv: Sequence[str] | None = None) -> int:
     arguments = parse_arguments(argv)
 
     try:
         cases = load_cases(arguments.cases)
-        validate_executable(arguments.command[0])
-        results = run_cases(cases, arguments.command, arguments.jobs)
+        executable = validate_executable(arguments.command[0])
+        command = (executable, *arguments.command[1:])
+        results = run_cases(cases, command, arguments.jobs)
     except (SpecificationError, ExecutionError) as error:
         print(error, file=sys.stderr)
         return 2

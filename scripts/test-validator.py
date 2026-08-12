@@ -23,6 +23,7 @@ CONTRACT = ("학습 목표", "선행 개념", "연결 실습", "완료 기준")
 class Mutant:
     name: str
     apply: Callable[[Path], None]
+    expected_fragment: str | None = None
 
 
 def concepts(root: Path) -> list[Path]:
@@ -137,6 +138,84 @@ def missing_roadmap_limit(root: Path) -> None:
     path.write_text(text.replace("## 자동화의 한계\n", "## 자동화 한계 누락\n", 1), encoding="utf-8")
 
 
+def duplicate_implementation_annotation(root: Path) -> None:
+    path = root / "exercises/command-checker/reference/command_checker/model.py"
+    text = path.read_text(encoding="utf-8")
+    marker = next(line for line in text.splitlines() if "[Implementation 2]" in line)
+    path.write_text(text + "\n" + marker + "\n", encoding="utf-8")
+
+
+def gap_in_implementation_annotations(root: Path) -> None:
+    path = root / "exercises/command-checker/reference/command_checker/runner.py"
+    text = path.read_text(encoding="utf-8")
+    if text.count("[Implementation 9]") != 1:
+        raise RuntimeError("implementation 9 anchor mismatch")
+    path.write_text(text.replace("[Implementation 9]", "[Implementation 11]", 1), encoding="utf-8")
+
+
+def implementation_annotation_in_skeleton(root: Path) -> None:
+    path = root / "exercises/command-checker/skeleton/command_checker/cli.py"
+    path.write_text(
+        path.read_text(encoding="utf-8")
+        + "\n# [Implementation 11] skeleton에 정답 순서를 노출한 결함입니다.\n",
+        encoding="utf-8",
+    )
+
+
+def drift_reference_implementation_index(root: Path) -> None:
+    path = root / "exercises/command-checker/README.md"
+    text = path.read_text(encoding="utf-8")
+    if text.count("| `1` |") != 1:
+        raise RuntimeError("reference implementation index anchor mismatch")
+    path.write_text(text.replace("| `1` |", "| `99` |", 1), encoding="utf-8")
+
+
+def remove_py_typed_sidecar(root: Path) -> None:
+    path = root / "exercises/command-checker/README.md"
+    text = path.read_text(encoding="utf-8")
+    if text.count("[Implementation 10-6]") != 1:
+        raise RuntimeError("py.typed sidecar anchor mismatch")
+    path.write_text(text.replace("[Implementation 10-6] ", "", 1), encoding="utf-8")
+
+
+def add_implementation_zero(root: Path) -> None:
+    path = root / "exercises/command-checker/reference/command_checker/model.py"
+    path.write_text(
+        path.read_text(encoding="utf-8")
+        + "\n# [Implementation 0] 존재하지 않는 bootstrap을 만든 결함입니다.\n",
+        encoding="utf-8",
+    )
+
+
+def malformed_implementation_annotation(root: Path) -> None:
+    path = root / "exercises/command-checker/reference/command_checker/model.py"
+    path.write_text(
+        path.read_text(encoding="utf-8")
+        + "\n# [Implementation x] 숫자가 아닌 단계 결함입니다.\n",
+        encoding="utf-8",
+    )
+
+
+def reference_as_default_implementation(root: Path) -> None:
+    path = root / "Makefile"
+    text = path.read_text(encoding="utf-8")
+    if text.count("EXERCISE_IMPL ?= workspace") != 1:
+        raise RuntimeError("Makefile learner default anchor mismatch")
+    path.write_text(
+        text.replace("EXERCISE_IMPL ?= workspace", "EXERCISE_IMPL ?= reference", 1),
+        encoding="utf-8",
+    )
+
+
+def missing_readme_stage_mapping(root: Path) -> None:
+    path = root / "README.md"
+    text = path.read_text(encoding="utf-8")
+    anchor = "make stage-04 EXERCISE_IMPL=workspace"
+    if text.count(anchor) != 1:
+        raise RuntimeError("README stage-04 mapping anchor mismatch")
+    path.write_text(text.replace(anchor, "make stage-XX EXERCISE_IMPL=workspace", 1), encoding="utf-8")
+
+
 MUTANTS = (
     Mutant("arbitrary root file outside exact manifest", arbitrary_root),
     Mutant("unexpected numbered document", extra_doc),
@@ -153,6 +232,51 @@ MUTANTS = (
     Mutant("copied pedagogy rubric", copied_rubric),
     Mutant("unfinished reference", unfinished_reference),
     Mutant("missing roadmap automation limit", missing_roadmap_limit),
+    Mutant(
+        "duplicate implementation annotation",
+        duplicate_implementation_annotation,
+        "Implementation annotation 중복",
+    ),
+    Mutant(
+        "gap in implementation annotations",
+        gap_in_implementation_annotations,
+        "Implementation top-level 번호는 1부터 연속",
+    ),
+    Mutant(
+        "implementation annotation leaked into skeleton",
+        implementation_annotation_in_skeleton,
+        "Implementation annotation 금지 경로",
+    ),
+    Mutant(
+        "reference implementation index drift",
+        drift_reference_implementation_index,
+        "Reference 구현 순서 표와 annotation 불일치",
+    ),
+    Mutant(
+        "missing py.typed sidecar annotation",
+        remove_py_typed_sidecar,
+        "py.typed sidecar annotation",
+    ),
+    Mutant(
+        "invented implementation zero",
+        add_implementation_zero,
+        "Implementation 0 대상이 없습니다",
+    ),
+    Mutant(
+        "malformed implementation annotation",
+        malformed_implementation_annotation,
+        "Implementation annotation 형식 오류",
+    ),
+    Mutant(
+        "reference selected as learner default",
+        reference_as_default_implementation,
+        "Makefile의 EXERCISE_IMPL 기본값은 workspace",
+    ),
+    Mutant(
+        "missing README stage mapping",
+        missing_readme_stage_mapping,
+        "README 학습 순서에서 stage 명령 누락",
+    ),
 )
 
 
@@ -195,6 +319,11 @@ def main() -> int:
             result = run_validator(target)
             if result.returncode == 0:
                 print(f"FAIL mutant survived: {mutant.name}", file=sys.stderr); return 1
+            combined = result.stdout + result.stderr
+            if mutant.expected_fragment and mutant.expected_fragment not in combined:
+                print(f"FAIL mutant rejected for wrong reason: {mutant.name}", file=sys.stderr)
+                print(combined, file=sys.stderr)
+                return 1
             print(f"PASS mutant rejected: {mutant.name}")
     print(f"VALIDATOR MUTANTS: PASS ({len(MUTANTS)})")
     return 0

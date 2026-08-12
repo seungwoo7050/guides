@@ -13,6 +13,7 @@ from typing import Sequence
 from .model import Result
 
 
+# [Implementation 8] 같은 directory의 완성된 임시 파일만 최종 경로로 원자 교체합니다.
 def atomic_write_text(path: Path, data: str) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     descriptor, temporary_name = tempfile.mkstemp(
@@ -32,6 +33,7 @@ def atomic_write_text(path: Path, data: str) -> None:
         raise
 
 
+# [Implementation 8-1] 실행과 분리된 같은 Result sequence에서 결정적인 JSON을 만듭니다.
 def render_json(results: Sequence[Result]) -> str:
     payload = {
         "passed": sum(result.passed for result in results),
@@ -45,6 +47,7 @@ def write_json_report(path: Path, results: Sequence[Result]) -> None:
     atomic_write_text(path, render_json(results))
 
 
+# [Implementation 8-2] 모든 동적 text를 XML 1.0에 맞춘 뒤 같은 결과로 JUnit을 만듭니다.
 def xml_text(value: str) -> str:
     return "".join(
         character

@@ -3,14 +3,17 @@
 
 from __future__ import annotations
 
+import io
 import json
 import os
 import re
 import stat
 import subprocess
 import sys
+import tokenize
 import tomllib
 import unicodedata
+from collections import Counter
 from pathlib import Path
 from urllib.parse import unquote
 
@@ -146,6 +149,109 @@ def error(message: str) -> None:
 def section(text: str, heading: str) -> str:
     match = re.search(rf"^## {re.escape(heading)}\n(.*?)(?=^## |\Z)", text, re.M | re.S)
     return match.group(1).strip() if match else ""
+
+
+IMPLEMENTATION_CANDIDATE = re.compile(r"\[Implementation[^\]\n]*\]")
+IMPLEMENTATION_EXACT = re.compile(r"\[Implementation (0|[1-9]\d*(?:-[1-9]\d*)?)\]")
+
+
+def implementation_sort_key(identifier: str) -> tuple[int, int]:
+    parts = identifier.split("-", 1)
+    return int(parts[0]), int(parts[1]) if len(parts) == 2 else 0
+
+
+def validate_implementation_annotations() -> None:
+    reference = ROOT / "exercises/command-checker/reference"
+    exercise_readme = ROOT / "exercises/command-checker/README.md"
+    ignored = {".git", ".guide", ".venv", ".pytest_cache", "__pycache__", "workspace"}
+    occurrences: list[tuple[str, Path, int, str]] = []
+
+    def inspect_line(path: Path, number: int, line: str, *, comment: bool) -> None:
+        if "[Implementation" not in line:
+            return
+        candidates = list(IMPLEMENTATION_CANDIDATE.finditer(line))
+        if not candidates:
+            error(f"Implementation annotation 형식 오류: {path.relative_to(ROOT)}:{number}")
+            return
+        for candidate in candidates:
+            exact = IMPLEMENTATION_EXACT.fullmatch(candidate.group(0))
+            if exact is None:
+                error(f"Implementation annotation 형식 오류: {path.relative_to(ROOT)}:{number}")
+                continue
+            identifier = exact.group(1)
+            if identifier == "0":
+                error("command-checker에는 Implementation 0 대상이 없습니다.")
+            allowed_source = path.is_relative_to(reference) and (
+                path.suffix == ".py" or path == reference / "pyproject.toml"
+            )
+            allowed_sidecar = path == exercise_readme
+            if not allowed_source and not allowed_sidecar:
+                error(f"Implementation annotation 금지 경로: {path.relative_to(ROOT)}:{number}")
+            if allowed_source and not comment:
+                error(f"Implementation annotation은 comment여야 합니다: {path.relative_to(ROOT)}:{number}")
+            if allowed_sidecar and identifier != "10-6":
+                error(f"README sidecar는 10-6만 소유합니다: {path.relative_to(ROOT)}:{number}")
+            if not re.search(r"[가-힣]", line):
+                error(f"Implementation annotation 설명 누락: {path.relative_to(ROOT)}:{number}")
+            occurrences.append((identifier, path, number, line))
+
+    for path in sorted(ROOT.rglob("*")):
+        relative = path.relative_to(ROOT)
+        if not path.is_file() or any(part in ignored for part in relative.parts):
+            continue
+        try:
+            text = path.read_text(encoding="utf-8")
+        except (OSError, UnicodeDecodeError):
+            continue
+        if path.suffix == ".py":
+            try:
+                tokens = tokenize.generate_tokens(io.StringIO(text).readline)
+                for token in tokens:
+                    if token.type == tokenize.COMMENT:
+                        inspect_line(path, token.start[0], token.string, comment=True)
+            except (IndentationError, tokenize.TokenError) as exc:
+                error(f"Python token 검사 실패: {relative}: {exc}")
+        else:
+            for number, line in enumerate(text.splitlines(), 1):
+                inspect_line(path, number, line, comment=line.lstrip().startswith("#"))
+
+    counts = Counter(identifier for identifier, _, _, _ in occurrences)
+    for identifier, count in sorted(counts.items(), key=lambda item: implementation_sort_key(item[0])):
+        if count != 1:
+            error(f"Implementation annotation 중복: {identifier}: {count}개")
+    if not counts:
+        error("Implementation annotation이 없습니다.")
+        return
+
+    top_level = {int(identifier) for identifier in counts if "-" not in identifier and identifier != "0"}
+    if top_level != set(range(1, max(top_level, default=0) + 1)):
+        error(f"Implementation top-level 번호는 1부터 연속이어야 합니다: {sorted(top_level)}")
+    children: dict[int, set[int]] = {}
+    for identifier in counts:
+        if "-" not in identifier:
+            continue
+        parent_text, child_text = identifier.split("-", 1)
+        parent, child = int(parent_text), int(child_text)
+        children.setdefault(parent, set()).add(child)
+        if parent not in top_level:
+            error(f"Implementation substep parent 누락: {identifier}")
+    for parent, values in sorted(children.items()):
+        if values != set(range(1, max(values) + 1)):
+            error(f"Implementation {parent} substep은 1부터 연속이어야 합니다: {sorted(values)}")
+
+    readme_text = exercise_readme.read_text(encoding="utf-8")
+    implementation_section = section(readme_text, "Reference 구현 순서")
+    row_ids = re.findall(r"^\|\s*`(\d+(?:-\d+)?)`\s*\|", implementation_section, re.M)
+    expected_ids = sorted(counts, key=implementation_sort_key)
+    if row_ids != expected_ids:
+        error(f"Reference 구현 순서 표와 annotation 불일치: {row_ids} != {expected_ids}")
+
+    sidecars = [item for item in occurrences if item[1] == exercise_readme]
+    if len(sidecars) != 1 or sidecars[0][0] != "10-6" or "reference/command_checker/py.typed" not in sidecars[0][3]:
+        error("py.typed sidecar annotation은 README의 10-6 행에 정확히 한 번 있어야 합니다.")
+    typed_marker = reference / "command_checker/py.typed"
+    if typed_marker.read_text(encoding="utf-8").strip():
+        error("reference py.typed는 공백 외 내용이 없는 marker여야 합니다.")
 
 
 def github_slug(value: str) -> str:
@@ -318,6 +424,29 @@ if exercise_path.is_file():
         error(f"자기 설명 질문이 2개 미만: {CONFIG['exercise']}")
 
 if GUIDE == "python":
+    validate_implementation_annotations()
+    root_readme = (ROOT / "README.md").read_text(encoding="utf-8")
+    learning_order = section(root_readme, "누적 학습 순서")
+    for column in ("순서", "문서", "관찰 예제", "직접 수행", "수정 위치", "검증", "완료 뒤 비교·다음"):
+        if column not in learning_order:
+            error(f"README 학습 순서 column 누락: {column}")
+    for concept in sorted(CONFIG["concepts"]):
+        if concept not in learning_order:
+            error(f"README 학습 순서에서 문서 누락: {concept}")
+    for stage in range(1, 9):
+        command = f"make stage-{stage:02d} EXERCISE_IMPL=workspace"
+        if command not in learning_order:
+            error(f"README 학습 순서에서 stage 명령 누락: {command}")
+    for phrase in ("examples/", "fixtures/", "workspace/", "reference/", "make exercise-check EXERCISE_IMPL=workspace"):
+        if phrase not in learning_order:
+            error(f"README 학습 순서 역할 누락: {phrase}")
+
+    makefile = (ROOT / "Makefile").read_text(encoding="utf-8")
+    if not re.search(r"^EXERCISE_IMPL \?= workspace$", makefile, re.M):
+        error("Makefile의 EXERCISE_IMPL 기본값은 workspace여야 합니다.")
+    if not re.search(r"^reference-check:\n\t@\$\(MAKE\).*EXERCISE_IMPL=reference$", makefile, re.M):
+        error("reference-check는 reference를 명시적으로 선택해야 합니다.")
+
     expected_modules = {"__init__.py", "__main__.py", "cli.py", "comparison.py", "model.py",
                         "process.py", "reports.py", "runner.py", "specification.py"}
     for implementation in ("reference", "skeleton"):

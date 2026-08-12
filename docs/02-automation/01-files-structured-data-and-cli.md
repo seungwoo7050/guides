@@ -184,7 +184,8 @@ def main(argv: Sequence[str] | None = None) -> int:
 
 ## 연결 실습
 
-- [command-checker 4단계](../../exercises/command-checker/README.md)에서 JSON 명세, cwd, environment와 usage error를 검증합니다.
+- [command-checker 4단계](../../exercises/command-checker/README.md#4단계-json-명세와-실행-시-검증)에서 JSON 명세, 상대 `cwd`, environment와 usage error를 검증합니다.
+- 원자적 결과 교체 절은 [8단계](../../exercises/command-checker/README.md#8단계-병렬-실행과-원자적-보고서)에서 JSON·JUnit writer에 다시 적용합니다.
 
 ## 완료 기준
 

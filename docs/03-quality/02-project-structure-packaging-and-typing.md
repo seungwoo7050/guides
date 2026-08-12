@@ -215,7 +215,8 @@ source-level 단계 검사는 skeleton, workspace와 reference를 같은 공개 
 
 ## 연결 실습
 
-- [command-checker 구성](../../exercises/command-checker/README.md)에서 9개 module의 허용 import 방향과 순환 부재를 AST architecture test로 확인하고, stage 1·8에서 실제 설치와 공개 타입 계약을 검사합니다.
+- [command-checker 1단계](../../exercises/command-checker/README.md#1단계-패키지와-진입점)에서는 제공된 `__main__.py`, `_command_checker_build.py`, `pyproject.toml`, `py.typed`가 `cli.main`을 노출하는 방식을 관찰합니다.
+- [command-checker 8단계](../../exercises/command-checker/README.md#8단계-병렬-실행과-원자적-보고서)에서는 9개 module의 허용 import 방향, 공개 타입, 일치하는 version metadata와 실제 설치 계약을 최종 확인합니다.
 
 ## 완료 기준
 

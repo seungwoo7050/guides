@@ -26,6 +26,7 @@ def _process_group_exists(group_id: int) -> bool:
     return True
 
 
+# [Implementation 7] TERM·유예·KILL·reap을 한 owner에 묶어 process group 수명을 닫습니다.
 def _terminate_group(process: subprocess.Popen[Any]) -> None:
     """프로세스 그룹에 SIGTERM을 보낸 뒤 필요하면 SIGKILL을 보냅니다."""
 
@@ -70,6 +71,7 @@ def _close_stream(selector: selectors.BaseSelector, stream: Any) -> None:
         pass
 
 
+# [Implementation 7-1] selector 하나가 세 pipe, deadline과 stream별 byte 상한을 소유합니다.
 def _collect_process(
     process: subprocess.Popen[bytes],
     input_bytes: bytes,
@@ -169,6 +171,7 @@ def _collect_process(
     return bytes(stdout), bytes(stderr), timed_out, exceeded
 
 
+# [Implementation 5-1] 사례별 env·cwd·spawn과 관찰 결과 생성을 하나의 실행 경계로 묶습니다.
 def run_case(case: Case, command: Sequence[str]) -> Result:
     if not command:
         raise ExecutionError("실행할 명령이 비어 있습니다.")
@@ -190,6 +193,7 @@ def run_case(case: Case, command: Sequence[str]) -> Result:
     except OSError as error:
         raise ExecutionError(f"명령을 시작할 수 없습니다: {error}") from error
 
+    # [Implementation 7-2] 수집 중 어떤 실패가 나도 이 함수가 만든 process group을 정리합니다.
     try:
         stdout_bytes, stderr_bytes, timed_out, exceeded = _collect_process(
             process,

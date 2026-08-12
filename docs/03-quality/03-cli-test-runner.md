@@ -115,7 +115,7 @@ runner → process
 
 ### 1단계: 패키지와 진입점
 
-`python -m command_checker`와 `pyproject.toml`이 설치한 `command-checker`가 실행되고, 도움말은 stdout/0, 사용법 오류는 stderr/2를 사용합니다.
+제공된 `__main__.py`와 packaging scaffold는 module 실행과 설치된 `command-checker`를 같은 `cli.main`에 연결합니다. 학습자는 `cli.py`의 parser와 `main`을 구현하며, 도움말은 stdout/0, 사용법 오류는 stderr/2를 사용합니다.
 
 ### 2단계: 데이터 모델
 
@@ -188,7 +188,7 @@ make stage-08 EXERCISE_IMPL=workspace
 
 ## 연결 실습
 
-- [command-checker 전체 실습](../../exercises/command-checker/README.md)을 stage 01~08 순서로 완성하고 JSON/JUnit까지 검증합니다.
+- [command-checker 전체 실습](../../exercises/command-checker/README.md)을 stage 01~08 순서로 완성하고 workspace 전체 검사를 통과시킵니다. 그 뒤 처음으로 최종 reference를 비교하고, 완성한 workspace 명령을 설치한 다음 repository `./verify.sh`로 종료합니다.
 
 ## 완료 기준
 

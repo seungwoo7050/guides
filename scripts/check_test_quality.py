@@ -56,6 +56,38 @@ MUTATIONS = (
         expected_test="test_bool_is_not_a_numeric_timeout_or_limit",
     ),
     Mutation(
+        name="absolute cwd accepted",
+        path="command_checker/specification.py",
+        before="if not cwd_text or cwd_path.is_absolute():",
+        after="if not cwd_text:",
+        pattern="test_stage_04_*.py",
+        expected_test="test_cwd_is_a_nonempty_relative_path_from_the_cases_file",
+    ),
+    Mutation(
+        name="cwd resolved from invocation directory",
+        path="command_checker/specification.py",
+        before="cwd = (base / cwd_path).resolve()",
+        after="cwd = cwd_path.resolve()",
+        pattern="test_stage_04_*.py",
+        expected_test="test_cwd_is_a_nonempty_relative_path_from_the_cases_file",
+    ),
+    Mutation(
+        name="normalized executable identity discarded by resolver",
+        path="command_checker/runner.py",
+        before="return str(path)",
+        after="return command",
+        pattern="test_stage_06_*.py",
+        expected_test="test_executable_is_selected_once_before_case_context",
+    ),
+    Mutation(
+        name="normalized executable identity discarded by CLI",
+        path="command_checker/cli.py",
+        before="command = (executable, *arguments.command[1:])",
+        after="command = tuple(arguments.command)",
+        pattern="test_stage_06_*.py",
+        expected_test="test_executable_is_selected_once_before_case_context",
+    ),
+    Mutation(
         name="output limit disabled",
         path="command_checker/process.py",
         before="if len(chunk) > remaining_capacity:",
@@ -71,6 +103,14 @@ MUTATIONS = (
             "return tuple(reversed(tuple(executor.map("
             "lambda case: run_case(case, command), cases))))"
         ),
+        pattern="test_stage_08_*.py",
+        expected_test="test_parallel_completion_keeps_input_order",
+    ),
+    Mutation(
+        name="parallel execution collapsed to sequential",
+        path="command_checker/runner.py",
+        before="if jobs == 1:",
+        after="if jobs >= 1:",
         pattern="test_stage_08_*.py",
         expected_test="test_parallel_completion_keeps_input_order",
     ),

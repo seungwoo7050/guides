@@ -7,7 +7,7 @@ from typing import Sequence, TextIO
 from .model import Case, Result
 
 
-def validate_executable(command: str) -> None:
+def validate_executable(command: str) -> str:
     raise NotImplementedError("stage 06: 실행 파일 검증을 구현하십시오.")
 
 

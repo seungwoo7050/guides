@@ -176,7 +176,7 @@ def lines(path: Path):
 
 ## 연결 실습
 
-- [command-checker 5·7단계](../../exercises/command-checker/README.md)에서 process stream 수명과 실패 시 정리를 추적합니다.
+- [command-checker 5단계](../../exercises/command-checker/README.md#5단계-외부-프로세스-한-건-실행)에서 process stream 소유권을 정하고, [7단계](../../exercises/command-checker/README.md#7단계-프로세스-수명과-출력-상한)에서 부분 실패와 timeout 뒤 정리를 완성합니다. 이 실습은 generator 자체보다 iterator·context-manager 장의 resource-lifetime 원칙을 직접 적용합니다.
 
 ## 완료 기준
 

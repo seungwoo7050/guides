@@ -151,7 +151,7 @@ python -c 'import sys; print(sys.executable)'
 python --version
 ```
 
-이 저장소의 `prepare.sh`는 `.guide/python/venv`를 만듭니다. 제3자 패키지를 요구하지 않으므로 네트워크 설치는 수행하지 않습니다.
+위 activation은 POSIX shell 예시입니다. 이 저장소가 공식 지원하는 macOS·Linux 흐름에서 `prepare.sh`는 `.guide/python/venv`를 만듭니다. 제3자 패키지를 요구하지 않으므로 네트워크 설치는 수행하지 않습니다.
 
 외부 Python 프로세스를 다시 실행할 때는 현재 인터프리터를 재사용합니다.
 
@@ -178,7 +178,7 @@ subprocess.run([sys.executable, "-m", "checker"], check=False)
 
 ## 연결 실습
 
-- [command-checker 1단계](../../exercises/command-checker/README.md)에서 import와 `python -m` 진입점, help/usage 채널을 확인합니다.
+- [command-checker 1단계](../../exercises/command-checker/README.md#1단계-패키지와-진입점)에서 제공된 `__main__.py`·packaging scaffold가 `cli.main`에 연결되는 방식을 관찰하고, workspace의 `cli.py`에서 help/usage 채널을 구현합니다.
 
 ## 완료 기준
 

@@ -318,7 +318,7 @@ COPY_BEFORE="$(python3 "$COPY/scripts/repository_state.py" fingerprint --root "$
 export PYTHONDONTWRITEBYTECODE=1
 
 run 'exact layout, links and pedagogy' "$PYTHON" -B "$COPY/scripts/validate.py"
-run 'fifteen layout-validator mutants' "$PYTHON" -B "$COPY/scripts/test-validator.py"
+run 'layout and annotation validator mutants' "$PYTHON" -B "$COPY/scripts/test-validator.py"
 run 'documentation contracts' "$PYTHON" -B "$COPY/scripts/check_docs.py"
 run 'shell entrypoint syntax' sh -n "$COPY/prepare.sh" "$COPY/verify.sh" \
     "$COPY/scripts/new-workspace.sh" "$COPY/scripts/test-prepare-safety.sh"

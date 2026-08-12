@@ -81,6 +81,35 @@ class SpecificationTest(unittest.TestCase):
             with self.assertRaises(self.model.SpecificationError):
                 self.specification.load_cases(missing_cwd)
 
+    def test_cwd_is_a_nonempty_relative_path_from_the_cases_file(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            cases_directory = root / "specs"
+            work = root / "work"
+            cases_directory.mkdir()
+            work.mkdir()
+            relative = write_cases(
+                cases_directory,
+                [{"name": "relative", "cwd": "../work"}],
+                "relative.json",
+            )
+            empty = write_cases(
+                cases_directory,
+                [{"name": "empty", "cwd": ""}],
+                "empty.json",
+            )
+            absolute = write_cases(
+                cases_directory,
+                [{"name": "absolute", "cwd": str(work)}],
+                "absolute.json",
+            )
+
+            self.assertEqual(self.specification.load_cases(relative)[0].cwd, work.resolve())
+            with self.assertRaises(self.model.SpecificationError):
+                self.specification.load_cases(empty)
+            with self.assertRaises(self.model.SpecificationError):
+                self.specification.load_cases(absolute)
+
     def test_top_level_must_be_a_nonempty_array(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)

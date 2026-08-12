@@ -1,14 +1,15 @@
 from __future__ import annotations
 
 import json
-import sys
 import tempfile
+import threading
 import unittest
 import xml.etree.ElementTree as ET
+from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 from unittest import mock
 
-from support import FIXTURES, module
+from support import module
 
 
 class ConcurrencyAndReportsTest(unittest.TestCase):
@@ -16,7 +17,6 @@ class ConcurrencyAndReportsTest(unittest.TestCase):
         self.model = module("model")
         self.runner = module("runner")
         self.reports = module("reports")
-        self.behavior = [sys.executable, str(FIXTURES / "behavior.py")]
 
     def result(self, *, name: str, passed: bool, stdout: str = ""):
         return self.model.Result(
@@ -33,11 +33,34 @@ class ConcurrencyAndReportsTest(unittest.TestCase):
 
     def test_parallel_completion_keeps_input_order(self) -> None:
         cases = (
-            self.model.Case(name="slow", args=("delay", "0.15", "slow"), stdout="slow\n"),
-            self.model.Case(name="fast", args=("delay", "0.01", "fast"), stdout="fast\n"),
-            self.model.Case(name="middle", args=("delay", "0.07", "middle"), stdout="middle\n"),
+            self.model.Case(name="slow"),
+            self.model.Case(name="fast"),
+            self.model.Case(name="middle"),
         )
-        results = self.runner.run_cases(cases, self.behavior, 3)
+        started = threading.Barrier(4)
+        releases = {case.name: threading.Event() for case in cases}
+        completed = {case.name: threading.Event() for case in cases}
+        completion_order: list[str] = []
+
+        def controlled_run(case, command):
+            del command
+            started.wait(timeout=2.0)
+            if not releases[case.name].wait(timeout=2.0):
+                raise AssertionError(f"release되지 않은 사례: {case.name}")
+            completion_order.append(case.name)
+            completed[case.name].set()
+            return self.result(name=case.name, passed=True)
+
+        with mock.patch.object(self.runner, "run_case", side_effect=controlled_run):
+            with ThreadPoolExecutor(max_workers=1) as coordinator:
+                future = coordinator.submit(self.runner.run_cases, cases, ("unused",), 3)
+                started.wait(timeout=2.0)
+                for name in ("fast", "middle", "slow"):
+                    releases[name].set()
+                    self.assertTrue(completed[name].wait(timeout=2.0), name)
+                results = future.result(timeout=2.0)
+
+        self.assertEqual(completion_order, ["fast", "middle", "slow"])
         self.assertEqual([result.name for result in results], ["slow", "fast", "middle"])
         self.assertTrue(all(result.passed for result in results))
 

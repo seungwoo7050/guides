@@ -23,6 +23,7 @@ _ALLOWED_FIELDS = {
 }
 
 
+# [Implementation 4] 신뢰하지 않는 JSON scalar·배열·환경 값을 내부 타입으로 정규화합니다.
 def _string(value: Any, field: str, index: int) -> str:
     if not isinstance(value, str):
         raise SpecificationError(f"cases[{index}].{field}는 문자열이어야 합니다.")
@@ -53,6 +54,7 @@ def _environment(value: Any, index: int) -> tuple[tuple[str, str], ...]:
     return tuple(sorted(value.items()))
 
 
+# [Implementation 4-1] field·기본값·상대 경로 계약을 검사한 뒤 불변 Case를 publish합니다.
 def _case(raw: Any, index: int, base: Path) -> Case:
     if not isinstance(raw, dict):
         raise SpecificationError(f"cases[{index}]는 객체여야 합니다.")
@@ -90,7 +92,12 @@ def _case(raw: Any, index: int, base: Path) -> Case:
         cwd_text = _string(cwd_value, "cwd", index)
         if "\0" in cwd_text:
             raise SpecificationError(f"cases[{index}].cwd에는 NUL 문자를 사용할 수 없습니다.")
-        cwd = (base / cwd_text).resolve()
+        cwd_path = Path(cwd_text)
+        if not cwd_text or cwd_path.is_absolute():
+            raise SpecificationError(
+                f"cases[{index}].cwd는 비어 있지 않은 상대 경로여야 합니다."
+            )
+        cwd = (base / cwd_path).resolve()
         if not cwd.is_dir():
             raise SpecificationError(f"cases[{index}].cwd 디렉터리가 없습니다: {cwd}")
 
@@ -108,6 +115,7 @@ def _case(raw: Any, index: int, base: Path) -> Case:
     )
 
 
+# [Implementation 4-2] 파일·JSON·중복 이름 경계를 소유하고 완성된 사례 tuple만 반환합니다.
 def load_cases(path: Path) -> tuple[Case, ...]:
     try:
         raw = json.loads(path.read_text(encoding="utf-8"))

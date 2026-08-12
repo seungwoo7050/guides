@@ -235,6 +235,7 @@ def compare_channels(
 ## 연결 실습
 
 - [command-checker 3단계](../../exercises/command-checker/README.md)에서 세 결과 채널의 순수 비교와 실패 category를 구현합니다.
+- 8단계에서 공개 함수·dataclass annotation과 `Any` 금지 계약을 다시 적용합니다.
 
 ## 완료 기준
 

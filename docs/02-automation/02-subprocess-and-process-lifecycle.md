@@ -194,7 +194,8 @@ stderr ≤ case.output_limit
 
 ## 연결 실습
 
-- [command-checker 5·7단계](../../exercises/command-checker/README.md)에서 child, pipe, timeout과 output limit 정리를 검증합니다.
+- [command-checker 5단계](../../exercises/command-checker/README.md#5단계-외부-프로세스-한-건-실행)에서 실행 파일 identity, 인자·cwd·env와 세 결과 채널을 연결합니다.
+- [command-checker 7단계](../../exercises/command-checker/README.md#7단계-프로세스-수명과-출력-상한)에서 child, pipe, timeout과 output limit 정리를 검증합니다.
 
 ## 완료 기준
 

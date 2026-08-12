@@ -123,7 +123,7 @@ worker 예외를 첫 번째에서 즉시 다시 발생시키면 나머지 작업
 
 ## 연결 실습
 
-- [command-checker 8단계](../../exercises/command-checker/README.md)에서 worker 수, 완료 순서와 결과 순서를 분리합니다.
+- [command-checker 8단계](../../exercises/command-checker/README.md#8단계-병렬-실행과-원자적-보고서)에서 barrier와 event로 완료 순서를 통제하면서 worker 수, 완료 순서와 결과 순서를 분리합니다.
 
 ## 완료 기준
 

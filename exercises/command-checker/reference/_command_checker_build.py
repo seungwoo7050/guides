@@ -15,6 +15,7 @@ from typing import Any
 ROOT = Path(__file__).resolve().parent
 
 
+# [Implementation 10-4] pyproject를 metadata·entrypoint의 owner로 삼고 drift를 먼저 거부합니다.
 def _project() -> dict[str, Any]:
     data = tomllib.loads((ROOT / "pyproject.toml").read_text(encoding="utf-8"))
     project = data["project"]
@@ -88,6 +89,7 @@ def prepare_metadata_for_build_wheel(
     return dist_info
 
 
+# [Implementation 10-5] module·marker·metadata·RECORD를 결정적인 wheel 하나로 publish합니다.
 def build_wheel(
     wheel_directory: str,
     config_settings: dict[str, Any] | None = None,

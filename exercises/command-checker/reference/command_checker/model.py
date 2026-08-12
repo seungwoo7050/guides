@@ -8,6 +8,7 @@ from pathlib import Path
 DEFAULT_OUTPUT_LIMIT = 1024 * 1024
 
 
+# [Implementation 2] 검증된 사례와 worker가 공유할 입력 상태를 불변 값으로 소유합니다.
 @dataclass(frozen=True, slots=True)
 class Case:
     name: str
@@ -27,6 +28,7 @@ class Case:
         return dict(self.env)
 
 
+# [Implementation 2-1] 한 실행의 관찰값과 수명 제한 상태를 같은 결과 값에 보존합니다.
 @dataclass(frozen=True, slots=True)
 class Result:
     name: str
@@ -40,6 +42,7 @@ class Result:
     exceeded_stream: str | None = None
 
 
+# [Implementation 2-2] 시작 전 명세 실패와 실행 자원 실패를 결과 불일치와 분리합니다.
 class SpecificationError(ValueError):
     """외부 명세가 검사를 시작하기 위한 계약을 만족하지 않습니다."""
 

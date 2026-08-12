@@ -90,6 +90,39 @@ class AggregationTest(unittest.TestCase):
         self.assertEqual(result.returncode, 2)
         self.assertIn("찾을 수 없습니다", result.stderr)
 
+    def test_executable_is_selected_once_before_case_context(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory).resolve()
+            case_work = root / "case-work"
+            case_work.mkdir()
+            executable = root / "probe"
+            executable.write_text("#!/bin/sh\npwd\n", encoding="utf-8")
+            executable.chmod(0o700)
+            cases = write_cases(
+                root,
+                [
+                    {
+                        "name": "selected",
+                        "cwd": "case-work",
+                        "env": {"PATH": ""},
+                        "stdout": str(case_work) + "\n",
+                    }
+                ],
+            )
+
+            for command, environment in (
+                ("./probe", None),
+                ("probe", {"PATH": str(root)}),
+            ):
+                with self.subTest(command=command):
+                    result = run_cli(
+                        ["--cases", str(cases), "--", command],
+                        cwd=root,
+                        environment=environment,
+                    )
+                    self.assertEqual(result.returncode, 0, result.stderr)
+                    self.assertIn("통과 selected", result.stdout)
+
 
 if __name__ == "__main__":
     unittest.main()

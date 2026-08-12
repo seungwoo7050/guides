@@ -128,7 +128,7 @@ POSIX 프로세스 그룹 검사는 macOS와 Linux에서 수행합니다. 다른
 
 ## 연결 실습
 
-- [단계별 공개 검사](../../exercises/command-checker/README.md)를 skeleton/reference에 실행하고 mutant 거부 이유를 찾습니다.
+- [단계별 공개 검사](../../exercises/command-checker/README.md)는 학습자가 수정하는 대상이 아니라 workspace와 reference에 같은 행동 계약을 적용하는 repository-owned 검사입니다. 각 mutant가 어느 공개 계약 때문에 거부되는지 확인합니다.
 
 ## 완료 기준
 

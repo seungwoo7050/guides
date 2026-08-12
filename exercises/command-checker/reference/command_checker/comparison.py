@@ -5,6 +5,7 @@ from __future__ import annotations
 from .model import Case
 
 
+# [Implementation 3] I/O 없이 세 결과 채널과 수명 실패를 한 순수 규칙으로 비교합니다.
 def compare_observation(
     case: Case,
     *,

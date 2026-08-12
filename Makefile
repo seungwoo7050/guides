@@ -1,6 +1,6 @@
 PYTHON ?= $(if $(wildcard .guide/python/venv/bin/python),.guide/python/venv/bin/python,python3)
 PYTHON_RUN = PYTHONDONTWRITEBYTECODE=1 $(PYTHON) -B
-EXERCISE_IMPL ?= reference
+EXERCISE_IMPL ?= workspace
 TEST_DIR := exercises/command-checker/tests
 
 .PHONY: prepare verify check negative-check validator-check prepare-safety-check \
