@@ -100,9 +100,11 @@ def main() -> int:
 
     faults = run(build, "page-fault-observer", "128")
     fault_fields = fields(faults.stdout)
+    expected_touch_checksum = sum((index % 251) + 1 for index in range(128))
     require(
         faults.returncode == 0
         and fault_fields.get("touched_pages") == "128"
+        and fault_fields.get("touch_checksum") == str(expected_touch_checksum)
         and int(fault_fields.get("minor_fault_delta", "-1")) >= 0,
         "page fault 관찰",
         faults,

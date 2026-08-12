@@ -124,11 +124,10 @@ mapping 제거 뒤 stale PTE나 frame reference가 남지 않음
 [`paging.py`](../../exercises/kernel-model/README.md)는 이 불변식을 단순한 Python object graph로 검사합니다. 실제 다단계 page table을 흉내 내기보다 process별 VPN mapping, frame content, write 권한과 COW reference를 모델링합니다.
 
 ```sh
-make -C exercises/kernel-model reference-test
-make -C exercises/kernel-model failure-test
+make checkpoint-check IMPL=workspace CHECKPOINT=05-paging
 ```
 
-`failure-fixtures/03-memory-shared-writable.json`은 같은 frame을 여러 process가 공유하면서 일반 writable 상태로 둔 모순을 거부합니다.
+검사를 통과한 뒤에만 `exercises/kernel-model/reference/kernel_model/paging.py`와 비교합니다. `failure-fixtures/03-memory-shared-writable.json`은 같은 frame을 여러 process가 공유하면서 일반 writable 상태로 둔 모순을 거부합니다.
 
 ## demand-zero mapping
 

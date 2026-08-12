@@ -10,6 +10,7 @@ class DeadlockInputError(ValueError):
     """자원 벡터나 그래프 입력이 유효하지 않을 때 발생합니다."""
 
 
+# [Implementation 4] wait-for graph는 단일 인스턴스 자원의 소유·대기 edge에서 cycle evidence를 찾는 별도 모델입니다.
 def find_wait_cycle(graph: Mapping[str, Sequence[str]]) -> list[str] | None:
     """단일 인스턴스 대기 그래프에서 한 순환을 반환합니다."""
 
@@ -18,6 +19,7 @@ def find_wait_cycle(graph: Mapping[str, Sequence[str]]) -> list[str] | None:
     stack: list[str] = []
     positions: dict[str, int] = {}
 
+    # [Implementation 4-1] visiting/visited와 stack position이 현재 DFS stack의 back-edge만 cycle로 복원합니다.
     def visit(node: str) -> list[str] | None:
         if node in visiting:
             start = positions[node]
@@ -47,6 +49,7 @@ def find_wait_cycle(graph: Mapping[str, Sequence[str]]) -> list[str] | None:
     return None
 
 
+# [Implementation 4-2] 다중 인스턴스 탐지는 available work로 완료 가능한 allocation을 반복 반환하고 끝까지 남은 작업을 보고합니다.
 def detect_deadlocked(
     available: Sequence[int],
     allocation: Mapping[str, Sequence[int]],
@@ -74,6 +77,7 @@ def detect_deadlocked(
     return {tid for tid, completed in finish.items() if not completed}
 
 
+# [Implementation 4-3] maximum-need로 미래의 안전 순서를 구성하는 avoidance 판정은 현재 deadlock 탐지와 의도적으로 분리합니다.
 def safe_sequence(
     available: Sequence[int],
     allocation: Mapping[str, Sequence[int]],

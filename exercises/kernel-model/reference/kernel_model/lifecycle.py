@@ -8,6 +8,7 @@ from enum import Enum
 from typing import Any, Deque, Mapping
 
 
+# [Implementation 1] TaskState, Task와 KernelState가 작업·CPU·queue 위치를 함께 소유하는 최소 상태 vocabulary를 고정합니다.
 class TaskState(str, Enum):
     """모델에서 사용하는 최소 실행 상태입니다."""
 
@@ -46,6 +47,7 @@ class KernelState:
     wait_queues: dict[str, Deque[str]] = field(default_factory=dict)
     completed: list[str] = field(default_factory=list)
 
+    # [Implementation 1-1] add/admit/dispatch는 작업을 모델에 들이고 NEW → READY → RUNNING 소유권을 한 위치씩 넘깁니다.
     def add(self, tid: str) -> Task:
         if not tid or tid in self.tasks:
             raise ValueError(f"새 작업 식별자가 유효하지 않습니다: {tid!r}")
@@ -98,6 +100,7 @@ class KernelState:
         self.assert_invariants()
         return task.tid
 
+    # [Implementation 1-2] block/wakeup/preempt/exit는 상태와 queue 위치를 같은 전이에서 바꿔 중간 중복 위치를 남기지 않습니다.
     def block(self, channel: str, reason: str) -> str:
         if not channel:
             raise ValueError("대기 채널은 비어 있을 수 없습니다.")
@@ -167,6 +170,7 @@ class KernelState:
             },
         }
 
+    # [Implementation 1-3] 모든 작업의 배타적 위치와 wait metadata를 검사한 뒤 같은 규칙으로 외부 snapshot도 재구성합니다.
     def assert_invariants(self) -> None:
         ready_items = list(self.ready)
         if len(set(ready_items)) != len(ready_items):

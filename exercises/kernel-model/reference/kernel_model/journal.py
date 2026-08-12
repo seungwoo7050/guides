@@ -10,6 +10,7 @@ class JournalError(ValueError):
     """저널 순서나 트랜잭션 상태가 잘못되었을 때 발생합니다."""
 
 
+# [Implementation 7] JournalRecord와 Journal은 append-only log의 transaction state와 다음 txid를 소유합니다.
 @dataclass(frozen=True, slots=True)
 class JournalRecord:
     txid: int
@@ -22,12 +23,14 @@ class Journal:
     records: list[JournalRecord] = field(default_factory=list)
     _next_txid: int = 1
 
+    # [Implementation 7-1] begin이 단조 증가 txid를 발급해 이후 operation과 commit의 수명 경계를 엽니다.
     def begin(self) -> int:
         txid = self._next_txid
         self._next_txid += 1
         self.records.append(JournalRecord(txid, "begin"))
         return txid
 
+    # [Implementation 7-2] operation은 열린 transaction에만 append하고 commit 이후 log mutation을 거부합니다.
     def append(self, txid: int, operation: Mapping[str, Any]) -> None:
         state = self._state(txid)
         if state != "open":
@@ -41,6 +44,7 @@ class Journal:
             raise JournalError(f"열린 트랜잭션만 commit할 수 있습니다: txid={txid}")
         self.records.append(JournalRecord(txid, "commit"))
 
+    # [Implementation 7-3] recovery는 committed transaction만 txid 순서로 replay하고 applied set이 중복 적용 책임을 소유합니다.
     def recover(
         self,
         apply_operation: Callable[[Mapping[str, Any]], None],
@@ -69,6 +73,7 @@ class Journal:
             recovered.append(txid)
         return recovered
 
+    # [Implementation 7-4] BEGIN → OPERATION* → COMMIT 순서를 검증한 뒤 snapshot reconstruction에도 같은 log 계약을 적용합니다.
     def validate(self) -> None:
         states: dict[int, str] = {}
         for record in self.records:

@@ -4,6 +4,7 @@
 #include <sys/wait.h>
 #include <unistd.h>
 
+/* [Implementation 1] fork 전에 heap 상태와 출력 buffer를 확정해 부모·자식 관찰이 중복 buffering에 오염되지 않게 합니다. */
 int main(void)
 {
     int *value;
@@ -21,6 +22,7 @@ int main(void)
         free(value);
         return 1;
     }
+    /* [Implementation 2] fork 뒤 자식은 같은 가상 주소의 private 값을 바꾸고 stdio cleanup을 중복하지 않도록 _exit 경계를 사용합니다. */
     child = fork();
     if (child < 0) {
         perror("fork");
@@ -35,6 +37,7 @@ int main(void)
         free(value);
         _exit(0);
     }
+    /* [Implementation 3] 부모는 EINTR를 견디며 자식을 회수한 뒤 값 분리만 증명하고 physical frame 동일성은 주장하지 않습니다. */
     for (;;) {
         if (waitpid(child, &status, 0) >= 0)
             break;

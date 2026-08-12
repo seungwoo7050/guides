@@ -4,6 +4,7 @@
 
 enum { DINER_COUNT = 5 };
 
+/* [Implementation 1] fork mutex, 시작 gate와 diner별 완료 횟수가 이 독립 관찰의 전체 공유 상태를 소유합니다. */
 typedef struct s_table {
     pthread_mutex_t forks[DINER_COUNT];
     pthread_mutex_t start_mutex;
@@ -19,6 +20,7 @@ typedef struct s_diner {
     int id;
 } t_diner;
 
+/* [Implementation 2] start-or-abort predicate를 while로 기다려 일부 thread 생성 실패에서도 모든 waiter가 같은 종료 결정을 봅니다. */
 static int wait_for_start(t_table *table)
 {
     int should_abort;
@@ -37,6 +39,7 @@ static int wait_for_start(t_table *table)
     return should_abort != 0 ? 1 : 0;
 }
 
+/* [Implementation 3] 모든 diner가 작은 lock을 먼저 잡는 전역 순서는 circular wait를 제거하지만 fairness나 starvation 부재는 보장하지 않습니다. */
 static void *diner_main(void *argument)
 {
     t_diner *diner;
@@ -73,6 +76,7 @@ static void *diner_main(void *argument)
     return NULL;
 }
 
+/* [Implementation 4] fork와 gate 자원을 단계적으로 만들고 실패 시 현재까지 소유한 mutex만 역순으로 회수합니다. */
 static int table_init(t_table *table, unsigned long rounds)
 {
     int index;
@@ -146,6 +150,7 @@ static int parse_rounds(const char *text, unsigned long *value)
     return 0;
 }
 
+/* [Implementation 5] 전체 thread가 생성된 뒤 gate를 열고, 실패 gate와 join을 포함한 수명을 닫은 후 diner별 완료를 판정합니다. */
 int main(int argc, char **argv)
 {
     t_table table;

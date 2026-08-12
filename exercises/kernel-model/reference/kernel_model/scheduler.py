@@ -15,6 +15,7 @@ class Policy(str, Enum):
     MLFQ = "mlfq"
 
 
+# [Implementation 3] JobSpec과 결과 record는 workload 입력, tick 관찰과 metric의 결정적인 vocabulary를 먼저 고정합니다.
 @dataclass(frozen=True, slots=True)
 class JobSpec:
     """CPU 버스트와 I/O 대기를 번갈아 수행하는 작업 명세입니다."""
@@ -84,6 +85,7 @@ class ScheduleResult:
         return sum(1 for tick in self.timeline if tick.running is not None)
 
 
+# [Implementation 3-1] 검증한 명세를 mutable runtime job으로 바꾸고 policy와 무관한 실행 state를 한 simulator가 소유합니다.
 def simulate(
     jobs: Iterable[JobSpec],
     policy: Policy | str,
@@ -129,6 +131,7 @@ def simulate(
         order_counter += 1
         ready.append(tid)
 
+    # [Implementation 3-2] choose는 READY 후보 사이의 policy와 deterministic tie-break만 담당하고 상태 전이는 호출자가 소유합니다.
     def choose() -> str:
         if selected_policy in (Policy.FCFS, Policy.RR):
             index = min(range(len(ready)), key=lambda i: runtimes[ready[i]].ready_order)
@@ -161,6 +164,7 @@ def simulate(
             )
         return ready.pop(index)
 
+    # [Implementation 3-3] 매 tick마다 arrival → wakeup → choose → run → block/preempt/complete 순서를 고정해 metric과 trace를 재현합니다.
     while completion_order.__len__() < len(specs):
         if time >= max_time:
             raise RuntimeError("스케줄링 모델이 최대 실행 시간을 넘었습니다.")

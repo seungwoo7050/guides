@@ -14,22 +14,9 @@
 
 ```sh
 ./scripts/new-workspace.sh exercises/kernel-model
-cd exercises/kernel-model/workspace
 ```
 
-작업 공간은 `skeleton/`의 현재 파일을 복사하며 기존 `workspace/`를 덮어쓰지 않습니다. 기준 구현을 바로 수정하지 말고 단계별로 자신의 구현을 완성합니다.
-
-루트에서 skeleton 계약, 기준 구현과 실패 fixture를 모두 검사할 수 있습니다.
-
-```sh
-make -C exercises/kernel-model check
-```
-
-모든 JSON fixture와 Python bytecode 검사까지 실행합니다.
-
-```sh
-make -C exercises/kernel-model verify
-```
+작업 공간은 `skeleton/`의 현재 파일을 복사하며 기존 `workspace/`를 덮어쓰지 않습니다. 저장소 루트에 머문 채 `exercises/kernel-model/workspace/kernel_model/`만 수정하고, 기준 구현을 바로 수정하지 말고 단계별로 자신의 구현을 완성합니다.
 
 자신의 `workspace/` 구현은 reference와 같은 공개 계약으로 검사합니다.
 
@@ -39,10 +26,12 @@ make -C exercises/kernel-model workspace-test
 
 ## 체크포인트
 
+checkpoint `01 → 08`은 project의 누적 구현 순서이며 문서 `1 → 11`의 읽기 번호와 같지 않습니다. 문서와 구현의 정확한 대응은 [root README의 전체 학습 순서](../../README.md#전체-학습-순서)에 있습니다. 공개 checkpoint ID는 그대로 유지합니다.
+
 | checkpoint | 모듈 | 구현할 모델 | 연결 문서 |
 |---|---|---|---|
-| `01-lifecycle` | `lifecycle.py` | `NEW`, `READY`, `RUNNING`, `BLOCKED`, `TERMINATED`와 큐 위치 불변식 | [프로세스와 문맥 전환](../../docs/01-boundary-and-execution/02-processes-threads-and-context-switches.md) |
-| `02-synchronization` | `synchronization.py` | 조건 검사와 대기 등록 사이의 깨우기 손실, 세마포어 허가 전달 | [블록·깨우기·IPC](../../docs/01-boundary-and-execution/04-blocking-wakeup-and-ipc.md) |
+| `01-lifecycle` | `lifecycle.py` | `NEW`, `READY`, `RUNNING`, `BLOCKED`, `TERMINATED`와 큐 위치 불변식 | [프로세스와 문맥 전환](../../docs/01-boundary-and-execution/02-processes-threads-and-context-switches.md), [블록·깨우기·IPC](../../docs/01-boundary-and-execution/04-blocking-wakeup-and-ipc.md) |
+| `02-synchronization` | `synchronization.py` | 조건 검사와 대기 등록 사이의 깨우기 손실, 세마포어 허가 전달 | [블록·깨우기·IPC](../../docs/01-boundary-and-execution/04-blocking-wakeup-and-ipc.md), [경쟁·원자성·순서](../../docs/02-concurrency/01-races-atomicity-and-ordering.md), [동기화 primitive](../../docs/02-concurrency/02-synchronization-primitives.md) |
 | `03-scheduler` | `scheduler.py` | FCFS, SJF, 우선순위, RR, MLFQ와 I/O wakeup | [CPU 스케줄링](../../docs/01-boundary-and-execution/03-cpu-scheduling.md) |
 | `04-deadlock` | `deadlock.py` | 대기 그래프 순환, 다중 인스턴스 탐지, 안전 순서 | [데드락과 진행](../../docs/02-concurrency/03-deadlock-and-progress.md) |
 | `05-paging` | `paging.py` | not-present 폴트, 보호 오류, COW와 FIFO·LRU·Clock | [주소 공간과 폴트](../../docs/03-virtual-memory/01-address-spaces-and-faults.md), [요구 페이징과 교체](../../docs/03-virtual-memory/02-demand-paging-cow-and-replacement.md) |
@@ -80,7 +69,7 @@ make checkpoint-check IMPL=workspace CHECKPOINT=08-cli
 ## skeleton과 reference의 사용법
 
 - [`skeleton/README.md`](skeleton/README.md)는 구현 순서와 공개 인터페이스를 설명합니다.
-- [`reference/README.md`](reference/README.md)는 구현을 마친 뒤 비교해야 할 설계 선택과 비보장 범위를 설명합니다.
+- [`reference/README.md`](reference/README.md)는 구현을 마친 뒤 비교해야 할 설계 선택, project-wide 권장 구현 순서와 비보장 범위를 설명합니다.
 - `fixtures/`는 정상 실행 입력입니다.
 - `failure-fixtures/`는 불변식 검사가 잡아야 하는 상태입니다.
 
@@ -101,6 +90,14 @@ reference를 먼저 복사하면 테스트는 통과할 수 있지만 정책 선
 - skeleton, reference와 failure fixture를 함께 검사해야 test의 거짓 양성을 줄일 수 있는 이유는 무엇입니까?
 
 ## 검증
+
+학습자의 최종 workspace:
+
+```sh
+make -C exercises/kernel-model workspace-test
+```
+
+maintainer가 canonical skeleton, reference, failure fixture와 checker 품질까지 확인할 때만 다음 명령을 사용합니다. 이 명령은 learner workspace를 검사하지 않습니다.
 
 ```sh
 make -C exercises/kernel-model check

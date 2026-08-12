@@ -166,21 +166,25 @@ wait queue에서 깨워도 CPU를 즉시 주는 것은 scheduler 정책입니다
 
 ## 연결 실습
 
-실행 수명 fixture를 먼저 확인합니다.
+`01-lifecycle`을 workspace에서 통과시킨 뒤 실행 수명 fixture를 확인합니다.
 
 ```sh
-python3 exercises/kernel-model/reference/kernel-model.py \
+make checkpoint-check IMPL=workspace CHECKPOINT=01-lifecycle
+python3 exercises/kernel-model/workspace/kernel-model.py \
   lifecycle exercises/kernel-model/fixtures/lifecycle.json
 ```
 
-깨우기 손실 창을 확인합니다.
+이어서 `02-synchronization`을 구현하고 깨우기 손실 창을 확인합니다.
 
 ```sh
-python3 exercises/kernel-model/reference/kernel-model.py \
+make checkpoint-check IMPL=workspace CHECKPOINT=02-synchronization
+python3 exercises/kernel-model/workspace/kernel-model.py \
   condition exercises/kernel-model/fixtures/condition.json
 ```
 
 `outcomes`에서 첫 `commit`은 `slept=false`가 되어야 합니다. notify가 prepare와 commit 사이에 발생했기 때문입니다. 두 번째 등록은 같은 generation에서 commit되고, 이후 broadcast가 대기자를 깨웁니다.
+
+각 checkpoint를 통과한 뒤에만 대응하는 `exercises/kernel-model/reference/kernel_model/lifecycle.py`와 `synchronization.py`의 설계 선택을 비교합니다.
 
 ## 설계 점검표
 

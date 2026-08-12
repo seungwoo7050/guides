@@ -4,12 +4,14 @@
 from __future__ import annotations
 
 import ast
+import io
 import json
 import os
 from pathlib import Path
 import re
 import stat
 import sys
+import tokenize
 from typing import Any
 from urllib.parse import unquote
 
@@ -27,7 +29,7 @@ IGNORED_PARTS = {
 }
 IGNORED_PREFIXES = (".checker-mutant.", ".workspace-copy.", ".workspace-create.lock")
 IGNORED_NAMES = {".DS_Store"}
-CORE_DOCS = {
+REQUIRED_DOCS = (
     "docs/01-boundary-and-execution/01-kernel-boundary-and-events.md",
     "docs/01-boundary-and-execution/02-processes-threads-and-context-switches.md",
     "docs/01-boundary-and-execution/03-cpu-scheduling.md",
@@ -39,8 +41,11 @@ CORE_DOCS = {
     "docs/03-virtual-memory/02-demand-paging-cow-and-replacement.md",
     "docs/04-storage-and-io/01-filesystems-page-cache-and-crash-consistency.md",
     "docs/04-storage-and-io/02-device-io-interrupts-and-dma.md",
+)
+OPTIONAL_DOCS = {
     "docs/80-extended-labs.md",
 }
+LEARNING_DOCS = set(REQUIRED_DOCS) | OPTIONAL_DOCS
 DOC_HEADINGS = ("학습 목표", "핵심 모델", "연결 실습", "완료 기준", "실패 조건", "자기 설명")
 EXERCISE_HEADINGS = ("목표", "체크포인트", "완료 기준", "자기 설명", "검증")
 EXAMPLE_HEADINGS = ("학습 목표", "준비 환경", "완료 기준", "자기 설명", "검증")
@@ -54,6 +59,86 @@ CHECKPOINTS = (
     "07-device-io",
     "08-cli",
 )
+OBSERVATION_DOCS = (
+    REQUIRED_DOCS[0],
+    REQUIRED_DOCS[4],
+    REQUIRED_DOCS[5],
+    REQUIRED_DOCS[6],
+    REQUIRED_DOCS[7],
+    REQUIRED_DOCS[8],
+)
+CHECKPOINT_LEARNING_MAP = (
+    (
+        "01-lifecycle",
+        (REQUIRED_DOCS[1], REQUIRED_DOCS[3]),
+        (),
+        ("exercises/kernel-model/workspace/kernel_model/lifecycle.py",),
+        ("exercises/kernel-model/reference/kernel_model/lifecycle.py",),
+        "02-synchronization",
+    ),
+    (
+        "02-synchronization",
+        (REQUIRED_DOCS[3], REQUIRED_DOCS[4], REQUIRED_DOCS[5]),
+        ("lost-update", "bounded-buffer"),
+        ("exercises/kernel-model/workspace/kernel_model/synchronization.py",),
+        ("exercises/kernel-model/reference/kernel_model/synchronization.py",),
+        "03-scheduler",
+    ),
+    (
+        "03-scheduler",
+        (REQUIRED_DOCS[2],),
+        (),
+        ("exercises/kernel-model/workspace/kernel_model/scheduler.py",),
+        ("exercises/kernel-model/reference/kernel_model/scheduler.py",),
+        "04-deadlock",
+    ),
+    (
+        "04-deadlock",
+        (REQUIRED_DOCS[6],),
+        ("dining-cycle",),
+        ("exercises/kernel-model/workspace/kernel_model/deadlock.py",),
+        ("exercises/kernel-model/reference/kernel_model/deadlock.py",),
+        "05-paging",
+    ),
+    (
+        "05-paging",
+        (REQUIRED_DOCS[7], REQUIRED_DOCS[8]),
+        ("page-fault-observer", "cow-observer"),
+        ("exercises/kernel-model/workspace/kernel_model/paging.py",),
+        ("exercises/kernel-model/reference/kernel_model/paging.py",),
+        "06-storage",
+    ),
+    (
+        "06-storage",
+        (REQUIRED_DOCS[9],),
+        (),
+        (
+            "exercises/kernel-model/workspace/kernel_model/filesystem.py",
+            "exercises/kernel-model/workspace/kernel_model/journal.py",
+        ),
+        (
+            "exercises/kernel-model/reference/kernel_model/filesystem.py",
+            "exercises/kernel-model/reference/kernel_model/journal.py",
+        ),
+        "07-device-io",
+    ),
+    (
+        "07-device-io",
+        (REQUIRED_DOCS[10],),
+        (),
+        ("exercises/kernel-model/workspace/kernel_model/device_io.py",),
+        ("exercises/kernel-model/reference/kernel_model/device_io.py",),
+        "08-cli",
+    ),
+    (
+        "08-cli",
+        ("docs/00-roadmap.md",),
+        (),
+        ("exercises/kernel-model/workspace/kernel_model/cli.py",),
+        ("exercises/kernel-model/reference/kernel_model/cli.py",),
+        "선택 확장",
+    ),
+)
 PACKAGE_MODULES = {
     "__init__.py",
     "cli.py",
@@ -66,6 +151,35 @@ PACKAGE_MODULES = {
     "scheduler.py",
     "synchronization.py",
 }
+EXAMPLE_SOURCES = (
+    "examples/syscall-boundary.c",
+    "examples/lost-update.c",
+    "examples/bounded-buffer.c",
+    "examples/dining-cycle.c",
+    "examples/cow-observer.c",
+    "examples/page-fault-observer.c",
+)
+OBSERVATION_EXAMPLES = (
+    "syscall-boundary",
+    "lost-update",
+    "bounded-buffer",
+    "dining-cycle",
+    "page-fault-observer",
+    "cow-observer",
+)
+REFERENCE_ANNOTATION_SOURCES = {
+    "exercises/kernel-model/reference/kernel-model.py",
+    *{
+        f"exercises/kernel-model/reference/kernel_model/{module}"
+        for module in PACKAGE_MODULES
+        if module != "__init__.py"
+    },
+}
+IMPLEMENTATION_PREFIX = "[" + "Implementation "
+IMPLEMENTATION_TOKEN = re.compile(
+    re.escape(IMPLEMENTATION_PREFIX) + r"(0|[1-9]\d*(?:-[1-9]\d*)?)\]"
+)
+IMPLEMENTATION_LIKE = re.compile(re.escape(IMPLEMENTATION_PREFIX) + r"[^\]\n]+\]")
 SKELETON_BOUNDARY_MODULES = PACKAGE_MODULES - {"__init__.py"}
 FIXTURES = {
     "condition.json",
@@ -222,6 +336,240 @@ def section(text: str, heading: str) -> str:
     return match.group("body") if match else ""
 
 
+def markdown_table(body: str) -> tuple[list[str], list[list[str]]]:
+    lines = [line.strip() for line in body.splitlines() if line.strip().startswith("|")]
+    if len(lines) < 2:
+        return [], []
+    parsed = [[cell.strip() for cell in line.strip("|").split("|")] for line in lines]
+    separator = parsed[1]
+    if not separator or not all(re.fullmatch(r":?-{3,}:?", cell) for cell in separator):
+        return [], []
+    return parsed[0], parsed[2:]
+
+
+def markdown_link_targets(cell: str) -> tuple[str, ...]:
+    return tuple(match.group(1).split("#", 1)[0] for match in re.finditer(r"\[[^\]]+\]\(([^)]+)\)", cell))
+
+
+def code_values(cell: str) -> tuple[str, ...]:
+    return tuple(re.findall(r"`([^`]+)`", cell))
+
+
+def check_readme_learning_map() -> None:
+    path = ROOT / "README.md"
+    if not path.is_file():
+        return
+    body = section(path.read_text(encoding="utf-8"), "전체 학습 순서")
+    header, rows = markdown_table(body)
+    expected_header = ["순서", "문서", "관찰 예제", "직접 수행", "수정 위치", "검증", "완료 뒤 비교·다음"]
+    if header != expected_header:
+        report(f"README ordered mapping header 오류: expected={expected_header} actual={header}")
+        return
+    if any(len(row) != len(expected_header) for row in rows):
+        report("README ordered mapping은 모든 행에 7개 semantic field가 필요합니다")
+        return
+    expected_order = ["관찰", *[str(number) for number in range(1, 9)], "선택"]
+    actual_order = [re.sub(r"`", "", row[0]) for row in rows]
+    if actual_order != expected_order:
+        report(f"README ordered mapping 순서 오류: expected={expected_order} actual={actual_order}")
+        return
+
+    observation = rows[0]
+    if markdown_link_targets(observation[1]) != OBSERVATION_DOCS:
+        report("README ordered mapping 관찰 문서 대응 오류")
+    expected_observation_examples = OBSERVATION_EXAMPLES
+    if code_values(observation[2]) != expected_observation_examples:
+        report("README ordered mapping 관찰 example 대응 오류")
+    if observation[4] != "—":
+        report("README observation 행은 learner 수정 위치가 없어야 합니다")
+
+    known_examples = set(expected_observation_examples)
+    for number, contract in enumerate(CHECKPOINT_LEARNING_MAP, start=1):
+        checkpoint, docs, examples, workspace_paths, reference_paths, next_stage = contract
+        row = rows[number]
+        if markdown_link_targets(row[1]) != docs:
+            report(f"README ordered mapping 문서/checkpoint 대응 오류: {checkpoint}")
+        row_examples = tuple(value for value in code_values(row[2]) if value in known_examples)
+        if row_examples != examples:
+            report(f"README ordered mapping example/checkpoint 대응 오류: {checkpoint}")
+        if f"`{checkpoint}`" not in row[3]:
+            report(f"README ordered mapping 직접 수행 누락: {checkpoint}")
+        actual_workspace_paths = tuple(
+            value for value in code_values(row[4]) if value.startswith("exercises/kernel-model/workspace/")
+        )
+        if actual_workspace_paths != workspace_paths or "reference/" in row[4]:
+            report(f"README ordered mapping workspace 수정 경계 오류: {checkpoint}")
+        if f"CHECKPOINT={checkpoint}" not in row[5] or "IMPL=workspace" not in row[5]:
+            report(f"README ordered mapping workspace 검증 명령 오류: {checkpoint}")
+        actual_reference_paths = tuple(
+            value for value in code_values(row[6]) if value.startswith("exercises/kernel-model/reference/")
+        )
+        if actual_reference_paths != reference_paths or next_stage not in row[6]:
+            report(f"README ordered mapping reference/next 대응 오류: {checkpoint}")
+    if "workspace-test" not in rows[8][5]:
+        report("README ordered mapping 최종 workspace-test 누락")
+    optional = rows[-1]
+    if markdown_link_targets(optional[1]) != ("docs/80-extended-labs.md",):
+        report("README ordered mapping 선택 확장 문서 대응 오류")
+    if "저장소 밖" not in optional[4] or "official" not in optional[5]:
+        report("README 선택 확장의 저장소 밖 manual evidence 예외 누락")
+    full_text = path.read_text(encoding="utf-8")
+    workspace_command = "./scripts/new-workspace.sh exercises/kernel-model"
+    if full_text.count(workspace_command) != 1:
+        report("README workspace 생성 명령은 전체 학습 순서에서 정확히 한 번만 실행해야 합니다")
+    if "첫 번째 읽기" not in body or "두 번째 구현 pass" not in body:
+        report("README의 read-first/implementation-second workflow 계약 누락")
+
+
+def annotation_values(text: str) -> list[str]:
+    return [match.group(1) for match in IMPLEMENTATION_TOKEN.finditer(text)]
+
+
+def implementation_sort_key(value: str) -> tuple[int, ...]:
+    return tuple(int(part) for part in value.split("-"))
+
+
+def check_scope_numbering(label: str, values: list[str]) -> None:
+    if not values:
+        report(f"Implementation annotation scope가 비어 있습니다: {label}")
+        return
+    duplicates = sorted(value for value in set(values) if values.count(value) > 1)
+    if duplicates:
+        report(f"Implementation exact anchor 중복: {label}: {duplicates}")
+    if values.count("0") > 1:
+        report(f"Implementation 0은 scope당 최대 한 번입니다: {label}")
+    top = sorted({int(value) for value in values if "-" not in value and value != "0"})
+    if top != list(range(1, max(top, default=0) + 1)):
+        report(f"Implementation top-level 번호가 1부터 연속이 아닙니다: {label}: {top}")
+    children: dict[int, set[int]] = {}
+    for value in values:
+        if "-" not in value:
+            continue
+        parent_text, child_text = value.split("-", 1)
+        parent, child = int(parent_text), int(child_text)
+        if parent not in top:
+            report(f"Implementation child의 parent가 없습니다: {label}: {value}")
+        children.setdefault(parent, set()).add(child)
+    for parent, numbers in sorted(children.items()):
+        ordered = sorted(numbers)
+        if ordered != list(range(1, max(ordered, default=0) + 1)):
+            report(f"Implementation substep이 1부터 연속이 아닙니다: {label}: {parent} -> {ordered}")
+
+
+def comment_annotation_values(relative: str, text: str) -> list[str]:
+    if relative.endswith(".py"):
+        try:
+            comments = "\n".join(
+                token.string
+                for token in tokenize.generate_tokens(io.StringIO(text).readline)
+                if token.type == tokenize.COMMENT
+            )
+        except (IndentationError, tokenize.TokenError) as error:
+            report(f"Python annotation tokenize 실패: {relative}: {error}")
+            comments = ""
+    elif relative.endswith(".c"):
+        comments = "\n".join(
+            match.group(0)
+            for match in re.finditer(r"/\*.*?\*/|//[^\n]*", text, flags=re.DOTALL)
+        )
+    else:
+        comments = ""
+    values = annotation_values(text)
+    if annotation_values(comments) != values:
+        report(f"Implementation anchor는 실제 source comment여야 합니다: {relative}")
+    return values
+
+
+def check_implementation_annotations(actual: set[str]) -> None:
+    allowed = set(EXAMPLE_SOURCES) | REFERENCE_ANNOTATION_SOURCES
+    values_by_path: dict[str, list[str]] = {}
+    for relative in sorted(actual):
+        path = ROOT / relative
+        try:
+            text = path.read_text(encoding="utf-8")
+        except (OSError, UnicodeDecodeError):
+            continue
+        loose = [match.group(0) for match in IMPLEMENTATION_LIKE.finditer(text)]
+        exact = [match.group(0) for match in IMPLEMENTATION_TOKEN.finditer(text)]
+        if loose != exact:
+            report(f"Implementation 표식 형식 오류: {relative}")
+        if exact and relative not in allowed:
+            report(f"Implementation annotation 금지 경로: {relative}")
+        if relative in allowed:
+            values_by_path[relative] = comment_annotation_values(relative, text)
+
+    for relative in EXAMPLE_SOURCES:
+        values = values_by_path.get(relative, [])
+        check_scope_numbering(relative, values)
+    reference_values = [
+        value
+        for relative in sorted(REFERENCE_ANNOTATION_SOURCES)
+        for value in values_by_path.get(relative, [])
+    ]
+    check_scope_numbering("exercises/kernel-model/reference", reference_values)
+    for relative in sorted(REFERENCE_ANNOTATION_SOURCES):
+        if not values_by_path.get(relative):
+            report(f"reference production module에 Implementation anchor가 없습니다: {relative}")
+
+    examples_readme = ROOT / "examples/README.md"
+    if examples_readme.is_file():
+        header, rows = markdown_table(section(examples_readme.read_text(encoding="utf-8"), "권장 구현 순서"))
+        if header != ["example scope", "단계", "source anchor", "먼저 고정하는 책임"]:
+            report("examples Implementation index header 오류")
+        indexed: dict[str, list[str]] = {}
+        scope_order: list[str] = []
+        current = ""
+        for row in rows:
+            if len(row) != 4:
+                report("examples Implementation index field 수 오류")
+                continue
+            if row[0]:
+                current = row[0].strip("`")
+                scope_order.append(current)
+            if current and re.fullmatch(r"[1-9]\d*(?:-[1-9]\d*)?", row[1]):
+                indexed.setdefault(current, []).append(row[1])
+        if scope_order != [Path(relative).name for relative in EXAMPLE_SOURCES]:
+            report("examples Implementation index scope 순서 오류")
+        for relative in EXAMPLE_SOURCES:
+            name = Path(relative).name
+            source_values = sorted(values_by_path.get(relative, []), key=implementation_sort_key)
+            if indexed.get(name, []) != source_values:
+                report(f"examples Implementation index/source 불일치: {name}")
+
+    reference_readme = ROOT / "exercises/kernel-model/reference/README.md"
+    if reference_readme.is_file():
+        header, rows = markdown_table(section(reference_readme.read_text(encoding="utf-8"), "권장 구현 순서"))
+        if header != ["단계", "파일·symbol", "책임과 다음 의존성"]:
+            report("reference Implementation index header 오류")
+        source_by_name = {Path(relative).name: relative for relative in REFERENCE_ANNOTATION_SOURCES}
+        indexed_values: list[str] = []
+        indexed_by_path: dict[str, list[str]] = {}
+        current_path = ""
+        for row in rows:
+            if len(row) != 3 or not re.fullmatch(r"[1-9]\d*(?:-[1-9]\d*)?", row[0]):
+                continue
+            filename = re.search(r"`([^`]*?\.py)(?::[^`]*)?`", row[1])
+            if filename:
+                name = Path(filename.group(1)).name
+                current_path = source_by_name.get(name, "")
+                if not current_path:
+                    report(f"reference Implementation index source 경로 오류: {name}")
+            if not current_path:
+                report(f"reference Implementation index source owner 누락: {row[0]}")
+                continue
+            indexed_values.append(row[0])
+            indexed_by_path.setdefault(current_path, []).append(row[0])
+        ordered_values = sorted(indexed_values, key=implementation_sort_key)
+        if indexed_values != ordered_values or len(indexed_values) != len(set(indexed_values)):
+            report("reference Implementation index 순서/중복 오류")
+        for relative in sorted(REFERENCE_ANNOTATION_SOURCES):
+            source_values = sorted(values_by_path.get(relative, []), key=implementation_sort_key)
+            if indexed_by_path.get(relative, []) != source_values:
+                report(f"reference Implementation index/source owner 불일치: {relative}")
+        if indexed_values != sorted(reference_values, key=implementation_sort_key):
+            report("reference Implementation index/source 불일치")
+
+
 def normalized_rubric(text: str, headings: tuple[str, ...]) -> str:
     return " || ".join(" ".join(section(text, heading).split()) for heading in headings)
 
@@ -242,6 +590,15 @@ def visible_markdown(text: str) -> tuple[str, bool]:
         if not in_fence:
             visible.append(re.sub(r"`[^`]*`", "", line))
     return "\n".join(visible), in_fence
+
+
+def shell_fence_commands(text: str) -> str:
+    blocks = re.findall(
+        r"(?:```|~~~)(?:sh|bash|shell)\s*\n(.*?)(?:```|~~~)",
+        text,
+        flags=re.DOTALL | re.IGNORECASE,
+    )
+    return "\n".join(blocks)
 
 
 def check_heading_contract(relative: str, text: str, headings: tuple[str, ...], label: str) -> None:
@@ -295,7 +652,7 @@ def check_markdown() -> None:
             if fragment and resolved.suffix.lower() == ".md" and github_slug(fragment) not in anchors(resolved):
                 report(f"깨진 anchor: {relative} -> {target}")
 
-        if relative in CORE_DOCS:
+        if relative in LEARNING_DOCS:
             check_heading_contract(relative, text, DOC_HEADINGS, "본문 학습")
             completion = section(text, "완료 기준")
             explanation = section(text, "자기 설명")
@@ -318,6 +675,17 @@ def check_markdown() -> None:
             completion_owners[normalized_completion] = relative
             explanation_owners[normalized_explanation] = relative
             concept_rubric_owners[full_rubric] = relative
+
+            if relative in REQUIRED_DOCS:
+                commands = shell_fence_commands(text)
+                reference_execution = re.search(
+                    r"(?:\bIMPL\s*=\s*reference\b|\breference-test\b|\bfailure-test\b|"
+                    r"make\s+-C\s+exercises/kernel-model\s+(?:check|verify)\b|"
+                    r"(?:python3?|python)\s+[^\n]*reference/[^\n]*)",
+                    commands,
+                )
+                if reference_execution:
+                    report(f"핵심 문서가 learner checkpoint 전에 reference 실행을 안내합니다: {relative}")
 
     exercise = ROOT / "exercises/kernel-model/README.md"
     practice_rubrics: list[tuple[str, str]] = []
@@ -360,6 +728,15 @@ def check_markdown() -> None:
         if rubric in practice_owners:
             report(f"복사형 exercise 전체 rubric: {relative}, {practice_owners[rubric]}")
         practice_owners[rubric] = relative
+
+    optional_path = ROOT / "docs/80-extended-labs.md"
+    if optional_path.is_file():
+        optional = optional_path.read_text(encoding="utf-8")
+        for requirement in ("expected evidence", "manual review", "official `verify.sh`", "disposable workspace"):
+            if requirement not in optional:
+                report(f"선택 확장 manual evidence 계약 누락: {requirement}")
+
+    check_readme_learning_map()
 
 
 def read_json(path: Path) -> Any | None:
@@ -488,6 +865,24 @@ def check_exercise_sources() -> None:
     if test_count < 20:
         report(f"checker test가 부족합니다: {test_count}")
 
+    page_fault = ROOT / "examples/page-fault-observer.c"
+    if page_fault.is_file():
+        source = page_fault.read_text(encoding="utf-8")
+        volatile_view = re.search(
+            r"(?m)^[ \t]*volatile\s+unsigned\s+char\s*\*\s*(?P<name>[A-Za-z_]\w*)\s*;",
+            source,
+        )
+        if volatile_view is None:
+            report("page-fault observer의 최적화 방지 volatile page 접근이 없습니다")
+        else:
+            view = re.escape(volatile_view.group("name"))
+            if re.search(rf"\b{view}\s*\[[^\]\n]+\]\s*=", source) is None:
+                report("page-fault observer volatile page write가 없습니다")
+            if re.search(rf"\btouch_checksum\s*\+=\s*{view}\s*\[", source) is None:
+                report("page-fault observer volatile page read/checksum 연결이 없습니다")
+        if "touch_checksum" not in source:
+            report("page-fault observer 실제 touch evidence 누락: touch_checksum")
+
 
 def check_sources(actual: set[str]) -> None:
     for relative in sorted(actual):
@@ -524,7 +919,7 @@ def check_versions_navigation_and_public_commands() -> None:
             report(f"Python 3.12 기준 누락: {relative}")
     roadmap_path = ROOT / "docs/00-roadmap.md"
     roadmap = roadmap_path.read_text(encoding="utf-8") if roadmap_path.is_file() else ""
-    for relative in sorted(CORE_DOCS):
+    for relative in (*REQUIRED_DOCS, *sorted(OPTIONAL_DOCS)):
         from_docs = Path(relative).relative_to("docs").as_posix()
         if from_docs not in roadmap and Path(relative).name not in roadmap:
             report(f"roadmap 정본 문서 누락: {relative}")
@@ -553,6 +948,8 @@ def check_versions_navigation_and_public_commands() -> None:
         report("이전 Python 3.10 기준이 남았습니다")
     makefile_path = ROOT / "Makefile"
     makefile = makefile_path.read_text(encoding="utf-8") if makefile_path.is_file() else ""
+    if re.search(r"(?m)^IMPL\s*\?=\s*workspace\s*$", makefile) is None:
+        report("root checkpoint-check의 learner 기본 구현은 workspace여야 합니다")
     for target in (
         "prepare:",
         "verify:",
@@ -585,6 +982,7 @@ def main() -> int:
     check_markdown()
     check_fixtures_and_packages()
     check_exercise_sources()
+    check_implementation_annotations(actual)
     check_sources(actual)
     check_versions_navigation_and_public_commands()
     if ERRORS:
@@ -593,7 +991,8 @@ def main() -> int:
             print(f"- {error}", file=sys.stderr)
         return 1
     print(
-        f"[PASS] exact tree와 학습 계약: core docs {len(CORE_DOCS)}개, "
+        f"[PASS] exact tree와 학습 계약: core docs {len(REQUIRED_DOCS)}개, "
+        f"optional docs {len(OPTIONAL_DOCS)}개, "
         f"checkpoints {len(CHECKPOINTS)}개, source files {len(actual)}개"
     )
     return 0

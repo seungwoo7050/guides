@@ -197,12 +197,15 @@ CPU별 ready queue의 부하를 언제 옮길지 결정해야 합니다.
 
 ## 연결 실습
 
-다음 명령은 작업 A가 disk를 기다리는 동안 B가 실행되고, B 종료 뒤 A가 깨어나 완료되는 흐름을 재현합니다.
+`01-lifecycle`을 workspace에서 구현하고 검사한 뒤, 작업 A가 disk를 기다리는 동안 B가 실행되고 B 종료 뒤 A가 깨어나 완료되는 흐름을 재현합니다.
 
 ```sh
-python3 exercises/kernel-model/reference/kernel-model.py \
+make checkpoint-check IMPL=workspace CHECKPOINT=01-lifecycle
+python3 exercises/kernel-model/workspace/kernel-model.py \
   lifecycle exercises/kernel-model/fixtures/lifecycle.json
 ```
+
+검사를 통과한 뒤에만 `exercises/kernel-model/reference/kernel_model/lifecycle.py`의 위치 불변식과 자신의 선택을 비교합니다.
 
 출력에서 확인할 항목은 다음과 같습니다.
 

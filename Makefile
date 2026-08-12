@@ -1,6 +1,6 @@
 SHELL := /bin/bash
 PYTHON ?= python3
-IMPL ?= reference
+IMPL ?= workspace
 CHECKPOINT ?= all
 
 .PHONY: prepare verify check static docs-check meta-check common-safety-check log-safety-check \

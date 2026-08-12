@@ -10,6 +10,7 @@ class FileSystemError(ValueError):
     """파일시스템 계약이나 불변식이 깨질 때 발생합니다."""
 
 
+# [Implementation 6] Inode와 FileSystemModel은 현재 namespace/cache와 durable namespace/data를 서로 다른 상태 owner로 둡니다.
 @dataclass
 class Inode:
     inode_id: int
@@ -29,6 +30,7 @@ class FileSystemModel:
     directory_dirty: bool = False
     _next_inode: int = 1
 
+    # [Implementation 6-1] create/write/rename/link/unlink는 live namespace와 inode link count를 한 operation 경계에서 갱신합니다.
     def create(self, name: str, data: str = "") -> int:
         self._validate_name(name)
         if name in self.directory:
@@ -83,6 +85,7 @@ class FileSystemModel:
             self.inodes.pop(inode_id)
         self.assert_invariants()
 
+    # [Implementation 6-2] file fsync와 directory fsync를 분리해 data durability, name durability와 crash recovery 가능 상태를 구분합니다.
     def fsync_file(self, name: str) -> None:
         inode = self._inode_for_name(name)
         inode.durable_data = inode.cached_data
@@ -112,6 +115,7 @@ class FileSystemModel:
         self._recompute_links()
         self.assert_invariants()
 
+    # [Implementation 6-3] journal replay가 호출하는 작은 operation 경계는 retry와 중복 적용 정책을 각 mutation에 명시합니다.
     def apply_operation(self, operation: Mapping[str, Any]) -> None:
         """저널 복구가 재생할 수 있는 작은 메타데이터 연산 집합입니다."""
 
@@ -144,6 +148,7 @@ class FileSystemModel:
         else:
             raise FileSystemError(f"지원하지 않는 파일시스템 연산입니다: {kind}")
 
+    # [Implementation 6-4] snapshot은 live/durable 관찰을 함께 노출하되 내부 object identity를 public expected 결과로 만들지 않습니다.
     def snapshot(self) -> dict[str, Any]:
         return {
             "directory": dict(sorted(self.directory.items())),
@@ -160,6 +165,7 @@ class FileSystemModel:
             },
         }
 
+    # [Implementation 6-5] namespace reachability, link count와 clean data의 durable 일치를 검사하고 외부 snapshot에도 같은 규칙을 적용합니다.
     def assert_invariants(self) -> None:
         for name, inode_id in self.directory.items():
             self._validate_name(name)

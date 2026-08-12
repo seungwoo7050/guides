@@ -1,6 +1,6 @@
 # 확장 상태·binary image 실습
 
-이 문서는 핵심 11장을 마친 뒤 선택하는 확장 과정입니다. 이전 평면형 과정에 있던 page-table 계산, MLFQ 정책 기록, 학습용 filesystem image와 device descriptor ring처럼 새 핵심 경로에 완전히 흡수되지 않은 실습을 보존합니다. 실제 kernel 구조를 복제하기보다 입력 계약과 손상 거부 기준을 먼저 고정합니다.
+이 문서는 핵심 11장과 상태 모델 checkpoint 8개를 모두 마친 뒤 선택하는 확장 과정입니다. page-table 계산, MLFQ 정책 기록, 학습용 filesystem image와 device descriptor ring을 실제 kernel 구조로 복제하기보다 입력 계약과 손상 거부 기준부터 고정합니다.
 
 ## 학습 목표
 
@@ -21,7 +21,7 @@
 결과를 판정하는 독립 계산 또는 checksum
 ```
 
-완성 reference를 먼저 복사하지 않습니다. 작은 입력을 손으로 계산한 뒤 parser·scheduler·ring 모델을 구현합니다.
+완성 reference를 제공하거나 먼저 복사하지 않습니다. 작은 입력을 손으로 계산한 뒤 parser·scheduler·ring 모델을 구현합니다. 위 artifact 묶음이 이 분석형 실습의 expected evidence이며 문서의 완료·실패 기준으로 수동 검토합니다. 이 선택 과정은 core checker와 official `verify.sh`의 자동 검증 대상이 아닙니다.
 
 ## 1. 주소 변환 산술
 
@@ -140,7 +140,7 @@ ring index가 wrap되므로 단순 `producer < consumer` 비교를 사용하지 
 
 주소 변환은 [주소 공간과 page fault](03-virtual-memory/01-address-spaces-and-faults.md), MLFQ는 [CPU scheduling](01-boundary-and-execution/03-cpu-scheduling.md), image는 [filesystem과 장애 일관성](04-storage-and-io/01-filesystems-page-cache-and-crash-consistency.md), ring은 [device I/O와 DMA](04-storage-and-io/02-device-io-interrupts-and-dma.md)의 완료 기준을 먼저 통과한 뒤 진행합니다.
 
-구현은 `exercises/kernel-model/workspace/`의 core module을 임의로 확장하지 않고 별도 ignored 실험 디렉터리에서 시작합니다. core checker의 8개 checkpoint 이름과 결과 계약을 바꾸지 않습니다.
+구현은 `exercises/kernel-model/workspace/`의 core module을 임의로 확장하지 않고 저장소 밖의 새 disposable workspace에서 시작합니다. 기존 경로를 덮어쓰지 않고, 생성 image와 실행 log도 그 workspace 안에 둡니다. core checker의 8개 checkpoint 이름과 결과 계약을 바꾸지 않습니다.
 
 ## 완료 기준
 
@@ -148,6 +148,7 @@ ring index가 wrap되므로 단순 `producer < consumer` 비교를 사용하지 
 - parser 또는 state machine이 모든 입력에서 명시한 timeout 안에 종료합니다.
 - checksum·oracle·불변식 검사 중 하나 이상이 후보 구현과 독립된 경로로 결과를 판정합니다.
 - 특정 CPU, kernel 또는 storage가 있어야만 성립하는 가정은 환경 전제로 분리합니다.
+- expected evidence가 저장소 밖 disposable workspace에 남고 문서의 manual review rubric을 만족합니다.
 
 ## 실패 조건
 

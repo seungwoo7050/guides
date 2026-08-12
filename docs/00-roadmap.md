@@ -84,9 +84,26 @@ filesystem namespace·page cache·durability·journal recovery
 | 10 | [파일시스템, page cache와 장애 일관성](04-storage-and-io/01-filesystems-page-cache-and-crash-consistency.md) | 현재 보이는 상태와 장애 뒤 남는 상태를 어떻게 분리합니까? | `filesystem.py`, `journal.py` |
 | 11 | [장치 I/O, interrupt와 DMA](04-storage-and-io/02-device-io-interrupts-and-dma.md) | 비동기 장치 요청의 buffer와 completion은 언제까지 살아 있어야 합니까? | `device_io.py` |
 
+### checkpoint 구현 순서
+
+위 표의 `1 → 11`은 개념의 읽기 순서입니다. 상태 모델은 모듈 의존성을 따라 공개 checkpoint `01 → 08` 순서로 구현합니다. 예를 들어 scheduling 문서는 세 번째로 읽지만 synchronization checkpoint가 lifecycle 뒤에 공통 wait 계약을 먼저 고정하므로 scheduler는 구현 순서에서 세 번째입니다. 공개 checkpoint 이름을 문서 번호에 맞춰 다시 번호 매기지 않습니다.
+
+| 구현 순서 | 먼저 읽을 문서 | workspace 대상 |
+|---:|---|---|
+| `01-lifecycle` | 2, 4 | `kernel_model/lifecycle.py` |
+| `02-synchronization` | 4, 5, 6 | `kernel_model/synchronization.py` |
+| `03-scheduler` | 3 | `kernel_model/scheduler.py` |
+| `04-deadlock` | 7 | `kernel_model/deadlock.py` |
+| `05-paging` | 8, 9 | `kernel_model/paging.py` |
+| `06-storage` | 10 | `kernel_model/filesystem.py`, `kernel_model/journal.py` |
+| `07-device-io` | 11 | `kernel_model/device_io.py` |
+| `08-cli` | 앞선 전체 모델 | `kernel_model/cli.py` |
+
+각 checkpoint의 정확한 수정 위치, 검증 명령과 reference 비교 시점은 [root README의 전체 학습 순서](../README.md#전체-학습-순서)에 있습니다.
+
 ### 선택 확장
 
-[확장 상태·binary image 실습](80-extended-labs.md)은 주소 변환 산술, MLFQ trace, checksum을 포함한 학습용 filesystem image, descriptor ring ownership을 다룹니다. 핵심 11장과 8개 checkpoint를 완료한 뒤 선택하며 핵심 완료 기준을 대신하지 않습니다.
+[확장 상태·binary image 실습](80-extended-labs.md)은 주소 변환 산술, MLFQ trace, checksum을 포함한 학습용 filesystem image, descriptor ring ownership을 다룹니다. 핵심 11장과 8개 checkpoint를 완료한 뒤 선택하며 핵심 완료 기준을 대신하지 않습니다. 자동 reference나 official `verify.sh` 대상이 아닌 manual expected-evidence 과정입니다.
 
 ## 목적별 짧은 경로
 
@@ -131,8 +148,13 @@ make -C examples verify
 [`exercises/kernel-model/`](../exercises/kernel-model/README.md)은 실제 시간과 스케줄러 우연성을 제거합니다. 상태 전이를 입력으로 주고, 불변식을 만족하는 결과 또는 명시적인 거부를 확인합니다.
 
 ```sh
-make -C exercises/kernel-model verify
+./scripts/new-workspace.sh exercises/kernel-model
+make checkpoint-check IMPL=workspace CHECKPOINT=01-lifecycle
+# 8개 checkpoint를 마친 뒤
+make -C exercises/kernel-model workspace-test
 ```
+
+학습 중에는 `workspace/`만 수정합니다. 각 checkpoint가 통과한 뒤에만 대응하는 `reference/` 모듈의 설계 선택을 비교합니다. `make -C exercises/kernel-model verify`는 maintainer가 canonical skeleton, reference와 checker를 함께 검사하는 명령이며 학습자의 workspace를 판정하지 않습니다.
 
 상태 모델에는 다음 두 종류의 입력이 있습니다.
 

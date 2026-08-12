@@ -8,6 +8,7 @@ from enum import Enum
 from typing import Any, Mapping
 
 
+# [Implementation 8] RequestState, IORequest와 DeviceQueue가 요청 위치, DMA pin, owner completion과 queue depth를 함께 소유합니다.
 class RequestState(str, Enum):
     QUEUED = "queued"
     IN_FLIGHT = "in-flight"
@@ -48,6 +49,7 @@ class DeviceQueue:
         if self.queue_depth <= 0:
             raise ValueError("장치 큐 깊이는 양수여야 합니다.")
 
+    # [Implementation 8-1] submit은 depth를 예약해 pending에 넣고 start_next만 in-flight 전이와 buffer pin을 함께 수행합니다.
     def submit(self, owner: str, buffer_pages: tuple[int, ...], length: int) -> int:
         if not owner:
             raise ValueError("요청 소유자는 비어 있을 수 없습니다.")
@@ -82,6 +84,7 @@ class DeviceQueue:
         self.assert_invariants()
         return request
 
+    # [Implementation 8-2] queued cancel은 즉시 완료하지만 in-flight cancel은 interrupt와 경쟁하므로 pin을 completion까지 유지합니다.
     def cancel(self, owner: str, request_id: int) -> RequestState:
         request = self._request_for_owner(owner, request_id)
         if request.state is RequestState.QUEUED:
@@ -117,6 +120,7 @@ class DeviceQueue:
         self.completions.setdefault(request.owner, deque()).append(request_id)
         self.assert_invariants()
 
+    # [Implementation 8-3] owner별 completion queue와 reap이 terminal result의 단 한 번 전달과 request 수명 종료를 소유합니다.
     def reap(self, owner: str) -> IORequest | None:
         queue = self.completions.get(owner)
         if not queue:
@@ -132,6 +136,7 @@ class DeviceQueue:
         self.assert_invariants()
         return request
 
+    # [Implementation 8-4] 요청의 배타적 queue 위치, pin/in-flight 동치, owner와 depth를 snapshot reconstruction에서도 검사합니다.
     def assert_invariants(self) -> None:
         pending = list(self.pending)
         if len(set(pending)) != len(pending):

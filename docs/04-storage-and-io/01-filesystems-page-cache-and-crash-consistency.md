@@ -187,11 +187,10 @@ COMMIT 뒤 새 operation 금지
 ```
 
 ```sh
-make -C exercises/kernel-model reference-test
-make -C exercises/kernel-model failure-test
+make checkpoint-check IMPL=workspace CHECKPOINT=06-storage
 ```
 
-`failure-fixtures/06-journal-commit-before-begin.json`은 transaction 시작 없이 commit된 log를 거부합니다.
+검사를 통과한 뒤에만 `exercises/kernel-model/reference/kernel_model/filesystem.py`와 `journal.py`를 비교합니다. `failure-fixtures/06-journal-commit-before-begin.json`은 transaction 시작 없이 commit된 log를 거부합니다.
 
 ## redo와 undo를 구분합니다
 

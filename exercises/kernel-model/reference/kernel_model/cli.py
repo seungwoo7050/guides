@@ -19,6 +19,7 @@ from .scheduler import JobSpec, simulate
 from .synchronization import ConditionChannel
 
 
+# [Implementation 9] fixture decode·최상위 object 검사와 canonical JSON dump가 입력 형식 및 성공 출력 경계를 소유합니다.
 def _load(path: str) -> dict[str, Any]:
     data = json.loads(Path(path).read_text(encoding="utf-8"))
     if not isinstance(data, dict):
@@ -31,6 +32,7 @@ def _dump(data: Any) -> None:
     sys.stdout.write("\n")
 
 
+# [Implementation 9-1] run_* adapter는 JSON operation을 domain API로 번역할 뿐 정책과 invariant의 소유권은 각 model에 남깁니다.
 def run_lifecycle(data: Mapping[str, Any]) -> dict[str, Any]:
     model = KernelState()
     for raw in data.get("operations", []):
@@ -235,6 +237,7 @@ def _request_id(raw: Mapping[str, Any], aliases: Mapping[str, int]) -> int:
     return aliases[str(raw["request"])]
 
 
+# [Implementation 9-2] parser와 main은 model dispatch 및 domain 실행 오류의 stderr·exit status 계약을 닫습니다. 파일 open·JSON decode 오류 변환은 이 모델의 보장 범위 밖입니다.
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description="결정론적 운영체제 상태 모델")
     parser.add_argument(

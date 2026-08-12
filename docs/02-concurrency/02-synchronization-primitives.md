@@ -141,10 +141,10 @@ message
 `ConditionChannel` 실습은 `prepare_wait`에서 관찰한 generation과 `commit_wait` 시점의 generation을 비교합니다. 사이에 notification이 있었다면 실제 sleep을 하지 않고 호출자에게 predicate 재검사를 요구합니다.
 
 ```sh
-make -C exercises/kernel-model reference-test
+make checkpoint-check IMPL=workspace CHECKPOINT=02-synchronization
 ```
 
-이 모델은 실제 condition variable API를 복제하려는 것이 아니라 깨우기 손실을 막기 위해 어떤 상태가 필요할 수 있는지 보여 줍니다.
+검사를 통과한 뒤에만 `exercises/kernel-model/reference/kernel_model/synchronization.py`와 비교합니다. 이 모델은 실제 condition variable API를 복제하려는 것이 아니라 깨우기 손실을 막기 위해 어떤 상태가 필요할 수 있는지 보여 줍니다.
 
 ## reader-writer lock과 seqlock은 읽기 비율만 보고 선택하지 않습니다
 

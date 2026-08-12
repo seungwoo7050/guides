@@ -52,6 +52,37 @@ make -C examples clean
 환경에 따라 달라질 수 있는 값:
 ```
 
+## 권장 구현 순서
+
+각 `.c` 파일은 서로 독립된 example scope이므로 단계 번호를 `1`부터 다시 시작합니다. 번호는 Git history가 아니라 학습을 위한 recommended construction order입니다. source의 같은 단계 주석이 authoritative anchor이며, 아래 표는 파일을 오가며 읽지 않아도 되도록 책임을 요약합니다. 일반 `cc` build와 실행·검증 명령은 project bootstrap이 아니므로 `Implementation 0`은 없습니다.
+
+| example scope | 단계 | source anchor | 먼저 고정하는 책임 |
+|---|---:|---|---|
+| `syscall-boundary.c` | 1 | `create_temp_directory` | 소유한 임시 namespace와 known-missing path |
+|  | 2 | `main` | 성공한 `write`와 cleanup 수명 |
+|  | 3 | `open` 직전 | 반환값과 보존한 `errno` 실패 근거 |
+| `lost-update.c` | 1 | `t_barrier` | barrier generation과 worker 공유 상태 |
+|  | 2 | `barrier_init` | predicate, 반복 세대와 부분 초기화 rollback |
+|  | 3 | `worker_main` | split load/store와 단일 RMW의 고정 interleaving |
+|  | 4 | `main` | 입력, thread join과 expected/actual evidence |
+| `bounded-buffer.c` | 1 | `t_buffer` | ring predicate와 통계의 단일 mutex owner |
+|  | 2 | `buffer_init` | synchronization resource 생성·역순 회수 |
+|  | 3 | `buffer_push` | full wait, atomic enqueue와 `not_empty` handoff |
+|  | 4 | `mark_producer_done` | 종료 state publish와 waiter broadcast |
+|  | 5 | `buffer_pop` | empty-or-done wait와 `not_full` handoff |
+|  | 6 | `main` | producer/consumer join과 결과 불변식 |
+| `dining-cycle.c` | 1 | `t_table` | fork, start gate와 완료 결과 owner |
+|  | 2 | `wait_for_start` | start-or-abort predicate |
+|  | 3 | `diner_main` | lower-first lock order와 비보장 범위 |
+|  | 4 | `table_init` | 부분 resource 초기화와 rollback |
+|  | 5 | `main` | thread gate, join과 전체 완료 evidence |
+| `cow-observer.c` | 1 | `main`의 allocation | fork 전 heap state와 stdio buffer |
+|  | 2 | `fork` 경계 | 자식 private write와 `_exit` 수명 |
+|  | 3 | `waitpid` loop | child reap과 parent value evidence |
+| `page-fault-observer.c` | 1 | `minor_faults` | process-level fault 통계의 관찰 한계 |
+|  | 2 | `main` | page count·size·overflow와 allocation owner |
+|  | 3 | page touch loop | `volatile` 실제 접근, checksum과 환경 의존 delta |
+
 ### `syscall-boundary`
 
 ```sh
@@ -100,6 +131,8 @@ make -C examples clean
 ```
 
 anonymous allocation의 page마다 첫 byte를 쓰고 minor fault 통계 변화량을 출력합니다. 정확한 숫자는 allocator, huge-page 정책과 주변 실행에 따라 달라지므로 고정 정답으로 사용하지 않습니다.
+
+page view는 `volatile` 접근으로 유지해 최적화 build에서도 각 page touch가 제거되지 않게 합니다. `touch_checksum`은 실제 접근을 결정적인 출력 근거에 연결하고, `minor_fault_delta`의 정확한 값은 계속 환경 의존 관찰값으로 둡니다.
 
 ## 결과가 예상과 다를 때
 

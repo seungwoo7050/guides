@@ -8,6 +8,7 @@ from enum import Enum
 from typing import Any, Iterable, Mapping
 
 
+# [Implementation 5] FaultKind, PTE, Frame과 AddressSpace가 mapping·resident·permission·COW vocabulary를 함께 고정합니다.
 class FaultKind(str, Enum):
     NOT_MAPPED = "not-mapped"
     NOT_PRESENT = "not-present"
@@ -63,6 +64,7 @@ class AddressSpace:
     pages: dict[int, PageTableEntry] = field(default_factory=dict)
 
 
+# [Implementation 5-1] MemoryManager가 process mapping과 frame allocator의 유일한 owner가 되어 refcount와 frame 수명 변경을 조정합니다.
 @dataclass
 class MemoryManager:
     """페이지 단위 값 하나를 저장하는 간결한 물리 메모리 모델입니다."""
@@ -111,6 +113,7 @@ class MemoryManager:
         )
         self.assert_invariants()
 
+    # [Implementation 5-2] read/write는 mapping → permission → presence → COW 순서로 fault 책임을 분류한 뒤에만 값을 접근합니다.
     def read(self, pid: str, vpn: int) -> int:
         entry = self._entry(pid, vpn)
         if not entry.readable:
@@ -139,6 +142,7 @@ class MemoryManager:
         self.assert_invariants()
         return fault
 
+    # [Implementation 5-3] fork는 PTE를 공유·read-only COW로 바꾸고 unmap/destroy는 같은 refcount 계약으로 마지막 frame을 회수합니다.
     def fork(self, parent_pid: str, child_pid: str) -> None:
         if child_pid in self.spaces:
             raise ValueError(f"이미 존재하는 프로세스입니다: {child_pid}")
@@ -206,6 +210,7 @@ class MemoryManager:
             },
         }
 
+    # [Implementation 5-4] 모든 PTE가 존재하는 frame을 가리키고 refcount와 writable/COW 관계가 맞는지 snapshot 경계에서도 검사합니다.
     def assert_invariants(self) -> None:
         references: dict[int, list[PageTableEntry]] = {frame_id: [] for frame_id in self.frames}
         for pid, space in self.spaces.items():
@@ -338,6 +343,7 @@ class ReplacementResult:
     frames: tuple[int, ...]
 
 
+# [Implementation 5-5] replacement는 mapping 모델과 분리된 trace에서 FIFO/LRU/Clock이 소유하는 최소 정책 상태와 eviction을 비교합니다.
 def simulate_replacement(references: Iterable[int], capacity: int, policy: str) -> ReplacementResult:
     """FIFO, LRU와 Clock의 페이지 폴트 수를 비교합니다."""
 

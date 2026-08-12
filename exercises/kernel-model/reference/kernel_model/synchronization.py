@@ -10,6 +10,7 @@ class SynchronizationError(ValueError):
     """동기화 상태가 계약을 위반할 때 발생합니다."""
 
 
+# [Implementation 2] WaitToken과 ConditionChannel은 predicate 확인 시점의 사건 generation을 저장해 wait 등록 책임을 명시합니다.
 @dataclass(frozen=True, slots=True)
 class WaitToken:
     """조건을 확인한 순간의 사건 세대를 기록합니다."""
@@ -29,6 +30,7 @@ class ConditionChannel:
     def prepare_wait(self) -> WaitToken:
         return WaitToken(channel=self.name, generation=self.generation)
 
+    # [Implementation 2-1] commit 시 generation을 다시 비교해 check-register 사이의 notify를 잃지 않고 sleep 여부를 결정합니다.
     def commit_wait(self, tid: str, token: WaitToken) -> bool:
         if token.channel != self.name:
             raise SynchronizationError("다른 조건 채널의 토큰입니다.")
@@ -57,6 +59,7 @@ class ConditionChannel:
         return awakened
 
 
+# [Implementation 2-2] semaphore는 permit owner와 FIFO waiter를 분리하고 release 시 permit을 직접 넘겨 중간 무소유 상태를 피합니다.
 @dataclass
 class CountingSemaphore:
     """허가 수와 FIFO 대기자를 함께 관리하는 세마포어 모델입니다."""

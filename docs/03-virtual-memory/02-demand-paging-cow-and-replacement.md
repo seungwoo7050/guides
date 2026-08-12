@@ -208,11 +208,12 @@ reference bit=0
 [`simulate_replacement`](../../exercises/kernel-model/README.md)는 같은 reference string에 FIFO, LRU와 Clock을 적용해 fault 수와 evicted page를 비교합니다.
 
 ```sh
-cd exercises/kernel-model
-python3 reference/kernel-model.py replacement fixtures/replacement.json
+make checkpoint-check IMPL=workspace CHECKPOINT=05-paging
+python3 exercises/kernel-model/workspace/kernel-model.py \
+  replacement exercises/kernel-model/fixtures/replacement.json
 ```
 
-이 모델은 real kernel의 page cache, NUMA와 background writeback을 재현하지 않습니다. 정책의 최소 상태와 반례를 확인하는 용도입니다.
+검사를 통과한 뒤에만 `exercises/kernel-model/reference/kernel_model/paging.py`의 정책 상태와 비교합니다. 이 모델은 real kernel의 page cache, NUMA와 background writeback을 재현하지 않습니다. 정책의 최소 상태와 반례를 확인하는 용도입니다.
 
 ## thrashing은 단순히 fault가 많은 상태가 아닙니다
 

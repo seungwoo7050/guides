@@ -6,6 +6,7 @@
 #include <sys/stat.h>
 #include <unistd.h>
 
+/* [Implementation 1] PID와 제한된 재시도 번호로 소유한 임시 경로를 만들고, 그 아래의 확실히 없는 path를 관찰 입력으로 준비합니다. */
 static int create_temp_directory(char *path, size_t size)
 {
     unsigned int attempt;
@@ -30,6 +31,7 @@ static int create_temp_directory(char *path, size_t size)
     return -1;
 }
 
+/* [Implementation 2] 성공한 write 경계와 모든 임시 directory의 cleanup 책임을 하나의 실행 수명으로 묶습니다. */
 int main(void)
 {
     const char message[] = "write 호출이 프로세스와 커널의 경계를 넘었습니다.\n";
@@ -54,6 +56,7 @@ int main(void)
         return 1;
     }
 
+    /* [Implementation 3] open 직후 errno를 보존해 음수 반환뿐 아니라 ENOENT라는 실패 이유까지 관찰 근거로 고정합니다. */
     errno = 0;
     descriptor = open(missing_path, O_RDONLY);
     saved_errno = errno;

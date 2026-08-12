@@ -63,8 +63,10 @@ C가 A가 보유한 자원을 기다림 → C → A
 - `detect_deadlocked`: 여러 인스턴스 자원에서 현재 완료 가능한 작업을 반복 제거하고 남는 집합을 찾습니다.
 
 ```sh
-make -C exercises/kernel-model reference-test
+make checkpoint-check IMPL=workspace CHECKPOINT=04-deadlock
 ```
+
+검사를 통과한 뒤에만 `exercises/kernel-model/reference/kernel_model/deadlock.py`의 세 알고리즘과 자신의 상태 표현을 비교합니다.
 
 ## Coffman 조건은 진단 체크리스트입니다
 
@@ -275,7 +277,7 @@ priority와 scheduler 상태
 이 오류들은 모두 “한 객체는 동시에 하나의 상태 위치만 가진다”는 공통 불변식을 어깁니다.
 
 ```sh
-make -C exercises/kernel-model failure-test
+make checkpoint-check IMPL=workspace CHECKPOINT=04-deadlock
 ```
 
 ## 연결 실습

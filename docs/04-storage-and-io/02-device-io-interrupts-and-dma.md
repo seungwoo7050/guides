@@ -317,13 +317,15 @@ completion worker 지연
 
 ## 연결 실습
 
-다음 명령으로 reference test와 I/O fixture를 실행합니다.
+`07-device-io`를 workspace에서 검사한 뒤 I/O fixture를 실행합니다.
 
 ```sh
-make -C exercises/kernel-model reference-test
-cd exercises/kernel-model
-python3 reference/kernel-model.py io fixtures/io.json
+make checkpoint-check IMPL=workspace CHECKPOINT=07-device-io
+python3 exercises/kernel-model/workspace/kernel-model.py \
+  io exercises/kernel-model/fixtures/io.json
 ```
+
+검사를 통과한 뒤에만 `exercises/kernel-model/reference/kernel_model/device_io.py`와 요청 수명·회수 정책을 비교합니다.
 
 그리고 다음 상황의 최종 state와 buffer pin 여부를 적습니다.
 

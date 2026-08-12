@@ -4,6 +4,7 @@
 
 enum { BUFFER_CAPACITY = 8 };
 
+/* [Implementation 1] 하나의 mutex가 ring 위치, item 수, 종료 flag와 결과 통계를 함께 소유해야 predicate와 관찰값이 일치합니다. */
 typedef struct s_buffer {
     int values[BUFFER_CAPACITY];
     size_t head;
@@ -19,6 +20,7 @@ typedef struct s_buffer {
     pthread_cond_t not_full;
 } t_buffer;
 
+/* [Implementation 2] mutex와 두 condition을 의존 순서로 만들고 부분 실패에서는 만들어진 자원만 역순으로 파기합니다. */
 static int buffer_init(t_buffer *buffer)
 {
     buffer->head = 0U;
@@ -50,6 +52,7 @@ static void buffer_destroy(t_buffer *buffer)
     (void)pthread_mutex_destroy(&buffer->mutex);
 }
 
+/* [Implementation 3] full predicate를 while로 재검사한 뒤 ring 갱신과 통계를 같은 critical section에서 commit하고 consumer를 깨웁니다. */
 static int buffer_push(t_buffer *buffer, int value)
 {
     if (pthread_mutex_lock(&buffer->mutex) != 0)
@@ -69,6 +72,7 @@ static int buffer_push(t_buffer *buffer, int value)
     return pthread_mutex_unlock(&buffer->mutex) == 0 ? 0 : -1;
 }
 
+/* [Implementation 4] 종료 flag도 buffer 상태의 일부로 publish하고, 빈 queue에서 기다리는 모든 consumer가 종료 predicate를 다시 보게 합니다. */
 static int mark_producer_done(t_buffer *buffer)
 {
     if (pthread_mutex_lock(&buffer->mutex) != 0)
@@ -78,6 +82,7 @@ static int mark_producer_done(t_buffer *buffer)
     return pthread_mutex_unlock(&buffer->mutex) == 0 ? 0 : -1;
 }
 
+/* [Implementation 5] empty-or-done predicate로 data와 정상 종료를 구분하고 slot 회수 뒤 producer에게 진행 가능성을 넘깁니다. */
 static int buffer_pop(t_buffer *buffer, int *value, int *finished)
 {
     if (pthread_mutex_lock(&buffer->mutex) != 0)
@@ -130,6 +135,7 @@ static int parse_items(const char *text, int *value)
     return 0;
 }
 
+/* [Implementation 6] producer와 consumer 수명을 join으로 닫은 뒤 count와 합계 불변식을 외부 성공 조건으로 노출합니다. */
 int main(int argc, char **argv)
 {
     t_buffer buffer;

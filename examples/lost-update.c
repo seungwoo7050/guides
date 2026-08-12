@@ -4,6 +4,7 @@
 #include <stdlib.h>
 #include <string.h>
 
+/* [Implementation 1] barrier generation과 두 worker의 counter 접근 계약이 결정적인 interleaving의 공동 상태를 소유합니다. */
 typedef struct s_barrier {
     pthread_mutex_t mutex;
     pthread_cond_t condition;
@@ -19,6 +20,7 @@ typedef struct s_worker {
     int use_fetch_add;
 } t_worker;
 
+/* [Implementation 2] generation predicate로 반복 barrier를 만들고 부분 초기화 실패는 역순으로 회수합니다. */
 static int barrier_init(t_barrier *barrier, unsigned int participants)
 {
     if (participants == 0U)
@@ -67,6 +69,7 @@ static void barrier_destroy(t_barrier *barrier)
     (void)pthread_mutex_destroy(&barrier->mutex);
 }
 
+/* [Implementation 3] 같은 값을 읽은 뒤 store하는 경로와 단일 atomic RMW를 같은 barrier schedule에서 비교합니다. relaxed ordering은 counter 원자성만 요구한다는 선택입니다. */
 static void *worker_main(void *argument)
 {
     t_worker *worker;
@@ -108,6 +111,7 @@ static int parse_rounds(const char *text, unsigned long *value)
     return 0;
 }
 
+/* [Implementation 4] 입력을 제한하고 worker를 생성·join한 뒤 expected/actual을 하나의 관찰 계약으로 출력합니다. */
 int main(int argc, char **argv)
 {
     const char *mode;

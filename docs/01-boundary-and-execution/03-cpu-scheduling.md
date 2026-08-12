@@ -155,12 +155,15 @@ metric은 같은 시간 정의와 event order로 계산해야 합니다.
 
 ## 연결 실습
 
-기준 fixture를 실행합니다.
+`03-scheduler`를 workspace에서 구현하고 검사한 뒤 schedule fixture를 실행합니다.
 
 ```sh
-python3 exercises/kernel-model/reference/kernel-model.py \
+make checkpoint-check IMPL=workspace CHECKPOINT=03-scheduler
+python3 exercises/kernel-model/workspace/kernel-model.py \
   schedule exercises/kernel-model/fixtures/schedule.json
 ```
+
+검사를 통과한 뒤에만 `exercises/kernel-model/reference/kernel_model/scheduler.py`와 tick 처리 순서를 비교합니다.
 
 출력에서 다음을 비교합니다.
 
