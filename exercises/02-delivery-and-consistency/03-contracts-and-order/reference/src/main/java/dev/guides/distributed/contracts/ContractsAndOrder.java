@@ -7,6 +7,7 @@ import java.util.Map;
 import java.util.TreeMap;
 
 public final class ContractsAndOrder {
+    // [Implementation 1] 처리 결과와 Event 어휘를 먼저 고정해 소비 계약의 입력과 출력을 공유합니다.
     public enum Outcome {
         APPLIED,
         BUFFERED,
@@ -33,6 +34,7 @@ public final class ContractsAndOrder {
         }
     }
 
+    // [Implementation 2] Projection이 적용 상태, 다음 sequence, 보류·격리 근거의 소유자가 됩니다.
     public static final class Projection {
         private final String expectedChannel;
         private final int supportedSchemaVersion;
@@ -44,10 +46,14 @@ public final class ContractsAndOrder {
         private final List<Event> isolated = new ArrayList<>();
 
         public Projection(String expectedChannel, int supportedSchemaVersion) {
+            if (supportedSchemaVersion <= 0) {
+                throw new IllegalArgumentException("supportedSchemaVersion must be positive");
+            }
             this.expectedChannel = expectedChannel;
             this.supportedSchemaVersion = supportedSchemaVersion;
         }
 
+        // [Implementation 2-1] 채널·identity·schema gate를 상태 변경보다 먼저 통과시킵니다.
         public synchronized Outcome onEvent(Event event) {
             if (!expectedChannel.equals(event.channel())) {
                 throw new ContractViolationException(
@@ -58,6 +64,9 @@ public final class ContractsAndOrder {
                 || event.aggregateId() == null || event.aggregateId().isBlank()
                 || event.sequence() <= 0) {
                 throw new ContractViolationException("invalid event identity or sequence");
+            }
+            if (event.schemaVersion() <= 0) {
+                throw new ContractViolationException("schema version must be positive");
             }
             Event known = knownEvents.get(event.eventId());
             if (known != null) {
@@ -74,6 +83,7 @@ public final class ContractsAndOrder {
                 return Outcome.ISOLATED;
             }
 
+            // [Implementation 2-2] aggregate별 sequence claim을 보존해 gap과 충돌을 구분합니다.
             long expected = nextSequence.getOrDefault(event.aggregateId(), 1L);
             TreeMap<Long, Event> claims = claimedSequences.get(event.aggregateId());
             Event claimed = claims == null ? null : claims.get(event.sequence());
@@ -135,11 +145,13 @@ public final class ContractsAndOrder {
             return isolated.size();
         }
 
+        // [Implementation 2-3] 적용과 다음 sequence 전진을 한 임계 구역의 효과로 묶습니다.
         private void apply(Event event) {
             states.put(event.aggregateId(), event.state());
             nextSequence.put(event.aggregateId(), event.sequence() + 1);
         }
 
+        // [Implementation 2-4] gap이 닫힌 aggregate만 연속 적용하고 다른 aggregate는 건드리지 않습니다.
         private void drain(String aggregateId) {
             TreeMap<Long, Event> buffer = buffers.get(aggregateId);
             if (buffer == null) {

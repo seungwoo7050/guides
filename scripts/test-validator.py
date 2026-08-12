@@ -3,19 +3,32 @@
 
 from __future__ import annotations
 
+import os
+import re
 import shutil
+import stat
 import subprocess
 import tempfile
-import re
-import os
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
+ANNOTATION_README = (
+    "exercises/01-boundaries-and-failure/01-uncertain-outcome/README.md"
+)
+ANNOTATION_SOURCE = (
+    "exercises/01-boundaries-and-failure/01-uncertain-outcome/reference/src/main/java/"
+    "dev/guides/distributed/uncertain/UncertainOutcome.java"
+)
+ANNOTATION_SKELETON = (
+    "exercises/01-boundaries-and-failure/01-uncertain-outcome/skeleton/src/main/java/"
+    "dev/guides/distributed/uncertain/UncertainOutcome.java"
+)
 
 
 def copy_repository(destination: Path) -> None:
     def ignore(_directory: str, names: list[str]) -> set[str]:
-        return {name for name in names if name in {".git", ".guide", "target", "__pycache__"}}
+        ignored = {".git", ".guide", ".workspace", "target", "__pycache__"}
+        return {name for name in names if name in ignored}
 
     shutil.copytree(ROOT, destination, symlinks=True, ignore=ignore)
 
@@ -70,6 +83,208 @@ def copy_pedagogy_section(root: Path, heading: str, next_heading: str) -> None:
     )
 
 
+def remove_line_containing(root: Path, relative: str, token: str) -> None:
+    path = root / relative
+    lines = path.read_text(encoding="utf-8").splitlines(keepends=True)
+    matches = [index for index, line in enumerate(lines) if token in line]
+    if len(matches) != 1:
+        raise AssertionError(
+            f"mutant precondition must match one line in {relative}: {token}"
+        )
+    del lines[matches[0]]
+    path.write_text("".join(lines), encoding="utf-8")
+
+
+def swap_lines_containing(root: Path, relative: str, first: str, second: str) -> None:
+    path = root / relative
+    lines = path.read_text(encoding="utf-8").splitlines(keepends=True)
+    first_matches = [index for index, line in enumerate(lines) if first in line]
+    second_matches = [index for index, line in enumerate(lines) if second in line]
+    if len(first_matches) != 1 or len(second_matches) != 1:
+        raise AssertionError(
+            f"mutant precondition must match one line for each token in {relative}"
+        )
+    first_index = first_matches[0]
+    second_index = second_matches[0]
+    lines[first_index], lines[second_index] = lines[second_index], lines[first_index]
+    path.write_text("".join(lines), encoding="utf-8")
+
+
+def mutate_line_token(
+    root: Path,
+    relative: str,
+    line_token: str,
+    old: str,
+    new: str,
+) -> None:
+    path = root / relative
+    lines = path.read_text(encoding="utf-8").splitlines(keepends=True)
+    matches = [index for index, line in enumerate(lines) if line_token in line]
+    if len(matches) != 1 or old not in lines[matches[0]]:
+        raise AssertionError(
+            f"mutant precondition missing from selected line in {relative}: {old}"
+        )
+    index = matches[0]
+    lines[index] = lines[index].replace(old, new, 1)
+    path.write_text("".join(lines), encoding="utf-8")
+
+
+def remove_all_implementation_markers(root: Path, relative: str) -> None:
+    path = root / relative
+    text = path.read_text(encoding="utf-8")
+    mutated, count = re.subn(
+        r"(?m)^(\s*)(?://|#) \[Implementation [^\]\n]+\].*\n",
+        "",
+        text,
+    )
+    if count == 0:
+        raise AssertionError(f"no Implementation markers found in {relative}")
+    path.write_text(mutated, encoding="utf-8")
+
+
+def mutate_marker_and_index(
+    root: Path,
+    source_relative: str,
+    readme_relative: str,
+    old_label: str,
+    new_label: str,
+) -> None:
+    mutate_text(
+        root,
+        source_relative,
+        f"[Implementation {old_label}]",
+        f"[Implementation {new_label}]",
+    )
+    mutate_text(
+        root,
+        readme_relative,
+        f"| Implementation {old_label} |",
+        f"| Implementation {new_label} |",
+    )
+
+
+def tree_snapshot(root: Path) -> dict[str, tuple[bytes, int]]:
+    snapshot: dict[str, tuple[bytes, int]] = {}
+    for path in sorted(root.rglob("*")):
+        if path.is_symlink():
+            raise AssertionError(f"workspace tree contains a symlink: {path}")
+        if path.is_file():
+            snapshot[path.relative_to(root).as_posix()] = (
+                path.read_bytes(),
+                stat.S_IMODE(path.stat().st_mode),
+            )
+    return snapshot
+
+
+def run_workspace(root: Path, slug: str) -> subprocess.CompletedProcess[str]:
+    return subprocess.run(
+        ["scripts/new-workspace.sh", slug],
+        cwd=root,
+        check=False,
+        capture_output=True,
+        text=True,
+        timeout=30,
+    )
+
+
+def check_workspace_runtime() -> None:
+    source_relative = Path(
+        "exercises/01-boundaries-and-failure/01-uncertain-outcome/skeleton"
+    )
+
+    with tempfile.TemporaryDirectory(prefix="guide-distributed-workspace-create-") as temporary:
+        clone = Path(temporary) / "repository"
+        copy_repository(clone)
+        source = clone / source_relative
+        source_before = tree_snapshot(source)
+
+        first = run_workspace(clone, "uncertain-outcome")
+        if first.returncode != 0:
+            raise AssertionError(
+                "workspace generator rejected a canonical slug:\n"
+                + first.stdout
+                + first.stderr
+            )
+        destination = clone / ".workspace/uncertain-outcome"
+        if tree_snapshot(destination) != source_before:
+            raise AssertionError(
+                "workspace generator did not copy canonical skeleton bytes and modes"
+            )
+        if tree_snapshot(source) != source_before:
+            raise AssertionError("workspace generator changed its canonical skeleton source")
+
+        destination_before = tree_snapshot(destination)
+        repeated = run_workspace(clone, "uncertain-outcome")
+        if repeated.returncode == 0:
+            raise AssertionError("workspace generator overwrote an existing destination")
+        if tree_snapshot(destination) != destination_before:
+            raise AssertionError("rejected repeat creation changed learner workspace bytes")
+        if tree_snapshot(source) != source_before:
+            raise AssertionError("rejected repeat creation changed canonical skeleton bytes")
+        print("[PASS] workspace generator copies once and preserves existing bytes")
+
+    with tempfile.TemporaryDirectory(prefix="guide-distributed-workspace-input-") as temporary:
+        clone = Path(temporary) / "repository"
+        copy_repository(clone)
+        for invalid in ("unknown-exercise", "../uncertain-outcome", "uncertain-outcome/reference"):
+            outcome = run_workspace(clone, invalid)
+            if outcome.returncode == 0:
+                raise AssertionError(
+                    f"workspace generator accepted invalid slug/path: {invalid}"
+                )
+        if (clone / ".workspace").exists() or (clone / ".workspace").is_symlink():
+            raise AssertionError("invalid slug/path created a learner workspace")
+        print("[PASS] workspace generator rejects unknown and path-like slugs")
+
+    with tempfile.TemporaryDirectory(prefix="guide-distributed-workspace-symlink-") as temporary:
+        clone = Path(temporary) / "repository"
+        copy_repository(clone)
+        external = Path(temporary) / "external-workspace"
+        external.mkdir()
+        (clone / ".workspace").symlink_to(external, target_is_directory=True)
+        outcome = run_workspace(clone, "uncertain-outcome")
+        if outcome.returncode == 0:
+            raise AssertionError("workspace generator followed a .workspace symlink")
+        if list(external.iterdir()):
+            raise AssertionError("rejected .workspace symlink changed the external target")
+        print("[PASS] workspace generator rejects a symlinked .workspace")
+
+    with tempfile.TemporaryDirectory(prefix="guide-distributed-workspace-race-") as temporary:
+        clone = Path(temporary) / "repository"
+        copy_repository(clone)
+        source = clone / source_relative
+        source_before = tree_snapshot(source)
+        command = ["scripts/new-workspace.sh", "uncertain-outcome"]
+        processes = [
+            subprocess.Popen(
+                command,
+                cwd=clone,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                text=True,
+            )
+            for _ in range(2)
+        ]
+        outcomes: list[tuple[int, str, str]] = []
+        for process in processes:
+            stdout, stderr = process.communicate(timeout=30)
+            outcomes.append((process.returncode, stdout, stderr))
+        if sum(returncode == 0 for returncode, _stdout, _stderr in outcomes) != 1:
+            raise AssertionError(
+                "concurrent workspace creation did not produce exactly one winner: "
+                + repr(outcomes)
+            )
+        destination = clone / ".workspace/uncertain-outcome"
+        if tree_snapshot(destination) != source_before:
+            raise AssertionError("concurrent creation published non-canonical workspace bytes")
+        if tree_snapshot(source) != source_before:
+            raise AssertionError("concurrent creation changed canonical skeleton bytes")
+        leftovers = list((clone / ".workspace").glob(".uncertain-outcome.*"))
+        if leftovers:
+            raise AssertionError(f"concurrent creation left temporary state: {leftovers}")
+        print("[PASS] concurrent workspace creation has one canonical winner")
+
+
 def main() -> int:
     baseline = validate(ROOT)
     if baseline.returncode:
@@ -90,12 +305,121 @@ def main() -> int:
             ),
         ),
         (
+            "missing README learning-path row",
+            lambda root: remove_line_containing(
+                root,
+                "README.md",
+                "docs/01-boundaries-and-failure/01-partial-failure-and-uncertain-outcomes.md",
+            ),
+        ),
+        (
+            "out-of-order README learning-path rows",
+            lambda root: swap_lines_containing(
+                root,
+                "README.md",
+                "docs/01-boundaries-and-failure/01-partial-failure-and-uncertain-outcomes.md",
+                "docs/01-boundaries-and-failure/02-service-boundaries-and-data-ownership.md",
+            ),
+        ),
+        (
+            "wrong README learning-path command token",
+            lambda root: mutate_line_token(
+                root,
+                "README.md",
+                "docs/01-boundaries-and-failure/01-partial-failure-and-uncertain-outcomes.md",
+                "./scripts/verify-java.sh .workspace/uncertain-outcome",
+                "./scripts/verify-java.sh .workspace/wrong-path",
+            ),
+        ),
+        (
             "unfinished reference",
             lambda root: mutate_text(
                 root,
                 "exercises/01-boundaries-and-failure/01-uncertain-outcome/reference/src/main/java/dev/guides/distributed/uncertain/UncertainOutcome.java",
                 "public final class UncertainOutcome",
                 "// TODO unfinished reference\npublic final class UncertainOutcome",
+            ),
+        ),
+        (
+            "annotation scope with all markers missing",
+            lambda root: remove_all_implementation_markers(root, ANNOTATION_SOURCE),
+        ),
+        (
+            "duplicate Implementation marker",
+            lambda root: mutate_marker_and_index(
+                root,
+                ANNOTATION_SOURCE,
+                ANNOTATION_README,
+                "2-2",
+                "2-1",
+            ),
+        ),
+        (
+            "top-level Implementation gap",
+            lambda root: mutate_marker_and_index(
+                root,
+                ANNOTATION_SOURCE,
+                ANNOTATION_README,
+                "3",
+                "4",
+            ),
+        ),
+        (
+            "Implementation child gap",
+            lambda root: mutate_marker_and_index(
+                root,
+                ANNOTATION_SOURCE,
+                ANNOTATION_README,
+                "2-2",
+                "2-3",
+            ),
+        ),
+        (
+            "orphan Implementation child",
+            lambda root: mutate_marker_and_index(
+                root,
+                ANNOTATION_SOURCE,
+                ANNOTATION_README,
+                "2-1",
+                "4-1",
+            ),
+        ),
+        (
+            "malformed Implementation label",
+            lambda root: mutate_marker_and_index(
+                root,
+                ANNOTATION_SOURCE,
+                ANNOTATION_README,
+                "2-1",
+                "02-1",
+            ),
+        ),
+        (
+            "Implementation marker leaked into skeleton",
+            lambda root: mutate_text(
+                root,
+                ANNOTATION_SKELETON,
+                "public final class UncertainOutcome",
+                "// [Implementation 1] mutant skeleton leak\n"
+                "public final class UncertainOutcome",
+            ),
+        ),
+        (
+            "README Implementation index mismatch",
+            lambda root: mutate_text(
+                root,
+                ANNOTATION_README,
+                "| Implementation 2-2 |",
+                "| Implementation 2-9 |",
+            ),
+        ),
+        (
+            "Implementation marker outside a source comment",
+            lambda root: mutate_text(
+                root,
+                ANNOTATION_SOURCE,
+                "// [Implementation 2] Gateway",
+                'private static final String MUTANT_MARKER = "[Implementation 2]"; // Gateway',
             ),
         ),
         (
@@ -212,6 +536,15 @@ def main() -> int:
             ),
         ),
         (
+            "non-unique standalone KRaft Compose prefix",
+            lambda root: mutate_text(
+                root,
+                "exercises/90-optional-labs/single-broker-kraft/verify.sh",
+                "guide-distributed-kraft-${UID:-0}-$$-${RANDOM:-0}",
+                "guide-distributed-kraft-${UID:-0}",
+            ),
+        ),
+        (
             "missing public make clean",
             lambda root: mutate_text(
                 root,
@@ -303,6 +636,8 @@ def main() -> int:
             if outcome.returncode == 0:
                 raise AssertionError(f"validator accepted mutant: {name}")
             print(f"[PASS] validator rejected {name}")
+
+    check_workspace_runtime()
 
     with tempfile.TemporaryDirectory(prefix="guide-distributed-workspace-") as temporary:
         clone = Path(temporary) / "repository"

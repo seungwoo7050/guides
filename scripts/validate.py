@@ -51,6 +51,195 @@ NON_JAVA_EXERCISES = {
     "exercises/90-optional-labs/single-broker-kraft",
 }
 
+LEARNING_PATH = (
+    (
+        "1",
+        "docs/01-boundaries-and-failure/01-partial-failure-and-uncertain-outcomes.md",
+        "exercises/01-boundaries-and-failure/01-uncertain-outcome",
+        ".workspace/uncertain-outcome",
+        "./scripts/verify-java.sh .workspace/uncertain-outcome",
+        "reference/",
+        "서비스 경계",
+    ),
+    (
+        "2",
+        "docs/01-boundaries-and-failure/02-service-boundaries-and-data-ownership.md",
+        "exercises/01-boundaries-and-failure/02-service-boundary",
+        ".workspace/service-boundary",
+        "./scripts/verify-java.sh .workspace/service-boundary",
+        "reference/",
+        "요청 판정",
+    ),
+    (
+        "3",
+        "docs/01-boundaries-and-failure/03-synchronous-and-asynchronous-decisions.md",
+        "exercises/01-boundaries-and-failure/03-request-decision",
+        ".workspace/request-decision",
+        "./scripts/verify-java.sh .workspace/request-decision",
+        "reference/",
+        "멱등성",
+    ),
+    (
+        "4",
+        "docs/02-delivery-and-consistency/01-idempotency-and-single-effects.md",
+        "exercises/02-delivery-and-consistency/01-duplicate-delivery",
+        ".workspace/duplicate-delivery",
+        "./scripts/verify-java.sh .workspace/duplicate-delivery",
+        "reference/",
+        "Outbox·Saga",
+    ),
+    (
+        "5",
+        "docs/02-delivery-and-consistency/02-outbox-saga-and-reconciliation.md",
+        "exercises/02-delivery-and-consistency/02-outbox-reconciliation",
+        ".workspace/outbox-reconciliation",
+        "./scripts/verify-java.sh .workspace/outbox-reconciliation",
+        "reference/",
+        "계약·순서",
+    ),
+    (
+        "6",
+        "docs/02-delivery-and-consistency/03-contracts-versioning-and-order.md",
+        "exercises/02-delivery-and-consistency/03-contracts-and-order",
+        ".workspace/contracts-and-order",
+        "./scripts/verify-java.sh .workspace/contracts-and-order",
+        "reference/",
+        "읽기 모델",
+    ),
+    (
+        "7",
+        "docs/02-delivery-and-consistency/04-read-models-and-late-events.md",
+        "exercises/02-delivery-and-consistency/04-read-model-rebuild",
+        ".workspace/read-model-rebuild",
+        "./scripts/verify-java.sh .workspace/read-model-rebuild",
+        "reference/",
+        "재시도 예산",
+    ),
+    (
+        "8",
+        "docs/03-resilience-and-load/01-timeouts-retries-circuit-breakers-and-dlq.md",
+        "exercises/03-resilience-and-load/01-retry-budget",
+        ".workspace/retry-budget",
+        "./scripts/verify-java.sh .workspace/retry-budget",
+        "reference/",
+        "역압",
+    ),
+    (
+        "9",
+        "docs/03-resilience-and-load/02-backpressure-bulkheads-and-load-shedding.md",
+        "exercises/03-resilience-and-load/02-backpressure",
+        ".workspace/backpressure",
+        "./scripts/verify-java.sh .workspace/backpressure",
+        "reference/",
+        "릴리스 명세",
+    ),
+    (
+        "10",
+        "docs/04-release-and-evidence/01-multi-repository-builds-and-release-manifests.md",
+        "exercises/04-release-and-evidence/01-release-manifest",
+        ".workspace/release-manifest/manifest_check.py",
+        (
+            "python3 exercises/04-release-and-evidence/01-release-manifest/tests/"
+            "verify_manifest.py .workspace/release-manifest/manifest_check.py"
+        ),
+        "reference/",
+        "관측성",
+    ),
+    (
+        "11",
+        "docs/04-release-and-evidence/02-distributed-observability.md",
+        "exercises/04-release-and-evidence/02-observability-correlation",
+        ".workspace/observability-correlation",
+        "./scripts/verify-java.sh .workspace/observability-correlation",
+        "reference/",
+        "장애 근거",
+    ),
+    (
+        "12",
+        "docs/04-release-and-evidence/03-end-to-end-chaos-and-failure-evidence.md",
+        "exercises/04-release-and-evidence/03-chaos-evidence",
+        ".workspace/chaos-evidence",
+        "./scripts/verify-java.sh .workspace/chaos-evidence",
+        "reference/",
+        "성능 판정",
+    ),
+    (
+        "13",
+        "docs/04-release-and-evidence/04-performance-gates-and-claims.md",
+        "exercises/04-release-and-evidence/04-performance-gate",
+        ".workspace/performance-gate",
+        "./scripts/verify-java.sh .workspace/performance-gate",
+        "reference/",
+        "통합 과제",
+    ),
+    (
+        "14",
+        "docs/05-capstone.md",
+        "exercises/05-capstone/reservation-flow",
+        ".workspace/reservation-flow",
+        "./scripts/verify-java.sh .workspace/reservation-flow",
+        "reference/",
+        "핵심 과정 완료",
+    ),
+    (
+        "선택",
+        "docs/90-optional-labs/01-single-broker-kraft.md",
+        "exercises/90-optional-labs/single-broker-kraft",
+        "—",
+        "./exercises/90-optional-labs/single-broker-kraft/verify.sh",
+        "관찰 근거",
+        "과정 종료",
+    ),
+)
+
+ANNOTATION_SCOPES = {
+    "exercises/01-boundaries-and-failure/01-uncertain-outcome": (
+        "reference/src/main/java/dev/guides/distributed/uncertain/UncertainOutcome.java",
+    ),
+    "exercises/01-boundaries-and-failure/02-service-boundary": (
+        "reference/src/main/java/dev/guides/distributed/boundary/ServiceBoundary.java",
+    ),
+    "exercises/01-boundaries-and-failure/03-request-decision": (
+        "reference/src/main/java/dev/guides/distributed/decision/RequestDecision.java",
+    ),
+    "exercises/02-delivery-and-consistency/01-duplicate-delivery": (
+        "reference/src/main/java/dev/guides/distributed/duplicate/DuplicateDelivery.java",
+    ),
+    "exercises/02-delivery-and-consistency/02-outbox-reconciliation": (
+        "reference/src/main/java/dev/guides/distributed/outbox/OutboxReconciliation.java",
+    ),
+    "exercises/02-delivery-and-consistency/03-contracts-and-order": (
+        "reference/src/main/java/dev/guides/distributed/contracts/ContractsAndOrder.java",
+    ),
+    "exercises/02-delivery-and-consistency/04-read-model-rebuild": (
+        "reference/src/main/java/dev/guides/distributed/readmodel/ReadModelRebuild.java",
+    ),
+    "exercises/03-resilience-and-load/01-retry-budget": (
+        "reference/src/main/java/dev/guides/distributed/retry/RetryBudget.java",
+    ),
+    "exercises/03-resilience-and-load/02-backpressure": (
+        "reference/src/main/java/dev/guides/distributed/backpressure/Backpressure.java",
+    ),
+    "exercises/04-release-and-evidence/01-release-manifest": (
+        "reference/manifest_check.py",
+    ),
+    "exercises/04-release-and-evidence/02-observability-correlation": (
+        "reference/src/main/java/dev/guides/distributed/observability/ObservabilityCorrelation.java",
+    ),
+    "exercises/04-release-and-evidence/03-chaos-evidence": (
+        "reference/src/main/java/dev/guides/distributed/chaos/ChaosEvidence.java",
+    ),
+    "exercises/04-release-and-evidence/04-performance-gate": (
+        "reference/src/main/java/dev/guides/distributed/performance/PerformanceGate.java",
+    ),
+    "exercises/05-capstone/reservation-flow": (
+        "reference/src/main/java/dev/guides/distributed/capstone/ReservationFlow.java",
+    ),
+    "exercises/90-optional-labs/single-broker-kraft": (
+        "reference/compose.yaml",
+    ),
+}
+
 EXPECTED_MODULES = [
     "exercises/test-support",
     *[f"{path}/reference" for path in sorted(JAVA_EXERCISES)],
@@ -86,6 +275,8 @@ FENCED_CODE = re.compile(r"^```[^\n]*\n.*?^```[ \t]*$", re.MULTILINE | re.DOTALL
 HEADING = re.compile(r"^#{1,6}\s+(.+?)\s*$", re.MULTILINE)
 PEDAGOGY = ("## 목표", "## 완료 기준", "## 자기 설명", "## 검증")
 XML_NS = {"m": "http://maven.apache.org/POM/4.0.0"}
+IMPLEMENTATION_TOKEN = re.compile(r"\[Implementation ([^\]\n]+)\]")
+IMPLEMENTATION_LABEL = re.compile(r"(?:0|[1-9]\d*)(?:-[1-9]\d*)?\Z")
 
 
 class Validation:
@@ -192,6 +383,7 @@ def check_expected_tree(result: Validation) -> None:
         "scripts/verify-skeletons.sh",
         "scripts/verify-nonjava.sh",
         "scripts/repository_state.py",
+        "scripts/new-workspace.sh",
         "scripts/test-validator.py",
     }
     for path in sorted(required_root):
@@ -212,11 +404,16 @@ def check_repository_manifest(result: Validation) -> None:
     manifest = ROOT / "config/repository-files.txt"
     if not manifest.is_file():
         return
-    expected = {
+    manifest_lines = [
         line.strip()
         for line in manifest.read_text(encoding="utf-8").splitlines()
         if line.strip()
-    }
+    ]
+    result.require(
+        manifest_lines == sorted(set(manifest_lines)),
+        "config/repository-files.txt must be unique and lexicographically ordered",
+    )
+    expected = set(manifest_lines)
     actual: set[str] = set()
     for path in ROOT.rglob("*"):
         rel_path = path.relative_to(ROOT)
@@ -291,6 +488,237 @@ def check_markdown(result: Validation) -> None:
                 }
                 result.require(urllib.parse.unquote(fragment).lower() in anchors,
                                f"broken anchor in {rel}: {raw_target}")
+
+
+def check_learning_path(result: Validation) -> None:
+    readme = (ROOT / "README.md").read_text(encoding="utf-8")
+    header = "| 순서 | 문서 | 관찰 예제 | 직접 수행 | 수정 위치 | 검증 | 완료 뒤 비교·다음 |"
+    result.require(header in readme, "README.md is missing the canonical ordered mapping header")
+
+    table_start = readme.find(header)
+    table_end = readme.find("\n## ", table_start)
+    table = readme[table_start:table_end if table_end >= 0 else len(readme)]
+    table_rows = [
+        line for line in table.splitlines()
+        if line.startswith("|") and not line.startswith((header, "|---", "| ---"))
+    ]
+    result.require(
+        len(table_rows) == len(LEARNING_PATH),
+        f"README.md learning table must contain exactly {len(LEARNING_PATH)} curriculum rows",
+    )
+
+    row_offsets: list[int] = []
+    for sequence, document, exercise, workspace, command, comparison, next_stage in LEARNING_PATH:
+        candidates = [
+            line for line in table_rows
+            if f"]({document})" in line and f"]({exercise}/README.md)" in line
+        ]
+        result.require(
+            len(candidates) == 1,
+            f"README.md must contain exactly one ordered row for {document} -> {exercise}",
+        )
+        if len(candidates) != 1:
+            continue
+        line = candidates[0]
+        columns = [column.strip() for column in line.strip().strip("|").split("|")]
+        result.require(len(columns) == 7, f"README.md row has the wrong column count: {exercise}")
+        if len(columns) != 7:
+            continue
+        result.require(columns[0] == sequence, f"README.md has the wrong sequence for {exercise}")
+        result.require(columns[2] == "—", f"README.md must show no example for {exercise}")
+        result.require(workspace in columns[4], f"README.md row is missing modification path: {exercise}")
+        result.require(command in columns[5], f"README.md row is missing verification command: {exercise}")
+        result.require(comparison in columns[6], f"README.md row is missing comparison evidence: {exercise}")
+        result.require(next_stage in columns[6], f"README.md row is missing its next stage: {exercise}")
+        row_offsets.append(table.find(line))
+    result.require(row_offsets == sorted(row_offsets), "README.md learning rows are out of canonical order")
+    result.require(
+        "별도 `examples/`는 없습니다." in readme,
+        "README.md must explicitly state that this branch has no examples",
+    )
+    result.require(
+        "workspace 검사가 통과하고 자기 설명" in readme,
+        "README.md must defer reference source until after workspace verification and self-explanation",
+    )
+
+    roadmap = (ROOT / "docs/00-roadmap.md").read_text(encoding="utf-8")
+    roadmap_offsets: list[int] = []
+    for _sequence, _document, exercise, _workspace, _command, _comparison, _next in LEARNING_PATH:
+        token = f"(../{exercise}/README.md)"
+        result.require(roadmap.count(token) == 1, f"roadmap must map exactly once to {exercise}")
+        roadmap_offsets.append(roadmap.find(token))
+    result.require(
+        roadmap_offsets == sorted(roadmap_offsets),
+        "roadmap exercise mapping is out of canonical order",
+    )
+
+    for sequence, _document, exercise, workspace, _command, _comparison, _next in LEARNING_PATH:
+        exercise_readme = ROOT / exercise / "README.md"
+        exercise_text = exercise_readme.read_text(encoding="utf-8")
+        if sequence == "선택":
+            result.require(
+                "관찰" in exercise_text and "workspace" in exercise_text,
+                f"{relative(exercise_readme)} must declare its observation-only workspace exception",
+            )
+            result.require(
+                "scripts/new-workspace.sh" not in exercise_text,
+                f"{relative(exercise_readme)} must not invent a learner workspace",
+            )
+            continue
+        slug = workspace.removeprefix(".workspace/").split("/", 1)[0]
+        result.require(
+            f"scripts/new-workspace.sh {slug}" in exercise_text,
+            f"{relative(exercise_readme)} must document safe workspace creation",
+        )
+        verify_start = exercise_text.find("## 검증\n")
+        comparison_text = exercise_text[verify_start:] if verify_start >= 0 else ""
+        result.require(
+            "reference" in comparison_text
+            and "검사" in comparison_text
+            and "자기 설명" in comparison_text,
+            f"{relative(exercise_readme)} must compare reference only after verification and self-explanation",
+        )
+
+
+def implementation_key(label: str) -> tuple[int, int]:
+    parent, separator, child = label.partition("-")
+    return int(parent), int(child) if separator else 0
+
+
+def check_implementation_annotations(result: Validation) -> None:
+    allowed_to_scope: dict[str, str] = {}
+    for scope, source_paths in ANNOTATION_SCOPES.items():
+        for source_path in source_paths:
+            allowed_to_scope[f"{scope}/{source_path}"] = scope
+
+    labels_by_scope: dict[str, list[str]] = {scope: [] for scope in ANNOTATION_SCOPES}
+    for path in ROOT.rglob("*"):
+        if not path.is_file():
+            continue
+        rel_path = path.relative_to(ROOT)
+        if learner_workspace(rel_path) or generated_path(rel_path):
+            continue
+        if any(part in {".git", ".guide"} for part in rel_path.parts):
+            continue
+        if rel_path.as_posix() in {"scripts/validate.py", "scripts/test-validator.py"}:
+            continue
+        try:
+            text = path.read_text(encoding="utf-8")
+        except (OSError, UnicodeDecodeError):
+            continue
+        if "[Implementation" not in text:
+            continue
+        matches = list(IMPLEMENTATION_TOKEN.finditer(text))
+        result.require(
+            text.count("[Implementation") == len(matches),
+            f"malformed Implementation marker in {relative(path)}",
+        )
+        scope = allowed_to_scope.get(relative(path))
+        result.require(scope is not None, f"Implementation marker is outside reference production source: {relative(path)}")
+        for match in matches:
+            label = match.group(1)
+            result.require(
+                IMPLEMENTATION_LABEL.fullmatch(label) is not None,
+                f"invalid Implementation label in {relative(path)}: {label}",
+            )
+            line_start = text.rfind("\n", 0, match.start()) + 1
+            line_end = text.find("\n", match.end())
+            line = text[line_start:line_end if line_end >= 0 else len(text)].strip()
+            result.require(
+                line.startswith(("// [Implementation", "# [Implementation")),
+                f"Implementation marker must be a source comment: {relative(path)}:{label}",
+            )
+            if scope is not None and IMPLEMENTATION_LABEL.fullmatch(label):
+                labels_by_scope[scope].append(label)
+
+    for scope, labels in labels_by_scope.items():
+        result.require(bool(labels), f"annotation scope has no Implementation markers: {scope}")
+        result.require(len(labels) == len(set(labels)), f"duplicate Implementation label in scope: {scope}")
+        top_level = sorted(int(label) for label in labels if "-" not in label)
+        result.require(0 not in top_level, f"{scope} must not invent Implementation 0")
+        if top_level:
+            result.require(
+                top_level == list(range(1, max(top_level) + 1)),
+                f"top-level Implementation labels must be contiguous in {scope}",
+            )
+        children: dict[int, list[int]] = {}
+        for label in labels:
+            if "-" not in label:
+                continue
+            parent_text, child_text = label.split("-", 1)
+            parent = int(parent_text)
+            child = int(child_text)
+            result.require(parent in top_level, f"orphan Implementation child in {scope}: {label}")
+            children.setdefault(parent, []).append(child)
+        for parent, child_labels in children.items():
+            ordered_children = sorted(child_labels)
+            result.require(
+                ordered_children == list(range(1, max(ordered_children) + 1)),
+                f"Implementation child labels must be contiguous in {scope}: {parent}",
+            )
+
+        readme = ROOT / scope / "README.md"
+        readme_text = readme.read_text(encoding="utf-8")
+        section_start = readme_text.find("## 권장 구현 순서\n")
+        section_end = readme_text.find("\n## ", section_start + 1)
+        section = readme_text[
+            section_start:section_end if section_end >= 0 else len(readme_text)
+        ] if section_start >= 0 else ""
+        result.require(section_start >= 0, f"{relative(readme)} is missing 권장 구현 순서")
+        result.require(
+            "권장" in section and "실제" in section and "과거 작성" in section,
+            f"{relative(readme)} must describe a recommended, non-historical construction order",
+        )
+        index_labels = re.findall(
+            r"^\|\s*Implementation\s+(\d+(?:-\d+)?)\s*\|",
+            section,
+            re.MULTILINE,
+        )
+        expected_labels = sorted(set(labels), key=implementation_key)
+        result.require(
+            index_labels == expected_labels,
+            f"README implementation index does not match source markers: {scope} "
+            f"(expected={expected_labels}, actual={index_labels})",
+        )
+
+
+def check_workspace_contract(result: Validation) -> None:
+    script_path = ROOT / "scripts/new-workspace.sh"
+    if not script_path.is_file():
+        return
+    text = script_path.read_text(encoding="utf-8")
+    for sequence, _document, exercise, workspace, _command, _comparison, _next in LEARNING_PATH:
+        if sequence == "선택":
+            continue
+        slug = workspace.removeprefix(".workspace/").split("/", 1)[0]
+        result.require(f"  {slug})" in text, f"workspace generator is missing slug: {slug}")
+        result.require(
+            f'SOURCE="{exercise}/skeleton"' in text,
+            f"workspace generator has the wrong canonical skeleton for {slug}",
+        )
+    for required in (
+        "require_plain_tree",
+        "workspace.is_symlink()",
+        "workspace.resolve(strict=True) != workspace",
+        "destination.exists() or destination.is_symlink()",
+        "lock.mkdir(mode=0o700)",
+        "renamex_np",
+        "renameat2",
+        "exclusive atomic publish is unsupported",
+    ):
+        result.require(required in text, f"workspace generator is missing safety contract: {required}")
+    result.require(
+        text.count('SOURCE="exercises/') == len(LEARNING_PATH) - 1,
+        "workspace generator must expose exactly the canonical core exercise mappings",
+    )
+
+    kraft = (ROOT / "exercises/90-optional-labs/single-broker-kraft/verify.sh").read_text(
+        encoding="utf-8"
+    )
+    result.require(
+        "guide-distributed-kraft-${UID:-0}-$$-${RANDOM:-0}" in kraft,
+        "standalone KRaft verification must use a process-unique default Compose project",
+    )
 
 
 def check_unique_pedagogy(result: Validation) -> None:
@@ -512,6 +940,7 @@ def check_scripts(result: Validation) -> None:
         "prepare.sh",
         "verify.sh",
         "scripts/repository_state.py",
+        "scripts/new-workspace.sh",
         "scripts/test-validator.py",
         "scripts/validate.py",
     ):
@@ -534,6 +963,17 @@ def check_scripts(result: Validation) -> None:
         and "__consumer_offsets" in kraft
         and "direct partition consumer failed; group result would be ambiguous" in kraft,
         "KRaft skeleton must distinguish direct-consumer success from the designated group failure",
+    )
+    workspace_generator = (ROOT / "scripts/new-workspace.sh").read_text(encoding="utf-8")
+    result.require(
+        "guide-distributed-kraft-${UID:-0}-$$-${RANDOM:-0}" in kraft,
+        "KRaft standalone verifier must isolate concurrent Compose projects",
+    )
+    result.require(
+        "publish_no_replace" in workspace_generator
+        and "workspace already exists" in workspace_generator
+        and "workspace.is_symlink()" in workspace_generator,
+        "workspace generator must preserve non-overwrite and symlink safety",
     )
 
     for documentation in (ROOT / "README.md", ROOT / "CONTRIBUTING.md"):
@@ -567,6 +1007,10 @@ def check_scripts(result: Validation) -> None:
         result.require(
             "\n  mvnw\n" in text,
             f"{name} preparation fingerprint must include mvnw",
+        )
+        result.require(
+            "\n  scripts/new-workspace.sh\n" in text,
+            f"{name} preparation fingerprint must include the workspace generator",
         )
         result.require(
             'find "$ROOT/exercises" -type f -name pom.xml | sort' in text,
@@ -614,8 +1058,11 @@ def main() -> int:
     check_expected_tree(result)
     check_repository_manifest(result)
     check_markdown(result)
+    check_learning_path(result)
     check_unique_pedagogy(result)
     check_learner_commands(result)
+    check_implementation_annotations(result)
+    check_workspace_contract(result)
     check_text_hygiene(result)
     check_java_exercises(result)
     check_maven_modules(result)

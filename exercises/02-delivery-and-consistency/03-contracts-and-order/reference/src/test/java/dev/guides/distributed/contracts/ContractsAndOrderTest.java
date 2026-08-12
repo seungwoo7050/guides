@@ -12,6 +12,7 @@ public final class ContractsAndOrderTest {
         duplicateEventIsIgnored();
         reusedIdAndCompetingSequenceAreRejected();
         aggregateGapsRemainIndependent();
+        nonPositiveSchemaVersionsAreRejected();
     }
 
     private static void mismatchedChannelIsRejected() {
@@ -180,5 +181,36 @@ public final class ContractsAndOrderTest {
         );
         Checks.equals("A2", projection.state("aggregate-a"), "gap이 채워지면 해당 aggregate만 drain해야 합니다");
         Checks.equals("B1", projection.state("aggregate-b"), "다른 aggregate 상태를 바꾸면 안 됩니다");
+    }
+
+    private static void nonPositiveSchemaVersionsAreRejected() {
+        Checks.throwsType(
+            IllegalArgumentException.class,
+            () -> new ContractsAndOrder.Projection(CHANNEL, 0),
+            "지원 schema version은 양수여야 합니다"
+        );
+        Checks.throwsType(
+            IllegalArgumentException.class,
+            () -> new ContractsAndOrder.Projection(CHANNEL, -1),
+            "음수인 지원 schema version을 허용하면 안 됩니다"
+        );
+
+        ContractsAndOrder.Projection projection =
+            new ContractsAndOrder.Projection(CHANNEL, 2);
+        Checks.throwsType(
+            ContractsAndOrder.ContractViolationException.class,
+            () -> projection.onEvent(
+                new ContractsAndOrder.Event(CHANNEL, 0, "event-v0", "r-v0", 1, "CREATED")
+            ),
+            "schema version 0인 이벤트를 계약 입력으로 허용하면 안 됩니다"
+        );
+        Checks.throwsType(
+            ContractsAndOrder.ContractViolationException.class,
+            () -> projection.onEvent(
+                new ContractsAndOrder.Event(CHANNEL, -1, "event-vn", "r-vn", 1, "CREATED")
+            ),
+            "음수 schema version 이벤트를 계약 입력으로 허용하면 안 됩니다"
+        );
+        Checks.equals(0, projection.isolatedCount(), "잘못된 version을 호환성 격리로 오인하면 안 됩니다");
     }
 }

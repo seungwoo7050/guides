@@ -11,6 +11,7 @@ public final class ChaosEvidenceTest {
         hypothesisBudgetAndCleanupEvidenceRemainSeparate();
         operationAndElapsedEvidenceStayConnected();
         lateConvergenceFailsThePrimaryResult();
+        unsupportedFailureIsRejected();
     }
 
     private static void evidenceContainsAllPhases() {
@@ -136,6 +137,16 @@ public final class ChaosEvidenceTest {
             ChaosEvidence.Result.FAIL,
             report.primaryResult(),
             "시간 한도를 넘긴 수렴을 실험 성공으로 판정하면 안 됩니다"
+        );
+    }
+
+    private static void unsupportedFailureIsRejected() {
+        Checks.throwsType(
+            IllegalArgumentException.class,
+            () -> new ChaosEvidence.Scenario().run(
+                ChaosEvidence.one(ChaosEvidence.Failure.DATABASE_DOWN)
+            ),
+            "지원하지 않는 database 장애를 성공 증거로 만들면 안 됩니다"
         );
     }
 }

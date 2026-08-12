@@ -11,10 +11,12 @@ from typing import Any
 SHA_PATTERN = re.compile(r"^[0-9a-f]{40}$")
 
 
+# [Implementation 1] ManifestError 하나로 입력 계약과 Git 상태 검증 실패를 호출자에게 전달합니다.
 class ManifestError(RuntimeError):
     pass
 
 
+# [Implementation 2] Git subprocess 경계를 모아 exit code와 stderr를 명세 오류로 변환합니다.
 def git(repo: Path, *args: str, check: bool = True) -> subprocess.CompletedProcess[str]:
     process = subprocess.run(
         ["git", "-C", str(repo), *args],
@@ -28,14 +30,15 @@ def git(repo: Path, *args: str, check: bool = True) -> subprocess.CompletedProce
         raise ManifestError(f"git {' '.join(args)} failed for {repo}: {detail}")
     return process
 
-
-
+# [Implementation 3] 원격 URL 표기 차이만 정규화하고 저장소 identity 자체는 보존합니다.
 def normalize_remote(value: str) -> str:
     normalized = value.strip().rstrip("/")
     if normalized.endswith(".git"):
         normalized = normalized[:-4]
     return normalized
 
+
+# [Implementation 3-1] 모든 필수 문자열 필드가 비어 있지 않다는 공통 입력 invariant를 둡니다.
 def require_string(entry: dict[str, Any], field: str) -> str:
     value = entry.get(field)
     if not isinstance(value, str) or not value.strip():
@@ -43,6 +46,7 @@ def require_string(entry: dict[str, Any], field: str) -> str:
     return value
 
 
+# [Implementation 4] 저장소 하나의 remote, clean detached HEAD, annotated tag 연결을 검증합니다.
 def verify_repository(entry: dict[str, Any]) -> None:
     name = require_string(entry, "name")
     repo = Path(require_string(entry, "path")).expanduser()
@@ -91,6 +95,7 @@ def verify_repository(entry: dict[str, Any]) -> None:
         raise ManifestError(f"{name}: annotated tag does not peel to manifest commit")
 
 
+# [Implementation 5] manifest 전체에서 이름·경로 uniqueness를 소유하고 각 저장소 검증을 위임합니다.
 def verify_manifest(path: Path) -> None:
     try:
         document = json.loads(path.read_text(encoding="utf-8"))
@@ -119,6 +124,7 @@ def verify_manifest(path: Path) -> None:
         verify_repository(raw_entry)
 
 
+# [Implementation 6] CLI 경계가 사용법, 안정적인 exit code, 사람이 읽는 증거를 제공합니다.
 def main(argv: list[str]) -> int:
     if len(argv) != 2:
         print("usage: manifest_check.py MANIFEST.json", file=sys.stderr)

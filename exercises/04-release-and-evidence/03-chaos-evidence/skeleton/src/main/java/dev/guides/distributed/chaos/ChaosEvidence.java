@@ -109,18 +109,11 @@ public final class ChaosEvidence {
                 );
             }
             Failure failure = failures.iterator().next();
+            if (failure != Failure.BROKER_DOWN) {
+                throw new IllegalArgumentException("unsupported failure: " + failure);
+            }
             List<Snapshot> evidence = new ArrayList<>();
             evidence.add(snapshot(Phase.BEFORE, operationId, 0));
-
-            if (failure == Failure.DATABASE_DOWN) {
-                processUp = true;
-                evidence.add(snapshot(Phase.DURING, operationId, elapsedMillis / 2));
-                evidence.add(snapshot(Phase.AFTER, operationId, elapsedMillis));
-                return report(
-                    operationId, hypothesis, timeBudgetMillis, elapsedMillis,
-                    cleanupSucceeds, evidence
-                );
-            }
 
             primaryRows++;
             pendingOutbox++;

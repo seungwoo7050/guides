@@ -118,6 +118,10 @@ Dispatcher는 실행·대기 한도를 가집니다.
 유지합니다. 다음 재조정은 같은 operation ID로 다시 조회하고, 정본 결과가 생긴
 경우에만 terminal 상태와 Outbox 이벤트를 만듭니다.
 
+Outbox가 잠시 비고 정본과 projection이 모두 `PENDING`이라는 이유만으로 수렴했다고
+판정하지 않습니다. 두 소유자의 상태가 같은 `ACCEPTED` 또는 `REJECTED`이고 남은
+Outbox가 없을 때만 이 업무 흐름의 terminal 수렴입니다.
+
 ## 실패 행렬
 
 | 실패 | 장애 중 기대 상태 | 복구 뒤 기대 상태 |

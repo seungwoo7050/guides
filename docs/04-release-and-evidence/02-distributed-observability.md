@@ -32,6 +32,9 @@
 | `aggregate_id` | 상태를 소유한 업무 대상 |
 
 재시도는 새 request ID를 가질 수 있지만 operation ID는 유지합니다. 이벤트를 다시 전달할 때 event ID도 유지합니다. 후속 이벤트는 새 event ID를 가지며 causation ID로 원인을 연결합니다.
+이미 upstream에서 시작된 흐름을 받는 ingress는 새 request ID와 별도로 기존
+`trace_id`·`correlation_id`를 명시적으로 받습니다. 편의 기본값은 새 흐름에서만
+사용하며 전달받은 업무 상관관계를 request ID로 덮어쓰지 않습니다.
 
 ### 구조화 로그에 상태 전이를 남깁니다
 

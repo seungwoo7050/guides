@@ -8,6 +8,7 @@ import java.util.Queue;
 import java.util.Set;
 
 public final class Backpressure {
+    // [Implementation 1] Admission으로 즉시 실행, 제한된 대기, 명시적 거절 결과를 고정합니다.
     public enum Admission {
         STARTED,
         QUEUED,
@@ -17,6 +18,7 @@ public final class Backpressure {
     private record Queued(String requestId, long enqueuedAt, long deadline) {
     }
 
+    // [Implementation 2] Lane이 의존성별 실행·대기·완료 집합과 포화 근거를 소유합니다.
     private static final class Lane {
         private final int maxInFlight;
         private final int maxQueued;
@@ -36,6 +38,7 @@ public final class Backpressure {
             this.maxQueueAge = maxQueueAge;
         }
 
+        // [Implementation 2-1] 중복과 만료를 먼저 판정한 뒤 용량 안에서만 admission을 허용합니다.
         private Admission submit(String requestId, long now, long deadline) {
             if (inFlight.contains(requestId)
                 || queued.stream().anyMatch(entry -> entry.requestId().equals(requestId))
@@ -59,6 +62,7 @@ public final class Backpressure {
             return Admission.REJECTED;
         }
 
+        // [Implementation 2-2] 완료된 슬롯 하나에 유효한 대기 작업 하나만 승격합니다.
         private String completeOne(long now) {
             if (inFlight.isEmpty()) {
                 throw new IllegalStateException("no in-flight work");
@@ -75,6 +79,7 @@ public final class Backpressure {
             return next == null ? null : next.requestId();
         }
 
+        // [Implementation 2-3] queue head부터 deadline과 최대 대기 시간을 검사해 만료 근거를 남깁니다.
         private void expire(long now) {
             while (!queued.isEmpty()) {
                 Queued head = queued.element();
@@ -88,12 +93,14 @@ public final class Backpressure {
             }
         }
 
+        // [Implementation 2-4] 가장 오래 기다린 항목의 나이로 포화의 지속 시간을 드러냅니다.
         private long oldestAge(long now) {
             Queued head = queued.peek();
             return head == null ? 0 : Math.max(0, now - head.enqueuedAt());
         }
     }
 
+    // [Implementation 3] AdmissionSystem이 이름별 Lane을 격리하고 관찰 API를 제공합니다.
     public static final class AdmissionSystem {
         private final Map<String, Lane> lanes = new HashMap<>();
 

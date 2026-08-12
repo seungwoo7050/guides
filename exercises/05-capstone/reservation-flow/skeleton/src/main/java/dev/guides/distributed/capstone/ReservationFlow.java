@@ -831,8 +831,12 @@ public final class ReservationFlow {
         }
 
         public boolean converged(String reservationId) {
-            return reservations.pendingOutboxCount() == 0
-                && reservations.status(reservationId) == query.status(reservationId);
+            Status authoritative = reservations.status(reservationId);
+            boolean terminal = authoritative == Status.ACCEPTED
+                || authoritative == Status.REJECTED;
+            return terminal
+                && reservations.pendingOutboxCount() == 0
+                && authoritative == query.status(reservationId);
         }
 
         public List<Event> brokerMessages() {

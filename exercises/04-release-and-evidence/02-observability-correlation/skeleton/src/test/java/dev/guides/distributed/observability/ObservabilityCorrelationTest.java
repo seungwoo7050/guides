@@ -11,6 +11,7 @@ public final class ObservabilityCorrelationTest {
         conflictingIdentifiersAreRejectedBeforeEvidence();
         metricsUseBoundedTagKeys();
         traceAndMetricContractsAreExplicit();
+        explicitIngressIdentifiersRemainConnected();
     }
 
     private static void identifiersRemainConnectedAcrossHops() {
@@ -111,5 +112,37 @@ public final class ObservabilityCorrelationTest {
             () -> flow.validateMetricTagKeys(Set.of("component", "operationId")),
             "고카디널리티 식별자를 metric tag로 허용하면 안 됩니다"
         );
+    }
+
+    private static void explicitIngressIdentifiersRemainConnected() {
+        ObservabilityCorrelation.Flow flow = new ObservabilityCorrelation.Flow();
+        ObservabilityCorrelation.Command command = flow.receive(
+            "req-upstream",
+            "op-upstream",
+            "trace-upstream",
+            "corr-business-flow",
+            "reservation-upstream"
+        );
+        ObservabilityCorrelation.Event event = flow.publish(command);
+        flow.consume(event);
+
+        Checks.equals("trace-upstream", command.traceId(), "upstream trace ID를 바꾸면 안 됩니다");
+        Checks.equals(
+            "corr-business-flow",
+            command.correlationId(),
+            "upstream correlation ID를 요청 ID로 덮어쓰면 안 됩니다"
+        );
+        for (ObservabilityCorrelation.Observation observation : flow.observations()) {
+            Checks.equals(
+                "trace-upstream",
+                observation.traceId(),
+                "명시적으로 받은 trace ID가 모든 hop에 이어져야 합니다"
+            );
+            Checks.equals(
+                "corr-business-flow",
+                observation.correlationId(),
+                "명시적으로 받은 correlation ID가 모든 hop에 이어져야 합니다"
+            );
+        }
     }
 }

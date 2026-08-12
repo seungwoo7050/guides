@@ -43,17 +43,33 @@ public final class ObservabilityCorrelation {
         private final Map<String, Integer> metrics = new LinkedHashMap<>();
         private int effects;
 
-        public Command receive(String requestId, String operationId, String aggregateId) {
+        public Command receive(
+            String requestId,
+            String operationId,
+            String traceId,
+            String correlationId,
+            String aggregateId
+        ) {
             Command command = new Command(
+                requestId,
+                operationId,
+                traceId,
+                correlationId,
+                aggregateId
+            );
+            observe("gateway", "command.received", command.traceId(), command.correlationId(),
+                command.operationId(), null, "accepted");
+            return command;
+        }
+
+        public Command receive(String requestId, String operationId, String aggregateId) {
+            return receive(
                 requestId,
                 operationId,
                 "trace-" + requestId,
                 requestId,
                 aggregateId
             );
-            observe("gateway", "command.received", command.traceId(), command.correlationId(),
-                command.operationId(), null, "accepted");
-            return command;
         }
 
         public Event publish(Command command) {

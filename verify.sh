@@ -30,6 +30,7 @@ FINGERPRINT_INPUTS=(
   .mvn/jvm.config
   .mvn/wrapper/maven-wrapper.properties
   scripts/repository_state.py
+  scripts/new-workspace.sh
   scripts/validate.py
   scripts/test-validator.py
   scripts/verify-java.sh

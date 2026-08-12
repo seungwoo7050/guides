@@ -18,6 +18,7 @@ public final class ReservationFlowTest {
         reconciliationDeadlineAndSchemaIsolationAreVerified();
         dispatcherQueueDeadlineAndRetryAreBounded();
         outboxAgeReconciliationAndReplayAreObservable();
+        pendingAgreementIsNotConvergence();
     }
 
     private static void dispatcherQueueDeadlineAndRetryAreBounded() {
@@ -748,6 +749,31 @@ public final class ReservationFlowTest {
             0,
             outOfOrder.pendingCount("query-out-of-order-terminal"),
             "거절한 잘못된 sequence가 pending buffer에 남으면 안 됩니다"
+        );
+    }
+
+    private static void pendingAgreementIsNotConvergence() {
+        ReservationFlow.SystemUnderTest system =
+            new ReservationFlow.SystemUnderTest(2, 1);
+        ReservationFlow.CommandResult command =
+            system.submit("op-pending", "corr-pending", 1);
+        system.publishPending(false);
+        system.query().consume(system.brokerMessages().get(0));
+
+        Checks.equals(
+            ReservationFlow.Status.PENDING,
+            system.reservations().status(command.reservationId()),
+            "terminal 결과 전에는 reservation 정본이 PENDING이어야 합니다"
+        );
+        Checks.equals(
+            ReservationFlow.Status.PENDING,
+            system.query().status(command.reservationId()),
+            "생성 event만 투영하면 query도 PENDING이어야 합니다"
+        );
+        Checks.equals(0, system.reservations().pendingOutboxCount(), "첫 event는 발행 완료 상태여야 합니다");
+        Checks.isFalse(
+            system.converged(command.reservationId()),
+            "정본과 projection이 같은 PENDING이어도 업무가 수렴한 것은 아닙니다"
         );
     }
 }

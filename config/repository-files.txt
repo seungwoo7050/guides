@@ -128,6 +128,7 @@ exercises/test-support/src/main/java/dev/guides/distributed/testing/Checks.java
 mvnw
 pom.xml
 prepare.sh
+scripts/new-workspace.sh
 scripts/repository_state.py
 scripts/test-validator.py
 scripts/validate.py

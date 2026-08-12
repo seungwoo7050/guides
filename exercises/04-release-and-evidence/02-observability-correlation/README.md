@@ -15,15 +15,39 @@
 - `correlationId`: 전체 업무 흐름
 - `aggregateId`: 상태가 바뀌는 업무 대상
 
+이미 upstream에서 시작한 흐름은 5인자 `receive`에 `traceId`와 `correlationId`를
+명시해 전달합니다. 기존 3인자 `receive`는 호환성을 위해 request ID에서 기본값을
+만들지만, 명시적으로 받은 값을 덮어쓰는 경로로 사용하지 않습니다.
+
 로그에는 필요한 식별자를 남기되, metric tag에는 `operationId`나 `aggregateId`처럼 값의 종류가 계속 늘어나는 식별자를 넣지 않습니다. 같은 이벤트가 재전달되면 처리 시도 로그는 여러 개 남을 수 있지만 업무 효과는 하나만 남아야 합니다.
 
 ## 실패 조건
 
 skeleton은 hop마다 새 correlation ID를 만들고, operation ID를 metric tag에 넣습니다. 이 경우 로그를 연결하기 어렵고 metric 시계열 수가 요청 수에 비례해 늘어납니다.
 
+## 권장 구현 순서
+
+`reference/` 전체가 하나의 numbering scope입니다. 아래 Implementation 번호는 권장
+구현 순서이며 실제 과거 작성 순서를 뜻하지 않습니다.
+
+| 구현 단계 | 파일·경계 | 책임 |
+|---:|---|---|
+| Implementation 1 | `Command`, `Event`, `Observation` | 서로 다른 수명 주기의 식별자와 관찰 결과를 고정합니다. |
+| Implementation 2 | `Flow` | 관찰 기록, event claim과 metric state를 소유합니다. |
+| Implementation 2-1 | `Flow.receive` overloads | 명시적 ingress 값을 보존하고 기존 API 기본값을 위임합니다. |
+| Implementation 2-2 | `Flow.publish` | 명령의 식별자와 causation을 event로 전달합니다. |
+| Implementation 2-3 | `Flow.consume` | 중복 전달과 event ID 충돌을 효과 변경 전에 구분합니다. |
+| Implementation 2-4 | `metricTagKeys` | 낮은 cardinality key만 허용합니다. |
+| Implementation 2-5 | `observe` | hop 관찰값과 bounded metric을 함께 기록합니다. |
+
+먼저 `./scripts/new-workspace.sh observability-correlation`로 안전한 복사본을 만들고
+`.workspace/observability-correlation`만 수정합니다. 정본 검사를 통과하고 식별자별
+수명 주기를 자기 말로 설명한 뒤에만 `reference/`의 위 순서와 결과를 비교합니다.
+
 ## 완료 기준
 
 - 명령·이벤트·구독 로그가 하나의 trace와 correlation 흐름으로 연결됩니다.
+- upstream에서 명시한 trace·correlation을 ingress와 이후 hop이 그대로 유지합니다.
 - causation ID가 직접 원인을, operation ID가 재시도 전체의 업무 명령을 가리킵니다.
 - metric tag 검사기가 고카디널리티 식별자를 거절하고 중복 효과는 하나로 유지합니다.
 
@@ -39,6 +63,9 @@ skeleton은 hop마다 새 correlation ID를 만들고, operation ID를 metric ta
 ```sh
 ./scripts/verify-java.sh .workspace/observability-correlation
 ```
+
+workspace 검사가 통과하고 자기 설명을 마친 뒤에만 `reference/`의 관찰 결과와
+권장 구현 순서를 비교합니다.
 
 reference는 다음을 만족합니다.
 

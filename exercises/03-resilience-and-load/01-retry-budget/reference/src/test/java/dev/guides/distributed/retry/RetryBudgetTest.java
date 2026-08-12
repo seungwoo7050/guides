@@ -12,6 +12,8 @@ public final class RetryBudgetTest {
         circuitBreakerStopsNewCalls();
         halfOpenProbeAndDlqReplayPreserveContracts();
         failedHalfOpenProbeStartsANewOpenWindow();
+        nonPositiveBackoffIsRejected();
+        halfOpenBusinessRejectionClosesBreaker();
     }
 
     private static void transientFailureUsesSameOperationId() {
@@ -192,5 +194,47 @@ public final class RetryBudgetTest {
             breaker.state(),
             "후속 probe 성공 뒤 breaker가 닫혀야 합니다"
         );
+    }
+
+    private static void nonPositiveBackoffIsRejected() {
+        RetryBudget.VirtualClock clock = new RetryBudget.VirtualClock();
+        Checks.throwsType(
+            IllegalArgumentException.class,
+            () -> new RetryBudget.Executor(clock, 0),
+            "backoff는 양수여야 합니다"
+        );
+        Checks.throwsType(
+            IllegalArgumentException.class,
+            () -> new RetryBudget.Executor(clock, -1),
+            "음수 backoff를 허용하면 안 됩니다"
+        );
+    }
+
+    private static void halfOpenBusinessRejectionClosesBreaker() {
+        RetryBudget.VirtualClock clock = new RetryBudget.VirtualClock();
+        RetryBudget.CircuitBreaker breaker =
+            new RetryBudget.CircuitBreaker(1, 20, clock);
+        RetryBudget.ScriptedDependency dependency = new RetryBudget.ScriptedDependency()
+            .thenThrow(new RetryBudget.TransientFailure("initial outage"))
+            .thenThrow(new RetryBudget.BusinessRejection("capacity unavailable"));
+        RetryBudget.Executor executor = new RetryBudget.Executor(clock, 1);
+
+        Checks.throwsType(
+            RetryBudget.CircuitOpen.class,
+            () -> executor.execute("op-business-probe", 100, dependency, breaker),
+            "첫 transient failure가 breaker를 열어야 합니다"
+        );
+        clock.advance(20);
+        Checks.throwsType(
+            RetryBudget.BusinessRejection.class,
+            () -> executor.execute("op-business-probe", 100, dependency, breaker),
+            "half-open probe의 업무 응답은 호출자에게 그대로 전달해야 합니다"
+        );
+        Checks.equals(
+            RetryBudget.CircuitBreaker.State.CLOSED,
+            breaker.state(),
+            "업무 거절도 의존성이 응답한 것이므로 half-open breaker를 닫아야 합니다"
+        );
+        Checks.equals(2, dependency.calls(), "half-open probe는 한 번만 실행해야 합니다");
     }
 }

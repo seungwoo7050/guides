@@ -5,6 +5,8 @@ import java.util.Map;
 import java.util.Optional;
 
 public final class UncertainOutcome {
+    // [Implementation 1] 응답 유실 뒤에도 공유할 결과 어휘를 먼저 고정해,
+    // 서버의 확정 상태와 클라이언트의 아직 모르는 상태를 구분한다.
     public enum Status {
         ACCEPTED,
         REJECTED,
@@ -22,11 +24,15 @@ public final class UncertainOutcome {
         }
     }
 
+    // [Implementation 2] Gateway가 연산별 입력과 결과, 업무 효과 횟수의 소유자다.
+    // 이 상태를 한 경계에 두어 재시도가 새 효과를 만들지 못하게 한다.
     public static final class Gateway {
         private final Map<String, Result> results = new HashMap<>();
         private final Map<String, Integer> fingerprints = new HashMap<>();
         private int effectCount;
 
+        // [Implementation 2-1] 같은 연산 ID의 입력 지문을 먼저 대조하고,
+        // 처음 본 요청에서만 결과 저장과 효과 증가를 함께 수행한다.
         public synchronized Result reserve(
             String operationId,
             int units,
@@ -55,6 +61,8 @@ public final class UncertainOutcome {
             return created;
         }
 
+        // [Implementation 2-2] 응답이 사라졌을 때 추측 대신 서버가 소유한
+        // 확정 결과를 다시 읽을 수 있는 복구 경계를 제공한다.
         public synchronized Optional<Result> query(String operationId) {
             return Optional.ofNullable(results.get(operationId));
         }
@@ -73,6 +81,8 @@ public final class UncertainOutcome {
         }
     }
 
+    // [Implementation 3] Client는 전송 실패와 업무 실패를 구분하고,
+    // 유실 예외에서는 같은 연산 ID를 조회한 뒤에만 UNKNOWN을 선택한다.
     public static final class Client {
         private final Gateway gateway;
 

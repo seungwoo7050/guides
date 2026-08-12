@@ -19,6 +19,23 @@ KAFKA_TRANSACTION_STATE_LOG_MIN_ISR=2
 
 `reference/compose.yaml`은 학습용 단일 브로커라는 제한을 명시하고 모두 1로 맞춥니다. 운영 클러스터에서도 복제 수를 1로 사용하라는 뜻이 아닙니다.
 
+## 권장 구현 순서
+
+`reference/compose.yaml`이 이 관찰 실습의 하나의 numbering scope입니다. 아래
+Implementation 번호는 권장 구성 순서이며 실제 과거 작성 순서를 뜻하지 않습니다.
+
+| 구현 단계 | 구성 경계 | 책임 |
+|---:|---|---|
+| Implementation 1 | service·image·run label | 검증할 broker service와 실행 소유권을 고정합니다. |
+| Implementation 2 | environment | KRaft role, quorum과 listener 경로를 연결합니다. |
+| Implementation 2-1 | group internal topic replication | 단일 broker가 만족할 수 있는 복제 불변식을 설정합니다. |
+| Implementation 3 | healthcheck | broker API가 응답할 때만 준비 완료로 봅니다. |
+
+이 단위는 구현 과제가 아니라 canonical broken/reference 구성을 비교하는 관찰형 선택
+실습입니다. learner workspace를 만들지 않고 두 Compose 파일도 수정하지 않습니다.
+먼저 예상되는 direct consumer와 group consumer 결과를 적고
+검증을 실행한 뒤에만 `reference/compose.yaml`의 설정과 실제 근거를 비교합니다.
+
 ## 완료 기준
 
 - direct partition consumer가 두 구성에서 모두 같은 메시지를 읽어 broker 기본 동작을 증명합니다.

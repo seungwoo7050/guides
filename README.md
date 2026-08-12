@@ -55,13 +55,28 @@ make clean
 
 전체 지도와 선택 경로는 [학습 로드맵](docs/00-roadmap.md)에 있습니다.
 
-| Part | 문서 | 종료 능력 |
-|---|---|---|
-| 1 | [경계와 부분 실패](docs/01-boundaries-and-failure/01-partial-failure-and-uncertain-outcomes.md) | 정본, 명령 경계와 불확실한 결과를 모델링합니다. |
-| 2 | [전달과 일관성](docs/02-delivery-and-consistency/01-idempotency-and-single-effects.md) | 중복·순서 역전·부분 성공 뒤에도 상태를 수렴시킵니다. |
-| 3 | [복원력과 부하](docs/03-resilience-and-load/01-timeouts-retries-circuit-breakers-and-dlq.md) | 시간 예산과 유입량을 제한해 연쇄 장애를 막습니다. |
-| 4 | [릴리스와 근거](docs/04-release-and-evidence/01-multi-repository-builds-and-release-manifests.md) | 실행 조합과 장애·성능 근거를 재현 가능하게 남깁니다. |
-| 5 | [통합 과제](docs/05-capstone.md) | 여러 서비스 사이의 실패 계약을 하나의 시스템에서 검증합니다. |
+별도 `examples/`는 없습니다. 각 개념은 바로 해당 실습의 결정적 실패 모델로
+확인합니다. 다음 표의 순서대로 관련 문서를 읽고, 안전한 작업 공간을 만든 뒤
+검사를 통과시키십시오. `reference` source는 workspace 검사가 통과하고 자기 설명을
+작성한 뒤에만 비교합니다.
+
+| 순서 | 문서 | 관찰 예제 | 직접 수행 | 수정 위치 | 검증 | 완료 뒤 비교·다음 |
+|---:|---|---|---|---|---|---|
+| 1 | [부분 실패와 확정할 수 없는 결과](docs/01-boundaries-and-failure/01-partial-failure-and-uncertain-outcomes.md) | — | [uncertain-outcome](exercises/01-boundaries-and-failure/01-uncertain-outcome/README.md) | `.workspace/uncertain-outcome` | `./scripts/verify-java.sh .workspace/uncertain-outcome` | `reference/` → 서비스 경계 |
+| 2 | [서비스 경계와 데이터 소유권](docs/01-boundaries-and-failure/02-service-boundaries-and-data-ownership.md) | — | [service-boundary](exercises/01-boundaries-and-failure/02-service-boundary/README.md) | `.workspace/service-boundary` | `./scripts/verify-java.sh .workspace/service-boundary` | `reference/` → 요청 판정 |
+| 3 | [동기·비동기 명령 계약](docs/01-boundaries-and-failure/03-synchronous-and-asynchronous-decisions.md) | — | [request-decision](exercises/01-boundaries-and-failure/03-request-decision/README.md) | `.workspace/request-decision` | `./scripts/verify-java.sh .workspace/request-decision` | `reference/` → 멱등성 |
+| 4 | [멱등성과 단일 업무 효과](docs/02-delivery-and-consistency/01-idempotency-and-single-effects.md) | — | [duplicate-delivery](exercises/02-delivery-and-consistency/01-duplicate-delivery/README.md) | `.workspace/duplicate-delivery` | `./scripts/verify-java.sh .workspace/duplicate-delivery` | `reference/` → Outbox·Saga |
+| 5 | [Outbox, Saga와 재조정](docs/02-delivery-and-consistency/02-outbox-saga-and-reconciliation.md) | — | [outbox-reconciliation](exercises/02-delivery-and-consistency/02-outbox-reconciliation/README.md) | `.workspace/outbox-reconciliation` | `./scripts/verify-java.sh .workspace/outbox-reconciliation` | `reference/` → 계약·순서 |
+| 6 | [계약, 버전과 순서](docs/02-delivery-and-consistency/03-contracts-versioning-and-order.md) | — | [contracts-and-order](exercises/02-delivery-and-consistency/03-contracts-and-order/README.md) | `.workspace/contracts-and-order` | `./scripts/verify-java.sh .workspace/contracts-and-order` | `reference/` → 읽기 모델 |
+| 7 | [읽기 모델, 지연 이벤트와 재구축](docs/02-delivery-and-consistency/04-read-models-and-late-events.md) | — | [read-model-rebuild](exercises/02-delivery-and-consistency/04-read-model-rebuild/README.md) | `.workspace/read-model-rebuild` | `./scripts/verify-java.sh .workspace/read-model-rebuild` | `reference/` → 재시도 예산 |
+| 8 | [시간 예산, 재시도, Circuit Breaker와 DLQ](docs/03-resilience-and-load/01-timeouts-retries-circuit-breakers-and-dlq.md) | — | [retry-budget](exercises/03-resilience-and-load/01-retry-budget/README.md) | `.workspace/retry-budget` | `./scripts/verify-java.sh .workspace/retry-budget` | `reference/` → 역압 |
+| 9 | [역압, Bulkhead와 Load Shedding](docs/03-resilience-and-load/02-backpressure-bulkheads-and-load-shedding.md) | — | [backpressure](exercises/03-resilience-and-load/02-backpressure/README.md) | `.workspace/backpressure` | `./scripts/verify-java.sh .workspace/backpressure` | `reference/` → 릴리스 명세 |
+| 10 | [다중 저장소 릴리스 명세](docs/04-release-and-evidence/01-multi-repository-builds-and-release-manifests.md) | — | [release-manifest](exercises/04-release-and-evidence/01-release-manifest/README.md) | `.workspace/release-manifest/manifest_check.py` | `python3 exercises/04-release-and-evidence/01-release-manifest/tests/verify_manifest.py .workspace/release-manifest/manifest_check.py` | `reference/` → 관측성 |
+| 11 | [분산 관측성](docs/04-release-and-evidence/02-distributed-observability.md) | — | [observability-correlation](exercises/04-release-and-evidence/02-observability-correlation/README.md) | `.workspace/observability-correlation` | `./scripts/verify-java.sh .workspace/observability-correlation` | `reference/` → 장애 근거 |
+| 12 | [종단 간 장애 실험](docs/04-release-and-evidence/03-end-to-end-chaos-and-failure-evidence.md) | — | [chaos-evidence](exercises/04-release-and-evidence/03-chaos-evidence/README.md) | `.workspace/chaos-evidence` | `./scripts/verify-java.sh .workspace/chaos-evidence` | `reference/` → 성능 판정 |
+| 13 | [성능 기준과 주장](docs/04-release-and-evidence/04-performance-gates-and-claims.md) | — | [performance-gate](exercises/04-release-and-evidence/04-performance-gate/README.md) | `.workspace/performance-gate` | `./scripts/verify-java.sh .workspace/performance-gate` | `reference/` → 통합 과제 |
+| 14 | [통합 과제](docs/05-capstone.md) | — | [reservation-flow](exercises/05-capstone/reservation-flow/README.md) | `.workspace/reservation-flow` | `./scripts/verify-java.sh .workspace/reservation-flow` | `reference/` → 핵심 과정 완료 |
+| 선택 | [단일 브로커 KRaft](docs/90-optional-labs/01-single-broker-kraft.md) | — | [broken/reference 구성 관찰](exercises/90-optional-labs/single-broker-kraft/README.md) | — | `./exercises/90-optional-labs/single-broker-kraft/verify.sh` | 관찰 근거 정리 → 과정 종료 |
 
 ## 실습 원칙
 
@@ -75,17 +90,20 @@ make clean
 → reference와 결과·불변 조건을 비교합니다.
 ```
 
-루트 `make verify`는 배포된 가이드 자체의 무결성을 검사하므로 원본 skeleton이 의도한 계약에서 실패해야 합니다. 학습할 때는 원본을 직접 고치지 않고 `.workspace/` 아래로 복사해 작업합니다. `.workspace/`는 Git과 exact curriculum tree 검사에서는 제외되지만 정식 검증의 외부 working-tree 복사와 source bytes·mode·symlink 불변성 검사에는 포함됩니다. 정식 검증이 실행하는 reference/skeleton 계약 검사는 계속 canonical tracked curriculum을 대상으로 합니다.
+루트 `make verify`는 배포된 가이드 자체의 무결성을 검사하므로 원본 skeleton이 의도한 계약에서 실패해야 합니다. 학습할 때는 원본을 직접 고치지 않고 안전한 생성기로 `.workspace/` 아래에 작업합니다. 생성기는 알려진 실습만 허용하고 기존 destination이나 symlink를 덮어쓰지 않습니다. `.workspace/`는 Git과 exact curriculum tree 검사에서는 제외되지만 정식 검증의 외부 working-tree 복사와 source bytes·mode·symlink 불변성 검사에는 포함됩니다. 정식 검증이 실행하는 reference/skeleton 계약 검사는 계속 canonical tracked curriculum을 대상으로 합니다.
 
 ```sh
-mkdir -p .workspace
-cp -R exercises/01-boundaries-and-failure/01-uncertain-outcome/skeleton \
-  .workspace/uncertain-outcome
+./scripts/new-workspace.sh uncertain-outcome
 
 # checker는 workspace의 테스트 복사본이 아니라 추적된 정본 테스트를 사용합니다.
 # 수정 전에는 실패하고, 계약을 구현한 뒤에는 통과해야 합니다.
 ./scripts/verify-java.sh .workspace/uncertain-outcome
 ```
+
+작업 공간이 이미 있으면 생성기는 실패하며 기존 파일을 보존합니다. 구현이 정본 검사를
+통과하고 위 실패 조건을 자신의 말로 설명한 뒤에만 해당 실습의 `reference/`를 읽습니다.
+선택 KRaft 실습은 코드를 작성하는 단계가 아니라 두 canonical 구성을 실제 broker에서
+비교하는 관찰형 예외이므로 별도 learner workspace가 없습니다.
 
 reference의 소스 형태를 외우는 것이 목표가 아닙니다. 다음 네 가지가 검사로 증명되어야 합니다.
 

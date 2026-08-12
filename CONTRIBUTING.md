@@ -32,7 +32,7 @@ VERIFY_LOG=/tmp/guide-distributed-services-verify.log make verify
 make clean
 ```
 
-`make prepare`의 Maven cache 준비용 복사본은 learner `.workspace/`를 제외합니다. 반면 `make verify`는 현재 working tree와 `.workspace/`를 모두 외부에 복사하고 bytes·mode·symlink와 Git index의 전후 불변성을 확인하되, exact curriculum validator와 reference/skeleton 계약 검사는 canonical tracked curriculum만 대상으로 합니다. 학습자용 `scripts/verify-java.sh .workspace/<slug>`도 workspace 안의 수정 가능한 테스트가 아니라 해당 실습의 추적된 정본 테스트를 사용합니다. `make clean`은 명시된 생성물만 지우며 준비 cache와 learner `.workspace/`는 보존합니다.
+`make prepare`의 Maven cache 준비용 복사본은 learner `.workspace/`를 제외합니다. 반면 `make verify`는 현재 working tree와 `.workspace/`를 모두 외부에 복사하고 bytes·mode·symlink와 Git index의 전후 불변성을 확인하되, exact curriculum validator와 reference/skeleton 계약 검사는 canonical tracked curriculum만 대상으로 합니다. 학습자용 workspace는 `./scripts/new-workspace.sh <slug>`로 만들며 이 명령은 기존 destination과 symlink를 덮어쓰지 않습니다. `./scripts/verify-java.sh .workspace/<slug>`도 workspace 안의 수정 가능한 테스트가 아니라 해당 실습의 추적된 정본 테스트를 사용합니다. `make clean`은 명시된 생성물만 지우며 준비 cache와 learner `.workspace/`는 보존합니다.
 
 커밋 전에는 추적 범위와 공백 오류를 확인합니다.
 

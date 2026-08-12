@@ -2,7 +2,7 @@
 set -Eeuo pipefail
 
 SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd -P)"
-PREFIX="${GUIDE_DOCKER_PROJECT_PREFIX:-guide-distributed-kraft-${UID:-0}}"
+PREFIX="${GUIDE_DOCKER_PROJECT_PREFIX:-guide-distributed-kraft-${UID:-0}-$$-${RANDOM:-0}}"
 SKELETON_PROJECT="${PREFIX}-skeleton"
 REFERENCE_PROJECT="${PREFIX}-reference"
 MESSAGE="guide-message-1"

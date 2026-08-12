@@ -118,17 +118,17 @@ Outbox, Saga와 재조정
 권장 순서는 다음과 같습니다.
 
 1. README의 실패 조건을 먼저 적습니다.
-2. skeleton 검사를 실행해 어떤 상태가 잘못 남는지 확인합니다.
-3. 구현을 수정합니다.
-4. 정상 결과뿐 아니라 바뀌면 안 되는 상태도 검사합니다.
-5. reference와 소스 모양이 아니라 관찰 가능한 계약을 비교합니다.
+2. 정본 생성기로 skeleton을 learner workspace에 복사합니다.
+3. workspace 검사를 실행해 어떤 상태가 잘못 남는지 확인합니다.
+4. 구현을 수정합니다.
+5. 정상 결과뿐 아니라 바뀌면 안 되는 상태도 검사합니다.
+6. 자기 설명을 작성하고 workspace 검사를 통과합니다.
+7. 마지막에 reference와 소스 모양이 아니라 관찰 가능한 계약을 비교합니다.
 
 저장소 전체 검증은 reference가 통과하는 것뿐 아니라 원본 skeleton이 **의도한 이유로 실패하는지**까지 확인합니다. 따라서 학습 구현은 원본 skeleton을 덮어쓰지 않고 `.workspace/`에 복사해 진행합니다.
 
 ```sh
-mkdir -p .workspace
-cp -R exercises/03-resilience-and-load/02-backpressure/skeleton \
-  .workspace/backpressure
+./scripts/new-workspace.sh backpressure
 
 # 배포된 skeleton의 기준 실패만 확인합니다.
 ./scripts/verify-skeletons.sh \
@@ -141,6 +141,11 @@ cp -R exercises/03-resilience-and-load/02-backpressure/skeleton \
 ./scripts/verify-java.sh \
   exercises/03-resilience-and-load/02-backpressure/reference
 ```
+
+`./scripts/new-workspace.sh`는 알려진 실습 slug만 허용하고 기존 destination이나
+symlink를 덮어쓰지 않습니다. 마지막 reference 명령은 workspace 검사가 통과하고
+자기 설명을 작성한 뒤에만 실행합니다. 선택 KRaft 실습은 learner 구현이 아니라
+고장 난 구성과 수정된 구성을 관찰하는 비교 실습이므로 이 workspace 흐름의 예외입니다.
 
 루트 `./verify.sh`는 학습자 구현의 채점 명령이 아니라 **가이드 배포본 전체의 무결성 검사**입니다.
 

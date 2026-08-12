@@ -11,6 +11,7 @@ import java.util.Queue;
 import java.util.TreeMap;
 
 public final class ReservationFlow {
+    // [Implementation 1] 서비스 사이에서 공유할 상태·event·evidence vocabulary를 먼저 고정합니다.
     public enum Status {
         PENDING,
         UNKNOWN,
@@ -124,6 +125,7 @@ public final class ReservationFlow {
     ) {
     }
 
+    // [Implementation 2] OutboxRecord가 event, 생성 시각과 발행 lifecycle을 한 record로 소유합니다.
     private static final class OutboxRecord {
         private final Event event;
         private final long createdAtMillis;
@@ -135,6 +137,7 @@ public final class ReservationFlow {
         }
     }
 
+    // [Implementation 3] ReservationService만 예약 상태와 해당 Outbox를 변경합니다.
     public static final class ReservationService {
         private final int maxPending;
         private final Map<String, Reservation> reservations = new LinkedHashMap<>();
@@ -152,6 +155,7 @@ public final class ReservationFlow {
             this.maxPending = maxPending;
         }
 
+        // [Implementation 3-1] operation 입력을 claim한 뒤 예약과 첫 Outbox를 함께 생성합니다.
         public CommandResult submit(
             String operationId,
             String correlationId,
@@ -228,6 +232,7 @@ public final class ReservationFlow {
             applyInventoryResult(result, 0L);
         }
 
+        // [Implementation 3-2] inventory 결과의 identity와 terminal 전이를 검증한 뒤 상태 event를 만듭니다.
         public void applyInventoryResult(Event result, long nowMillis) {
             if (result.kind() != Kind.INVENTORY_ACCEPTED
                 && result.kind() != Kind.INVENTORY_REJECTED) {
@@ -325,6 +330,7 @@ public final class ReservationFlow {
             }
         }
 
+        // [Implementation 3-3] pendingOutbox는 아직 발행되지 않은 event의 불변 snapshot만 노출합니다.
         public List<Event> pendingOutbox() {
             List<Event> pending = new ArrayList<>();
             for (OutboxRecord record : outbox.values()) {
@@ -362,6 +368,7 @@ public final class ReservationFlow {
             return pendingOutbox().size();
         }
 
+        // [Implementation 3-4] 가장 오래된 미발행 record의 age를 복구 지연 evidence로 계산합니다.
         public OptionalLong oldestPendingOutboxAge(long nowMillis) {
             return outbox.values().stream()
                 .filter(record -> !record.published)
@@ -389,6 +396,7 @@ public final class ReservationFlow {
         }
     }
 
+    // [Implementation 4] InventoryService만 재고 효과와 operation별 정본 결과를 소유합니다.
     public static final class InventoryService {
         private int available;
         private int allocationEffects;
@@ -406,6 +414,7 @@ public final class ReservationFlow {
             this.available = available;
         }
 
+        // [Implementation 4-1] handle은 event와 operation identity를 claim한 뒤 재고 효과를 한 번만 적용합니다.
         public Event handle(Event request) {
             if (request.kind() != Kind.RESERVATION_REQUESTED) {
                 throw new IllegalArgumentException("not a reservation request");
@@ -462,6 +471,7 @@ public final class ReservationFlow {
                 && left.causationId().equals(right.causationId());
         }
 
+        // [Implementation 4-2] 재조정은 원래 operation ID로 inventory 정본 결과를 조회합니다.
         public Event findResultByOperation(String operationId) {
             lookupOperations.add(operationId);
             if (!lookupAvailable) {
@@ -487,6 +497,7 @@ public final class ReservationFlow {
         }
     }
 
+    // [Implementation 5] Broker는 전달 시도만 기록하며 업무 처리 완료를 판정하지 않습니다.
     public static final class Broker {
         private boolean available = true;
         private final List<Event> messages = new ArrayList<>();
@@ -507,6 +518,7 @@ public final class ReservationFlow {
         }
     }
 
+    // [Implementation 6] Publisher는 Reservation Outbox와 Broker 사이의 전달 순서를 소유합니다.
     public static final class Publisher {
         private final ReservationService reservations;
         private final Broker broker;
@@ -516,6 +528,7 @@ public final class ReservationFlow {
             this.broker = broker;
         }
 
+        // [Implementation 6-1] publishPending은 send 성공 뒤에만 Outbox를 published로 표시합니다.
         public void publishPending(boolean crashAfterFirstSend) {
             boolean first = true;
             for (Event event : reservations.pendingOutbox()) {
@@ -529,6 +542,7 @@ public final class ReservationFlow {
         }
     }
 
+    // [Implementation 7] QueryService가 schema·sequence별 projection state와 보류 event를 소유합니다.
     public static final class QueryService {
         private final Map<String, Status> statuses = new HashMap<>();
         private final Map<String, Integer> lastSequence = new HashMap<>();
@@ -545,6 +559,7 @@ public final class ReservationFlow {
             consume(new EventEnvelope(schemaVersion, event));
         }
 
+        // [Implementation 7-1] consume은 event identity를 claim하기 전에 schema와 sequence를 검증합니다.
         public void consume(EventEnvelope envelope) {
             int schemaVersion = envelope.schemaVersion();
             Event event = envelope.event();
@@ -629,6 +644,7 @@ public final class ReservationFlow {
             return isolated.size();
         }
 
+        // [Implementation 7-2] rebuild는 기존 projection을 비운 뒤 envelope identity를 포함해 replay합니다.
         public void rebuild(List<EventEnvelope> history) {
             statuses.clear();
             lastSequence.clear();
@@ -641,6 +657,7 @@ public final class ReservationFlow {
             }
         }
 
+        // [Implementation 7-3] drain은 연속된 다음 sequence만 보류 buffer에서 적용합니다.
         private void drain(String reservationId) {
             TreeMap<Integer, Event> events = pending.get(reservationId);
             while (events != null) {
@@ -657,6 +674,7 @@ public final class ReservationFlow {
             }
         }
 
+        // [Implementation 7-4] apply는 terminal contradiction을 거절한 뒤 projection checkpoint를 전진시킵니다.
         private void apply(Event event) {
             Status status = switch (event.kind()) {
                 case RESERVATION_REQUESTED -> Status.PENDING;
@@ -687,6 +705,7 @@ public final class ReservationFlow {
         }
     }
 
+    // [Implementation 8] SystemUnderTest가 서비스 경계를 연결하고 end-to-end evidence를 수집합니다.
     public static final class SystemUnderTest {
         private final ReservationService reservations;
         private final InventoryService inventory;
@@ -703,6 +722,7 @@ public final class ReservationFlow {
             publisher = new Publisher(reservations, broker);
         }
 
+        // [Implementation 8-1] ingress submit은 deadline을 상태 변경 전에 확인하고 correlation evidence를 남깁니다.
         public CommandResult submit(
             String operationId,
             String correlationId,
@@ -779,6 +799,7 @@ public final class ReservationFlow {
             }
         }
 
+        // [Implementation 8-2] reconcile은 전달·inventory·정본 조회·projection을 복구 순서로 연결합니다.
         public void reconcile() {
             publishPending(false);
             consumeInventoryRequests();
@@ -789,6 +810,7 @@ public final class ReservationFlow {
             }
         }
 
+        // [Implementation 8-3] pending 예약마다 정본 조회 결과와 다음 행동 시각을 기록합니다.
         public List<ReconciliationRecord> reconcilePending(
             long nowMillis,
             long retryDelayMillis
@@ -835,9 +857,14 @@ public final class ReservationFlow {
             return List.copyOf(current);
         }
 
+        // [Implementation 8-4] 정본과 projection이 같은 terminal 상태이며 Outbox가 비어야 수렴입니다.
         public boolean converged(String reservationId) {
-            return reservations.pendingOutboxCount() == 0
-                && reservations.status(reservationId) == query.status(reservationId);
+            Status authoritative = reservations.status(reservationId);
+            boolean terminal = authoritative == Status.ACCEPTED
+                || authoritative == Status.REJECTED;
+            return terminal
+                && reservations.pendingOutboxCount() == 0
+                && authoritative == query.status(reservationId);
         }
 
         public List<Event> brokerMessages() {
@@ -873,6 +900,7 @@ public final class ReservationFlow {
         }
     }
 
+    // [Implementation 9] Dispatcher가 queue·running slot·deadline의 자원 수명 주기를 소유합니다.
     public static final class Dispatcher {
         private final SystemUnderTest system;
         private final int maxRunning;
@@ -890,6 +918,7 @@ public final class ReservationFlow {
             this.maxQueued = maxQueued;
         }
 
+        // [Implementation 9-1] enqueue는 deadline과 queue 상한을 검사한 뒤에만 task를 소유합니다.
         public void enqueue(DispatchTask task, long nowMillis) {
             if (task == null || nowMillis >= task.deadlineMillis()) {
                 throw new DeadlineExceeded();
@@ -900,6 +929,7 @@ public final class ReservationFlow {
             queued.add(task);
         }
 
+        // [Implementation 9-2] beginNext는 running slot을 예약하며 만료 task를 실행하지 않습니다.
         public DispatchTask beginNext(long nowMillis) {
             if (runningCount >= maxRunning) {
                 throw new Overloaded();
@@ -916,6 +946,7 @@ public final class ReservationFlow {
             return task;
         }
 
+        // [Implementation 9-3] execute는 running task의 원래 operation과 deadline을 ingress에 전달합니다.
         public CommandResult execute(DispatchTask task, long nowMillis) {
             if (runningTasks.getOrDefault(task, 0) == 0) {
                 throw new IllegalStateException("dispatch task is not running");
@@ -929,6 +960,7 @@ public final class ReservationFlow {
             );
         }
 
+        // [Implementation 9-4] complete는 정확히 한 실행의 slot만 반환합니다.
         public void complete(DispatchTask task) {
             int count = runningTasks.getOrDefault(task, 0);
             if (count == 0) {

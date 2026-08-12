@@ -27,13 +27,18 @@
 
 skeleton은 소유자 문자열이 비어 있는지만 확인합니다. 두 서비스가 같은 테이블을 직접 변경하거나 동기 호출이 순환해도 유효한 구조로 판정합니다.
 
-## 구현 순서
+## 권장 구현 순서
 
-1. 모든 참조가 등록된 서비스를 가리키는지 확인합니다.
-2. 각 데이터 집합의 writer가 정확히 소유자 하나인지 확인합니다.
-3. 동기 의존 그래프를 깊이 우선 탐색해 순환을 찾습니다.
-4. 오류를 첫 번째 하나로 숨기지 말고 모두 수집합니다.
-5. 오류 메시지에는 데이터나 서비스 이름을 포함합니다.
+범위는 이 실습의 `reference` 프로젝트 전체이며 아래 번호를 모든 구현 파일에서
+공유합니다. 이 번호는 학습을 위한 권장 구성 순서이고 실제 Git 이력이나 과거 작성
+순서를 뜻하지 않습니다.
+
+| 순서 | 구현 위치 | 책임과 연결 |
+| --- | --- | --- |
+| Implementation 1 | `DataSet`, `Service`, `Architecture` | 데이터 소유권과 서비스 의존을 불변 입력 모델로 고정합니다. |
+| Implementation 2 | `review` | 등록·소유권·writer 위반을 첫 오류에서 멈추지 않고 모두 수집합니다. |
+| Implementation 3 | `findCycles` | 완료 상태를 공유하며 각 서비스에서 의존 그래프 탐색을 시작합니다. |
+| Implementation 3-1 | `visit` | 현재 경로와 완료된 경로를 분리해 실제 동기 의존 순환만 찾습니다. |
 
 ## 완료 기준
 
@@ -48,6 +53,13 @@ skeleton은 소유자 문자열이 비어 있는지만 확인합니다. 두 서�
 
 ## 검증
 
+처음 한 번 저장소 루트에서 추적된 skeleton을 안전한 workspace로 복사합니다. 기존
+destination은 덮어쓰지 않습니다.
+
+```sh
+./scripts/new-workspace.sh service-boundary
+```
+
 학습자 복사본은 다음 정본 명령으로 검사합니다.
 
 ```sh
@@ -59,3 +71,10 @@ skeleton은 소유자 문자열이 비어 있는지만 확인합니다. 두 서�
 - 등록되지 않은 서비스 참조를 찾습니다.
 - `orchestrator → inventory → orchestrator` 순환을 찾습니다.
 - 한 구조에 여러 결함이 있으면 모든 결함을 반환합니다.
+
+학습자 workspace 검증을 통과하고 위 자기 설명에 답한 뒤에만 reference와 비교합니다.
+
+```sh
+./scripts/verify-java.sh \
+  exercises/01-boundaries-and-failure/02-service-boundary/reference
+```

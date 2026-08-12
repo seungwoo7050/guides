@@ -9,6 +9,8 @@ import java.util.Map;
 import java.util.Set;
 
 public final class ServiceBoundary {
+    // [Implementation 1] 데이터 소유권, 서비스 의존, 전체 구조를 불변 값으로
+    // 먼저 모델링해 검토 중 입력이 바뀌지 않는 공통 경계를 만든다.
     public record DataSet(String name, String owner, Set<String> writers) {
         public DataSet {
             writers = Set.copyOf(writers);
@@ -28,6 +30,8 @@ public final class ServiceBoundary {
         }
     }
 
+    // [Implementation 2] review는 등록 여부와 단일 writer 위반을 모두 수집한다.
+    // 첫 오류에서 멈추지 않아 한 번의 검토로 구조의 전체 결함을 드러낸다.
     public static List<String> review(Architecture architecture) {
         Set<String> serviceNames = new LinkedHashSet<>();
         List<String> issues = new ArrayList<>();
@@ -75,6 +79,8 @@ public final class ServiceBoundary {
         return List.copyOf(issues);
     }
 
+    // [Implementation 3] 각 서비스를 시작점으로 순회하되 완료 집합을 공유해,
+    // 이미 판정한 하위 그래프를 다시 탐색하지 않는다.
     private static void findCycles(
         Map<String, Set<String>> dependencies,
         Set<String> services,
@@ -87,6 +93,8 @@ public final class ServiceBoundary {
         }
     }
 
+    // [Implementation 3-1] visiting은 현재 재귀 경로, complete는 판정 완료 상태다.
+    // 현재 경로에 다시 들어온 서비스만 순환으로 보고 두 lifecycle을 분리한다.
     private static void visit(
         String service,
         Map<String, Set<String>> dependencies,

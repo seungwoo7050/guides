@@ -25,6 +25,22 @@
 
 skeleton은 가장 빠른 실행 하나만 보고 `PASS`를 반환합니다. 중복 효과나 오류가 있어도 빠르면 성공으로 오판합니다.
 
+## 권장 구현 순서
+
+`reference/` 전체가 하나의 numbering scope입니다. 아래 Implementation 번호는 권장
+구현 순서이며 실제 과거 작성 순서를 뜻하지 않습니다.
+
+| 구현 단계 | 파일·경계 | 책임 |
+|---:|---|---|
+| Implementation 1 | `Decision` | `PASS`, `FAIL`, `UNVERIFIED`의 증거 의미를 구분합니다. |
+| Implementation 2 | `Run`, `Goal` | 측정 근거와 판정 정책의 소유자를 분리합니다. |
+| Implementation 2-1 | `Goal` constructor | 잘못된 반복 수와 시간 정책을 먼저 거절합니다. |
+| Implementation 3 | `evaluate` | 완전성, 환경, 정확성, 시간을 순서대로 gate합니다. |
+
+먼저 `./scripts/new-workspace.sh performance-gate`로 안전한 복사본을 만들고
+`.workspace/performance-gate`만 수정합니다. 정본 검사를 통과하고 `FAIL`과
+`UNVERIFIED`의 차이를 설명한 뒤에만 `reference/`의 순서와 결과를 비교합니다.
+
 ## 완료 기준
 
 - 빠르지만 오류·누락·중복 효과가 있는 결과는 `FAIL`입니다.
@@ -43,6 +59,9 @@ skeleton은 가장 빠른 실행 하나만 보고 `PASS`를 반환합니다. 중
 ```sh
 ./scripts/verify-java.sh .workspace/performance-gate
 ```
+
+workspace 검사가 통과하고 자기 설명을 마친 뒤에만 `reference/`의 판정 결과와
+권장 구현 순서를 비교합니다.
 
 - 빠르지만 중복 효과가 있는 결과는 `FAIL`입니다.
 - 반복 수가 부족하거나 환경 지문이 섞이면 `UNVERIFIED`입니다.
