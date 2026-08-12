@@ -68,13 +68,11 @@ IPv6에는 일반적인 서브넷 브로드캐스트가 없고 멀티캐스트�
 
 ## 코드로 LPM 검증하기
 
-프로토콜 검사기의 경로 기준 입력을 사용해 조회할 수 있습니다.
+먼저 읽기 전용 경로 입력에서 결과를 손으로 예상하고, root README 순서 6에서 `workspace/protocol_inspector/routing.py`를 구현해 공개 검사로 확인합니다.
 
 ```sh
 cd exercises/protocol-inspector
-PYTHONPATH=reference python3 -m protocol_inspector route \
-  --table fixtures/routes.json \
-  --destination 10.20.30.8
+PYTHONPATH=workspace python3 -m unittest tests.test_routing -v
 ```
 
 직접 구현할 때는 각 route가 목적지를 포함하는지 검사한 뒤 다음 순서로 비교합니다.

@@ -6,6 +6,23 @@
 
 TCP handshake와 반복 SYN의 관찰 근거를 추출하되, 캡처 중복과 offload 가능성을 남겨 재전송 원인을 과장하지 않습니다.
 
+## 권장 구현 순서
+
+아래 번호는 analyzer와 loopback capture를 합친 이 관찰 실습 전체의 학습 지향 권장 구현 순서입니다. 파일의 줄 순서나 실제 과거 작성 순서를 뜻하지 않으며, 제공된 source를 읽을 때 책임과 resource 수명을 따라가기 위한 index입니다.
+
+| 번호 | 파일·symbol | 먼저 고정하는 책임 |
+|---:|---|---|
+| 1 | `analyze_tcpdump.py` packet grammar | 지원하는 tcpdump text 경계 |
+| 1-1 | `analyze_tcpdump.py::Packet.signature` | 재전송 후보를 비교하는 동등성 key |
+| 1-2 | `analyze_tcpdump.py::parse_line`, `parse_trace` | text를 typed observation으로 정규화 |
+| 2 | `analyze_tcpdump.py::handshake_complete` | SYN, SYN/ACK, ACK의 방향·sequence 관계 |
+| 3 | `analyze_tcpdump.py::retransmission_candidates` | 반복 관찰과 확정 원인의 분리 |
+| 4 | `analyze_tcpdump.py::analyze` | packet, handshake와 candidate report 조립 |
+| 4-1 | `analyze_tcpdump.py::main` | fixture path와 JSON 출력 경계 |
+| 5 | `capture-loopback.sh` 설정 | interface, port, output과 소유 resource |
+| 5-1 | `capture-loopback.sh::cleanup` | 자신이 시작한 process와 temporary log 정리 |
+| 5-2 | `capture-loopback.sh` capture lifecycle | server → capture → request → analyzer 순서 |
+
 ## 휴대 가능한 분석 검사
 
 다음 명령은 정상 핸드셰이크와 반복 SYN fixture를 분석합니다.
@@ -43,6 +60,10 @@ sudo PORT=28080 OUTPUT=/tmp/loopback-tcp.txt ./scripts/capture-loopback.sh
 5. 같은 범위가 다시 보이면 지연 시간과 캡처 위치를 함께 기록합니다.
 
 Linux namespace 안에서 실제 SYN 손실과 재전송을 만들려면 [라우팅·NAT·손실 실습](../linux-routing-nat/README.md)을 이어서 진행하세요.
+
+## 기대 증거
+
+이 실습에는 별도 reference 답안이 없습니다. fixture 검사에서 handshake의 세 packet이 서로의 sequence를 확인하고, 반복 SYN은 원인 확정이 아니라 candidate로 보고되어야 합니다. 수동 캡처를 수행했다면 interface, port, 수집 위치와 offload·중복 가능성을 `capture.txt`와 함께 기록합니다.
 
 ## 완료 기준
 

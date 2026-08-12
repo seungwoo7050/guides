@@ -79,7 +79,7 @@ IPv4 헤더 체크섬과 TCP·UDP 체크섬은 16비트 1의 보수 합을 사�
 
 ```sh
 cd exercises/protocol-inspector
-PYTHONPATH=reference python3 -m protocol_inspector checksum 0001f203f4f5f6f7
+PYTHONPATH=workspace python3 -m unittest tests.test_checksum -v
 ```
 
 TCP checksum은 TCP header와 payload만 계산하지 않습니다. IPv4 출발지·목적지, 0, protocol과 TCP 길이로 만든 의사 헤더를 앞에 붙입니다. 이 의사 헤더는 잘못된 주소나 protocol로 전달된 세그먼트를 검출하는 데 도움을 줍니다.

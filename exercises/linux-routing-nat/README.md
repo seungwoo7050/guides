@@ -10,6 +10,29 @@
 클라이언트 c0 ── r0 라우터 r1 ── s0 서버
 ```
 
+## 권장 구현 순서
+
+아래 번호는 topology helper, probe와 세 driver를 합친 이 실험 전체의 학습 지향 권장 구현 순서입니다. 파일의 줄 순서나 실제 과거 작성 순서를 뜻하지 않으며, 제공된 source의 resource ownership과 다음 단계 의존성을 읽기 위한 index입니다.
+
+| 번호 | 파일·symbol | 먼저 고정하는 책임 |
+|---:|---|---|
+| 1 | `common.sh` run scope | 실행별 namespace·interface 이름과 ownership flag |
+| 1-1 | `common.sh::assert_names_available` | 기존 resource non-overwrite |
+| 1-2 | `common.sh::cleanup_topology` | 이번 실행이 소유한 resource만 정리 |
+| 2 | `preflight.sh` command checks | privilege와 mode별 실행 도구 계약 |
+| 2-1 | `preflight.sh` namespace capability probe | 실제 생성·실행 확인과 owned probe cleanup |
+| 3 | `common.sh::create_links` | namespace와 veth lifecycle |
+| 3-1 | `common.sh::configure_routed_topology` | 두 subnet, route와 forwarding 상태 |
+| 3-2 | `common.sh::configure_nat_topology` | 사설·시험 대역과 forwarding 상태 |
+| 4 | `run-routing.sh` | 전달, TTL 경계와 default route 복구 |
+| 5 | `udp_probe.py` | SNAT 전후 출발지를 드러내는 UDP workload |
+| 5-1 | `run-nat.sh` cleanup | temporary evidence와 server process 수명 |
+| 5-2 | `run-nat.sh` NAT driver | SNAT, readiness, observed source와 응답 검증 |
+| 6 | `tcp_probe.py` | 손실 뒤 연결 복구를 드러내는 TCP workload |
+| 6-1 | `run-loss-retransmission.sh` cleanup | qdisc, process와 temporary capture 수명 |
+| 6-2 | `run-loss-retransmission.sh` loss driver | capture, 100% loss, 반복 SYN과 recovery |
+| 7 | `run-all.sh` | 세 공개 실험의 최종 실행 순서 |
+
 ## 요구 환경
 
 다음 조건이 모두 필요합니다.
@@ -66,12 +89,16 @@ sudo ./scripts/run-loss-retransmission.sh
 
 손실률을 무작위 값으로 두지 않고 첫 구간을 전부 버리므로 검사가 결정적입니다. 실제 네트워크의 재전송 원인은 혼잡, 링크 손실, 방화벽 정책, 경로 변경처럼 다양하므로 이 실험 결과를 일반화하지 마세요.
 
+## 기대 증거
+
+이 실습에는 별도 reference 답안이 없습니다. 완료 증거는 TTL 1/2의 차이와 default route 복구, server가 본 SNAT 출발지와 응답 역변환, 같은 SYN의 반복과 손실 제거 뒤 연결 성공입니다. 정상·실패·signal 종료 뒤 이번 실행이 소유한 namespace, interface, qdisc와 process가 남지 않았다는 결과도 함께 기록합니다.
+
 ## 완료 기준
 
 - TTL 1은 router에서 만료되고 TTL 2는 server에 도달하는 차이를 관찰합니다.
 - server가 SNAT 뒤 router 외부 주소를 보고 응답이 원래 client로 돌아오는지 확인합니다.
 - 첫 SYN을 100% 손실시킨 뒤 반복 SYN과 연결 복구를 같은 capture에서 확인합니다.
-- 정상·실패·signal 종료 뒤 이번 실행이 만든 namespace, interface와 process가 남지 않습니다.
+- 정상·실패·signal 종료 뒤 이번 실행이 만든 namespace, interface, qdisc와 process가 남지 않습니다.
 
 ## 자기 설명
 

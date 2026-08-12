@@ -12,6 +12,7 @@ from .diagnose import diagnose, render_text
 from .model import TraceFormatError, load_trace
 
 
+# [Implementation 3] trace path와 출력 형식의 명령행 계약을 domain logic 밖에 둡니다.
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         prog="path-diagnosis",
@@ -28,6 +29,7 @@ def build_parser() -> argparse.ArgumentParser:
     return parser
 
 
+# [Implementation 3-1] 입력 오류, 출력 채널과 건강·실패·형식 오류 exit status를 조립합니다.
 def main(argv: Sequence[str] | None = None) -> int:
     parser = build_parser()
     args = parser.parse_args(argv)

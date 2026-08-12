@@ -9,6 +9,7 @@ import json
 from pathlib import Path
 import re
 
+# [Implementation 1] 지원하는 tcpdump text grammar를 명시해 해석 경계를 먼저 제한합니다.
 LINE = re.compile(
     r"^(?P<time>\d+(?:\.\d+)?)\s+IP6?\s+"
     r"(?P<source>\S+)\s+>\s+(?P<destination>\S+):\s+"
@@ -20,6 +21,7 @@ ACK = re.compile(r"\back\s+(?P<ack>\d+)")
 LENGTH = re.compile(r"\blength\s+(?P<length>\d+)")
 
 
+# [Implementation 1-1] 한 packet의 관찰 필드와 반복 판별 signature를 불변 상태로 둡니다.
 @dataclass(frozen=True)
 class Packet:
     timestamp: float
@@ -42,6 +44,7 @@ class Packet:
         )
 
 
+# [Implementation 1-2] 개별 line을 typed packet으로 정규화하고 관련 없는 line은 제외합니다.
 def parse_line(line: str) -> Packet | None:
     match = LINE.match(line.strip())
     if match is None:
@@ -80,6 +83,7 @@ def _is_plain_ack(packet: Packet) -> bool:
     return packet.flags == "."
 
 
+# [Implementation 2] 방향과 sequence 공간을 함께 확인해야 handshake가 완성되게 합니다.
 def handshake_complete(packets: list[Packet]) -> bool:
     for first_index, first in enumerate(packets):
         if not _is_syn(first) or first.sequence_start is None:
@@ -107,6 +111,7 @@ def handshake_complete(packets: list[Packet]) -> bool:
     return False
 
 
+# [Implementation 3] 같은 signature의 반복을 원인 확정이 아닌 재전송 후보로만 기록합니다.
 def retransmission_candidates(packets: list[Packet]) -> list[dict[str, object]]:
     first_seen: dict[tuple[str, str, str, int | None, int | None], Packet] = {}
     duplicates: list[dict[str, object]] = []
@@ -132,6 +137,7 @@ def retransmission_candidates(packets: list[Packet]) -> list[dict[str, object]]:
     return duplicates
 
 
+# [Implementation 4] packet 목록과 두 관찰 판정을 하나의 재현 가능한 report로 조립합니다.
 def analyze(text: str) -> dict[str, object]:
     packets = parse_trace(text)
     return {
@@ -142,6 +148,7 @@ def analyze(text: str) -> dict[str, object]:
     }
 
 
+# [Implementation 4-1] trace 파일 경계와 JSON 출력 형식을 CLI에서 고정합니다.
 def main() -> int:
     parser = argparse.ArgumentParser(
         description="tcpdump 텍스트에서 TCP 핸드셰이크와 재전송 후보를 찾습니다."

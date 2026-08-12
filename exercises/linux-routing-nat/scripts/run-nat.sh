@@ -7,6 +7,7 @@ SCRIPT_DIR=$(CDPATH='' cd -- "$(dirname -- "$0")" && pwd)
 . "$SCRIPT_DIR/common.sh"
 
 "$SCRIPT_DIR/preflight.sh" nat
+# [Implementation 5-1] NAT evidence 파일과 server process를 driver가 끝까지 소유합니다.
 PEER_FILE=$(mktemp)
 READY_FILE=$(mktemp)
 rm -f "$READY_FILE"
@@ -25,6 +26,7 @@ trap 'exit 130' INT
 trap 'exit 143' TERM
 configure_nat_topology
 
+# [Implementation 5-2] SNAT, server readiness, observed source와 응답 역변환을 순서대로 검증합니다.
 ip netns exec "$ROUTER" iptables -t nat -A POSTROUTING \
     -s 10.202.1.0/24 -o r1 -j SNAT --to-source 198.18.0.1
 

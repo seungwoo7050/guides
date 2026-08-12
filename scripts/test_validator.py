@@ -14,7 +14,14 @@ ROOT = Path(__file__).resolve().parents[1]
 
 
 def copy_repository(destination: Path) -> None:
-    shutil.copytree(ROOT, destination, symlinks=True, ignore=shutil.ignore_patterns(".git", ".guide", "workspace", "__pycache__", "*.pyc"))
+    shutil.copytree(
+        ROOT,
+        destination,
+        symlinks=True,
+        ignore=shutil.ignore_patterns(
+            ".git", ".guide", ".verify", "workspace", "__pycache__", ".pytest_cache", "*.pyc"
+        ),
+    )
 
 
 def validate(root: Path) -> subprocess.CompletedProcess[str]:
@@ -37,6 +44,24 @@ def mutate_text(root: Path, relative: str, old: str, new: str) -> None:
     if old not in text:
         raise AssertionError(f"mutant precondition missing: {relative}: {old}")
     path.write_text(text.replace(old, new, 1), encoding="utf-8")
+
+
+def swap_lines(root: Path, relative: str, first_prefix: str, second_prefix: str) -> None:
+    path = root / relative
+    lines = path.read_text(encoding="utf-8").splitlines(keepends=True)
+    first = [index for index, line in enumerate(lines) if line.startswith(first_prefix)]
+    second = [index for index, line in enumerate(lines) if line.startswith(second_prefix)]
+    if len(first) != 1 or len(second) != 1:
+        raise AssertionError(
+            f"swap precondition failed: {relative}: first={first_prefix}: {first}, "
+            f"second={second_prefix}: {second}"
+        )
+    lines[first[0]], lines[second[0]] = lines[second[0]], lines[first[0]]
+    path.write_text("".join(lines), encoding="utf-8")
+
+
+def implementation_token(label: str) -> str:
+    return "[" + "Implementation " + label + "]"
 
 
 def copy_section(root: Path, source_relative: str, target_relative: str, title: str) -> None:
@@ -134,7 +159,137 @@ def main() -> int:
         ),
         "package version pin",
     )
-    print("[PASS] validator mutant suite: 11/11")
+    expect(
+        "missing-root-ordered-mapping-row",
+        lambda root: mutate_text(
+            root,
+            "README.md",
+            "| 13 | [표준 지도](docs/90-standards-map.md)",
+            "| 13 | 표준 지도",
+        ),
+        "ordered mapping 문서 누락",
+    )
+    expect(
+        "root-ordered-mapping-header-drift",
+        lambda root: mutate_text(
+            root,
+            "README.md",
+            "| 순서 | 문서 | 관찰 예제 | 직접 수행 | 수정 위치 | 검증 | 완료 뒤 비교·다음 |",
+            "| 단계 | 문서 | 관찰 예제 | 직접 수행 | 수정 위치 | 검증 | 완료 뒤 비교·다음 |",
+        ),
+        "ordered mapping 열 구성이",
+    )
+    expect(
+        "missing-roadmap-ordered-mapping",
+        lambda root: mutate_text(
+            root,
+            "README.md",
+            "| 0 | [학습 로드맵](docs/00-roadmap.md)",
+            "| 0 | 학습 로드맵",
+        ),
+        "ordered mapping 문서 누락: docs/00-roadmap.md",
+    )
+    expect(
+        "root-ordered-mapping-row-order",
+        lambda root: swap_lines(
+            root,
+            "README.md",
+            "| 7 | [UDP·TCP 서비스 계약]",
+            "| 8 | [TCP 상태·순서 번호]",
+        ),
+        "ordered mapping 순서는 0부터 13까지",
+    )
+    expect(
+        "forbidden-skeleton-annotation",
+        lambda root: mutate_text(
+            root,
+            "exercises/protocol-inspector/skeleton/protocol_inspector/checksum.py",
+            "def internet_checksum",
+            f"# {implementation_token('1')} 잘못된 skeleton 위치입니다.\ndef internet_checksum",
+        ),
+        "허용되지 않은 Implementation annotation 위치",
+    )
+    expect(
+        "duplicate-annotation",
+        lambda root: mutate_text(
+            root,
+            "exercises/protocol-inspector/reference/protocol_inspector/checksum.py",
+            "def checksum_is_valid",
+            f"# {implementation_token('1')} 중복된 기준 위치입니다.\ndef checksum_is_valid",
+        ),
+        "Implementation annotation 중복",
+    )
+    expect(
+        "annotation-number-gap",
+        lambda root: mutate_text(
+            root,
+            "exercises/protocol-inspector/reference/protocol_inspector/cli.py",
+            implementation_token("6"),
+            implementation_token("7"),
+        ),
+        "Implementation 상위 번호가 1부터 연속",
+    )
+    expect(
+        "readme-annotation-index-drift",
+        lambda root: mutate_text(
+            root,
+            "exercises/path-diagnosis/README.md",
+            "| 3-1 | `cli.py::main`",
+            "| 3-2 | `cli.py::main`",
+        ),
+        "README 구현 순서와 source annotation",
+    )
+    expect(
+        "readme-annotation-row-order",
+        lambda root: swap_lines(
+            root,
+            "exercises/protocol-inspector/README.md",
+            "| 1 | `checksum.py::internet_checksum`",
+            "| 1-1 | `checksum.py::tcp_checksum_ipv4`",
+        ),
+        "README 구현 순서가 의미적 번호 순서",
+    )
+    expect(
+        "readme-annotation-file-drift",
+        lambda root: mutate_text(
+            root,
+            "exercises/protocol-inspector/README.md",
+            "| 1 | `checksum.py::internet_checksum`",
+            "| 1 | `routing.py::internet_checksum`",
+        ),
+        "README 구현 순서 파일과 source annotation",
+    )
+    expect(
+        "two-annotations-on-one-comment",
+        lambda root: mutate_text(
+            root,
+            "exercises/protocol-inspector/reference/protocol_inspector/checksum.py",
+            implementation_token("1"),
+            f"{implementation_token('1')} {implementation_token('2')}",
+        ),
+        "Implementation annotation은 한 comment line에 하나",
+    )
+    expect(
+        "learner-defaults-to-reference",
+        lambda root: mutate_text(
+            root,
+            "Makefile",
+            "EXERCISE_IMPL := workspace\n",
+            "EXERCISE_IMPL := reference\n",
+        ),
+        "protocol 학습자 Make 기본값은 workspace",
+    )
+    expect(
+        "path-learner-defaults-to-reference",
+        lambda root: mutate_text(
+            root,
+            "Makefile",
+            "PATH_EXERCISE_IMPL := workspace\n",
+            "PATH_EXERCISE_IMPL := reference\n",
+        ),
+        "path 학습자 Make 기본값은 workspace",
+    )
+    print("[PASS] validator mutant suite: 24/24")
     return 0
 
 

@@ -70,11 +70,11 @@ Jumbo frame은 모든 경로 장비와 인터페이스가 같은 MTU를 지원�
 
 ## 프레임 파서로 경계 확인하기
 
-프로토콜 검사기는 일반 Ethernet II와 한 개의 802.1Q 또는 802.1ad 태그를 읽습니다.
+프로토콜 검사기는 일반 Ethernet II와 한 개의 802.1Q 또는 802.1ad 태그를 읽습니다. checksum과 packet stage를 완성하는 root README 순서 4에서 다음 module 검사를 실행합니다.
 
 ```sh
 cd exercises/protocol-inspector
-PYTHONPATH=reference python3 -m unittest tests.test_packet.PacketParserTests.test_vlan_tag_changes_the_payload_offset -v
+PYTHONPATH=workspace python3 -m unittest tests.test_packet.PacketParserTests.test_vlan_tag_changes_the_payload_offset -v
 ```
 
 파서가 확인하는 핵심 조건은 다음과 같습니다.

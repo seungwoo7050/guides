@@ -38,6 +38,7 @@ def _jsonable(value: Any) -> Any:
     return value
 
 
+# [Implementation 6] domain 결과를 안정적인 JSON·text·exit status adapter로 노출합니다.
 def command_decode(args: argparse.Namespace) -> int:
     decoded = decode_ethernet_ipv4_tcp(_load_hex(args.path))
     payload = {
@@ -121,6 +122,7 @@ def command_tcp(args: argparse.Namespace) -> int:
     return 0
 
 
+# [Implementation 6-1] 하위 명령의 입력 계약을 등록하고 handler 조립점을 하나로 둡니다.
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         prog="python -m protocol_inspector",

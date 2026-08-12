@@ -11,6 +11,7 @@ trap cleanup_topology EXIT
 trap 'exit 129' HUP
 trap 'exit 130' INT
 trap 'exit 143' TERM
+# [Implementation 4] 전달·TTL·default route 실패와 복구를 한 topology 수명 안에서 검증합니다.
 configure_routed_topology
 
 printf '%s\n' "[routing] client route table"

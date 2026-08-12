@@ -2,8 +2,8 @@ SHELL := /bin/sh
 export PYTHONDONTWRITEBYTECODE := 1
 
 PYTHON ?= python3
-EXERCISE_IMPL ?= reference
-PATH_EXERCISE_IMPL ?= reference
+EXERCISE_IMPL := workspace
+PATH_EXERCISE_IMPL := workspace
 PROTOCOL_EXERCISE := exercises/protocol-inspector
 PATH_EXERCISE := exercises/path-diagnosis
 
@@ -92,7 +92,11 @@ static-check: preflight docs-check python-check shell-check
 
 meta-check: validator-mutant-check workspace-safety-check verify-log-safety-check runner-safety-check marker-safety-check
 
-reference-check: protocol-check path-diagnosis-check window-check observation-check
+reference-check:
+	@$(MAKE) --no-print-directory protocol-check EXERCISE_IMPL=reference
+	@$(MAKE) --no-print-directory path-diagnosis-check PATH_EXERCISE_IMPL=reference
+	@$(MAKE) --no-print-directory window-check
+	@$(MAKE) --no-print-directory observation-check
 
 check: static-check meta-check reference-check skeleton-check test-quality-check
 

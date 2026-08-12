@@ -16,6 +16,7 @@ class TraceFormatError(ValueError):
     """입력 trace가 공개 계약을 만족하지 않을 때 발생합니다."""
 
 
+# [Implementation 1] 진단할 요청의 이름·port·transport·application 경계를 먼저 검증합니다.
 @dataclass(frozen=True)
 class RequestContext:
     """진단하려는 요청의 최소 식별 정보입니다."""
@@ -49,6 +50,7 @@ class RequestContext:
         }
 
 
+# [Implementation 1-1] 한 계층의 status와 관찰 facts를 불변 evidence로 정규화합니다.
 @dataclass(frozen=True)
 class StageEvidence:
     """한 계층에서 수집한 상태, 관찰 문장과 구조화된 사실입니다."""
@@ -85,6 +87,7 @@ class StageEvidence:
         }
 
 
+# [Implementation 1-2] 일곱 계층의 순서와 첫 실패 전후 progression을 Trace가 소유합니다.
 @dataclass(frozen=True)
 class Trace:
     """정해진 계층 순서와 상태 진행을 만족하는 전체 관찰 기록입니다."""
@@ -132,6 +135,7 @@ class Trace:
         return self.stages[failure_index - 1]
 
 
+# [Implementation 1-3] 파일·JSON·구조 오류를 하나의 공개 TraceFormatError 경계로 바꿉니다.
 def load_trace(path: str | Path) -> Trace:
     """JSON 파일을 읽고 모든 입력 오류를 TraceFormatError로 통일합니다."""
 

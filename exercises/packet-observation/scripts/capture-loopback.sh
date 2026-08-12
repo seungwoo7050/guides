@@ -12,6 +12,7 @@ for command in python3 tcpdump; do
     fi
 done
 
+# [Implementation 5] interface·port·output과 이번 실행이 소유할 resource를 먼저 정합니다.
 PORT=${PORT:-18080}
 OUTPUT=${OUTPUT:-capture.txt}
 SCRIPT_DIR=$(CDPATH='' cd -- "$(dirname -- "$0")" && pwd)
@@ -33,6 +34,7 @@ if [ -e "$OUTPUT" ]; then
     exit 1
 fi
 
+# [Implementation 5-1] 이번 실행이 시작한 capture·server와 임시 log만 정리합니다.
 cleanup() {
     if [ -n "$CAPTURE_PID" ]; then
         kill -INT "$CAPTURE_PID" 2>/dev/null || true
@@ -49,6 +51,7 @@ trap 'exit 129' HUP
 trap 'exit 130' INT
 trap 'exit 143' TERM
 
+# [Implementation 5-2] server 준비 뒤 capture와 request를 실행하고 같은 analyzer로 증거를 만듭니다.
 python3 -m http.server "$PORT" --bind 127.0.0.1 >"$SERVER_LOG" 2>&1 &
 SERVER_PID=$!
 sleep 1

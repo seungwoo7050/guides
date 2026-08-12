@@ -45,9 +45,16 @@ def main() -> int:
             shutil.copytree(EXERCISE / "reference", implementation)
             path = implementation / "protocol_inspector" / module
             text = path.read_text(encoding="utf-8")
-            if old not in text:
-                raise AssertionError(f"mutant precondition missing: {name}")
-            path.write_text(text.replace(old, new, 1), encoding="utf-8")
+            occurrences = text.count(old)
+            if occurrences != 1:
+                raise AssertionError(
+                    f"mutant precondition must identify one production statement: "
+                    f"{name}, found={occurrences}"
+                )
+            mutated = text.replace(old, new, 1)
+            if mutated == text or old in mutated:
+                raise AssertionError(f"mutant did not replace its production statement: {name}")
+            path.write_text(mutated, encoding="utf-8")
             environment = os.environ.copy()
             environment["PYTHONPATH"] = str(implementation)
             result = subprocess.run(

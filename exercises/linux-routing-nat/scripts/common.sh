@@ -1,5 +1,6 @@
 #!/bin/sh
 
+# [Implementation 1] 실행별 resource 이름과 소유권 flag를 먼저 고정합니다.
 RUN_SEED=${GUIDE_NETWORK_RUN_ID:-$$}
 RUN_SUFFIX=$(printf '%s' "$RUN_SEED" | cksum | awk '{print $1}')
 CLIENT="cn-client-$RUN_SUFFIX"
@@ -33,6 +34,7 @@ namespace_exists() {
     ip netns list | grep -Eq "^$1([[:space:]]|$)"
 }
 
+# [Implementation 1-1] 기존 namespace와 interface를 발견하면 덮어쓰기 전에 중단합니다.
 assert_names_available() {
     for namespace in "$CLIENT" "$ROUTER" "$SERVER"; do
         if namespace_exists "$namespace"; then
@@ -53,6 +55,7 @@ assert_names_available() {
     done
 }
 
+# [Implementation 1-2] ownership을 획득한 resource만 정리합니다.
 cleanup_topology() {
     [ "$OWN_CLIENT" -eq 0 ] || ip netns del "$CLIENT" 2>/dev/null || true
     [ "$OWN_ROUTER" -eq 0 ] || ip netns del "$ROUTER" 2>/dev/null || true
@@ -61,6 +64,7 @@ cleanup_topology() {
     [ "$OWN_RIGHT_LINK" -eq 0 ] || ip link del "$ROUTER_RIGHT_LINK" 2>/dev/null || true
 }
 
+# [Implementation 3] namespace와 veth를 만들고 각 resource의 ownership 이전을 기록합니다.
 create_links() {
     assert_names_available
     ip netns add "$CLIENT"
@@ -96,6 +100,7 @@ create_links() {
     ip -n "$SERVER" link set s0 up
 }
 
+# [Implementation 3-1] 두 subnet의 주소·route와 router forwarding을 함께 구성합니다.
 configure_routed_topology() {
     create_links
     ip -n "$CLIENT" address add 10.201.1.2/24 dev c0
@@ -107,6 +112,7 @@ configure_routed_topology() {
     ip netns exec "$ROUTER" sysctl -q -w net.ipv4.ip_forward=1 >/dev/null
 }
 
+# [Implementation 3-2] 사설·시험 대역을 분리해 주소 변환 전 topology를 고정합니다.
 configure_nat_topology() {
     create_links
     ip -n "$CLIENT" address add 10.202.1.2/24 dev c0

@@ -9,6 +9,7 @@ ANALYZER="$EXERCISE_DIR/../packet-observation/scripts/analyze_tcpdump.py"
 . "$SCRIPT_DIR/common.sh"
 
 "$SCRIPT_DIR/preflight.sh" loss
+# [Implementation 6-1] qdisc, process와 temporary capture를 소유해 trap이 처리하는 종료 경로에서 정리합니다.
 TRACE=$(mktemp)
 REPORT=$(mktemp)
 SERVER_PID=
@@ -31,6 +32,7 @@ trap 'exit 130' INT
 trap 'exit 143' TERM
 configure_routed_topology
 
+# [Implementation 6-2] capture 뒤 100% 손실을 걸고 반복 SYN을 본 후 제거해 연결 복구를 증명합니다.
 ip netns exec "$SERVER" python3 "$SCRIPT_DIR/tcp_probe.py" server \
     --bind 10.201.2.2 --port 9000 &
 SERVER_PID=$!

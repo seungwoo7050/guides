@@ -8,6 +8,7 @@ from typing import Any, Callable, Mapping
 from .model import StageEvidence, Trace
 
 
+# [Implementation 2] 자동화 출력과 사람의 조사 기록이 공유할 진단 결과 계약을 고정합니다.
 @dataclass(frozen=True)
 class Diagnosis:
     """자동화와 사람이 함께 사용할 수 있는 진단 결과입니다."""
@@ -40,6 +41,7 @@ class Diagnosis:
 Classifier = Callable[[StageEvidence], tuple[str, str, tuple[str, ...]]]
 
 
+# [Implementation 2-1] 첫 실패와 마지막 성공을 고정한 뒤 해당 계층 classifier에 위임합니다.
 def diagnose(trace: Trace) -> Diagnosis:
     """첫 실패 단계와 facts를 조합해 진단 코드를 선택합니다."""
 
@@ -81,6 +83,7 @@ def diagnose(trace: Trace) -> Diagnosis:
     )
 
 
+# [Implementation 2-2] machine 결과와 같은 경계를 안정적인 text 표현으로 변환합니다.
 def render_text(diagnosis: Diagnosis) -> str:
     """진단을 사람이 읽는 안정적인 텍스트 형식으로 출력합니다."""
 
@@ -98,6 +101,7 @@ def render_text(diagnosis: Diagnosis) -> str:
     return "\n".join(lines)
 
 
+# [Implementation 2-3] 각 계층의 facts가 지지하는 범위까지만 구체적인 원인으로 분류합니다.
 def _classify_dns(stage: StageEvidence) -> tuple[str, str, tuple[str, ...]]:
     rcode = _text(stage.facts, "rcode").upper()
     if rcode == "NXDOMAIN":

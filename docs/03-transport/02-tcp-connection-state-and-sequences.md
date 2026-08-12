@@ -96,16 +96,14 @@ RST의 원인은 캡처 방향과 이전 패킷을 함께 보아야 합니다. �
 
 ## 상태 머신 실습
 
-프로토콜 검사기는 정상 open·close와 일부 동시 종료를 명시적 transition table로 표현합니다.
+프로토콜 검사기는 정상 open·close와 일부 동시 종료를 명시적 transition table로 표현합니다. root README 순서 8에서 state module을 먼저 검사하고, 그 뒤 CLI를 조립합니다.
 
 ```sh
 cd exercises/protocol-inspector
-PYTHONPATH=reference python3 -m protocol_inspector tcp \
-  --role client \
-  --events active-open,receive-syn-ack,app-close,receive-ack,receive-fin,timeout
+PYTHONPATH=workspace python3 -m unittest tests.test_tcp_state -v
 ```
 
-예상 상태:
+공개 검사가 확인하는 active client의 핵심 상태 순서:
 
 ```text
 CLOSED

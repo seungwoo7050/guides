@@ -5,6 +5,7 @@ from __future__ import annotations
 import ipaddress
 
 
+# [Implementation 1] 신뢰하지 않는 byte 길이를 16비트 1의 보수 합 경계로 정규화합니다.
 def internet_checksum(data: bytes) -> int:
     """16비트 1의 보수 합에 대한 1의 보수를 반환합니다.
 
@@ -31,6 +32,7 @@ def checksum_is_valid(data: bytes) -> bool:
     return internet_checksum(data) == 0
 
 
+# [Implementation 1-1] 주소와 segment 길이를 IPv4 TCP pseudo-header 계약으로 묶습니다.
 def tcp_checksum_ipv4(
     source: str | ipaddress.IPv4Address,
     destination: str | ipaddress.IPv4Address,

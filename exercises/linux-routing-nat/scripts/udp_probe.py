@@ -8,6 +8,7 @@ from pathlib import Path
 import socket
 
 
+# [Implementation 5] server가 본 peer와 응답을 남기는 최소 UDP workload를 만듭니다.
 def run_server(bind: str, port: int, output: Path, ready: Path) -> int:
     with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as sock:
         sock.bind((bind, port))

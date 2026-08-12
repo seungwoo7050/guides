@@ -16,4 +16,4 @@ def build_parser() -> argparse.ArgumentParser:
 
 def main() -> int:
     build_parser().parse_args()
-    raise NotImplementedError("완성 예제의 출력 계약을 참고해 하위 명령을 연결하세요")
+    raise NotImplementedError("README의 공개 출력 계약에 맞게 하위 명령을 연결하세요")

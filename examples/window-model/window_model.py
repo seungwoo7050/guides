@@ -7,6 +7,7 @@ from dataclasses import dataclass
 import math
 
 
+# [Implementation 1] 송신 sequence와 흐름·혼잡 창의 소유 상태를 먼저 고정합니다.
 @dataclass
 class WindowSender:
     send_base: int
@@ -24,6 +25,7 @@ class WindowSender:
             if getattr(self, name) <= 0:
                 raise ValueError(f"{name}은 양수여야 합니다")
 
+    # [Implementation 1-1] 저장 상태에서 비행량과 실제 송신 가능량을 파생합니다.
     @property
     def in_flight(self) -> int:
         return self.next_sequence - self.send_base
@@ -36,6 +38,7 @@ class WindowSender:
     def available(self) -> int:
         return max(0, self.effective_window - self.in_flight)
 
+    # [Implementation 1-2] 송신과 누적 ACK만이 sequence 경계를 바꾸게 합니다.
     def send_one_segment(self) -> tuple[int, int] | None:
         size = min(self.maximum_segment_size, self.available)
         if size == 0:
@@ -54,6 +57,7 @@ class WindowSender:
         return newly_acked
 
 
+# [Implementation 2] RTT 표본과 backoff가 공유하는 재전송 제한 시간을 소유합니다.
 @dataclass
 class RttEstimator:
     """RFC 6298의 계산 순서를 따라 재전송 제한 시간을 갱신합니다."""
@@ -87,6 +91,7 @@ class RttEstimator:
         return self.timeout
 
 
+# [Implementation 3] Reno의 혼잡 창과 복구 상태를 하나의 controller가 소유합니다.
 @dataclass
 class RenoController:
     """slow start와 congestion avoidance의 창 변화를 바이트 단위로 계산합니다."""
@@ -105,6 +110,7 @@ class RenoController:
         ) <= 0:
             raise ValueError("창, 임계값과 MSS는 모두 양수여야 합니다")
 
+    # [Implementation 3-1] 새 ACK와 중복 ACK를 서로 다른 Reno 전이로 적용합니다.
     def acknowledge(self, newly_acked: int) -> str:
         if newly_acked < 0:
             raise ValueError("ACK 바이트 수는 음수일 수 없습니다")
@@ -140,6 +146,7 @@ class RenoController:
         self.congestion_window += increment
         return "congestion-avoidance"
 
+    # [Implementation 3-2] timeout은 새 slow-start 임계값을 계산하고 혼잡 창을 한 segment로 되돌립니다.
     def timeout(self) -> None:
         self.slow_start_threshold = max(
             2 * self.maximum_segment_size,
@@ -150,6 +157,7 @@ class RenoController:
         self.fast_recovery = False
 
 
+# [Implementation 4] 결정적 사건 순서를 조립해 각 상태 변화의 관찰 증거를 만듭니다.
 def demo() -> list[str]:
     sender = WindowSender(
         send_base=1000,

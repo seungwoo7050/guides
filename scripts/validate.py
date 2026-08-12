@@ -4,10 +4,12 @@
 from __future__ import annotations
 
 import ast
+import io
 import os
 import re
 import subprocess
 import sys
+import tokenize
 import unicodedata
 from pathlib import Path
 from urllib.parse import unquote
@@ -47,6 +49,37 @@ CONCEPT_SECTIONS = ("학습 목표", "선행 개념", "연결 실습", "완료 �
 EXERCISE_SECTIONS = ("목표", "완료 기준", "자기 설명", "검증")
 TEXT_SUFFIXES = {".md", ".py", ".sh", ".txt", ".json", ".hex"}
 GENERATED_NAMES = {"__pycache__", ".pytest_cache", ".guide", ".verify"}
+SKIPPED_TREE_NAMES = GENERATED_NAMES | {".git", "workspace"}
+ROOT_MAPPING_COLUMNS = (
+    "순서",
+    "문서",
+    "관찰 예제",
+    "직접 수행",
+    "수정 위치",
+    "검증",
+    "완료 뒤 비교·다음",
+)
+ROOT_MAPPING_MATERIALS = {
+    "examples/window-model/README.md",
+    "exercises/linux-routing-nat/README.md",
+    "exercises/packet-observation/README.md",
+    "exercises/path-diagnosis/README.md",
+    "exercises/protocol-inspector/README.md",
+}
+ANNOTATION_SCOPES = {
+    "window-model": "examples/window-model/README.md",
+    "protocol-inspector": "exercises/protocol-inspector/README.md",
+    "packet-observation": "exercises/packet-observation/README.md",
+    "linux-routing-nat": "exercises/linux-routing-nat/README.md",
+    "path-diagnosis": "exercises/path-diagnosis/README.md",
+}
+IMPLEMENTATION_PREFIX = "[" + "Implementation "
+IMPLEMENTATION_TOKEN = re.compile(re.escape(IMPLEMENTATION_PREFIX) + r"([^\]\r\n]+)\]")
+VALID_IMPLEMENTATION_LABEL = re.compile(r"^(0|[1-9][0-9]*)(?:-([1-9][0-9]*))?$")
+TABLE_SEPARATOR_CELL = re.compile(r"^:?-{3,}:?$")
+SOURCE_BASENAME = re.compile(
+    r"(?<![A-Za-z0-9_.-])([A-Za-z0-9][A-Za-z0-9_-]*\.(?:py|sh))(?=`|::|\s|,|;|$)"
+)
 
 
 def error(message: str) -> None:
@@ -112,6 +145,262 @@ def markdown_without_fences(text: str) -> str:
         if not in_fence:
             lines.append(line)
     return "\n".join(lines)
+
+
+def source_files() -> list[Path]:
+    """Return repository files without traversing generated or learner trees."""
+
+    result: list[Path] = []
+    for directory, names, files in os.walk(ROOT, topdown=True, followlinks=False):
+        names[:] = sorted(name for name in names if name not in SKIPPED_TREE_NAMES)
+        base = Path(directory)
+        for name in sorted(files):
+            candidate = base / name
+            if name not in SKIPPED_TREE_NAMES and not candidate.is_symlink() and candidate.is_file():
+                result.append(candidate)
+    return result
+
+
+def markdown_table_cells(line: str) -> list[str] | None:
+    stripped = line.strip()
+    if not stripped.startswith("|") or not stripped.endswith("|"):
+        return None
+    return [cell.replace(r"\|", "|").strip() for cell in re.split(r"(?<!\\)\|", stripped[1:-1])]
+
+
+def first_markdown_table(text: str) -> tuple[list[str], bool, list[list[str]]] | None:
+    """Parse the first contiguous pipe table without treating prose as table data."""
+
+    lines = text.splitlines()
+    for index, line in enumerate(lines):
+        header = markdown_table_cells(line)
+        if header is None:
+            continue
+        separator = markdown_table_cells(lines[index + 1]) if index + 1 < len(lines) else None
+        separator_valid = separator is not None and len(separator) == len(header) and all(
+            TABLE_SEPARATOR_CELL.fullmatch(cell) for cell in separator
+        )
+        rows: list[list[str]] = []
+        for candidate in lines[index + 2 :]:
+            cells = markdown_table_cells(candidate)
+            if cells is None:
+                break
+            rows.append(cells)
+        return header, separator_valid, rows
+    return None
+
+
+def implementation_order_key(label: str) -> tuple[int, int, int]:
+    top, separator, child = label.partition("-")
+    return int(top), 1 if separator else 0, int(child) if separator else 0
+
+
+def annotation_scope(relative: str) -> str | None:
+    if relative == "examples/window-model/window_model.py":
+        return "window-model"
+    if relative.startswith("exercises/protocol-inspector/reference/protocol_inspector/") and relative.endswith(".py"):
+        return "protocol-inspector"
+    if relative in {
+        "exercises/packet-observation/scripts/analyze_tcpdump.py",
+        "exercises/packet-observation/scripts/capture-loopback.sh",
+    }:
+        return "packet-observation"
+    if relative.startswith("exercises/linux-routing-nat/scripts/") and relative.endswith((".py", ".sh")):
+        return "linux-routing-nat"
+    if relative.startswith("exercises/path-diagnosis/reference/path_diagnosis/") and relative.endswith(".py"):
+        return "path-diagnosis"
+    return None
+
+
+def comment_lines(path: Path, text: str) -> set[int]:
+    if path.suffix == ".py":
+        try:
+            return {
+                token.start[0]
+                for token in tokenize.generate_tokens(io.StringIO(text).readline)
+                if token.type == tokenize.COMMENT
+            }
+        except (IndentationError, tokenize.TokenError):
+            return set()
+    if path.suffix == ".sh":
+        return {
+            number
+            for number, line in enumerate(text.splitlines(), 1)
+            if line.lstrip().startswith("#")
+        }
+    return set()
+
+
+def check_numbering(scope: str, labels: list[str]) -> None:
+    if len(labels) != len(set(labels)):
+        duplicates = sorted(label for label in set(labels) if labels.count(label) > 1)
+        error(f"Implementation annotation 중복: {scope}: {', '.join(duplicates)}")
+
+    parsed: list[tuple[int, int | None]] = []
+    for label in labels:
+        top, separator, child = label.partition("-")
+        parsed.append((int(top), int(child) if separator else None))
+    if any(top == 0 and child is not None for top, child in parsed):
+        error(f"Implementation 0에는 하위 번호를 사용할 수 없습니다: {scope}")
+
+    top_levels = sorted({top for top, child in parsed if top > 0 and child is None})
+    expected_top = list(range(1, max(top_levels, default=0) + 1))
+    if top_levels != expected_top:
+        error(f"Implementation 상위 번호가 1부터 연속이지 않습니다: {scope}")
+    for top in top_levels:
+        children = sorted({child for parent, child in parsed if parent == top and child is not None})
+        expected_children = list(range(1, max(children, default=0) + 1))
+        if children != expected_children:
+            error(f"Implementation 하위 번호가 1부터 연속이지 않습니다: {scope}:{top}")
+    orphaned = sorted({top for top, child in parsed if child is not None and top not in top_levels})
+    if orphaned:
+        error(f"Implementation 하위 번호의 parent가 없습니다: {scope}: {orphaned}")
+
+
+def check_learning_mapping_and_annotations() -> None:
+    readme = (ROOT / "README.md").read_text(encoding="utf-8")
+    mapping = section(readme, "정본 학습 순서")
+    if not mapping:
+        error("root README 정본 학습 순서가 없습니다")
+    mapping_table = first_markdown_table(mapping) if mapping else None
+    mapping_rows: list[list[str]] = []
+    if mapping_table is None:
+        error("root README ordered mapping 표가 없습니다")
+    else:
+        header, separator_valid, rows = mapping_table
+        if tuple(header) != ROOT_MAPPING_COLUMNS:
+            for column in ROOT_MAPPING_COLUMNS:
+                if column not in header:
+                    error(f"root README ordered mapping 열 누락: {column}")
+            error("root README ordered mapping 열 구성이 canonical columns와 다릅니다")
+        if not separator_valid:
+            error("root README ordered mapping 구분 행 형식이 잘못되었습니다")
+
+        order: list[int] = []
+        for position, cells in enumerate(rows, 1):
+            if len(cells) != len(ROOT_MAPPING_COLUMNS):
+                error(f"root README ordered mapping data row 열 수 오류: row={position}")
+                continue
+            mapping_rows.append(cells)
+            if re.fullmatch(r"[0-9]+", cells[0]) is None:
+                error(f"root README ordered mapping 순서가 정수가 아닙니다: {cells[0]}")
+                continue
+            order.append(int(cells[0]))
+        expected_order = list(range(14))
+        if order != expected_order:
+            error("root README ordered mapping 순서는 0부터 13까지 유일하고 연속이어야 합니다")
+
+    mapping_data = "\n".join(" | ".join(cells) for cells in mapping_rows)
+    for relative in sorted(DOCS):
+        if f"]({relative})" not in mapping_data:
+            error(f"root README ordered mapping 문서 누락: {relative}")
+    for relative in sorted(ROOT_MAPPING_MATERIALS):
+        if f"]({relative})" not in mapping_data:
+            error(f"root README ordered mapping 실행 자료 누락: {relative}")
+
+    anchors_by_scope: dict[str, dict[str, tuple[str, int]]] = {
+        scope: {} for scope in ANNOTATION_SCOPES
+    }
+    for path in source_files():
+        relative_path = path.relative_to(ROOT)
+        data = path.read_bytes()
+        if IMPLEMENTATION_PREFIX.encode() not in data:
+            continue
+        try:
+            text = data.decode("utf-8")
+        except UnicodeDecodeError:
+            error(f"Implementation annotation이 UTF-8 text 밖에 있습니다: {relative_path}")
+            continue
+        allowed_comment_lines = comment_lines(path, text)
+        relative = relative_path.as_posix()
+        for number, line in enumerate(text.splitlines(), 1):
+            if IMPLEMENTATION_PREFIX not in line:
+                continue
+            matches = list(IMPLEMENTATION_TOKEN.finditer(line))
+            if line.count(IMPLEMENTATION_PREFIX) != len(matches):
+                error(f"Implementation annotation token 형식 오류: {relative}:{number}")
+                continue
+            if len(matches) > 1:
+                error(f"Implementation annotation은 한 comment line에 하나만 둘 수 있습니다: {relative}:{number}")
+            for match in matches:
+                label = match.group(1)
+                parsed = VALID_IMPLEMENTATION_LABEL.fullmatch(label)
+                if parsed is None or (parsed.group(1) == "0" and parsed.group(2) is not None):
+                    error(f"Implementation annotation 번호 형식 오류: {relative}:{number}: {label}")
+                    continue
+                scope = annotation_scope(relative)
+                if scope is None or number not in allowed_comment_lines:
+                    error(f"허용되지 않은 Implementation annotation 위치: {relative}:{number}")
+                    continue
+                if re.search(r"[가-힣]", line) is None:
+                    error(f"Implementation annotation 설명은 한국어를 포함해야 합니다: {relative}:{number}")
+                anchors = anchors_by_scope[scope]
+                if label in anchors:
+                    first_relative, first_line = anchors[label]
+                    error(
+                        f"Implementation annotation 중복: {scope}: {label}: "
+                        f"{first_relative}:{first_line}, {relative}:{number}"
+                    )
+                else:
+                    anchors[label] = (relative, number)
+
+    for scope, readme_relative in ANNOTATION_SCOPES.items():
+        anchors = anchors_by_scope[scope]
+        labels = list(anchors)
+        if not labels:
+            error(f"Implementation annotation scope가 비어 있습니다: {scope}")
+            continue
+        check_numbering(scope, labels)
+        readme_path = ROOT / readme_relative
+        implementation_order = section(readme_path.read_text(encoding="utf-8"), "권장 구현 순서")
+        if not implementation_order:
+            error(f"README 권장 구현 순서가 없습니다: {readme_relative}")
+            continue
+        if IMPLEMENTATION_PREFIX in implementation_order:
+            error(f"README index가 source exact annotation token을 중복합니다: {readme_relative}")
+
+        index_table = first_markdown_table(implementation_order)
+        if index_table is None:
+            error(f"README 권장 구현 순서 표가 없습니다: {readme_relative}")
+            continue
+        index_header, index_separator_valid, index_rows = index_table
+        if len(index_header) < 2 or index_header[:2] != ["번호", "파일·symbol"]:
+            error(f"README 권장 구현 순서 표 header가 잘못되었습니다: {readme_relative}")
+        if not index_separator_valid:
+            error(f"README 권장 구현 순서 표 구분 행이 잘못되었습니다: {readme_relative}")
+
+        index_labels: list[str] = []
+        index_cells: dict[str, str] = {}
+        for position, cells in enumerate(index_rows, 1):
+            if len(cells) != len(index_header):
+                error(f"README 권장 구현 순서 data row 열 수 오류: {readme_relative}: row={position}")
+                continue
+            label = cells[0]
+            parsed = VALID_IMPLEMENTATION_LABEL.fullmatch(label)
+            if parsed is None or (parsed.group(1) == "0" and parsed.group(2) is not None):
+                error(f"README 구현 순서 번호 형식 오류: {readme_relative}: {label}")
+                continue
+            index_labels.append(label)
+            index_cells.setdefault(label, cells[1])
+
+        if len(index_labels) != len(set(index_labels)):
+            error(f"README 구현 순서 번호가 중복됩니다: {readme_relative}")
+        if set(index_labels) != set(labels):
+            error(f"README 구현 순서와 source annotation이 다릅니다: {readme_relative}")
+        elif index_labels != sorted(labels, key=implementation_order_key):
+            error(f"README 구현 순서가 의미적 번호 순서와 다릅니다: {readme_relative}")
+
+        for label in index_labels:
+            if label not in anchors or label not in index_cells:
+                continue
+            expected_basename = Path(anchors[label][0]).name
+            declared = set(SOURCE_BASENAME.findall(index_cells[label]))
+            if declared != {expected_basename}:
+                error(
+                    f"README 구현 순서 파일과 source annotation이 다릅니다: "
+                    f"{readme_relative}: {label}: expected={expected_basename} "
+                    f"declared={sorted(declared)}"
+                )
 
 
 def check_layout() -> None:
@@ -217,7 +506,7 @@ def check_learning_contracts() -> None:
 
 
 def check_markdown() -> None:
-    markdown = sorted(path for path in ROOT.rglob("*.md") if not any(part in GENERATED_NAMES or part == "workspace" for part in path.relative_to(ROOT).parts))
+    markdown = sorted(path for path in source_files() if path.suffix == ".md")
     link_pattern = re.compile(r"!?\[[^]]*\]\(([^)]+)\)")
     for path in markdown:
         text = path.read_text(encoding="utf-8")
@@ -249,12 +538,8 @@ def check_markdown() -> None:
 
 
 def check_source() -> None:
-    for path in ROOT.rglob("*"):
+    for path in source_files():
         relative = path.relative_to(ROOT)
-        if any(part in {".git", ".guide", "workspace", "__pycache__", ".pytest_cache"} for part in relative.parts):
-            continue
-        if not path.is_file():
-            continue
         if path.suffix in {".pyc", ".pyo"}:
             error(f"생성 bytecode가 남았습니다: {relative}")
         if path.name != "Makefile" and path.suffix not in TEXT_SUFFIXES:
@@ -299,6 +584,19 @@ def check_interfaces_and_pins() -> None:
     for target in ("prepare", "check", "static-check", "meta-check", "reference-check", "skeleton-check", "test-quality-check", "docker-e2e", "verify", "clean"):
         if re.search(rf"(?m)^{re.escape(target)}\s*:", makefile) is None:
             error(f"공개 Make target 누락: {target}")
+    if re.search(r"(?m)^EXERCISE_IMPL := workspace$", makefile) is None:
+        error("protocol 학습자 Make 기본값은 workspace여야 합니다")
+    if re.search(r"(?m)^PATH_EXERCISE_IMPL := workspace$", makefile) is None:
+        error("path 학습자 Make 기본값은 workspace여야 합니다")
+    reference_target = re.search(
+        r"(?ms)^reference-check:\s*\n(.*?)(?=^[^\t\n][^\n]*:|\Z)",
+        makefile,
+    )
+    reference_recipe = reference_target.group(1) if reference_target else ""
+    if "protocol-check EXERCISE_IMPL=reference" not in reference_recipe:
+        error("reference-check가 protocol reference를 명시하지 않습니다")
+    if "path-diagnosis-check PATH_EXERCISE_IMPL=reference" not in reference_recipe:
+        error("reference-check가 path reference를 명시하지 않습니다")
     prepare = (ROOT / "prepare.sh").read_text(encoding="utf-8")
     verify = (ROOT / "verify.sh").read_text(encoding="utf-8")
     expected = "python:3.12-slim-bookworm@sha256:4766d8b510c428e595d74b9cc5bbb2fae8e26316fffb4adc89908d79aacd58a2"
@@ -329,6 +627,7 @@ def check_interfaces_and_pins() -> None:
 def main() -> int:
     check_layout()
     check_learning_contracts()
+    check_learning_mapping_and_annotations()
     check_markdown()
     check_source()
     check_interfaces_and_pins()

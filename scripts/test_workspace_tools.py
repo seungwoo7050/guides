@@ -43,7 +43,30 @@ def require_failure(result: subprocess.CompletedProcess[str], label: str) -> Non
         raise AssertionError(f"{label} unexpectedly succeeded")
 
 
+def run_make(root: Path, *arguments: str) -> subprocess.CompletedProcess[str]:
+    return subprocess.run(
+        ["make", *arguments],
+        cwd=root,
+        capture_output=True,
+        text=True,
+        timeout=30,
+        check=False,
+    )
+
+
 def main() -> int:
+    with tempfile.TemporaryDirectory(prefix="guide-cn-workspace-") as temporary:
+        root = Path(temporary) / "repo"
+        copy_repository(root)
+        require_failure(run_make(root, "protocol-check"), "protocol learner check without workspace")
+        require_failure(run_make(root, "path-diagnosis-check"), "path learner check without workspace")
+        protocol_reference = run_make(root, "protocol-check", "EXERCISE_IMPL=reference")
+        if protocol_reference.returncode:
+            raise AssertionError(protocol_reference.stdout + protocol_reference.stderr)
+        path_reference = run_make(root, "path-diagnosis-check", "PATH_EXERCISE_IMPL=reference")
+        if path_reference.returncode:
+            raise AssertionError(path_reference.stdout + path_reference.stderr)
+
     with tempfile.TemporaryDirectory(prefix="guide-cn-workspace-") as temporary:
         root = Path(temporary) / "repo"
         copy_repository(root)

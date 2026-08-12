@@ -6,6 +6,7 @@ SCRIPT_DIR=$(CDPATH='' cd -- "$(dirname -- "$0")" && pwd)
 # shellcheck disable=SC1091
 . "$SCRIPT_DIR/common.sh"
 
+# [Implementation 2] privilege와 실험 mode별 필수 command를 topology 생성 전에 검증합니다.
 require_root
 for command in ip ping sysctl python3 grep; do
     require_command "$command"
@@ -28,6 +29,7 @@ case "$MODE" in
         ;;
 esac
 
+# [Implementation 2-1] 실제 namespace 생성·실행을 확인하고 소유한 probe를 종료 시 정리합니다.
 assert_names_available
 probe="cn-probe-$RUN_SUFFIX"
 probe_owned=0

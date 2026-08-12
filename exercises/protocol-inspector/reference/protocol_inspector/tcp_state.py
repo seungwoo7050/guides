@@ -40,6 +40,7 @@ class TCPEvent(str, Enum):
     TIMEOUT = "timeout"
 
 
+# [Implementation 5] 현재 state와 event가 허용하는 공통 정상 전이를 표로 고정합니다.
 _TRANSITIONS: dict[tuple[TCPState, TCPEvent], TCPState] = {
     (TCPState.LISTEN, TCPEvent.RECEIVE_SYN): TCPState.SYN_RECEIVED,
     (TCPState.LISTEN, TCPEvent.APP_CLOSE): TCPState.CLOSED,
@@ -59,6 +60,7 @@ _TRANSITIONS: dict[tuple[TCPState, TCPEvent], TCPState] = {
 }
 
 
+# [Implementation 5-1] endpoint가 RST 예외와 모든 state mutation의 소유자가 됩니다.
 @dataclass
 class TCPEndpoint:
     role: EndpointRole

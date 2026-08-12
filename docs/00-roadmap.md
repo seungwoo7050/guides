@@ -96,31 +96,35 @@ Part I–IV와 다섯 실습은 **필수 경로**입니다. 이미 특정 계층
 
 ## 문서와 실습의 대응
 
-| 학습 구간 | 실행 자료 | 확인하는 계약 |
-|---|---|---|
-| 계층·Ethernet·IP·LPM·TCP 상태 | [프로토콜 검사기](../exercises/protocol-inspector/README.md) | 길이 경계, 체크섬, 캡슐화, 경로 선택, 상태 전이 |
-| RTT·재전송·흐름·혼잡 제어 | [송신 창 모델](../examples/window-model/README.md) | `send_base`, `in_flight`, RTO, `rwnd`, `cwnd` |
-| TCP 패킷 증거 | [패킷 관찰](../exercises/packet-observation/README.md) | 핸드셰이크, 순서 번호, 재전송 후보 |
-| 실제 경로·NAT·손실 | [Linux 라우팅·NAT·손실](../exercises/linux-routing-nat/README.md) | TTL, 기본 경로, SNAT, 실제 SYN 재전송 |
-| 전체 계층 통합 | [경로 진단](../exercises/path-diagnosis/README.md) | 마지막 성공, 첫 실패, 증거와 다음 검사 |
+root README의 [정본 학습 순서](../README.md#정본-학습-순서)가 문서별 직접 수행과 다음 단계를 고정합니다. 여기서는 다섯 실행 자료의 역할과 완료 판정을 구분합니다.
 
-권장 순서는 `protocol-inspector → window-model → packet-observation → linux-routing-nat → path-diagnosis`입니다. Docker privileged 환경을 아직 준비하지 못했다면 결정적 fixture를 먼저 학습할 수는 있지만, 네임스페이스 실험과 full verify를 실행하기 전에는 이 가이드의 완료 기준을 충족한 것이 아닙니다.
+| 실행 순서 | 연결 문서 | 자료 역할 | 학습자 경계 | 검증 | 완료 뒤 판정 |
+|---:|---|---|---|---|---|
+| 1 | Part I, IP·LPM·전달, TCP 상태 | [프로토콜 검사기](../exercises/protocol-inspector/README.md) | `workspace/`에서 checksum, packet, PCAP, route, TCP state, CLI를 단계별 구현 | module별 unittest 뒤 `make protocol-check` | 전체 통과 뒤 `reference/` 책임 배치 비교 |
+| 2 | RTT·재전송·흐름·혼잡 제어 | [송신 창 모델](../examples/window-model/README.md) | 제공된 좁은 관찰 모델 실행 | `make window-check` | 상태 전이와 출력이 기대 증거 |
+| 3 | TCP 상태·순서·재전송 | [패킷 관찰](../exercises/packet-observation/README.md) | 제공된 analyzer와 선택적 loopback capture 실행 | `make observation-check` | handshake, ACK, 재전송 후보와 캡처 조건이 기대 증거 |
+| 4 | ARP·전달·NAT·재전송 | [Linux 라우팅·NAT·손실](../exercises/linux-routing-nat/README.md) | 제공된 격리 실험 실행 | 지원 Linux에서 `cd exercises/linux-routing-nat && sudo ./scripts/run-all.sh`; 최종 `./verify.sh` | TTL, route 복구, SNAT, 반복 SYN, 자원 정리가 기대 증거 |
+| 5 | IP route·MTU, UDP/TCP, DNS·TLS·HTTP, 장애 분리 | [경로 진단](../exercises/path-diagnosis/README.md) | 앞 장의 fixture를 읽고 Part IV에서 `workspace/` model·diagnosis·CLI 구현 | module별 unittest 뒤 `make path-diagnosis-check` | 전체 통과 뒤 `reference/` 책임 배치 비교 |
 
-## 학습자 구현과 reference 사용 규칙
+첫 실행·구현 진입 순서는 `protocol-inspector → window-model → packet-observation → linux-routing-nat → path-diagnosis`입니다. protocol workspace는 Part I에서 만들지만 Part III의 TCP·CLI까지 문서와 교차해 완성하며, Linux topology는 앞 장에서 증거를 예상한 뒤 재전송 장에서 세 실험을 함께 실행합니다. Docker privileged 환경을 아직 준비하지 못했다면 결정적 fixture를 먼저 학습할 수는 있지만, 네임스페이스 실험과 full verify를 실행하기 전에는 이 가이드의 완료 기준을 충족한 것이 아닙니다.
+
+## 학습자 구현, reference와 기대 증거 사용 규칙
 
 `protocol-inspector`와 `path-diagnosis`는 다음 순서로 사용합니다.
 
 ```text
 문제 계약과 fixture 확인
 → 결과를 손으로 예상
-→ skeleton에서 구현
+→ skeleton을 복사한 workspace에서 구현
 → 공개 검사 실행
 → 실패 원인 기록
 → 모든 검사 통과
 → reference와 책임 배치 비교
 ```
 
-reference를 먼저 복사하면 결과는 얻어도 경계 검사와 상태 모델을 설계하는 능력은 남지 않습니다. `scripts/new-workspace.sh`는 기존 workspace를 덮어쓰지 않고 skeleton의 추적 파일만 복사합니다.
+reference를 먼저 복사하거나 source를 읽으면 결과는 얻어도 경계 검사와 상태 모델을 설계하는 능력은 남지 않습니다. `scripts/new-workspace.sh`는 기존 workspace를 덮어쓰지 않고 skeleton의 추적 파일만 복사합니다. 정본 repository 검증이 reference를 실행하는 것은 학습자 사용 순서와 다른 black-box 건강 검사이며, 학습자는 자신의 workspace가 통과한 뒤에만 reference source를 봅니다.
+
+`window-model`, `packet-observation`, `linux-routing-nat`에는 reference implementation이 없습니다. 이 자료는 README가 지정한 상태 전이, packet 관계, 격리 실험 출력과 소유 자원 정리를 기대 증거로 사용합니다. 한 가지 prose 답안을 강제하지 않지만 관찰 위치, 실행 조건과 보장하지 않는 범위를 함께 기록해야 합니다.
 
 ## 검증 명령
 
@@ -135,21 +139,20 @@ reference를 먼저 복사하면 결과는 얻어도 경계 검사와 상태 모
 
 ```sh
 make docs-check
-make EXERCISE_IMPL=reference protocol-check
-make PATH_EXERCISE_IMPL=reference path-diagnosis-check
+make reference-check
 make skeleton-check
 make test-quality-check
 make window-check
 make observation-check
 ```
 
-고정 검증 container 안에서는 다음 target이 privileged Linux 실험을 실행합니다. 호스트에서 직접 실행하지 않습니다.
+격리가 확보된 Linux의 root shell 또는 disposable container에서 세 실험만 다시 실행할 때는 다음 하위 target을 사용할 수 있습니다. 일반 호스트나 원격 운영 장비에서 직접 실행하지 않습니다.
 
 ```sh
 make docker-e2e
 ```
 
-정본 `./verify.sh`는 이 target을 digest로 고정한 로컬 이미지에서 필수로 실행하며 환경 부족을 skip으로 처리하지 않습니다.
+정본 `./verify.sh`는 같은 `preflight.sh`와 `run-all.sh`를 digest로 고정한 local container 안에서 직접 실행하며 환경 부족을 skip으로 처리하지 않습니다.
 
 ## 범위 밖 항목
 
@@ -166,7 +169,7 @@ make docker-e2e
 
 ## 완료 기준
 
-- 다섯 실행 자료의 README에 지정된 관찰 증거를 남기고 reference 결과와 직접 비교합니다.
+- 다섯 실행 자료의 README에 지정된 관찰 증거를 남기고, 구현 실습은 reference와, 제공된 관찰 자료는 기대 증거와 비교합니다.
 - `prepare.sh`가 고정 verifier image를 준비한 뒤 `verify.sh`가 `failed=0`, `skipped=0`으로 종료하며 privileged routing·NAT·100% loss 실험을 모두 통과합니다.
 - 새로운 장애 사례에서 마지막 성공·첫 실패·반증 명령·수정 뒤 회귀 결과를 계층별로 기록합니다.
 

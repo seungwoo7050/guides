@@ -7,6 +7,7 @@ import argparse
 import socket
 
 
+# [Implementation 6] 손실 제거 뒤 연결 복구를 드러내는 최소 TCP workload를 만듭니다.
 def run_server(bind: str, port: int) -> int:
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as listener:
         listener.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)

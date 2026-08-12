@@ -96,11 +96,11 @@ OSI 7계층은 대화를 정리할 때 유용하지만 패킷 하나가 언제�
 
 ## 바이트에서 계층을 확인하기
 
-프로토콜 검사기의 fixture는 FCS가 제외된 Ethernet II 프레임 안에 IPv4와 TCP SYN을 담습니다.
+프로토콜 검사기의 읽기 전용 fixture는 FCS가 제외된 Ethernet II 프레임 안에 IPv4와 TCP SYN을 담습니다. 이 장에서는 parser를 아직 구현하지 않고 field offset을 손으로 예상합니다. checksum을 배운 뒤 root README 순서 4에서 workspace parser를 완성하고 공개 검사로 확인합니다.
 
 ```sh
 cd exercises/protocol-inspector
-PYTHONPATH=reference python3 -m protocol_inspector decode fixtures/syn-frame.hex
+sed -n '1,20p' fixtures/syn-frame.hex
 ```
 
 출력에서 다음 연결을 확인하세요.

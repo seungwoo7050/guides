@@ -33,6 +33,7 @@ _MAGIC = {
 }
 
 
+# [Implementation 3] byte order와 timestamp 해상도를 정한 뒤 snaplen과 record 길이 경계를 검증합니다.
 def parse_pcap(data: bytes) -> Capture:
     if not isinstance(data, bytes):
         raise ValueError("PCAP 입력은 bytes여야 합니다.")

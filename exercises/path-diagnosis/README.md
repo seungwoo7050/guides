@@ -9,11 +9,35 @@
 계층별 관찰을 순서가 있는 trace로 검증하고 마지막 성공, 첫 실패, 구체적 진단 코드와 다음 검사를 과장 없이 도출합니다.
 
 ```text
-skeleton/path_diagnosis/   학습자가 구현할 공개 계약
+skeleton/path_diagnosis/   수정하지 않는 미완성 시작점과 공개 계약
+workspace/path_diagnosis/  생성 뒤 학습자가 수정하는 유일한 구현
 reference/path_diagnosis/  기준 구현
 broken/path_diagnosis/     검사 품질을 확인하는 의도적 오답
 tests/                     세 구현에 공통인 동작 검사
 fixtures/                  정상 경로와 계층별 실패 증거
+```
+
+## 권장 구현 순서
+
+아래 번호는 `reference/path_diagnosis/` 프로젝트 전체의 학습 지향 권장 구현 순서입니다. 파일의 줄 순서나 실제 과거 작성 순서를 뜻하지 않습니다. 학습자는 같은 책임을 `workspace/`에 구현하고, 통과한 뒤에만 reference source의 annotation과 비교합니다.
+
+| 번호 | 파일·symbol | 먼저 고정하는 책임 |
+|---:|---|---|
+| 1 | `model.py::RequestContext` | 요청 이름·port·transport·application 입력 계약 |
+| 1-1 | `model.py::StageEvidence` | 한 계층의 status, observation과 구조화 facts |
+| 1-2 | `model.py::Trace` | 일곱 단계 순서와 첫 실패 전후 progression invariant |
+| 1-3 | `model.py::load_trace` | 파일·JSON·구조 오류의 공개 예외 정규화 |
+| 2 | `diagnose.py::Diagnosis` | 자동화와 사람이 공유하는 결과 계약 |
+| 2-1 | `diagnose.py::diagnose` | 첫 실패·마지막 성공과 classifier dispatch |
+| 2-2 | `diagnose.py::render_text` | machine 결과와 일치하는 안정적 text 표현 |
+| 2-3 | `diagnose.py::_classify_*` | 관찰 facts보다 구체적으로 과장하지 않는 계층별 정책 |
+| 3 | `cli.py::build_parser` | trace 경로와 출력 형식 CLI 계약 |
+| 3-1 | `cli.py::main` | 입력 오류, 출력 채널과 exit status 경계 |
+
+먼저 저장소 루트에서 workspace를 한 번 만듭니다. 기존 workspace는 덮어쓰지 않습니다.
+
+```sh
+scripts/new-workspace.sh exercises/path-diagnosis
 ```
 
 ## 진단 단계
@@ -59,7 +83,7 @@ dns
 
 ### 1. 입력 계약과 상태 진행을 검증합니다
 
-`skeleton/path_diagnosis/model.py`에서 다음을 구현합니다.
+`workspace/path_diagnosis/model.py`에서 다음을 구현합니다.
 
 - 요청 이름, 포트, 전송 방식과 응용 프로토콜을 검증합니다.
 - 일곱 단계가 빠짐없이 올바른 순서인지 확인합니다.
@@ -71,7 +95,7 @@ dns
 
 ### 2. 첫 실패와 세부 원인을 분리합니다
 
-`skeleton/path_diagnosis/diagnose.py`에서 다음을 구현합니다.
+`workspace/path_diagnosis/diagnose.py`에서 다음을 구현합니다.
 
 ```text
 첫 실패 단계 결정
@@ -82,14 +106,21 @@ dns
 
 예를 들어 `path` 단계가 실패했다는 사실만으로 MTU 문제를 확정하면 안 됩니다. 작은 패킷은 성공하고 큰 패킷은 실패하며 필요한 ICMP도 관찰되지 않았을 때 `MTU_BLACK_HOLE`로 분류합니다. 그 밖의 path 실패는 더 일반적인 `PATH_FAILURE`로 남겨야 합니다.
 
-### 3. CLI 계약을 구현합니다
-
-다음 명령을 지원합니다.
+첫 두 단계를 구현한 시점에는 아직 CLI 전체 검사를 실행하지 않습니다. model과 diagnosis의 공개 계약만 먼저 확인합니다.
 
 ```sh
 cd exercises/path-diagnosis
-PYTHONPATH=reference python3 -m path_diagnosis fixtures/healthy.json
-PYTHONPATH=reference python3 -m path_diagnosis fixtures/mtu-black-hole.json --format json
+PYTHONPATH=workspace python3 -m unittest tests.test_model tests.test_diagnose -v
+```
+
+### 3. CLI 계약을 구현합니다
+
+`workspace/path_diagnosis/cli.py`에서 다음 명령과 출력 경계를 구현합니다.
+
+```sh
+cd exercises/path-diagnosis
+PYTHONPATH=workspace python3 -m path_diagnosis fixtures/healthy.json
+PYTHONPATH=workspace python3 -m path_diagnosis fixtures/mtu-black-hole.json --format json
 ```
 
 종료 상태는 다음과 같습니다.
@@ -104,18 +135,17 @@ PYTHONPATH=reference python3 -m path_diagnosis fixtures/mtu-black-hole.json --fo
 
 ## 구현 중 검사
 
-기준 구현 전체를 검사합니다.
+저장소 루트에서 학습자 구현 전체를 검사합니다.
 
 ```sh
-PYTHONPATH=reference python3 -m unittest discover -s tests -v
+make PATH_EXERCISE_IMPL=workspace path-diagnosis-check
 ```
 
-학습자 구현은 workspace에서 검사합니다.
+검사를 모두 통과한 뒤에만 기준 구현의 책임 배치와 출력 계약을 비교합니다.
 
 ```sh
-cd ../..
-./scripts/new-workspace.sh exercises/path-diagnosis
-make PATH_EXERCISE_IMPL=workspace path-diagnosis-check
+make PATH_EXERCISE_IMPL=reference path-diagnosis-check
+diff -ru exercises/path-diagnosis/workspace exercises/path-diagnosis/reference
 ```
 
 저장소 전체에서는 다음 두 검사가 추가로 실행됩니다.
@@ -149,9 +179,9 @@ python3 scripts/check_test_quality.py
 ## 검증
 
 ```sh
-make PATH_EXERCISE_IMPL=reference path-diagnosis-check
+make PATH_EXERCISE_IMPL=workspace path-diagnosis-check
 python3 scripts/check_skeleton.py
 python3 scripts/check_test_quality.py
 ```
 
-기준 구현은 통과하고 skeleton과 알려진 오답은 의도한 계약에서 실패해야 합니다.
+학습자 workspace와 기준 구현은 통과하고 skeleton과 알려진 오답은 의도한 계약에서 실패해야 합니다. 기준 구현 검사는 workspace 통과 뒤 비교 단계 또는 저장소 전체 `make reference-check`에서 실행합니다.

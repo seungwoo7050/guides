@@ -6,6 +6,7 @@ from dataclasses import dataclass
 import ipaddress
 
 
+# [Implementation 4] 외부 route 입력을 검증된 network·next-hop·metric 상태로 바꿉니다.
 @dataclass(frozen=True)
 class Route:
     network: ipaddress.IPv4Network
@@ -43,6 +44,7 @@ class RoutingTable:
     def add(self, route: Route) -> None:
         self._routes.append(route)
 
+    # [Implementation 4-1] prefix 길이를 먼저 고정하고 metric과 입력 순서로 tie를 해소합니다.
     def lookup(self, destination: str | ipaddress.IPv4Address) -> Route | None:
         address = ipaddress.IPv4Address(destination)
         candidates = [

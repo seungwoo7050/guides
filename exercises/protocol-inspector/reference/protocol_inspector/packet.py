@@ -76,6 +76,7 @@ class DecodedPacket:
     tcp: TCPSegment | None
 
 
+# [Implementation 2] Ethernet 최소 길이와 선택 VLAN offset을 상위 해석보다 먼저 검증합니다.
 def parse_ethernet(data: bytes) -> EthernetFrame:
     """FCS가 제외된 Ethernet 프레임을 해석합니다."""
 
@@ -109,6 +110,7 @@ def parse_ethernet(data: bytes) -> EthernetFrame:
     )
 
 
+# [Implementation 2-1] IPv4가 선언한 header·total length를 실제 buffer 안에서만 신뢰합니다.
 def parse_ipv4(data: bytes) -> IPv4Packet:
     """IPv4 패킷을 전체 길이 필드까지 해석합니다."""
 
@@ -166,6 +168,7 @@ _FLAG_NAMES: Final[tuple[tuple[int, str], ...]] = (
 )
 
 
+# [Implementation 2-2] TCP data offset과 payload 경계를 분리하고 주소가 있을 때만 checksum을 판정합니다.
 def parse_tcp(
     data: bytes,
     *,
@@ -209,6 +212,7 @@ def parse_tcp(
     )
 
 
+# [Implementation 2-3] EtherType, 상위 protocol과 fragment 상태에 따라 decoder 조립을 중단합니다.
 def decode_ethernet_ipv4_tcp(data: bytes) -> DecodedPacket:
     """지원하는 계층을 순서대로 해석하고 나머지는 안전하게 남겨 둡니다."""
 
