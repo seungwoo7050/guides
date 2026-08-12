@@ -1,3 +1,4 @@
+-- [Implementation 4] Expand와 severity backfill을 재실행 가능하게 구성해 구·신 write의 공존 창을 연다.
 ALTER TABLE tickets ADD COLUMN IF NOT EXISTS priority integer;
 
 UPDATE tickets
@@ -9,6 +10,7 @@ SET priority = CASE severity
 END
 WHERE priority IS NULL;
 
+-- [Implementation 5] NOT VALID 제약 생성, 기존 row 검증, NOT NULL 전환 뒤 구버전 열을 호환 창에 남긴다.
 DO $$
 BEGIN
     IF NOT EXISTS (

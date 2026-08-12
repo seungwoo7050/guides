@@ -333,6 +333,8 @@ insert p95는 3ms 증가했으며 index 크기는 280MB다.
 
 ## 연결 연습
 
+먼저 [`Index 비용 예제`](../../examples/index_cost_simulator.py)에서 선택도와 random/sequential page 비용 가정이 접근 경로의 상대 비용을 바꾸는지 관찰한다. 이 수치는 실제 PostgreSQL plan을 예측하는 oracle이 아니라 cost model 입력의 방향성을 분리하는 축소 실험이다.
+
 [`Query plans and indexes`](../../exercises/04-execution-and-optimization/02-query-plans-and-indexes/README.md)에서 실제 PostgreSQL을 사용해 다음을 검증한다.
 
 - tenant·상태·시간 범위 query

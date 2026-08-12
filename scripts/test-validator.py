@@ -12,6 +12,14 @@ import tempfile
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
+IMPLEMENTATION_PREFIX = "[" + "Implementation "
+IMPLEMENTATION_MARKER_RE = re.compile(
+    re.escape(IMPLEMENTATION_PREFIX) + r"(?:0|[1-9]\d*(?:-[1-9]\d*)?)\]"
+)
+
+
+def implementation_marker(label: str) -> str:
+    return f"{IMPLEMENTATION_PREFIX}{label}]"
 
 
 def copy_source(destination: Path) -> None:
@@ -200,6 +208,71 @@ def main() -> int:
 
     expect_rejection("canonical-workspace-command", replace_canonical_command, "실행 가능한 검증 명령 누락")
 
+    def disconnect_root_mapping(root: Path) -> None:
+        path = root / "README.md"
+        text = path.read_text(encoding="utf-8")
+        canonical = "./scripts/check-workspace.sh exercises/02-storage-and-indexes/02-bplus-tree"
+        path.write_text(text.replace(canonical, "./scripts/check-workspace.sh exercises/not-the-bplus-tree", 1), encoding="utf-8")
+
+    expect_rejection(
+        "root-learning-mapping",
+        disconnect_root_mapping,
+        "root 학습 mapping exercise 계약 누락",
+    )
+
+    def duplicate_implementation_anchor(root: Path) -> None:
+        path = root / "examples/buffer_pool.py"
+        path.write_text(
+            path.read_text(encoding="utf-8")
+            + f"\n# {implementation_marker('1')} duplicate mutant\n",
+            encoding="utf-8",
+        )
+
+    expect_rejection(
+        "duplicate-implementation-anchor",
+        duplicate_implementation_anchor,
+        "Implementation marker 중복",
+    )
+
+    def gap_implementation_numbers(root: Path) -> None:
+        path = root / "examples/transaction_anomalies.py"
+        text = path.read_text(encoding="utf-8")
+        path.write_text(
+            text.replace(implementation_marker("2"), implementation_marker("3"), 1),
+            encoding="utf-8",
+        )
+
+    expect_rejection(
+        "implementation-number-gap",
+        gap_implementation_numbers,
+        "Implementation top-level 번호 연속성 오류",
+    )
+
+    def leak_implementation_into_skeleton(root: Path) -> None:
+        path = root / "exercises/02-storage-and-indexes/01-slotted-page/skeleton/slotted_page.py"
+        path.write_text(
+            path.read_text(encoding="utf-8")
+            + f"\n# {implementation_marker('1')} forbidden mutant\n",
+            encoding="utf-8",
+        )
+
+    expect_rejection(
+        "skeleton-implementation-anchor",
+        leak_implementation_into_skeleton,
+        "Implementation marker 금지 위치",
+    )
+
+    def remove_reference_annotations(root: Path) -> None:
+        path = root / "exercises/01-relational-semantics-and-design/01-sql-semantics/reference/answers.sql"
+        text = path.read_text(encoding="utf-8")
+        path.write_text(IMPLEMENTATION_MARKER_RE.sub("", text), encoding="utf-8")
+
+    expect_rejection(
+        "missing-reference-annotation",
+        remove_reference_annotations,
+        "Implementation top-level anchor 누락",
+    )
+
     def disconnect_workspace_dispatcher(root: Path) -> None:
         path = root / "scripts/check-workspace.sh"
         text = path.read_text(encoding="utf-8")
@@ -244,7 +317,7 @@ def main() -> int:
         [sys.executable, "scripts/check-exercises.py"],
         "지정된 학습 계약",
     )
-    print("[PASS] validator/contract mutant suite: 18/18")
+    print("[PASS] validator/contract mutant suite: 23/23")
     return 0
 
 

@@ -232,8 +232,8 @@ checkpoint write burst
 
 ## 연결 연습
 
-- [`Clock buffer pool 구현`](../../exercises/02-storage-and-indexes/03-buffer-pool-clock/README.md): cache hit, pin, dirty eviction과 Clock을 구현한다.
 - [`Buffer pool 예제`](../../examples/buffer_pool.py): pinned frame과 second chance를 작은 상태로 관찰한다.
+- [`Clock buffer pool 구현`](../../exercises/02-storage-and-indexes/03-buffer-pool-clock/README.md): 예제를 관찰한 뒤 cache hit, pin, dirty eviction과 Clock을 구현한다.
 - [`Mini storage engine`](../../exercises/05-capstones/02-mini-storage-engine/README.md): buffer flush와 WAL durable boundary를 통합한다.
 
 ## 완료 기준

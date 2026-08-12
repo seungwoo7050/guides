@@ -32,6 +32,17 @@
 1. `NOT IN` 후보 집합에 `NULL`이 있을 때 `NOT EXISTS`와 결과가 달라지는 이유는 무엇인가?
 2. `COUNT(*)`와 nullable 오른쪽 열의 `COUNT(column)` 중 outer join 집계에 맞는 것은 무엇인가?
 
+## 권장 구현 순서
+
+아래 번호 범위는 `reference/answers.sql` 전체다. Git의 과거 작성 이력이 아니라, 네 view를 다시 만든다면 따를 권장 순서이며 파일마다 번호를 다시 시작하지 않는다. 먼저 workspace 검증을 통과시킨 뒤 source의 같은 번호 주석과 비교한다.
+
+| 순서 | 파일·대상 | 책임 |
+|---:|---|---|
+| 1 | `answers.sql` · `q01_users_without_orders` | NULL-safe no-orders anti-join |
+| 2 | `answers.sql` · `q02_unblocked_users` | NULL-safe blocked-user anti-join |
+| 3 | `answers.sql` · `q03_user_totals` | 모든 user를 보존하는 집계 row 단위 |
+| 4 | `answers.sql` · `q04_ranked_spenders` | tie-break가 포함된 안정적인 순위 |
+
 ## 검증
 
 `make prepare` 뒤 학습자 workspace를 공용 PostgreSQL fixture에서 검사한다.

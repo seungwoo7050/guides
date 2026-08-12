@@ -1,3 +1,4 @@
+-- [Implementation 1] 조건부 UPDATE 한 문장이 재고 확인과 차감을 같은 row conflict로 직렬화한다.
 CREATE OR REPLACE FUNCTION reserve_inventory(p_sku text, p_quantity integer)
 RETURNS boolean
 LANGUAGE plpgsql
@@ -16,6 +17,7 @@ BEGIN
     RETURN changed = 1;
 END $$;
 
+-- [Implementation 2] 여러 doctor row의 불변식은 모든 경로가 공유하는 guard row lock으로 직렬화한다.
 CREATE OR REPLACE FUNCTION take_off_call(p_doctor_id integer)
 RETURNS boolean
 LANGUAGE plpgsql

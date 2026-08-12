@@ -3,6 +3,7 @@ from __future__ import annotations
 import struct
 from dataclasses import dataclass
 
+# [Implementation 1] Header와 slot binary format을 먼저 고정해 page 안의 두 성장 경계를 계산할 수 있게 한다.
 HEADER = struct.Struct("!4sHH")
 SLOT = struct.Struct("!HHB3x")
 MAGIC = b"SLPG"
@@ -12,6 +13,7 @@ class PageFullError(RuntimeError):
     pass
 
 
+# [Implementation 2] Slot은 안정적인 논리 ID의 상태이고 SlottedPage가 bytes와 free boundary를 소유한다.
 @dataclass
 class Slot:
     offset: int
@@ -34,6 +36,7 @@ class SlottedPage:
     def free_space(self) -> int:
         return self._free_end - (HEADER.size + len(self._slots) * SLOT.size)
 
+    # [Implementation 3] Payload와 live slot lookup을 mutation 전에 검증해 실패가 page를 바꾸지 않게 한다.
     def _validate_payload(self, payload: bytes) -> bytes:
         if not isinstance(payload, bytes):
             raise TypeError("payload must be bytes")
@@ -52,6 +55,7 @@ class SlottedPage:
             raise KeyError(slot_id)
         return slot
 
+    # [Implementation 4] 수용 가능성을 먼저 계산한 뒤 compact하고 tombstone slot을 안정적으로 재사용한다.
     def insert(self, payload: bytes) -> int:
         payload = self._validate_payload(payload)
         reusable = next((index for index, slot in enumerate(self._slots) if not slot.alive), None)
@@ -75,6 +79,7 @@ class SlottedPage:
         self._slots[reusable] = new_slot
         return reusable
 
+    # [Implementation 5] Read/delete/update/compact는 slot ID를 유지하며 record bytes의 위치만 다시 소유한다.
     def read(self, slot_id: int) -> bytes:
         slot = self._slot(slot_id)
         return bytes(self._data[slot.offset : slot.offset + slot.length])
@@ -119,6 +124,7 @@ class SlottedPage:
             rebuilt.append(Slot(self._free_end, len(payload), True))
         self._slots = rebuilt
 
+    # [Implementation 6] Serialize가 memory state를 고정된 header·directory·record layout으로 내린다.
     def serialize(self) -> bytes:
         raw = bytearray(self._data)
         HEADER.pack_into(raw, 0, MAGIC, len(self._slots), self._free_end)
@@ -126,6 +132,7 @@ class SlottedPage:
             SLOT.pack_into(raw, HEADER.size + index * SLOT.size, slot.offset, slot.length, int(slot.alive))
         return bytes(raw)
 
+    # [Implementation 7] 외부 bytes는 boundary와 각 live slot 범위를 모두 검증한 뒤에만 page가 된다.
     @classmethod
     def from_bytes(cls, raw: bytes) -> "SlottedPage":
         if len(raw) < HEADER.size:

@@ -246,8 +246,8 @@ session A와 B를 분리
 
 ## 연결 연습
 
-- [`PostgreSQL isolation exercise`](../../exercises/03-transactions-and-recovery/01-postgres-isolation/README.md): 재고 lost update와 당직 write skew를 실제 session 두 개로 재현하고 수정한다.
 - [`Transaction anomaly 예제`](../../examples/transaction_anomalies.py): read-modify-write가 한 변경을 잃는 최소 상태를 본다.
+- [`PostgreSQL isolation exercise`](../../exercises/03-transactions-and-recovery/01-postgres-isolation/README.md): 예제를 관찰한 뒤 재고 lost update와 당직 write skew를 실제 session 두 개로 재현하고 수정한다.
 - 다음 문서인 [`MVCC·WAL·복구`](02-mvcc-wal-and-recovery.md)는 snapshot과 durability가 내부에서 구현되는 방식을 다룬다.
 
 ## 완료 기준

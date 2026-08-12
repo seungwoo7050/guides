@@ -36,6 +36,20 @@ slot directory와 record 영역을 분리해 가변 길이 bytes가 이동해도
 1. slot ID 대신 byte offset을 RID로 노출하면 compaction이 어떤 상위 계층을 깨뜨리는가?
 2. header·slot directory·record 영역이 서로 겹치지 않음을 어떤 경계식으로 증명하는가?
 
+## 권장 구현 순서
+
+아래 번호는 `reference/slotted_page.py` project 전체의 권장 construction order다. 과거 이력이 아니며 file-local 번호가 아니다. 먼저 workspace를 통과시킨 뒤 reference의 authoritative 주석과 비교한다.
+
+| 순서 | 파일·symbol | 책임 |
+|---:|---|---|
+| 1 | binary format constants | header와 slot encoding |
+| 2 | `Slot`, `SlottedPage` | 논리 slot과 page-owned boundary |
+| 3 | `_validate_payload`, `_slot` | mutation 전 입력·수명 검증 |
+| 4 | `insert` | capacity preflight, compaction, slot reuse |
+| 5 | read/update/delete lifecycle | stable slot ID와 record rebuild |
+| 6 | `serialize` | memory state를 page layout으로 고정 |
+| 7 | `from_bytes` | untrusted page boundary 검증 |
+
 ## 검증
 
 학습자 workspace를 공용 테스트에 직접 연결한다.

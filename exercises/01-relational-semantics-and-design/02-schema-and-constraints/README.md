@@ -14,6 +14,14 @@
 
 문서: [`docs/01-relational-semantics-and-design/03-er-normalization-and-constraints.md`](../../../docs/01-relational-semantics-and-design/03-er-normalization-and-constraints.md)
 
+## 시작
+
+```bash
+./scripts/new-workspace.sh exercises/01-relational-semantics-and-design/02-schema-and-constraints
+```
+
+직접 수정할 파일은 `workspace/schema.sql`이다. 생성 직후 검사가 지정된 제약 결함에서 실패하는지 먼저 확인한다.
+
 ## 목표
 
 협업 도메인의 소속·역할·상태 규칙을 복합 키와 선언적 제약으로 데이터베이스 경계에 둔다.
@@ -28,6 +36,17 @@
 
 1. 단일 `user_id` 외래 키만으로 assignee의 프로젝트 소속을 보장할 수 없는 이유는 무엇인가?
 2. 애플리케이션 validation과 데이터베이스 제약을 함께 유지해야 하는 실패 시나리오는 무엇인가?
+
+## 권장 구현 순서
+
+아래 번호 범위는 `reference/schema.sql` 전체다. 과거 작성 순서가 아닌 권장 construction order이며, workspace가 통과한 뒤에만 같은 번호의 reference 주석과 비교한다.
+
+| 순서 | 파일·대상 | 책임 |
+|---:|---|---|
+| 1 | `schema.sql` · `users` | identity와 대소문자 무시 uniqueness |
+| 2 | `schema.sql` · `projects` | owner·이름·lifecycle 제약 |
+| 3 | `schema.sql` · `memberships` | project 안의 user role 복합 identity |
+| 4 | `schema.sql` · `tasks` | project-scoped assignee와 상태·시간 불변식 |
 
 ## 검증
 

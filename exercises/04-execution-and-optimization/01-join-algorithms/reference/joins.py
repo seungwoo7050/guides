@@ -7,6 +7,7 @@ Row = dict[str, Any]
 Joined = tuple[Row, Row]
 
 
+# [Implementation 1] Nested loop가 NULL 불일치와 중복 row 조합을 보존하는 bag semantic oracle이다.
 def nested_loop_join(left: list[Row], right: list[Row], left_key: str, right_key: str) -> list[Joined]:
     result: list[Joined] = []
     for left_row in left:
@@ -20,6 +21,7 @@ def nested_loop_join(left: list[Row], right: list[Row], left_key: str, right_key
     return result
 
 
+# [Implementation 2] Hash join은 작은 입력을 build하되 외부 결과 tuple의 left/right 방향을 유지한다.
 def hash_join(left: list[Row], right: list[Row], left_key: str, right_key: str) -> list[Joined]:
     # 더 작은 쪽을 build하면 hash table 메모리를 줄일 수 있다. 결과 tuple은 항상 (left, right)다.
     if len(left) <= len(right):
@@ -48,6 +50,7 @@ def hash_join(left: list[Row], right: list[Row], left_key: str, right_key: str) 
     ]
 
 
+# [Implementation 3] Merge join은 두 입력을 정렬한 뒤 같은 key의 양쪽 run 전체를 곱으로 결합한다.
 def merge_join(left: list[Row], right: list[Row], left_key: str, right_key: str) -> list[Joined]:
     left_rows = sorted((row for row in left if row.get(left_key) is not None), key=lambda row: row[left_key])
     right_rows = sorted((row for row in right if row.get(right_key) is not None), key=lambda row: row[right_key])

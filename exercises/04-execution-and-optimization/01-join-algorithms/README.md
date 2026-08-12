@@ -35,6 +35,16 @@ PYTHONPATH=exercises/04-execution-and-optimization/01-join-algorithms/workspace 
 1. 출력 list 순서가 아닌 bag으로 알고리즘 동등성을 비교해야 하는 이유는 무엇인가?
 2. 심한 key skew가 hash join의 메모리와 실행 시간에 어떤 영향을 주는가?
 
+## 권장 구현 순서
+
+아래 번호 범위는 `reference/joins.py` 전체다. 과거 작성 순서가 아닌 권장 construction order이며, workspace의 세 알고리즘이 통과한 뒤 reference 주석과 비교한다.
+
+| 순서 | 파일·symbol | 책임 |
+|---:|---|---|
+| 1 | `nested_loop_join` | NULL·중복 bag semantic oracle |
+| 2 | `hash_join` | 작은 build side와 tuple 방향 보존 |
+| 3 | `merge_join` | 정렬과 equal-key run 전체 결합 |
+
 ## 검증
 
 ```bash

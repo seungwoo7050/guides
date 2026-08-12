@@ -13,6 +13,14 @@
 
 문서: [`docs/04-execution-and-optimization/03-schema-index-and-tuning-loop.md`](../../../docs/04-execution-and-optimization/03-schema-index-and-tuning-loop.md)
 
+## 시작
+
+```bash
+./scripts/new-workspace.sh exercises/04-execution-and-optimization/03-safe-migration-and-backfill
+```
+
+직접 수정할 파일은 `workspace/migration.sql`이다. 최초 실패와 두 번 적용 결과를 같은 workspace 검증으로 확인한다.
+
 ## 검증 계약
 
 reference의 migration은 중단 뒤 다시 적용해도 같은 최종 상태를 만들며, 루트 검증은 이를 두 번 실행해 확인한다.
@@ -31,6 +39,18 @@ reference의 migration은 중단 뒤 다시 적용해도 같은 최종 상태를
 
 1. 기본값 있는 `NOT NULL` column을 한 단계로 추가하지 않는 이유를 lock과 배포 호환성 관점에서 설명할 수 있는가?
 2. `NOT VALID` 제약을 먼저 추가하고 나중에 validate하는 방식의 운영상 이점은 무엇인가?
+
+## 권장 구현 순서
+
+아래 번호는 `reference/migration.sql` 전체의 권장 construction order다. 과거 이력이 아니며, workspace를 두 번 적용해 통과한 뒤 reference의 단계 주석과 비교한다.
+
+| 순서 | 파일·단계 | 책임 |
+|---:|---|---|
+| 1 | expand | nullable column을 재실행 가능하게 추가 |
+| 2 | backfill | legacy state를 새 값으로 정규화 |
+| 3 | constraint creation | NOT VALID write boundary |
+| 4 | validate·contract | 기존 row 검증 뒤 NOT NULL 전환 |
+| 5 | access path | 최종 상태 조회 index |
 
 ## 검증
 

@@ -36,6 +36,18 @@ LSN, durable boundary, page LSN과 transaction 상태를 사용해 redo/undo의 
 1. redo가 `record.lsn > page_lsn`인 record만 적용해야 멱등성이 생기는 이유는 무엇인가?
 2. 같은 page의 미완료 update를 로그 정순이 아니라 역순으로 undo해야 하는 이유는 무엇인가?
 
+## 권장 구현 순서
+
+아래 번호는 `reference/recovery.py` project 전체에서 공유한다. Git 이력이 아니라 권장 construction order이며, workspace 통과 후 source의 같은 번호 주석을 따라 설계 차이를 비교한다.
+
+| 순서 | 파일·symbol | 책임 |
+|---:|---|---|
+| 1 | `Page`, `LogRecord` | data state와 history position |
+| 2 | `LogManager` | monotonic LSN과 durable boundary |
+| 3 | `Disk` | WAL-before-data write invariant |
+| 4 | `RecoveryManager.recover` redo | commit 분류와 page-LSN redo |
+| 5 | `RecoveryManager.recover` undo | loser의 reverse-order 복원 |
+
 ## 검증
 
 ```bash

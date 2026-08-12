@@ -42,6 +42,29 @@ append-only heap, buffer pool, ordered index와 truncate하지 않은 WAL을 연
 1. 이 축소 구현이 WAL 전체로 heap을 재구성하기 때문에 log truncation을 지원하지 못하는 이유는 무엇인가?
 2. recovery 뒤 index를 WAL로 직접 복구하지 않고 heap에서 rebuild했을 때 얻는 단순성과 비용은 무엇인가?
 
+## 권장 구현 순서
+
+아래 번호는 `reference/mini_storage.py` 전체에서 공유한다. Stage나 Git 이력이 아니라 실제 dependency를 따른 권장 construction order이며, 한 파일 안에서도 page→log→buffer→index→engine을 오간다. Workspace 통과 뒤 source의 같은 번호 주석과 비교한다.
+
+| 순서 | 파일·symbol | 책임 |
+|---:|---|---|
+| 1 | binary format constants | page·slot·record layout |
+| 2 | `SlottedPage` | page/RID state owner |
+| 2-1 | page insert | record encoding과 capacity |
+| 2-2 | page serialization | round-trip과 corrupt boundary |
+| 3 | `DiskManager` | durable page allocation/I/O |
+| 4 | `LogRecord`, `LogManager` | WAL namespace와 durability |
+| 5 | `Frame`, `BufferPool` | residency state owner |
+| 5-1 | buffer fetch/victim | pin과 Clock replacement |
+| 5-2 | buffer flush | WAL-gated page durability |
+| 6 | `OrderedLeafIndex` | ordered leaf array와 RID range |
+| 7 | `MiniStorageEngine` | component composition |
+| 7-1 | `_rebuild_index` | heap-based volatile index rebuild |
+| 7-2 | `_choose_page` | fetch/unpin page selection |
+| 8 | `insert` | WAL→page→commit→index publication |
+| 9 | read/checkpoint boundary | point·range와 flush lifecycle |
+| 10 | `recover` | committed replay, loser 제거, txid 재개 |
+
 ## 검증
 
 ```bash

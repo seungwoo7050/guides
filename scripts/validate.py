@@ -15,6 +15,19 @@ LAYOUT_MANIFEST = ROOT / "scripts/layout-manifest.txt"
 EXERCISE_MANIFEST = ROOT / "scripts/exercises.txt"
 LINK_RE = re.compile(r"(?<!!)\[[^\]]*\]\(([^)]+)\)")
 FENCE_RE = re.compile(r"^```")
+IMPLEMENTATION_PREFIX = "[" + "Implementation "
+IMPLEMENTATION_TOKEN_RE = re.compile(
+    re.escape(IMPLEMENTATION_PREFIX) + r"(0|[1-9]\d*)(?:-([1-9]\d*))?\]"
+)
+ROOT_MAPPING_COLUMNS = (
+    "순서",
+    "문서",
+    "관찰 예제",
+    "직접 수행",
+    "수정 위치",
+    "검증",
+    "완료 뒤 비교·다음",
+)
 GENERATED_ROOTS = {".git", ".guide", ".verify"}
 GENERATED_PARTS = {"__pycache__", ".pytest_cache"}
 DOCS = [
@@ -121,6 +134,181 @@ def exercises(errors: list[str]) -> list[str]:
 def section(text: str, heading: str) -> str:
     match = re.search(rf"(?ms)^{re.escape(heading)}\s*$\n(.*?)(?=^##\s|\Z)", text)
     return match.group(1).strip() if match else ""
+
+
+def markdown_table_rows(text: str) -> list[list[str]]:
+    rows: list[list[str]] = []
+    for line in text.splitlines():
+        if not line.startswith("|"):
+            continue
+        cells = [cell.strip() for cell in line.strip().strip("|").split("|")]
+        if cells and all(re.fullmatch(r":?-{3,}:?", cell) for cell in cells):
+            continue
+        rows.append(cells)
+    return rows
+
+
+def check_root_learning_mapping(errors: list[str], exercise_paths: list[str]) -> None:
+    path = ROOT / "README.md"
+    if not path.is_file():
+        return
+    mapping = section(path.read_text(encoding="utf-8"), "## 학습 순서")
+    if not mapping:
+        fail(errors, "root 학습 순서 mapping section 누락")
+        return
+
+    rows = markdown_table_rows(mapping)
+    if list(ROOT_MAPPING_COLUMNS) not in rows:
+        fail(errors, "root 학습 순서 semantic column 누락")
+
+    for relative in DOCS:
+        if relative not in mapping:
+            fail(errors, f"root 학습 mapping 문서 누락: {relative}")
+
+    example_paths = sorted((ROOT / "examples").glob("*.py"))
+    for example in example_paths:
+        relative = example.relative_to(ROOT).as_posix()
+        if relative not in mapping:
+            fail(errors, f"root 학습 mapping 예제 누락: {relative}")
+
+    raw_rows = [line for line in mapping.splitlines() if line.startswith("|")]
+    for relative in exercise_paths:
+        required = (
+            f"{relative}/README.md",
+            f"{relative}/workspace",
+            f"./scripts/check-workspace.sh {relative}",
+            f"{relative}/reference",
+        )
+        if not any(all(token in row for token in required) for row in raw_rows):
+            fail(errors, f"root 학습 mapping exercise 계약 누락: {relative}")
+
+    if "가이드 종료" not in mapping:
+        fail(errors, "root 학습 mapping 종료 상태 누락")
+
+
+def implementation_label(major: int, minor: int | None) -> str:
+    return str(major) if minor is None else f"{major}-{minor}"
+
+
+def implementation_index_labels(text: str) -> list[str]:
+    labels: list[str] = []
+    for cells in markdown_table_rows(text):
+        if not cells:
+            continue
+        value = cells[0]
+        if re.fullmatch(r"(?:0|[1-9]\d*)(?:-[1-9]\d*)?", value):
+            labels.append(value)
+            continue
+        match = IMPLEMENTATION_TOKEN_RE.fullmatch(value)
+        if match is not None:
+            labels.append(implementation_label(int(match.group(1)), int(match.group(2)) if match.group(2) else None))
+    return labels
+
+
+def example_index_section(text: str, filename: str) -> str:
+    heading = f"### `{filename}`"
+    match = re.search(rf"(?ms)^{re.escape(heading)}\s*$\n(.*?)(?=^###\s|\Z)", text)
+    return match.group(1).strip() if match else ""
+
+
+def check_implementation_annotations(errors: list[str], exercise_paths: list[str]) -> None:
+    scope_files: dict[str, set[str]] = {}
+    scope_owners: dict[str, tuple[str, str]] = {}
+    file_scopes: dict[str, str] = {}
+
+    examples_readme = "examples/README.md"
+    for path in sorted((ROOT / "examples").glob("*.py")):
+        relative = path.relative_to(ROOT).as_posix()
+        scope = f"example:{relative}"
+        scope_files[scope] = {relative}
+        scope_owners[scope] = (examples_readme, path.name)
+        file_scopes[relative] = scope
+
+    commentable_reference_suffixes = {".py", ".sql", ".sh"}
+    for relative in exercise_paths:
+        scope = f"exercise:{relative}"
+        readme = f"{relative}/README.md"
+        allowed = {readme}
+        reference = ROOT / relative / "reference"
+        for path in reference.rglob("*"):
+            if path.is_file() and path.suffix in commentable_reference_suffixes:
+                allowed.add(path.relative_to(ROOT).as_posix())
+        scope_files[scope] = allowed
+        scope_owners[scope] = (readme, "## 권장 구현 순서")
+        for allowed_path in allowed:
+            file_scopes[allowed_path] = scope
+
+    markers: dict[str, list[tuple[int, int | None, str]]] = {
+        scope: [] for scope in scope_files
+    }
+    for path in ROOT.rglob("*"):
+        relative_path = path.relative_to(ROOT)
+        if should_ignore(relative_path) or not path.is_file():
+            continue
+        try:
+            text = path.read_text(encoding="utf-8")
+        except UnicodeDecodeError:
+            continue
+        if IMPLEMENTATION_PREFIX not in text:
+            continue
+        relative = relative_path.as_posix()
+        matches = list(IMPLEMENTATION_TOKEN_RE.finditer(text))
+        if text.count(IMPLEMENTATION_PREFIX) != len(matches):
+            fail(errors, f"Implementation marker 형식 오류: {relative}")
+        scope = file_scopes.get(relative)
+        if scope is None:
+            fail(errors, f"Implementation marker 금지 위치: {relative}")
+            continue
+        for match in matches:
+            markers[scope].append(
+                (
+                    int(match.group(1)),
+                    int(match.group(2)) if match.group(2) else None,
+                    relative,
+                )
+            )
+
+    for scope, values in markers.items():
+        pairs = [(major, minor) for major, minor, _ in values]
+        if len(pairs) != len(set(pairs)):
+            fail(errors, f"Implementation marker 중복: {scope}")
+        zero_count = sum(major == 0 for major, _ in pairs)
+        if zero_count > 1:
+            fail(errors, f"Implementation 0 중복: {scope}")
+
+        top_levels = sorted(major for major, minor in pairs if major > 0 and minor is None)
+        if not top_levels:
+            fail(errors, f"Implementation top-level anchor 누락: {scope}")
+            continue
+        expected_top_levels = list(range(1, max(top_levels) + 1))
+        if top_levels != expected_top_levels:
+            fail(errors, f"Implementation top-level 번호 연속성 오류: {scope}")
+
+        for parent in sorted({major for major, minor in pairs if minor is not None}):
+            if parent not in top_levels:
+                fail(errors, f"Implementation substep parent 누락 ({parent}): {scope}")
+            children = sorted(minor for major, minor in pairs if major == parent and minor is not None)
+            if children != list(range(1, max(children) + 1)):
+                fail(errors, f"Implementation substep 번호 연속성 오류 ({parent}): {scope}")
+
+        ordered_pairs = sorted(
+            set(pairs),
+            key=lambda item: (item[0], item[1] is not None, item[1] or 0),
+        )
+        expected_labels = [implementation_label(major, minor) for major, minor in ordered_pairs]
+        owner_relative, owner_section = scope_owners[scope]
+        owner_path = ROOT / owner_relative
+        if not owner_path.is_file():
+            fail(errors, f"Implementation index owner 누락: {owner_relative}")
+            continue
+        owner_text = owner_path.read_text(encoding="utf-8")
+        if scope.startswith("example:"):
+            index_text = example_index_section(owner_text, owner_section)
+        else:
+            index_text = section(owner_text, owner_section)
+        actual_labels = implementation_index_labels(index_text)
+        if actual_labels != expected_labels:
+            fail(errors, f"Implementation README index 불일치: {scope}")
 
 
 def check_required_and_pedagogy(errors: list[str], exercise_paths: list[str]) -> None:
@@ -431,8 +619,10 @@ def main() -> int:
     check_exact_tree(errors)
     exercise_paths = exercises(errors)
     check_required_and_pedagogy(errors, exercise_paths)
+    check_root_learning_mapping(errors, exercise_paths)
     check_links(errors)
     check_reference_and_tests(errors, exercise_paths)
+    check_implementation_annotations(errors, exercise_paths)
     check_files_and_modes(errors)
     check_version_contract(errors)
     check_public_and_capstone_contract(errors)
@@ -443,7 +633,7 @@ def main() -> int:
         return 1
     print(f"[PASS] exact tree: {len(load_lines(LAYOUT_MANIFEST))} files")
     print(f"[PASS] pedagogy: {len(DOCS)} docs, {len(exercise_paths)} tailored exercises")
-    print("[PASS] links, anchors, modes, reference quality, PostgreSQL 18.4 pin")
+    print("[PASS] learning mapping, Implementation scopes, links, modes, reference quality, PostgreSQL 18.4 pin")
     return 0
 
 

@@ -1,3 +1,4 @@
+-- [Implementation 1] Organization principal과 대소문자 무시 user identity를 tenant model의 기반으로 둔다.
 CREATE TABLE organizations (
     id bigint PRIMARY KEY,
     name text NOT NULL UNIQUE
@@ -9,6 +10,7 @@ CREATE TABLE users (
 );
 CREATE UNIQUE INDEX users_email_ci_uq ON users(lower(email));
 
+-- [Implementation 2] Membership과 project의 복합 key가 tenant 안의 소속·소유권 경계를 만든다.
 CREATE TABLE memberships (
     org_id bigint NOT NULL REFERENCES organizations(id) ON DELETE CASCADE,
     user_id bigint NOT NULL REFERENCES users(id) ON DELETE CASCADE,
@@ -24,6 +26,7 @@ CREATE TABLE projects (
     UNIQUE (org_id, name)
 );
 
+-- [Implementation 3] Ticket lifecycle과 project·reporter·assignee 참조를 같은 tenant 복합 FK로 제한한다.
 CREATE TABLE tickets (
     id bigint PRIMARY KEY,
     project_id bigint NOT NULL,

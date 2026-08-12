@@ -10,10 +10,12 @@ Row = dict[str, Any]
 Relation = list[Row]
 
 
+# [Implementation 1] 선택은 입력 row를 그대로 노출하지 않고 복사해 관찰 결과의 소유권을 분리한다.
 def select(rows: Iterable[Row], predicate: Callable[[Row], bool]) -> Relation:
     return [dict(row) for row in rows if predicate(row)]
 
 
+# [Implementation 2] 사영이 열 순서와 distinct key를 함께 소유해야 중복 제거 기준이 흔들리지 않는다.
 def project(rows: Iterable[Row], *columns: str, distinct: bool = True) -> Relation:
     result: Relation = []
     seen: set[tuple[Any, ...]] = set()
@@ -26,6 +28,7 @@ def project(rows: Iterable[Row], *columns: str, distinct: bool = True) -> Relati
     return result
 
 
+# [Implementation 3] 오른쪽 lookup을 만든 뒤 양쪽 열을 namespace로 분리해 이름 충돌을 피한다.
 def inner_join(left: Iterable[Row], right: Iterable[Row], left_key: str, right_key: str) -> Relation:
     index: dict[Any, list[Row]] = {}
     for row in right:
@@ -39,6 +42,7 @@ def inner_join(left: Iterable[Row], right: Iterable[Row], left_key: str, right_k
     return result
 
 
+# [Implementation 4] 마지막에 작은 relation을 연결해 선택→조인→사영의 결과 계약을 관찰한다.
 users = [
     {"id": 1, "email": "a@example.test"},
     {"id": 2, "email": "b@example.test"},

@@ -7,6 +7,7 @@ class BufferPoolFull(RuntimeError):
     pass
 
 
+# [Implementation 1] DiskManager가 durable page bytes와 물리 I/O 관찰 counter를 소유한다.
 class DiskManager:
     def __init__(self, page_size: int = 64) -> None:
         if page_size <= 0:
@@ -40,6 +41,7 @@ class DiskManager:
         self.pages[page_id] = bytes(data)
 
 
+# [Implementation 2] Frame 상태와 BufferPool의 page table·Clock hand가 residency의 단일 source of truth다.
 @dataclass
 class Frame:
     page_id: int | None = None
@@ -58,6 +60,7 @@ class BufferPool:
         self.page_table: dict[int, int] = {}
         self.hand = 0
 
+    # [Implementation 3] Fetch는 hit의 pin을 늘리거나 dirty victim을 먼저 기록한 뒤 mapping을 교체한다.
     def fetch(self, page_id: int) -> bytearray:
         resident = self.page_table.get(page_id)
         if resident is not None:
@@ -81,6 +84,7 @@ class BufferPool:
         self.page_table[page_id] = frame_index
         return frame.data
 
+    # [Implementation 4] 빈 frame을 우선하고 Clock 순회에서는 pin을 제외한 referenced frame에 한 번 양보한다.
     def _choose_victim(self) -> int:
         for index, frame in enumerate(self.frames):
             if frame.page_id is None:
@@ -102,6 +106,7 @@ class BufferPool:
             return index
         raise BufferPoolFull("all frames are pinned or recently referenced")
 
+    # [Implementation 5] Unpin만 pin ownership을 반환하며 dirty 상태는 한번 켜지면 flush까지 유지된다.
     def unpin(self, page_id: int, *, dirty: bool = False) -> None:
         try:
             frame = self.frames[self.page_table[page_id]]
@@ -112,6 +117,7 @@ class BufferPool:
         frame.pin_count -= 1
         frame.dirty = frame.dirty or dirty
 
+    # [Implementation 6] Flush가 dirty bytes를 disk boundary로 내리고 성공 뒤에만 flag를 지운다.
     def flush(self, page_id: int) -> None:
         try:
             frame = self.frames[self.page_table[page_id]]

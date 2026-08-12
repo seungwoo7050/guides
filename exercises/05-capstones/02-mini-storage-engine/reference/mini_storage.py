@@ -5,6 +5,7 @@ from bisect import bisect_left
 from dataclasses import dataclass, field, replace
 from typing import Literal
 
+# [Implementation 1] Page header, slot과 record binary format을 먼저 고정해 모든 저장 경계가 같은 layout을 쓴다.
 PAGE_HEADER = struct.Struct("!4sQHH")
 PAGE_SLOT = struct.Struct("!HH")
 RECORD_HEADER = struct.Struct("!qI")
@@ -23,6 +24,7 @@ class PageFull(RuntimeError):
     pass
 
 
+# [Implementation 2] SlottedPage가 page ID, page LSN, bytes와 RID slot state를 함께 소유한다.
 class SlottedPage:
     def __init__(self, page_id: int, size: int) -> None:
         self.page_id = page_id
@@ -36,6 +38,7 @@ class SlottedPage:
     def free_space(self) -> int:
         return self._free_end - (PAGE_HEADER.size + len(self._slots) * PAGE_SLOT.size)
 
+    # [Implementation 2-1] Record를 key·length·value로 encoding하고 capacity를 확인한 뒤 slot을 publish한다.
     def insert(self, key: int, value: bytes) -> int:
         if not isinstance(key, int):
             raise TypeError("key must be int")
@@ -71,6 +74,7 @@ class SlottedPage:
     def records(self) -> list[tuple[int, int, bytes]]:
         return [(slot_id, *self.read(slot_id)) for slot_id in range(len(self._slots))]
 
+    # [Implementation 2-2] Serialize/from_bytes가 memory state와 untrusted page bytes 사이의 round-trip 경계다.
     def serialize(self) -> bytes:
         raw = bytearray(self._data)
         PAGE_HEADER.pack_into(raw, 0, PAGE_MAGIC, self.page_lsn, len(self._slots), self._free_end)
@@ -97,6 +101,7 @@ class SlottedPage:
         return page
 
 
+# [Implementation 3] DiskManager가 durable page bytes, allocation namespace와 write event를 소유한다.
 class DiskManager:
     def __init__(self, page_size: int = 256) -> None:
         if page_size < 96:
@@ -130,6 +135,7 @@ class DiskManager:
         return sorted(self.pages)
 
 
+# [Implementation 4] LogRecord와 LogManager가 append-only LSN namespace와 durable boundary를 소유한다.
 @dataclass(frozen=True)
 class LogRecord:
     lsn: int
@@ -170,6 +176,7 @@ class LogManager:
         return [record for record in self.records if record.lsn <= self.flushed_lsn]
 
 
+# [Implementation 5] Frame state와 BufferPool page table·Clock hand가 resident page ownership을 표현한다.
 @dataclass
 class Frame:
     page: SlottedPage | None = None
@@ -188,6 +195,7 @@ class BufferPool:
         self.page_table: dict[int, int] = {}
         self.hand = 0
 
+    # [Implementation 5-1] Fetch는 hit를 pin하거나 Clock victim을 flush한 뒤 mapping을 원자적으로 교체한다.
     def fetch(self, page_id: int) -> SlottedPage:
         if page_id in self.page_table:
             frame = self.frames[self.page_table[page_id]]
@@ -231,6 +239,7 @@ class BufferPool:
         frame.pin_count -= 1
         frame.dirty = frame.dirty or dirty
 
+    # [Implementation 5-2] Dirty frame은 page LSN까지 WAL이 durable한 경우에만 disk로 내려간다.
     def _flush_frame(self, frame: Frame) -> None:
         if frame.page is None or not frame.dirty:
             return
@@ -247,6 +256,7 @@ class BufferPool:
             self._flush_frame(frame)
 
 
+# [Implementation 6] OrderedLeafIndex는 B+ tree를 과장하지 않고 정렬 leaf 배열과 RID range만 소유한다.
 class OrderedLeafIndex:
     """정렬된 leaf 배열의 split과 range scan만 제공하는 축소 index."""
 
@@ -284,6 +294,7 @@ class OrderedLeafIndex:
         return [item for leaf in self.leaves for item in leaf if start <= item[0] <= end]
 
 
+# [Implementation 7] Engine이 disk, WAL, buffer와 index를 조립하고 transaction ID namespace를 소유한다.
 class MiniStorageEngine:
     def __init__(
         self,
@@ -301,6 +312,7 @@ class MiniStorageEngine:
             self.disk.allocate()
         self._rebuild_index()
 
+    # [Implementation 7-1] Heap page가 durable truth이고 volatile index는 live record를 순회해 다시 만든다.
     def _rebuild_index(self) -> None:
         self.index = OrderedLeafIndex()
         for page_id in self.disk.page_ids:
@@ -308,6 +320,7 @@ class MiniStorageEngine:
             for slot_id, key, _ in page.records():
                 self.index.insert(key, (page_id, slot_id))
 
+    # [Implementation 7-2] Page 선택은 fetch/unpin ownership을 닫은 뒤 기존 page 또는 새 allocation을 반환한다.
     def _choose_page(self, value: bytes) -> int:
         needed = RECORD_HEADER.size + len(value) + PAGE_SLOT.size
         for page_id in self.disk.page_ids:
@@ -318,6 +331,7 @@ class MiniStorageEngine:
                 return page_id
         return self.disk.allocate()
 
+    # [Implementation 8] Auto-commit insert는 WAL→page/LSN→COMMIT flush→index publish 순서를 지킨다.
     def insert(self, key: int, value: bytes) -> None:
         try:
             self.index.get(key)
@@ -340,6 +354,7 @@ class MiniStorageEngine:
         self.log.flush(commit_lsn)
         self.index.insert(key, (page_id, slot_id))
 
+    # [Implementation 9] Point/range read와 checkpoint는 index RID의 pin 수명과 flush 경계를 닫는다.
     def get(self, key: int) -> bytes:
         page_id, slot_id = self.index.get(key)
         page = self.buffer.fetch(page_id)
@@ -357,6 +372,7 @@ class MiniStorageEngine:
     def checkpoint(self) -> None:
         self.buffer.flush_all()
 
+    # [Implementation 10] Recovery는 durable commit만 replay하고 txid를 재개한 뒤 heap flush와 index rebuild로 끝낸다.
     @classmethod
     def recover(
         cls,

@@ -89,20 +89,22 @@ schema·index·migration 튜닝 루프
 
 ## 문서와 연습 대응표
 
-| 구획 | 문서 | 연습 |
-|---|---|---|
-| 관계 의미 | 관계 모델·SQL 의미 | [`SQL 의미`](../exercises/01-relational-semantics-and-design/01-sql-semantics/README.md) |
-| 스키마 설계 | ER·정규화·제약 | [`스키마와 제약`](../exercises/01-relational-semantics-and-design/02-schema-and-constraints/README.md) |
-| 페이지 | 페이지·레코드 | [`Slotted page`](../exercises/02-storage-and-indexes/01-slotted-page/README.md) |
-| 인덱스 | B+ tree·hash·BRIN | [`B+ tree`](../exercises/02-storage-and-indexes/02-bplus-tree/README.md) |
-| 메모리 | Buffer pool·Clock | [`Buffer pool`](../exercises/02-storage-and-indexes/03-buffer-pool-clock/README.md) |
-| 동시성 | 격리·lock | [`PostgreSQL isolation`](../exercises/03-transactions-and-recovery/01-postgres-isolation/README.md) |
-| 복구 | MVCC·WAL | [`WAL recovery`](../exercises/03-transactions-and-recovery/02-wal-recovery/README.md) |
-| 실행기 | Join·sort | [`Join algorithms`](../exercises/04-execution-and-optimization/01-join-algorithms/README.md) |
-| 최적화 | EXPLAIN·index | [`Query plans`](../exercises/04-execution-and-optimization/02-query-plans-and-indexes/README.md) |
-| 변경 | Migration·backfill | [`Safe migration`](../exercises/04-execution-and-optimization/03-safe-migration-and-backfill/README.md) |
-| Capstone A | Application review | [`Ticketing DB`](../exercises/05-capstones/01-application-database-review/README.md) |
-| Capstone B | Mini storage engine | [`Mini storage`](../exercises/05-capstones/02-mini-storage-engine/README.md) |
+각 행은 문서 → 좁은 관찰 예제 → learner workspace → 검증 → 완료 뒤 reference 비교 순서다. 같은 자료를 두 경로에서 다시 만날 수 있지만, 이미 통과한 exercise는 결과와 설계 설명만 회귀 확인한다.
+
+| 구획 | 문서 | 관찰 예제 | 직접 수행 | 수정 위치 | 검증 | 완료 뒤 비교 |
+|---|---|---|---|---|---|---|
+| 관계 의미 | 관계 모델·SQL 의미 | [`relational_algebra.py`](../examples/relational_algebra.py) | [`SQL 의미`](../exercises/01-relational-semantics-and-design/01-sql-semantics/README.md) | `workspace/answers.sql` | `./scripts/check-workspace.sh exercises/01-relational-semantics-and-design/01-sql-semantics` | `reference/answers.sql` |
+| 스키마 설계 | ER·정규화·제약 | — | [`스키마와 제약`](../exercises/01-relational-semantics-and-design/02-schema-and-constraints/README.md) | `workspace/schema.sql` | `./scripts/check-workspace.sh exercises/01-relational-semantics-and-design/02-schema-and-constraints` | `reference/schema.sql` |
+| 페이지 | 페이지·레코드 | [`slotted_page.py`](../examples/slotted_page.py) | [`Slotted page`](../exercises/02-storage-and-indexes/01-slotted-page/README.md) | `workspace/slotted_page.py` | `./scripts/check-workspace.sh exercises/02-storage-and-indexes/01-slotted-page` | `reference/slotted_page.py` |
+| 인덱스 | B+ tree·hash·BRIN | [`index_cost_simulator.py`](../examples/index_cost_simulator.py) | [`B+ tree`](../exercises/02-storage-and-indexes/02-bplus-tree/README.md) | `workspace/bplus_tree.py` | `./scripts/check-workspace.sh exercises/02-storage-and-indexes/02-bplus-tree` | `reference/bplus_tree.py` |
+| 메모리 | Buffer pool·Clock | [`buffer_pool.py`](../examples/buffer_pool.py) | [`Buffer pool`](../exercises/02-storage-and-indexes/03-buffer-pool-clock/README.md) | `workspace/buffer_pool.py` | `./scripts/check-workspace.sh exercises/02-storage-and-indexes/03-buffer-pool-clock` | `reference/buffer_pool.py` |
+| 동시성 | 격리·lock | [`transaction_anomalies.py`](../examples/transaction_anomalies.py) | [`PostgreSQL isolation`](../exercises/03-transactions-and-recovery/01-postgres-isolation/README.md) | `workspace/functions.sql` | `./scripts/check-workspace.sh exercises/03-transactions-and-recovery/01-postgres-isolation` | `reference/functions.sql` |
+| 복구 | MVCC·WAL | [`wal_recovery.py`](../examples/wal_recovery.py) | [`WAL recovery`](../exercises/03-transactions-and-recovery/02-wal-recovery/README.md) | `workspace/recovery.py` | `./scripts/check-workspace.sh exercises/03-transactions-and-recovery/02-wal-recovery` | `reference/recovery.py` |
+| 실행기 | Join·sort | [`join_algorithms.py`](../examples/join_algorithms.py) | [`Join algorithms`](../exercises/04-execution-and-optimization/01-join-algorithms/README.md) | `workspace/joins.py` | `./scripts/check-workspace.sh exercises/04-execution-and-optimization/01-join-algorithms` | `reference/joins.py` |
+| 최적화 | EXPLAIN·index | [`index_cost_simulator.py`](../examples/index_cost_simulator.py) | [`Query plans`](../exercises/04-execution-and-optimization/02-query-plans-and-indexes/README.md) | `workspace/indexes.sql` | `./scripts/check-workspace.sh exercises/04-execution-and-optimization/02-query-plans-and-indexes` | `reference/indexes.sql` |
+| 변경 | Migration·backfill | — | [`Safe migration`](../exercises/04-execution-and-optimization/03-safe-migration-and-backfill/README.md) | `workspace/migration.sql` | `./scripts/check-workspace.sh exercises/04-execution-and-optimization/03-safe-migration-and-backfill` | `reference/migration.sql` |
+| Capstone A | Application review | — | [`Ticketing DB`](../exercises/05-capstones/01-application-database-review/README.md) | `workspace/`의 SQL 4개와 검토 문서 | `./scripts/check-workspace.sh exercises/05-capstones/01-application-database-review` | `reference/` 전체 |
+| Capstone B | Mini storage engine | — | [`Mini storage`](../exercises/05-capstones/02-mini-storage-engine/README.md) | `workspace/mini_storage.py` | `./scripts/check-workspace.sh exercises/05-capstones/02-mini-storage-engine` | `reference/mini_storage.py` |
 
 ## 실행 계약
 

@@ -223,8 +223,8 @@ slot 안정성이 깨지면 index가 잘못된 record를 가리킨다. buffer po
 
 ## 연결 연습
 
-- [`Slotted page 구현`](../../exercises/02-storage-and-indexes/01-slotted-page/README.md): insert·delete·update·compaction·serialization을 구현한다.
 - [`Slotted page 예제`](../../examples/slotted_page.py): slot ID가 delete 뒤에도 유지되는 최소 예제를 실행한다.
+- [`Slotted page 구현`](../../exercises/02-storage-and-indexes/01-slotted-page/README.md): 예제를 관찰한 뒤 insert·delete·update·compaction·serialization을 구현한다.
 - 다음 문서인 [`인덱스 구조`](02-index-structures.md)는 key가 RID로 연결되는 구조를 다룬다.
 
 ## 완료 기준

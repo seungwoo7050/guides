@@ -243,9 +243,9 @@ BACKUP/REPLICA: 더 많은 bytes
 
 ## 연결 연습
 
-- [`B+ tree 구현`](../../exercises/02-storage-and-indexes/02-bplus-tree/README.md): leaf/internal split, separator와 range scan을 구현한다.
-- [`실행 계획과 인덱스`](../../exercises/04-execution-and-optimization/02-query-plans-and-indexes/README.md): composite·partial index가 실제 PostgreSQL plan에 나타나는지 확인한다.
 - [`Index 비용 예제`](../../examples/index_cost_simulator.py): 선택도에 따라 index scan과 sequential scan의 상대 비용이 바뀌는 축소 모델이다.
+- [`B+ tree 구현`](../../exercises/02-storage-and-indexes/02-bplus-tree/README.md): 비용 예제를 관찰한 뒤 leaf/internal split, separator와 range scan을 구현한다.
+- [`실행 계획과 인덱스`](../../exercises/04-execution-and-optimization/02-query-plans-and-indexes/README.md): 내부구조 경로의 후반에 composite·partial index가 실제 PostgreSQL plan에 나타나는지 확인한다.
 
 ## 완료 기준
 

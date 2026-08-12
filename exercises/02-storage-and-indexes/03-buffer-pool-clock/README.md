@@ -36,6 +36,19 @@ page table, pin count, dirty bit와 Clock hand를 하나의 frame 수명 계약�
 1. referenced bit를 지우는 첫 순회와 실제 축출 순회를 분리해야 하는 이유는 무엇인가?
 2. page table entry를 disk write보다 먼저 지우면 실패 시 어떤 상태를 잃는가?
 
+## 권장 구현 순서
+
+아래 번호는 `reference/buffer_pool.py` 전체에서 공유하는 권장 construction order다. 과거 작성 이력이 아니며, workspace가 통과하기 전에는 reference를 열지 않는다.
+
+| 순서 | 파일·symbol | 책임 |
+|---:|---|---|
+| 1 | `DiskManager` | durable page와 I/O 관찰 소유 |
+| 2 | `Frame`, `BufferPool` state | residency, page table과 Clock hand |
+| 3 | `fetch` | hit pin 또는 dirty-before-remap miss |
+| 4 | `_choose_victim` | free frame과 Clock second chance |
+| 5 | `unpin` | pin 반환과 sticky dirty state |
+| 6 | `flush`, `flush_all` | disk durability boundary |
+
 ## 검증
 
 ```bash

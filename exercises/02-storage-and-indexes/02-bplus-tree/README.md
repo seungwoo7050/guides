@@ -36,6 +36,20 @@ leaf와 internal node의 서로 다른 split 규칙을 보존하면서 point loo
 1. internal separator를 왼쪽 최대가 아닌 오른쪽 subtree 최소로 정의했을 때 탐색 비교는 어떻게 달라지는가?
 2. range scan이 root를 매번 다시 탐색하지 않도록 leaf 연결이 제공하는 이점은 무엇인가?
 
+## 권장 구현 순서
+
+아래 번호 범위는 `reference/bplus_tree.py` 전체다. Git 이력이 아니라 권장 construction order이며, workspace 검증 후 reference의 같은 번호 주석을 읽는다.
+
+| 순서 | 파일·symbol | 책임 |
+|---:|---|---|
+| 1 | `Node`, tree initialization | leaf/internal shape와 root |
+| 2 | `_find_leaf` | separator descent와 parent path |
+| 3 | `insert` | ordered insert와 기존 key 교체 |
+| 4 | leaf split/parent propagation | leaf chain과 오른쪽 최소 separator |
+| 5 | `_split_internal` | middle separator 승격 |
+| 6 | `get`, `range` | point lookup과 leaf-chain scan |
+| 7 | `validate` | range·height·separator·chain 불변식 |
+
 ## 검증
 
 

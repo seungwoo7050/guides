@@ -7,7 +7,7 @@
 1. 한 tenant의 최신 event 20개를 `(created_at DESC, id DESC)` 순서로 조회한다.
 2. 실행 가능한 `PENDING` job을 `scheduled_at` 순서로 꺼낸다. 완료된 job은 인덱스에 유지할 필요가 없다.
 
-`reference/indexes.sql`은 다음을 보여 준다.
+`workspace/indexes.sql`에 다음 계약을 만족하는 두 index를 설계한다.
 
 - equality prefix 뒤의 range/order key
 - 동률을 깨는 안정적인 ID 정렬
@@ -17,6 +17,14 @@
 검증은 index 정의만 보지 않는다. 두 workload의 실제 정렬 결과, 선택된 index scan, 불필요한 `Sort` 부재를 함께 확인한다.
 
 문서: [`docs/04-execution-and-optimization/02-statistics-cost-model-and-explain.md`](../../../docs/04-execution-and-optimization/02-statistics-cost-model-and-explain.md)
+
+## 시작
+
+```bash
+./scripts/new-workspace.sh exercises/04-execution-and-optimization/02-query-plans-and-indexes
+```
+
+생성 직후 `workspace/indexes.sql`의 빈 시작 상태가 plan 계약에서 실패하는지 먼저 확인한다.
 
 ## 목표
 
@@ -32,6 +40,19 @@
 
 1. equality key 뒤에 order/range key를 두는 순서가 이 workload에 맞는 이유는 무엇인가?
 2. partial index predicate와 질의 predicate가 논리적으로 맞지 않으면 planner가 사용할 수 없는 이유는 무엇인가?
+
+## 완료 뒤 reference 비교
+
+Workspace 검증을 통과한 뒤 `reference/indexes.sql`에서 equality prefix, 안정적인 ID tie-break, `INCLUDE`와 partial predicate가 각각 어떤 workload 요구에 대응하는지 비교한다. Index 정의를 복사하는 데서 끝내지 않고 자신의 `EXPLAIN` 결과와 선택 이유를 함께 기록한다.
+
+## 권장 구현 순서
+
+아래 번호 범위는 `reference/indexes.sql` 전체다. Git 이력이 아닌 권장 construction order이며 각 index는 workload 결과와 plan을 먼저 고정한 뒤 비교한다.
+
+| 순서 | 파일·대상 | 책임 |
+|---:|---|---|
+| 1 | event index | tenant equality와 stable latest-page order |
+| 2 | pending-job index | partial queue order와 covering payload |
 
 ## 검증
 

@@ -30,6 +30,15 @@
 - concurrency 검사는 `sleep`에만 의존하지 말고 공유 conflict 지점과 최종 불변식을 검사한다.
 - skeleton이 우연히 통과하지 않도록 알려진 잘못된 구현을 실제로 거부하는지 확인한다.
 
+## 학습 구현 주석을 고칠 때
+
+- 하나의 독립 example과 하나의 exercise `reference/` project가 각각 번호 범위 하나를 소유한다. 파일마다 번호를 다시 시작하지 않는다.
+- 번호는 Git의 과거 작성 이력이 아니라 권장 construction order다. 가장 가까운 learner-facing README의 index와 source anchor가 같은 범위를 설명해야 한다.
+- 주석은 책임, state/resource owner, invariant, failure state와 다음 단계의 의존성을 설명한다. 모든 함수나 단순 boilerplate에 기계적으로 붙이지 않는다.
+- `skeleton/`, tests, fixture, validator, prepare/verify, generated file, lockfile과 exact manifest에는 학습 구현 marker를 넣지 않는다.
+- Project bootstrap 단계는 실제 generator·package/framework 초기화가 있을 때만 사용한다. Workspace 복사, Docker image 준비, build와 검증 명령은 bootstrap 단계가 아니다.
+- Marker를 추가하거나 옮기면 `python3 scripts/validate.py`와 validator mutant suite로 scope별 유일성·연속성과 금지 위치를 함께 확인한다.
+
 ## 변경 확인
 
 저장소 루트의 공개 명령 네 가지는 다음과 같다.

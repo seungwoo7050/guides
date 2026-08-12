@@ -175,8 +175,8 @@ SELECT DISTINCT grade FROM users;
 
 ## 연결 연습
 
-- [`SQL 의미와 질의 모양`](../../exercises/01-relational-semantics-and-design/01-sql-semantics/README.md): 외부 조인, `NOT EXISTS`, 집계와 안정적인 정렬을 PostgreSQL에서 검증한다.
 - [`관계 대수 예제`](../../examples/relational_algebra.py): 선택·사영·조인의 작은 불변 구현을 실행한다.
+- [`SQL 의미와 질의 모양`](../../exercises/01-relational-semantics-and-design/01-sql-semantics/README.md): 예제를 관찰한 뒤 외부 조인, `NOT EXISTS`, 집계와 안정적인 정렬을 PostgreSQL에서 검증한다.
 
 ## 완료 기준
 

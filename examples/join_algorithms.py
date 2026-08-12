@@ -10,6 +10,7 @@ Row = dict[str, Any]
 Joined = list[tuple[Row, Row]]
 
 
+# [Implementation 1] Nested loop를 NULL·중복을 포함한 bag 의미의 가장 직접적인 기준으로 둔다.
 def nested_loop(left: list[Row], right: list[Row], left_key: str, right_key: str) -> Joined:
     result: Joined = []
     for left_row in left:
@@ -22,6 +23,7 @@ def nested_loop(left: list[Row], right: list[Row], left_key: str, right_key: str
     return result
 
 
+# [Implementation 2] Hash bucket은 같은 key의 모든 오른쪽 row를 보유해 중복 조합을 잃지 않는다.
 def hash_join(left: list[Row], right: list[Row], left_key: str, right_key: str) -> Joined:
     buckets: dict[Any, list[Row]] = defaultdict(list)
     for row in right:
@@ -31,6 +33,7 @@ def hash_join(left: list[Row], right: list[Row], left_key: str, right_key: str) 
     return [(left_row, right_row) for left_row in left if left_row[left_key] is not None for right_row in buckets.get(left_row[left_key], [])]
 
 
+# [Implementation 3] 같은 입력에서 두 알고리즘의 bag 결과와 NULL 배제를 함께 확인한다.
 users = [{"id": 1}, {"id": 1}, {"id": 2}, {"id": None}]
 orders = [
     {"id": 10, "user_id": 1},

@@ -20,6 +20,7 @@ docs/04-execution-and-optimization/03-schema-index-and-tuning-loop.md
 docs/05-capstones/01-application-database-review.md
 docs/05-capstones/02-mini-storage-engine.md
 docs/90-system-review.md
+examples/README.md
 examples/buffer_pool.py
 examples/index_cost_simulator.py
 examples/join_algorithms.py

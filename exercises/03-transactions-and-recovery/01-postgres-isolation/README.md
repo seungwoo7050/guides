@@ -11,6 +11,14 @@
 
 문서: [`docs/03-transactions-and-recovery/01-transactions-isolation-and-locks.md`](../../../docs/03-transactions-and-recovery/01-transactions-isolation-and-locks.md)
 
+## 시작
+
+```bash
+./scripts/new-workspace.sh exercises/03-transactions-and-recovery/01-postgres-isolation
+```
+
+직접 수정할 파일은 `workspace/functions.sql`이다. 두 session 검사는 `make prepare`가 준비한 PostgreSQL image를 사용한다.
+
 ## 목표
 
 각 업무 불변식을 공유 row 충돌 또는 PostgreSQL isolation 실패와 연결해 동시 요청의 허용 결과를 제한한다.
@@ -25,6 +33,15 @@
 
 1. 서로 다른 doctor row만 잠그는 방식으로 write skew를 막지 못하는 이유는 무엇인가?
 2. retry가 필요한 serialization failure와 업무상 `false` 반환을 호출자는 어떻게 구분해야 하는가?
+
+## 권장 구현 순서
+
+아래 번호 범위는 `reference/functions.sql` 전체다. 실제 과거 순서가 아니라 두 업무 불변식을 안전하게 만드는 권장 construction order이며, workspace 검증 뒤 reference와 비교한다.
+
+| 순서 | 파일·대상 | 책임 |
+|---:|---|---|
+| 1 | `reserve_inventory` | 조건부 UPDATE로 재고 확인·차감 직렬화 |
+| 2 | `take_off_call` | 공유 guard row로 cross-row 불변식 직렬화 |
 
 ## 검증
 

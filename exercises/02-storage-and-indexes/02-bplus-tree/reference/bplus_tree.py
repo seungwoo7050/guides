@@ -7,6 +7,7 @@ from typing import Generic, TypeVar
 V = TypeVar("V")
 
 
+# [Implementation 1] Node shape와 leaf link를 먼저 정의하고 tree root를 하나의 빈 leaf로 시작한다.
 @dataclass
 class Node(Generic[V]):
     leaf: bool
@@ -24,6 +25,7 @@ class BPlusTree(Generic[V]):
         self.max_keys = order - 1
         self.root: Node[V] = Node(leaf=True)
 
+    # [Implementation 2] 오른쪽 subtree 최소 separator 규칙으로 leaf까지 내려가며 parent path를 보존한다.
     def _find_leaf(self, key: int) -> tuple[Node[V], list[Node[V]]]:
         node = self.root
         path: list[Node[V]] = []
@@ -32,6 +34,7 @@ class BPlusTree(Generic[V]):
             node = node.children[bisect_right(node.keys, key)]
         return node, path
 
+    # [Implementation 3] Leaf의 정렬 위치에서 기존 key는 교체하고 새 key만 overflow 경계로 보낸다.
     def insert(self, key: int, value: V) -> None:
         if not isinstance(key, int):
             raise TypeError("key must be int")
@@ -45,6 +48,7 @@ class BPlusTree(Generic[V]):
         if len(leaf.keys) > self.max_keys:
             self._split_leaf(leaf, path)
 
+    # [Implementation 4] Leaf split은 value와 next chain을 나눈 뒤 오른쪽 최소 key를 parent에 전파한다.
     def _split_leaf(self, leaf: Node[V], path: list[Node[V]]) -> None:
         split = (len(leaf.keys) + 1) // 2
         right = Node[V](leaf=True)
@@ -73,6 +77,7 @@ class BPlusTree(Generic[V]):
         if len(parent.keys) > self.max_keys:
             self._split_internal(parent, path)
 
+    # [Implementation 5] Internal split은 가운데 separator를 승격하고 두 child 범위를 분리한다.
     def _split_internal(self, node: Node[V], path: list[Node[V]]) -> None:
         middle = len(node.keys) // 2
         promote = node.keys[middle]
@@ -83,6 +88,7 @@ class BPlusTree(Generic[V]):
         node.children = node.children[: middle + 1]
         self._insert_in_parent(node, promote, right, path)
 
+    # [Implementation 6] Point lookup과 range scan은 같은 leaf 탐색을 공유하고 range는 next chain을 따른다.
     def get(self, key: int) -> V:
         leaf, _ = self._find_leaf(key)
         index = bisect_left(leaf.keys, key)
@@ -105,6 +111,7 @@ class BPlusTree(Generic[V]):
             leaf = leaf.next
         return result
 
+    # [Implementation 7] Recursive validation이 key 범위, 동일 높이, separator와 leaf chain을 함께 증명한다.
     def validate(self) -> None:
         leaf_depths: set[int] = set()
         leaves: list[Node[V]] = []
