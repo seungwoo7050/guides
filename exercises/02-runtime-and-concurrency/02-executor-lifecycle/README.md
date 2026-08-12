@@ -6,6 +6,19 @@
 
 작업자·대기열·대기 시간을 모두 제한하고 포화, 실패, timeout, 인터럽트와 종료를 호출자가 관찰할 수 있는 실행기 API로 만듭니다.
 
+## 권장 구현 순서
+
+`reference/` 전체가 하나의 numbering scope입니다. 번호는 실제 과거 작성 순서가 아니라 제한된 실행기와 그 resource lifecycle을 만드는 학습용 권장 구현 순서입니다. 제공된 Maven scaffold에는 Implementation 0을 부여하지 않습니다.
+
+| 순서 | 구현 위치 | 책임 |
+|---:|---|---|
+| 1 | `BoundedTaskRunner` constructor | capacity·timeout을 검증하고 worker·queue·rejection policy의 소유자를 만듭니다. |
+| 2 | `BoundedTaskRunner.submit` | rejection과 Future 실패 의미를 감추지 않고 보존합니다. |
+| 3 | `BoundedTaskRunner.run` | deadline을 넘긴 작업을 interrupt cancellation으로 전환합니다. |
+| 4 | `BoundedTaskRunner.close` | 정상 종료에서 강제 종료로 전이하고 caller interruption을 복원합니다. |
+| 4-1 | `BoundedTaskRunner.cancelQueued` | 시작하지 못한 queue 항목을 완료된 cancellation evidence로 바꿉니다. |
+| 5 | `ExecutorProbe.main` | 관찰 가능한 workload를 조립하고 runner lifetime을 한 경계로 제한합니다. |
+
 ## 구현할 계약
 
 - 작업자 수와 대기열 크기를 생성 시점에 고정합니다.
@@ -19,7 +32,6 @@
 ```sh
 ./scripts/new-workspace.sh exercises/02-runtime-and-concurrency/02-executor-lifecycle
 ./scripts/check-workspace.sh exercises/02-runtime-and-concurrency/02-executor-lifecycle
-./mvnw -pl :executor-lifecycle-reference -am test
 ```
 
 검사는 `CountDownLatch`로 작업 순서를 고정합니다. 컴퓨터가 느리거나 빠르다는 사실을 합격 조건으로 사용하지 않습니다. JFR 관찰은 루트 `make verify`에도 포함됩니다.
@@ -39,5 +51,10 @@
 
 ```sh
 ./scripts/check-workspace.sh exercises/02-runtime-and-concurrency/02-executor-lifecycle
+```
+
+workspace가 통과하고 자기 설명을 마친 뒤에만 비교용 구현을 검증하고 `reference/` 소스를 읽습니다.
+
+```sh
 ./scripts/mvn-guide.sh -pl :executor-lifecycle-reference -am test
 ```

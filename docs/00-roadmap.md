@@ -79,11 +79,11 @@ make clean
 
 | 순서 | 문서 | 실습 | 완료 기준 |
 |---:|---|---|---|
-| 1 | [JDK·JVM과 첫 프로그램](01-language-and-domain/01-jdk-jvm-and-first-program.md) | [첫 명령행 프로그램](../exercises/01-language-and-domain/01-first-program/README.md) | 직접 컴파일·실행하고 종료 상태와 출력 경계를 설명합니다. |
+| 1 | [JDK·JVM과 첫 프로그램](01-language-and-domain/01-jdk-jvm-and-first-program.md) | [JVM 실행 환경 확인](../examples/runtime-model/README.md) → [첫 명령행 프로그램](../exercises/01-language-and-domain/01-first-program/README.md) | 환경을 관찰한 뒤 직접 컴파일·실행하고 종료 상태와 출력 경계를 설명합니다. |
 | 2 | [Java 언어 기초](01-language-and-domain/02-java-language-foundations.md) | 첫 명령행 프로그램 확장 | 값과 참조, 분기·반복·메서드·배열·클래스의 역할을 구분합니다. |
 | 3 | [도메인 타입과 계약](01-language-and-domain/03-domain-types-records-and-sealed-types.md) | [값 객체 계약](../exercises/01-language-and-domain/02-value-object-contract/README.md) | 생성자가 불변식을 만들고 타입이 잘못된 조합을 차단합니다. |
 | 4 | [컬렉션·Stream과 숫자 불변식](01-language-and-domain/04-collections-streams-and-numeric-invariants.md) | 값 객체 계약 | 순서·중복·소유권과 정확한 계산 규칙을 선택합니다. |
-| 5 | [오류·검증·시간과 식별자](01-language-and-domain/05-errors-validation-time-and-identifiers.md) | 값 객체 계약 확장 | 실패 종류와 검증 위치를 구분하고 시간을 재현합니다. |
+| 5 | [오류·검증·시간과 식별자](01-language-and-domain/05-errors-validation-time-and-identifiers.md) | 값 객체 계약 완성, `Clock`·작업 ID는 capstone에서 통합 | 실패 종류와 검증 위치를 구분하고 후속 통합 위치를 설명합니다. |
 
 ### 2부: 실행 상태와 동시성
 
@@ -116,12 +116,15 @@ capstone은 다음을 한 문제에서 결합합니다.
 
 ## 실습 사용 원칙
 
-각 실습은 `skeleton`과 `reference`를 제공합니다.
+각 구현 실습은 `skeleton`과 `reference`를 제공합니다.
 
-1. README에서 입력·출력·실패 조건을 읽습니다.
-2. skeleton 테스트를 실행해 현재 실패를 확인합니다.
-3. 테스트 파일이 아니라 구현을 수정합니다.
-4. 정상 사례와 실패·경계 사례를 모두 통과시킵니다.
-5. 자신의 구현을 설명한 뒤 reference와 비교합니다.
+1. 관련 문서와 좁은 관찰 예제가 있으면 먼저 확인합니다.
+2. `./scripts/new-workspace.sh exercises/<경로>`로 learner workspace를 만듭니다.
+3. `./scripts/check-workspace.sh exercises/<경로>`로 지정된 초기 실패를 확인합니다.
+4. 원본 skeleton과 공개 테스트가 아니라 `.workspace/<이름>/src/main/` 구현만 수정합니다.
+5. 정상 사례와 실패·경계 사례를 같은 workspace 검사로 모두 통과시킵니다.
+6. 자신의 구현을 설명한 뒤에만 exercise-local `reference/` 소스를 비교합니다.
 
 reference를 복사해 테스트를 통과하는 것은 학습 완료가 아닙니다. 반대로 reference와 구조가 다르더라도 같은 계약을 더 명확하게 지키고 검증할 수 있다면 올바른 해답이 될 수 있습니다.
+
+`multi-repository-maven`은 이 흐름의 분석·관찰형 예외입니다. 추적된 두 모듈을 수정하지 않고 격리된 임시 Maven 저장소에서 설치 전 실패와 설치 후 성공을 관찰하며, 별도 learner workspace나 `reference/`를 만들지 않습니다.

@@ -70,6 +70,89 @@ WORKSPACE_EXERCISES = {
     "exercises/04-capstone/01-concurrent-job-ledger": "concurrent-job-ledger",
 }
 
+ORDERED_LEARNING_ROWS: tuple[tuple[str, ...], ...] = (
+    (
+        "docs/00-roadmap.md",
+        "make check",
+        "docs/01-language-and-domain/01-jdk-jvm-and-first-program.md",
+    ),
+    (
+        "docs/01-language-and-domain/01-jdk-jvm-and-first-program.md",
+        "examples/runtime-model/README.md",
+        "exercises/01-language-and-domain/01-first-program/README.md",
+        ".workspace/first-program",
+        "./scripts/check-workspace.sh exercises/01-language-and-domain/01-first-program",
+        "아직 `reference/`를 보지 않고",
+    ),
+    (
+        "docs/01-language-and-domain/02-java-language-foundations.md",
+        ".workspace/first-program",
+        "exercises/01-language-and-domain/01-first-program/reference/",
+        "통과·자기 설명 뒤",
+    ),
+    (
+        "docs/01-language-and-domain/03-domain-types-records-and-sealed-types.md",
+        "exercises/01-language-and-domain/02-value-object-contract/README.md",
+        ".workspace/value-object-contract",
+        "./scripts/check-workspace.sh exercises/01-language-and-domain/02-value-object-contract",
+        "아직 `reference/`를 보지 않고",
+    ),
+    (
+        "docs/01-language-and-domain/04-collections-streams-and-numeric-invariants.md",
+        ".workspace/value-object-contract",
+        "./scripts/check-workspace.sh exercises/01-language-and-domain/02-value-object-contract",
+        "아직 `reference/`를 보지 않고",
+    ),
+    (
+        "docs/01-language-and-domain/05-errors-validation-time-and-identifiers.md",
+        ".workspace/value-object-contract",
+        "./scripts/check-workspace.sh exercises/01-language-and-domain/02-value-object-contract",
+        "exercises/01-language-and-domain/02-value-object-contract/reference/",
+        "통과·자기 설명 뒤",
+    ),
+    (
+        "docs/02-runtime-and-concurrency/01-concurrency-locking-and-executors.md",
+        "exercises/02-runtime-and-concurrency/01-concurrent-state-update/README.md",
+        ".workspace/concurrent-state-update",
+        "./scripts/check-workspace.sh exercises/02-runtime-and-concurrency/01-concurrent-state-update",
+        "통과·자기 설명 뒤 해당 `reference/`",
+    ),
+    (
+        "docs/02-runtime-and-concurrency/01-concurrency-locking-and-executors.md",
+        "exercises/02-runtime-and-concurrency/02-executor-lifecycle/README.md",
+        ".workspace/executor-lifecycle",
+        "./scripts/check-workspace.sh exercises/02-runtime-and-concurrency/02-executor-lifecycle",
+        "통과·자기 설명 뒤 해당 `reference/`",
+    ),
+    (
+        "docs/03-build-test-and-evidence/01-maven-wrapper-and-lifecycle.md",
+        "exercises/03-build-test-and-evidence/01-multi-repository-maven/README.md",
+        "./exercises/03-build-test-and-evidence/01-multi-repository-maven/verify.sh",
+        "별도 `reference/`는 없습니다",
+    ),
+    (
+        "docs/03-build-test-and-evidence/02-junit-assertj-and-test-doubles.md",
+        "exercises/03-build-test-and-evidence/02-state-and-effect-testing/README.md",
+        ".workspace/state-and-effect-testing",
+        "./scripts/check-workspace.sh exercises/03-build-test-and-evidence/02-state-and-effect-testing",
+        "통과·자기 설명 뒤 해당 `reference/`",
+    ),
+    (
+        "docs/03-build-test-and-evidence/03-quality-profiling-and-evidence.md",
+        "make check",
+        "make verify",
+        "docs/04-capstone.md",
+    ),
+    (
+        "docs/04-capstone.md",
+        "exercises/04-capstone/01-concurrent-job-ledger/README.md",
+        ".workspace/concurrent-job-ledger",
+        "./scripts/check-workspace.sh exercises/04-capstone/01-concurrent-job-ledger",
+        "통과·자기 설명 뒤 해당 `reference/`",
+        "make verify",
+    ),
+)
+
 OBSERVATION_EXERCISE = (
     "exercises/03-build-test-and-evidence/01-multi-repository-maven"
 )
@@ -83,6 +166,125 @@ EXPECTED_MODULES = {
     "exercises/03-build-test-and-evidence/02-state-and-effect-testing/reference",
     "exercises/04-capstone/01-concurrent-job-ledger/reference",
 }
+
+IMPLEMENTATION_SCOPES: dict[str, tuple[str, tuple[str, ...]]] = {
+    "runtime-model": (
+        "examples/runtime-model/README.md",
+        (
+            "examples/runtime-model/README.md",
+            "examples/runtime-model/pom.xml",
+            "examples/runtime-model/src/main/java/",
+        ),
+    ),
+    "first-program": (
+        "exercises/01-language-and-domain/01-first-program/README.md",
+        (
+            "exercises/01-language-and-domain/01-first-program/README.md",
+            "exercises/01-language-and-domain/01-first-program/reference/pom.xml",
+            "exercises/01-language-and-domain/01-first-program/reference/src/main/java/",
+        ),
+    ),
+    "value-object-contract": (
+        "exercises/01-language-and-domain/02-value-object-contract/README.md",
+        (
+            "exercises/01-language-and-domain/02-value-object-contract/README.md",
+            "exercises/01-language-and-domain/02-value-object-contract/reference/pom.xml",
+            "exercises/01-language-and-domain/02-value-object-contract/reference/src/main/java/",
+        ),
+    ),
+    "concurrent-state-update": (
+        "exercises/02-runtime-and-concurrency/01-concurrent-state-update/README.md",
+        (
+            "exercises/02-runtime-and-concurrency/01-concurrent-state-update/README.md",
+            "exercises/02-runtime-and-concurrency/01-concurrent-state-update/reference/pom.xml",
+            "exercises/02-runtime-and-concurrency/01-concurrent-state-update/reference/src/main/java/",
+        ),
+    ),
+    "executor-lifecycle": (
+        "exercises/02-runtime-and-concurrency/02-executor-lifecycle/README.md",
+        (
+            "exercises/02-runtime-and-concurrency/02-executor-lifecycle/README.md",
+            "exercises/02-runtime-and-concurrency/02-executor-lifecycle/reference/pom.xml",
+            "exercises/02-runtime-and-concurrency/02-executor-lifecycle/reference/src/main/java/",
+        ),
+    ),
+    "multi-repository-maven": (
+        "exercises/03-build-test-and-evidence/01-multi-repository-maven/README.md",
+        (
+            "exercises/03-build-test-and-evidence/01-multi-repository-maven/README.md",
+            "exercises/03-build-test-and-evidence/01-multi-repository-maven/contract-library/pom.xml",
+            "exercises/03-build-test-and-evidence/01-multi-repository-maven/contract-library/src/main/java/",
+            "exercises/03-build-test-and-evidence/01-multi-repository-maven/consumer-service/pom.xml",
+            "exercises/03-build-test-and-evidence/01-multi-repository-maven/consumer-service/src/main/java/",
+        ),
+    ),
+    "state-and-effect-testing": (
+        "exercises/03-build-test-and-evidence/02-state-and-effect-testing/README.md",
+        (
+            "exercises/03-build-test-and-evidence/02-state-and-effect-testing/README.md",
+            "exercises/03-build-test-and-evidence/02-state-and-effect-testing/reference/pom.xml",
+            "exercises/03-build-test-and-evidence/02-state-and-effect-testing/reference/src/main/java/",
+        ),
+    ),
+    "concurrent-job-ledger": (
+        "exercises/04-capstone/01-concurrent-job-ledger/README.md",
+        (
+            "exercises/04-capstone/01-concurrent-job-ledger/README.md",
+            "exercises/04-capstone/01-concurrent-job-ledger/reference/pom.xml",
+            "exercises/04-capstone/01-concurrent-job-ledger/reference/src/main/java/",
+        ),
+    ),
+}
+
+IMPLEMENTATION_REQUIRED_FILES: dict[str, tuple[str, ...]] = {
+    "runtime-model": (
+        "examples/runtime-model/pom.xml",
+        "examples/runtime-model/src/main/java/dev/guides/java/runtime/RuntimeProbe.java",
+    ),
+    "first-program": (
+        "exercises/01-language-and-domain/01-first-program/reference/src/main/java/dev/guides/java/firstprogram/NumberReportApplication.java",
+    ),
+    "value-object-contract": (
+        "exercises/01-language-and-domain/02-value-object-contract/reference/src/main/java/dev/guides/java/valueobject/Currency.java",
+        "exercises/01-language-and-domain/02-value-object-contract/reference/src/main/java/dev/guides/java/valueobject/Money.java",
+    ),
+    "concurrent-state-update": (
+        "exercises/02-runtime-and-concurrency/01-concurrent-state-update/reference/src/main/java/dev/guides/java/concurrentstate/DeterministicRaceDemo.java",
+        "exercises/02-runtime-and-concurrency/01-concurrent-state-update/reference/src/main/java/dev/guides/java/concurrentstate/LockedCounter.java",
+        "exercises/02-runtime-and-concurrency/01-concurrent-state-update/reference/src/main/java/dev/guides/java/concurrentstate/RacyCounter.java",
+    ),
+    "executor-lifecycle": (
+        "exercises/02-runtime-and-concurrency/02-executor-lifecycle/reference/src/main/java/dev/guides/java/executor/BoundedTaskRunner.java",
+        "exercises/02-runtime-and-concurrency/02-executor-lifecycle/reference/src/main/java/dev/guides/java/executor/ExecutorProbe.java",
+    ),
+    "multi-repository-maven": (
+        "exercises/03-build-test-and-evidence/01-multi-repository-maven/contract-library/pom.xml",
+        "exercises/03-build-test-and-evidence/01-multi-repository-maven/contract-library/src/main/java/dev/guides/contract/ContractVersion.java",
+        "exercises/03-build-test-and-evidence/01-multi-repository-maven/consumer-service/pom.xml",
+        "exercises/03-build-test-and-evidence/01-multi-repository-maven/consumer-service/src/main/java/dev/guides/consumer/ConsumerApplication.java",
+    ),
+    "state-and-effect-testing": (
+        "exercises/03-build-test-and-evidence/02-state-and-effect-testing/reference/src/main/java/dev/guides/java/stateeffect/ExternalEffect.java",
+        "exercises/03-build-test-and-evidence/02-state-and-effect-testing/reference/src/main/java/dev/guides/java/stateeffect/IdempotentOperationService.java",
+        "exercises/03-build-test-and-evidence/02-state-and-effect-testing/reference/src/main/java/dev/guides/java/stateeffect/OperationResult.java",
+        "exercises/03-build-test-and-evidence/02-state-and-effect-testing/reference/src/main/java/dev/guides/java/stateeffect/StateStore.java",
+    ),
+    "concurrent-job-ledger": (
+        "exercises/04-capstone/01-concurrent-job-ledger/reference/src/main/java/dev/guides/java/jobledger/ConcurrentJobLedger.java",
+        "exercises/04-capstone/01-concurrent-job-ledger/reference/src/main/java/dev/guides/java/jobledger/CreditJob.java",
+        "exercises/04-capstone/01-concurrent-job-ledger/reference/src/main/java/dev/guides/java/jobledger/DebitJob.java",
+        "exercises/04-capstone/01-concurrent-job-ledger/reference/src/main/java/dev/guides/java/jobledger/JobCommand.java",
+        "exercises/04-capstone/01-concurrent-job-ledger/reference/src/main/java/dev/guides/java/jobledger/JobId.java",
+        "exercises/04-capstone/01-concurrent-job-ledger/reference/src/main/java/dev/guides/java/jobledger/JobKind.java",
+        "exercises/04-capstone/01-concurrent-job-ledger/reference/src/main/java/dev/guides/java/jobledger/JobReceipt.java",
+    ),
+}
+
+IMPLEMENTATION_TOKEN_PREFIX = "[" + "Implementation "
+IMPLEMENTATION_PATTERN = re.compile(
+    re.escape(IMPLEMENTATION_TOKEN_PREFIX) + r"([^\]\r\n]+)\]"
+)
+IMPLEMENTATION_LABEL = re.compile(r"(?:0|[1-9]\d*(?:-[1-9]\d*)?)")
 
 FORBIDDEN_PATHS = {
     "docs/00-java-language-foundations.md",
@@ -397,6 +599,224 @@ def check_public_commands() -> None:
                 report(f"공개 명령 안내가 빠졌습니다: {relative}: {command}")
 
 
+def check_observation_exercise_contract() -> None:
+    relative = f"{OBSERVATION_EXERCISE}/verify.sh"
+    path = ROOT / relative
+    if not path.is_file():
+        return
+    text = path.read_text(encoding="utf-8")
+    for token in (
+        ".guide/java/prepared.json",
+        "preparation-capture",
+        "marker-field",
+        "maven_repository",
+        "maven_user_home",
+        "GUIDE_MAVEN_REPOSITORY",
+        "MAVEN_USER_HOME",
+    ):
+        if token not in text:
+            report(f"Maven 관찰 실습의 standalone cache 계약이 빠졌습니다: {relative}: {token}")
+
+
+def check_ordered_learning_map() -> None:
+    readme = (ROOT / "README.md").read_text(encoding="utf-8")
+    found = section(readme, "정본 학습 순서")
+    if found is None:
+        report("README에 정본 학습 순서가 없습니다.")
+        return
+    mapping = found[1]
+    header = "| 순서 | 문서 | 관찰 예제 | 직접 수행 | 수정 위치 | 검증 | 완료 뒤 비교·다음 |"
+    if header not in mapping:
+        report("README 정본 학습 표의 canonical semantic field가 빠졌습니다.")
+
+    parsed: list[tuple[int, list[str]]] = []
+    for line in mapping.splitlines():
+        if re.match(r"^\|\s*\d+\s*\|", line) is None:
+            continue
+        cells = [cell.strip() for cell in line.strip().strip("|").split("|")]
+        if len(cells) != 7:
+            report(f"README 정본 학습 표의 field 수가 7이 아닙니다: {line}")
+            continue
+        parsed.append((int(cells[0]), cells))
+
+    actual_order = [number for number, _ in parsed]
+    expected_order = list(range(len(ORDERED_LEARNING_ROWS)))
+    if actual_order != expected_order:
+        report(
+            "README 정본 학습 표의 순서가 0부터 연속적이지 않습니다: "
+            + ", ".join(str(number) for number in actual_order)
+        )
+
+    rows = {number: cells for number, cells in parsed}
+    if len(rows) != len(parsed):
+        report("README 정본 학습 표에 중복 순서가 있습니다.")
+    for number, required_tokens in enumerate(ORDERED_LEARNING_ROWS):
+        cells = rows.get(number)
+        if cells is None:
+            continue
+        row = " | ".join(cells[1:])
+        for token in required_tokens:
+            if token not in row:
+                report(f"README 정본 학습 표 {number}행의 대응이 잘못되었습니다: {token}")
+
+    required_paths = {
+        *EXPECTED_DOCS,
+        "examples/runtime-model/README.md",
+        *(f"{exercise}/README.md" for exercise in EXPECTED_EXERCISES),
+    }
+    for relative in sorted(required_paths):
+        if relative not in mapping:
+            report(f"README 정본 학습 표에 경로가 빠졌습니다: {relative}")
+
+    for exercise, workspace in sorted(WORKSPACE_EXERCISES.items()):
+        command = f"./scripts/check-workspace.sh {exercise}"
+        if command not in mapping:
+            report(f"README 정본 학습 표에 learner 검증 명령이 빠졌습니다: {exercise}")
+        if f".workspace/{workspace}" not in mapping:
+            report(f"README 정본 학습 표에 수정 위치가 빠졌습니다: .workspace/{workspace}")
+
+    if "완료 뒤" not in mapping or "reference/" not in mapping:
+        report("README 정본 학습 표에 완료 뒤 reference 비교 시점이 없습니다.")
+
+
+def annotation_scope(relative: str) -> str | None:
+    matched: list[str] = []
+    for name, (_, allowed) in IMPLEMENTATION_SCOPES.items():
+        if any(relative == entry or (entry.endswith("/") and relative.startswith(entry)) for entry in allowed):
+            matched.append(name)
+    if len(matched) > 1:
+        report(f"Implementation annotation scope가 겹칩니다: {relative}: {', '.join(matched)}")
+    return matched[0] if len(matched) == 1 else None
+
+
+def marker_is_comment(path: Path, line: str, in_fence: bool) -> bool:
+    stripped = line.strip()
+    if path.suffix == ".java":
+        return stripped.startswith(("//", "/*", "*"))
+    if path.suffix == ".xml":
+        return stripped.startswith("<!--") and stripped.endswith("-->")
+    if path.suffix == ".md":
+        return not in_fence and stripped.startswith("|")
+    return False
+
+
+def implementation_index(readme: Path) -> list[str]:
+    found = section(readme.read_text(encoding="utf-8"), "권장 구현 순서")
+    if found is None:
+        report(f"annotation scope README에 권장 구현 순서가 없습니다: {readme.relative_to(ROOT)}")
+        return []
+    labels: list[str] = []
+    row = re.compile(
+        r"^\|\s*(?:"
+        + re.escape(IMPLEMENTATION_TOKEN_PREFIX)
+        + r")?(0|[1-9]\d*(?:-[1-9]\d*)?)(?:\])?\s*\|"
+    )
+    for line in found[1].splitlines():
+        match = row.match(line)
+        if match:
+            labels.append(match.group(1))
+    if len(labels) != len(set(labels)):
+        report(f"권장 구현 순서 index에 중복 번호가 있습니다: {readme.relative_to(ROOT)}")
+    return labels
+
+
+def check_numbering(scope: str, labels: list[str]) -> None:
+    top_level = sorted(int(label) for label in labels if "-" not in label and label != "0")
+    if not top_level:
+        report(f"Implementation top-level 번호가 없습니다: {scope}")
+        return
+    expected_top = list(range(1, max(top_level) + 1))
+    if top_level != expected_top:
+        report(f"Implementation top-level 번호가 연속적이지 않습니다: {scope}: {top_level}")
+
+    parents = set(top_level)
+    children: dict[int, list[int]] = {}
+    for label in labels:
+        if "-" not in label:
+            continue
+        parent_text, child_text = label.split("-", 1)
+        parent = int(parent_text)
+        child = int(child_text)
+        if parent not in parents:
+            report(f"parent가 없는 Implementation substep입니다: {scope}: {label}")
+        children.setdefault(parent, []).append(child)
+    for parent, values in sorted(children.items()):
+        ordered = sorted(values)
+        if ordered != list(range(1, max(ordered) + 1)):
+            report(f"Implementation substep 번호가 연속적이지 않습니다: {scope}: {ordered}")
+
+
+def check_implementation_annotations() -> None:
+    anchors: dict[str, list[tuple[str, int, str]]] = {
+        name: [] for name in IMPLEMENTATION_SCOPES
+    }
+    for path in source_files():
+        if path.is_symlink():
+            continue
+        try:
+            text = path.read_text(encoding="utf-8")
+        except (UnicodeDecodeError, OSError):
+            continue
+        relative = path.relative_to(ROOT).as_posix()
+        in_fence = False
+        fence = ""
+        for number, line in enumerate(text.splitlines(), start=1):
+            stripped = line.lstrip()
+            line_in_fence = in_fence
+            if path.suffix == ".md" and stripped.startswith(("```", "~~~")):
+                marker = stripped[:3]
+                if not in_fence:
+                    in_fence = True
+                    fence = marker
+                elif marker == fence:
+                    in_fence = False
+                continue
+            for match in IMPLEMENTATION_PATTERN.finditer(line):
+                label = match.group(1)
+                scope = annotation_scope(relative)
+                if scope is None:
+                    report(f"허용 범위 밖 Implementation annotation입니다: {relative}:{number}")
+                    continue
+                if not IMPLEMENTATION_LABEL.fullmatch(label) or label.startswith("0-"):
+                    report(f"잘못된 Implementation 번호입니다: {relative}:{number}: {label}")
+                    continue
+                if not marker_is_comment(path, line, line_in_fence):
+                    report(f"주석 또는 README sidecar가 아닌 annotation입니다: {relative}:{number}")
+                    continue
+                anchors[scope].append((label, number, relative))
+
+    for scope, occurrences in anchors.items():
+        labels = [label for label, _, _ in occurrences]
+        if not labels:
+            report(f"Implementation annotation이 없는 scope입니다: {scope}")
+            continue
+        if labels.count("0") > 1:
+            report(f"Implementation 0이 scope에 둘 이상 있습니다: {scope}")
+        duplicates = sorted({label for label in labels if labels.count(label) > 1})
+        for label in duplicates:
+            locations = [f"{relative}:{number}" for value, number, relative in occurrences if value == label]
+            report(f"중복 Implementation anchor입니다: {scope}: {label}: {', '.join(locations)}")
+        unique = sorted(set(labels), key=lambda value: tuple(int(part) for part in value.split("-")))
+        check_numbering(scope, unique)
+
+        anchored_files = {relative for _, _, relative in occurrences}
+        for required in IMPLEMENTATION_REQUIRED_FILES[scope]:
+            if required not in anchored_files:
+                report(f"Implementation annotation이 빠진 완성 파일입니다: {scope}: {required}")
+
+        readme_relative = IMPLEMENTATION_SCOPES[scope][0]
+        indexed = implementation_index(ROOT / readme_relative)
+        if indexed != unique:
+            missing = sorted(set(unique) - set(indexed))
+            orphan = sorted(set(indexed) - set(unique))
+            if missing:
+                report(f"README index에 없는 Implementation anchor입니다: {scope}: {', '.join(missing)}")
+            if orphan:
+                report(f"source anchor가 없는 README implementation row입니다: {scope}: {', '.join(orphan)}")
+            if not missing and not orphan:
+                report(f"README implementation index 순서가 권장 구현 순서와 다릅니다: {scope}")
+
+
 def check_poms_and_sources() -> None:
     namespace = {"m": "http://maven.apache.org/POM/4.0.0"}
     for path in sorted(ROOT.rglob("pom.xml")):
@@ -504,6 +924,9 @@ def main() -> int:
     check_exercise_rubrics()
     check_workspace_contract()
     check_public_commands()
+    check_observation_exercise_contract()
+    check_ordered_learning_map()
+    check_implementation_annotations()
     check_poms_and_sources()
     check_test_pairs()
     check_toolchain_and_modes()

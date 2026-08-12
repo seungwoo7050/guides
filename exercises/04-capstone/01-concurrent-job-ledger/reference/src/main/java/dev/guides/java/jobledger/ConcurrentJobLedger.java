@@ -15,6 +15,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.ReentrantLock;
 
 public final class ConcurrentJobLedger implements AutoCloseable {
+  // [Implementation 4] balance, completion, clock, executor, lock과 close state의 ownership을 모읍니다.
   private static final Duration DEFAULT_CLOSE_TIMEOUT = Duration.ofSeconds(5);
 
   private final Clock clock;
@@ -48,6 +49,7 @@ public final class ConcurrentJobLedger implements AutoCloseable {
             new ThreadPoolExecutor.AbortPolicy());
   }
 
+  // [Implementation 7] ID별 dedup·conflict와 bounded admission을 원자적으로 연결합니다.
   public CompletableFuture<JobReceipt> submit(JobCommand command) {
     Objects.requireNonNull(command, "작업 명령이 필요합니다.");
     if (closed.get()) {
@@ -81,6 +83,7 @@ public final class ConcurrentJobLedger implements AutoCloseable {
     return slot.result();
   }
 
+  // [Implementation 5-1] balance invariant를 소유한 같은 lock 아래에서 잔액을 관찰합니다.
   public long currentBalance() {
     balanceLock.lock();
     try {
@@ -90,6 +93,7 @@ public final class ConcurrentJobLedger implements AutoCloseable {
     }
   }
 
+  // [Implementation 5-2] balance와 짝을 이루는 적용 횟수도 같은 lock 아래에서 읽습니다.
   public long appliedJobCount() {
     balanceLock.lock();
     try {
@@ -99,6 +103,7 @@ public final class ConcurrentJobLedger implements AutoCloseable {
     }
   }
 
+  // [Implementation 8] close를 idempotent하게 만들고 graceful·forced·interrupted 전이를 처리합니다.
   public void close(Duration timeout) {
     Objects.requireNonNull(timeout, "종료 제한 시간이 필요합니다.");
     if (timeout.isNegative()) {
@@ -129,6 +134,7 @@ public final class ConcurrentJobLedger implements AutoCloseable {
     close(DEFAULT_CLOSE_TIMEOUT);
   }
 
+  // [Implementation 6-1] executor의 성공과 실패를 모든 duplicate caller가 공유할 Future로 번역합니다.
   private void execute(JobSlot slot) {
     try {
       slot.result().complete(apply(slot.command()));
@@ -137,6 +143,7 @@ public final class ConcurrentJobLedger implements AutoCloseable {
     }
   }
 
+  // [Implementation 5] 다음 balance와 count를 먼저 계산한 뒤 두 state를 한 번에 commit합니다.
   private JobReceipt apply(JobCommand command) {
     Instant completedAt = clock.instant();
     balanceLock.lock();
@@ -165,6 +172,7 @@ public final class ConcurrentJobLedger implements AutoCloseable {
     }
   }
 
+  // [Implementation 8-1] 승인됐지만 시작하지 못한 작업의 Future를 terminal cancellation로 만듭니다.
   private static void cancelQueued(List<Runnable> queued) {
     for (Runnable task : queued) {
       if (task instanceof JobTask jobTask) {
@@ -186,5 +194,6 @@ public final class ConcurrentJobLedger implements AutoCloseable {
     }
   }
 
+  // [Implementation 6] command와 shared completion identity를 한 immutable slot으로 묶습니다.
   private record JobSlot(JobCommand command, CompletableFuture<JobReceipt> result) {}
 }

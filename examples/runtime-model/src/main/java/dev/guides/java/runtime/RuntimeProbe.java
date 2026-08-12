@@ -6,6 +6,7 @@ import java.time.ZoneId;
 public final class RuntimeProbe {
   private RuntimeProbe() {}
 
+  // [Implementation 2] JVM과 운영체제가 소유한 환경을 비교 가능한 key=value evidence로 남깁니다.
   public static void main(String[] args) {
     System.out.printf("java.version=%s%n", System.getProperty("java.version"));
     System.out.printf("java.home=%s%n", System.getProperty("java.home"));

@@ -9,6 +9,7 @@ import java.util.concurrent.TimeUnit;
 public final class ExecutorProbe {
   private ExecutorProbe() {}
 
+  // [Implementation 5] bounded workload를 조립하고 try-with-resources로 runner lifetime을 닫습니다.
   public static void main(String[] arguments) throws Exception {
     List<Future<Long>> results = new ArrayList<>();
     try (BoundedTaskRunner runner = new BoundedTaskRunner(2, 8, Duration.ofSeconds(2))) {

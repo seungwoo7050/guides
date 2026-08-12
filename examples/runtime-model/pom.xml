@@ -9,5 +9,6 @@
     <version>1.0.0</version>
     <relativePath>../../pom.xml</relativePath>
   </parent>
+  <!-- [Implementation 1] 고정된 루트 빌드를 상속하는 관찰 모듈의 경계를 선언합니다. -->
   <artifactId>runtime-model</artifactId>
 </project>

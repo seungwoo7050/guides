@@ -17,6 +17,7 @@ public final class BoundedTaskRunner implements AutoCloseable {
   private final ThreadPoolExecutor executor;
   private final Duration shutdownTimeout;
 
+  // [Implementation 1] worker, queue, rejection policy와 shutdown deadline의 ownership을 만듭니다.
   public BoundedTaskRunner(int workers, int queueCapacity, Duration shutdownTimeout) {
     if (workers < 1) {
       throw new IllegalArgumentException("작업자 수는 1 이상이어야 합니다.");
@@ -44,10 +45,12 @@ public final class BoundedTaskRunner implements AutoCloseable {
             new ThreadPoolExecutor.AbortPolicy());
   }
 
+  // [Implementation 2] executor의 rejection과 task Future를 caller에게 그대로 드러냅니다.
   public <T> Future<T> submit(Callable<T> task) throws RejectedExecutionException {
     return executor.submit(Objects.requireNonNull(task));
   }
 
+  // [Implementation 3] deadline 초과를 Future의 interrupt cancellation으로 연결합니다.
   public <T> T run(Callable<T> task, Duration timeout)
       throws InterruptedException, ExecutionException, TimeoutException {
     Objects.requireNonNull(timeout, "작업 제한 시간이 필요합니다.");
@@ -64,6 +67,7 @@ public final class BoundedTaskRunner implements AutoCloseable {
   }
 
   @Override
+  // [Implementation 4] graceful shutdown에서 forced shutdown으로 전이하고 interruption을 복원합니다.
   public void close() {
     executor.shutdown();
     boolean interrupted = false;
@@ -84,6 +88,7 @@ public final class BoundedTaskRunner implements AutoCloseable {
     }
   }
 
+  // [Implementation 4-1] 시작하지 못한 queue 항목도 완료된 cancellation state로 바꿉니다.
   private static void cancelQueued(List<Runnable> queued) {
     for (Runnable task : queued) {
       if (task instanceof Future<?> future) {

@@ -9,6 +9,7 @@ import java.util.concurrent.TimeUnit;
 public final class DeterministicRaceDemo {
   private DeterministicRaceDemo() {}
 
+  // [Implementation 2] 재현, Future 실패 전달, 보존 법칙 evidence와 executor 정리를 조립합니다.
   public static void main(String[] args) throws Exception {
     RacyCounter counter = new RacyCounter(100);
     CyclicBarrier barrier = new CyclicBarrier(2);

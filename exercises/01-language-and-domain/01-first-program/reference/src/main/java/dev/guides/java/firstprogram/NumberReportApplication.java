@@ -10,6 +10,7 @@ public final class NumberReportApplication {
 
   private NumberReportApplication() {}
 
+  // [Implementation 2] 순수하게 반환된 상태를 실제 process exit 경계로 번역합니다.
   public static void main(String[] args) {
     int status = run(args, System.out, System.err);
     if (status != 0) {
@@ -17,6 +18,7 @@ public final class NumberReportApplication {
     }
   }
 
+  // [Implementation 1] 입력과 두 출력 stream을 받는 application 부작용 경계를 먼저 고정합니다.
   public static int run(String[] args, PrintStream output, PrintStream error) {
     if (args.length == 0) {
       error.println("오류: 하나 이상의 정수를 입력하십시오.");
@@ -27,6 +29,7 @@ public final class NumberReportApplication {
     long maximum = Long.MIN_VALUE;
     long sum = 0L;
 
+    // [Implementation 1-1] 성공 출력을 쓰기 전에 모든 입력과 checked sum을 완전히 검증합니다.
     for (String argument : args) {
       long value;
       try {
@@ -46,6 +49,7 @@ public final class NumberReportApplication {
       maximum = Math.max(maximum, value);
     }
 
+    // [Implementation 1-2] locale과 반올림을 고정한 완성 결과만 stdout에 commit합니다.
     BigDecimal average =
         BigDecimal.valueOf(sum).divide(BigDecimal.valueOf(args.length), 2, RoundingMode.HALF_UP);
 

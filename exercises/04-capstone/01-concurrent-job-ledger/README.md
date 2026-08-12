@@ -8,6 +8,28 @@
 
 값 객체, 주입된 시간, 원자적 잔액 변경, 작업별 결과 공유와 제한된 실행기 수명을 결합해 실패 뒤에도 설명 가능한 동시 작업 원장을 완성합니다.
 
+## 권장 구현 순서
+
+`reference/` 전체가 하나의 numbering scope입니다. 번호는 실제 과거 작성 순서가 아니라 여러 파일을 오가며 원장을 만드는 학습용 권장 구현 순서입니다. 제공된 Maven scaffold에는 Implementation 0을 부여하지 않습니다.
+
+| 순서 | 구현 위치 | 책임 |
+|---:|---|---|
+| 1 | `JobId` | non-null·non-blank 작업 identity를 만듭니다. |
+| 2 | `JobCommand` | 지원하는 command family를 sealed boundary로 닫습니다. |
+| 2-1 | `CreditJob` | 양수 credit 불변식을 생성 시점에 고정합니다. |
+| 2-2 | `DebitJob` | 양수 debit 불변식을 생성 시점에 고정합니다. |
+| 3 | `JobKind` | 원장이 기록할 effect 종류를 닫힌 집합으로 고정합니다. |
+| 3-1 | `JobReceipt` | effect 종류와 완료 시각을 불변 evidence로 표현합니다. |
+| 4 | `ConcurrentJobLedger` fields와 constructor | balance, lock, clock, job registry, executor와 close state의 owner를 만듭니다. |
+| 5 | `ConcurrentJobLedger.apply` | 다음 balance·count를 먼저 계산하고 두 state를 한 lock 안에서 commit합니다. |
+| 5-1 | `currentBalance` | balance lock 아래에서 잔액을 관찰합니다. |
+| 5-2 | `appliedJobCount` | 같은 lock 아래에서 짝을 이루는 적용 횟수를 관찰합니다. |
+| 6 | `JobSlot` | command와 모든 중복 호출이 공유할 completion identity를 묶습니다. |
+| 6-1 | `execute`, `JobTask` | executor의 성공·실패를 shared Future 완료로 번역합니다. |
+| 7 | `submit` | ID별 dedup·conflict를 원자적으로 결정하고 rejection 때 admission을 rollback합니다. |
+| 8 | `close(Duration)` | idempotent한 정상→강제 종료와 interruption restoration을 구현합니다. |
+| 8-1 | `cancelQueued` | 승인됐지만 시작하지 못한 작업 Future를 취소합니다. |
+
 ## 공개 계약
 
 `ConcurrentJobLedger`는 다음을 만족해야 합니다.
@@ -40,12 +62,6 @@
 ./scripts/check-workspace.sh exercises/04-capstone/01-concurrent-job-ledger
 ```
 
-reference는 전체 reactor에서 검증합니다.
-
-```sh
-./mvnw -pl :concurrent-job-ledger-reference -am test
-```
-
 구현이 reference와 같은 클래스 내부 구조를 가질 필요는 없습니다. 공개 계약, 실패 뒤 상태와 종료 수명을 더 명확하게 지키는 다른 설계도 유효합니다.
 
 ## 완료 기준
@@ -63,5 +79,10 @@ reference는 전체 reactor에서 검증합니다.
 
 ```sh
 ./scripts/check-workspace.sh exercises/04-capstone/01-concurrent-job-ledger
+```
+
+workspace가 통과하고 자기 설명을 마친 뒤에만 비교용 구현을 검증하고 `reference/` 소스를 읽습니다.
+
+```sh
 ./scripts/mvn-guide.sh -pl :concurrent-job-ledger-reference -am test
 ```

@@ -3,6 +3,7 @@
 
 from __future__ import annotations
 
+import json
 import os
 import re
 import shutil
@@ -69,6 +70,47 @@ def run_validator(root: Path) -> subprocess.CompletedProcess[str]:
 def write_text(path: Path, text: str = "mutant\n") -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(text, encoding="utf-8")
+
+
+def implementation(label: str) -> str:
+    return "[" + f"Implementation {label}]"
+
+
+def append_text(path: Path, text: str) -> None:
+    path.write_text(path.read_text(encoding="utf-8") + text, encoding="utf-8")
+
+
+def remove_line_containing(path: Path, needle: str) -> None:
+    lines = path.read_text(encoding="utf-8").splitlines(keepends=True)
+    matched = [line for line in lines if needle in line]
+    if len(matched) != 1:
+        raise AssertionError(f"line mutant target이 정확히 하나가 아닙니다: {path}: {needle}")
+    path.write_text("".join(line for line in lines if needle not in line), encoding="utf-8")
+
+
+def swap_text(path: Path, first: str, second: str) -> None:
+    text = path.read_text(encoding="utf-8")
+    if text.count(first) != 1 or text.count(second) != 1:
+        raise AssertionError(f"swap mutant target이 정확히 하나가 아닙니다: {path}")
+    sentinel = "__GUIDE_JAVA_SWAP_SENTINEL__"
+    if sentinel in text:
+        raise AssertionError(f"swap sentinel이 이미 존재합니다: {path}")
+    path.write_text(
+        text.replace(first, sentinel).replace(second, first).replace(sentinel, second),
+        encoding="utf-8",
+    )
+
+
+def swap_lines_containing(path: Path, first: str, second: str) -> None:
+    lines = path.read_text(encoding="utf-8").splitlines(keepends=True)
+    first_indexes = [index for index, line in enumerate(lines) if first in line]
+    second_indexes = [index for index, line in enumerate(lines) if second in line]
+    if len(first_indexes) != 1 or len(second_indexes) != 1:
+        raise AssertionError(f"line swap mutant target이 정확히 하나가 아닙니다: {path}")
+    first_index = first_indexes[0]
+    second_index = second_indexes[0]
+    lines[first_index], lines[second_index] = lines[second_index], lines[first_index]
+    path.write_text("".join(lines), encoding="utf-8")
 
 
 def run_git(root: Path, *arguments: str) -> None:
@@ -314,6 +356,77 @@ def verify_workspace_tools(temporary_root: Path) -> None:
     print("[PASS] learner workspace manifest·POM·공용 테스트·symlink 안전성")
 
 
+def verify_multi_repository_public_command() -> None:
+    prepared_repository = os.environ.get("GUIDE_MAVEN_REPOSITORY")
+    prepared_home = os.environ.get("MAVEN_USER_HOME")
+    if not prepared_repository or not prepared_home:
+        print("[INFO] Maven 관찰 실습 marker fallback은 전체 verify에서 실행됩니다.")
+        return
+    with tempfile.TemporaryDirectory(prefix="guide-java-multi-public-") as temporary:
+        fixture = (Path(temporary) / "repository").resolve()
+        fixture.mkdir()
+        copy_source(ROOT, fixture)
+        cache_root = fixture / ".guide/java"
+        cache_root.mkdir(parents=True)
+        (cache_root / "maven-home").symlink_to(Path(prepared_home), target_is_directory=True)
+        (cache_root / "maven-repository").symlink_to(
+            Path(prepared_repository), target_is_directory=True
+        )
+        fingerprint = capture(fixture, include_learner_workspace=False)
+        java_version = subprocess.run(
+            ["java", "-version"],
+            text=True,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+            check=True,
+        ).stdout.splitlines()[0]
+        javac_version = subprocess.run(
+            ["javac", "-version"],
+            text=True,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+            check=True,
+        ).stdout.strip()
+        marker = {
+            "schema": 1,
+            "guide_id": "java",
+            "input_fingerprint": fingerprint,
+            "java_version": java_version,
+            "javac_version": javac_version,
+            "maven_version": "3.9.16",
+            "maven_version_text": "Apache Maven 3.9.16",
+            "maven_user_home": str(cache_root / "maven-home"),
+            "maven_repository": str(cache_root / "maven-repository"),
+            "docker_image_id": None,
+        }
+        (cache_root / "prepared.json").write_text(
+            json.dumps(marker, ensure_ascii=False, indent=2, sort_keys=True) + "\n",
+            encoding="utf-8",
+        )
+        before = capture(fixture)
+        environment = os.environ.copy()
+        environment.pop("GUIDE_MAVEN_REPOSITORY", None)
+        environment.pop("MAVEN_USER_HOME", None)
+        result = subprocess.run(
+            ["./exercises/03-build-test-and-evidence/01-multi-repository-maven/verify.sh"],
+            cwd=fixture,
+            env=environment,
+            text=True,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+            check=False,
+            timeout=120,
+        )
+        if result.returncode != 0:
+            raise AssertionError(
+                "Maven 관찰 실습 공개 명령이 준비 marker만으로 실행되지 않습니다.\n"
+                + result.stdout
+            )
+        if capture(fixture) != before:
+            raise AssertionError("Maven 관찰 실습 공개 명령이 source 상태를 변경했습니다.")
+    print("[PASS] Maven 관찰 실습 공개 명령의 marker fallback과 source 불변성")
+
+
 def mutations() -> list[tuple[str, Mutation]]:
     return [
         (
@@ -435,6 +548,154 @@ def mutations() -> list[tuple[str, Mutation]]:
             "wrong-executable-mode",
             lambda root: (root / "scripts/preflight.sh").chmod(0o644),
         ),
+        (
+            "missing-ordered-learning-row",
+            lambda root: remove_line_containing(
+                root / "README.md",
+                "exercises/04-capstone/01-concurrent-job-ledger/README.md",
+            ),
+        ),
+        (
+            "wrong-ordered-learning-pair",
+            lambda root: swap_text(
+                root / "README.md",
+                "exercises/02-runtime-and-concurrency/01-concurrent-state-update/README.md",
+                "exercises/02-runtime-and-concurrency/02-executor-lifecycle/README.md",
+            ),
+        ),
+        (
+            "annotation-in-skeleton",
+            lambda root: append_text(
+                root
+                / "exercises/01-language-and-domain/02-value-object-contract/skeleton/src/main/java/dev/guides/java/valueobject/Money.java",
+                f"\n// {implementation('1')} skeleton mutant\n",
+            ),
+        ),
+        (
+            "annotation-in-reference-test",
+            lambda root: append_text(
+                root
+                / "exercises/01-language-and-domain/02-value-object-contract/reference/src/test/java/dev/guides/java/valueobject/MoneyTest.java",
+                f"\n// {implementation('1')} test mutant\n",
+            ),
+        ),
+        (
+            "annotation-outside-scope",
+            lambda root: append_text(
+                root / "docs/04-capstone.md",
+                f"\n<!-- {implementation('1')} docs mutant -->\n",
+            ),
+        ),
+        (
+            "duplicate-implementation-anchor",
+            lambda root: append_text(
+                root
+                / "examples/runtime-model/src/main/java/dev/guides/java/runtime/RuntimeProbe.java",
+                f"\n// {implementation('1')} duplicate mutant\n",
+            ),
+        ),
+        (
+            "gapped-implementation-top-level",
+            lambda root: replace(
+                root
+                / "examples/runtime-model/src/main/java/dev/guides/java/runtime/RuntimeProbe.java",
+                implementation("2"),
+                implementation("3"),
+            ),
+        ),
+        (
+            "gapped-implementation-substep",
+            lambda root: replace(
+                root
+                / "exercises/01-language-and-domain/01-first-program/reference/src/main/java/dev/guides/java/firstprogram/NumberReportApplication.java",
+                implementation("1-1"),
+                implementation("1-3"),
+            ),
+        ),
+        (
+            "implementation-child-without-parent",
+            lambda root: replace(
+                root
+                / "exercises/01-language-and-domain/01-first-program/reference/src/main/java/dev/guides/java/firstprogram/NumberReportApplication.java",
+                implementation("1"),
+                implementation("3"),
+            ),
+        ),
+        (
+            "invalid-implementation-zero-child",
+            lambda root: replace(
+                root
+                / "examples/runtime-model/src/main/java/dev/guides/java/runtime/RuntimeProbe.java",
+                implementation("2"),
+                implementation("0-1"),
+            ),
+        ),
+        (
+            "duplicate-implementation-zero",
+            lambda root: (
+                append_text(
+                    root / "examples/runtime-model/pom.xml",
+                    f"\n<!-- {implementation('0')} first zero mutant -->\n",
+                ),
+                append_text(
+                    root
+                    / "examples/runtime-model/src/main/java/dev/guides/java/runtime/RuntimeProbe.java",
+                    f"\n// {implementation('0')} second zero mutant\n",
+                ),
+            ),
+        ),
+        (
+            "missing-implementation-index-row",
+            lambda root: remove_line_containing(
+                root / "examples/runtime-model/README.md", "| 2 | `RuntimeProbe.main`"
+            ),
+        ),
+        (
+            "orphan-implementation-index-row",
+            lambda root: replace(
+                root / "examples/runtime-model/README.md",
+                "\n## 실행과 관찰\n",
+                "\n| 3 | `Missing.anchor` | source anchor가 없는 mutant row입니다. |\n\n## 실행과 관찰\n",
+            ),
+        ),
+        (
+            "reordered-implementation-index",
+            lambda root: swap_lines_containing(
+                root / "examples/runtime-model/README.md",
+                "| 1 | `pom.xml`",
+                "| 2 | `RuntimeProbe.main`",
+            ),
+        ),
+        (
+            "unannotated-required-implementation-file",
+            lambda root: (
+                remove_line_containing(
+                    root
+                    / "exercises/03-build-test-and-evidence/01-multi-repository-maven/contract-library/pom.xml",
+                    implementation("1"),
+                ),
+                replace(
+                    root
+                    / "exercises/03-build-test-and-evidence/01-multi-repository-maven/contract-library/src/main/java/dev/guides/contract/ContractVersion.java",
+                    implementation("1-1"),
+                    implementation("1"),
+                ),
+                remove_line_containing(
+                    root
+                    / "exercises/03-build-test-and-evidence/01-multi-repository-maven/README.md",
+                    "| 1-1 | `ContractVersion`",
+                ),
+            ),
+        ),
+        (
+            "missing-multi-repository-marker-fallback",
+            lambda root: replace(
+                root
+                / "exercises/03-build-test-and-evidence/01-multi-repository-maven/verify.sh",
+                ".guide/java/prepared.json",
+                ".guide/java/unprepared.json",
+            ),
+        ),
     ]
 
 
@@ -479,6 +740,8 @@ def main() -> int:
         if not (copied_state / ".workspace/learner/note.txt").is_file():
             raise AssertionError("격리 source 복사가 learner workspace를 누락했습니다.")
         print("[PASS] learner workspace는 source 복사·불변성에 포함하고 준비 fingerprint에서만 제외")
+
+    verify_multi_repository_public_command()
 
     baseline = run_validator(ROOT)
     if baseline.returncode != 0:

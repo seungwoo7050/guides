@@ -10,6 +10,17 @@
 
 명령행 문자열을 안전하게 `long`으로 변환하고, 계산 성공과 입력 실패의 출력·종료 상태 경계를 하나의 실행 가능한 계약으로 만듭니다.
 
+## 권장 구현 순서
+
+`reference/` 전체가 하나의 numbering scope입니다. 번호는 실제 과거 작성 순서가 아니라 같은 프로그램을 다시 만들 때의 학습용 권장 구현 순서입니다. Maven project와 POM은 제공된 scaffold이므로 Implementation 0은 없습니다.
+
+| 순서 | 구현 위치 | 책임 |
+|---:|---|---|
+| 1 | `NumberReportApplication.run` | 인자와 두 출력 stream을 받는 부작용 경계를 먼저 고정합니다. |
+| 1-1 | `run`의 인자 순회 | 모든 입력을 변환하고 합계·최솟값·최댓값을 성공 출력 전에 계산합니다. |
+| 1-2 | `run`의 평균·출력 블록 | 반올림과 locale을 고정하고 완성된 결과만 stdout에 commit합니다. |
+| 2 | `NumberReportApplication.main` | 반환 상태를 실제 process exit로 번역합니다. |
+
 ## 프로그램 계약
 
 다음처럼 하나 이상의 정수를 전달합니다.
@@ -49,12 +60,6 @@ average=13.00
 ./scripts/check-workspace.sh exercises/01-language-and-domain/01-first-program
 ```
 
-완성 예시는 루트 reactor에서 검증됩니다.
-
-```sh
-./mvnw -pl :first-program-reference -am test
-```
-
 테스트를 약하게 바꾸어 skeleton을 통과시키지 않습니다. 구현을 마친 뒤에만 `reference`와 비교합니다.
 
 ## 완료 기준
@@ -72,5 +77,10 @@ average=13.00
 
 ```sh
 ./scripts/check-workspace.sh exercises/01-language-and-domain/01-first-program
+```
+
+workspace가 통과하고 자기 설명을 마친 뒤에만 비교용 구현을 검증하고 `reference/` 소스를 읽습니다.
+
+```sh
 ./scripts/mvn-guide.sh -pl :first-program-reference -am test
 ```

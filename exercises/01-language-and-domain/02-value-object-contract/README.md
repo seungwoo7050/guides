@@ -6,6 +6,18 @@
 
 금액과 통화를 하나의 불변 값으로 묶고, 생성·덧셈·뺄셈의 모든 실패를 객체 경계에서 일관되게 거절합니다.
 
+## 권장 구현 순서
+
+`reference/` 전체가 하나의 numbering scope입니다. 번호는 실제 과거 작성 순서가 아니라 불변 값 객체를 만드는 학습용 권장 구현 순서입니다. 제공된 Maven scaffold에는 Implementation 0을 부여하지 않습니다.
+
+| 순서 | 구현 위치 | 책임 |
+|---:|---|---|
+| 1 | `Currency` | 허용하는 통화 집합을 닫힌 타입으로 고정합니다. |
+| 2 | `Money` compact constructor | 금액과 통화의 생성 불변식을 유효한 instance보다 먼저 검사합니다. |
+| 3 | `Money.requireSameCurrency` | 피연산자의 존재와 통화 호환성을 한 경계가 소유합니다. |
+| 4 | `Money.add` | checked arithmetic 뒤 원본을 바꾸지 않는 새 값을 만듭니다. |
+| 5 | `Money.subtract` | checked arithmetic과 음수 결과 거절을 함께 적용합니다. |
+
 ## 구현할 계약
 
 정본 skeleton을 `.workspace/value-object-contract`로 복사한 뒤 학습자 복사본의 `Money`를 수정합니다.
@@ -20,12 +32,6 @@
 ```sh
 ./scripts/new-workspace.sh exercises/01-language-and-domain/02-value-object-contract
 ./scripts/check-workspace.sh exercises/01-language-and-domain/02-value-object-contract
-```
-
-완성 예시는 다음 명령으로 확인합니다.
-
-```sh
-./mvnw -pl :value-object-contract-reference -am test
 ```
 
 테스트를 삭제하거나 예외 범위를 넓혀 통과시키지 않습니다. 생성 실패, 통화 불일치, 오버플로와 음수 결과가 각각 어느 경계에서 거절되는지 설명할 수 있어야 합니다.
@@ -45,5 +51,10 @@
 
 ```sh
 ./scripts/check-workspace.sh exercises/01-language-and-domain/02-value-object-contract
+```
+
+workspace가 통과하고 자기 설명을 마친 뒤에만 비교용 구현을 검증하고 `reference/` 소스를 읽습니다.
+
+```sh
 ./scripts/mvn-guide.sh -pl :value-object-contract-reference -am test
 ```

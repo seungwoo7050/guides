@@ -3,6 +3,7 @@ set -euo pipefail
 
 EXERCISE=$(cd "$(dirname "$0")" && pwd)
 ROOT=$(cd "$EXERCISE/../../.." && pwd)
+MARKER="$ROOT/.guide/java/prepared.json"
 SEED=${GUIDE_MAVEN_REPOSITORY:-}
 WORK="$EXERCISE/.workspace"
 REPOSITORY="$WORK/repository"
@@ -20,8 +21,24 @@ trap 'exit 129' HUP
 trap 'exit 130' INT
 trap 'exit 143' TERM
 
+if [[ -n "$SEED" ]]; then
+  [[ "${MAVEN_USER_HOME:-}" == /* && -d "${MAVEN_USER_HOME:-}" ]] \
+    || fail "격리 검증에는 준비된 절대 MAVEN_USER_HOME이 필요합니다."
+else
+  [[ -f "$MARKER" ]] || fail "먼저 저장소 루트에서 make prepare를 실행하십시오."
+  fingerprint=$(python3 "$ROOT/scripts/guide_state.py" preparation-capture "$ROOT")
+  SEED=$(
+    python3 "$ROOT/scripts/guide_state.py" marker-field \
+      "$MARKER" "$fingerprint" maven_repository
+  )
+  MAVEN_USER_HOME=$(
+    python3 "$ROOT/scripts/guide_state.py" marker-field \
+      "$MARKER" "$fingerprint" maven_user_home
+  )
+fi
 [[ "$SEED" == /* && -d "$SEED" ]] \
   || fail "GUIDE_MAVEN_REPOSITORY에 준비된 절대 캐시 경로가 필요합니다."
+export MAVEN_USER_HOME
 rm -rf "$WORK"
 mkdir -p "$REPOSITORY"
 cp -R "$SEED"/. "$REPOSITORY"/

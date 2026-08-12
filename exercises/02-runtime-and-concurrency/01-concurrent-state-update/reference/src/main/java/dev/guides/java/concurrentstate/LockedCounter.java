@@ -10,6 +10,7 @@ public final class LockedCounter {
     this.value = initialValue;
   }
 
+  // [Implementation 3] lock이 read-decide-write 전체를 소유해 conservation invariant를 지킵니다.
   public boolean trySubtract(long delta) {
     lock.lock();
     try {
@@ -23,6 +24,7 @@ public final class LockedCounter {
     }
   }
 
+  // [Implementation 3-1] 관찰도 같은 lock을 거쳐 state ownership 밖의 race를 만들지 않습니다.
   public long value() {
     lock.lock();
     try {
