@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""The answer checker must reject fifteen independent known-bad answers."""
+"""Prove that the answer checker rejects independent known-bad answers."""
 
 from __future__ import annotations
 
@@ -116,9 +116,59 @@ def curl_loopback_query_decoy(data: dict) -> None:
     )
 
 
+def attached_semicolon(data: dict) -> None:
+    first(data)["observation_commands"][0] += "; touch changed"
+
+
+def attached_pipe(data: dict) -> None:
+    first(data)["observation_commands"][0] += "|sh"
+
+
+def newline_chaining(data: dict) -> None:
+    first(data)["observation_commands"][0] += "\ntouch changed"
+
+
+def background_chaining(data: dict) -> None:
+    first(data)["observation_commands"][0] += "& touch changed"
+
+
+def missing_holder_observation(data: dict) -> None:
+    data["cases"]["03-waiting-for-input"]["observation_commands"][2] = (
+        "lsof -p READER_PID"
+    )
+
+
+def missing_relative_config_observation(data: dict) -> None:
+    data["cases"]["05-working-directory"]["observation_commands"][0] = (
+        "grep service app/service.py"
+    )
+
+
+def wrong_cwd_presence_observation(data: dict) -> None:
+    data["cases"]["05-working-directory"]["observation_commands"][2] = (
+        "test ! -e app/config/service.json"
+    )
+
+
+def fifo_keyword_soup(data: dict) -> None:
+    data["cases"]["03-waiting-for-input"]["observation_commands"] = [
+        "ps -p 1 -o READER_PID,HOLDER_PID",
+        "lsof READER_PID",
+        "lsof HOLDER_PID",
+    ]
+
+
+def working_directory_keyword_soup(data: dict) -> None:
+    data["cases"]["05-working-directory"]["observation_commands"] = [
+        "grep 'pathlib.path does not exist' app/service.py",
+        "test -n app/config/service.json",
+        "test ! -n wrong-run-dir/config/service.json",
+    ]
+
+
 MUTANTS = (
     Mutant("missing case", "누락된 사례", missing_case),
-    Mutant("wrong layer", "layer는", wrong_layer),
+    Mutant("wrong layer", "layer가", wrong_layer),
     Mutant("unsafe observation", "위험하거나", unsafe_command),
     Mutant("vague evidence", "40자 이상", vague_evidence),
     Mutant("single regression", "두 개 이상", one_regression),
@@ -132,11 +182,78 @@ MUTANTS = (
     Mutant("curl loopback subdomain", "loopback endpoint", curl_loopback_subdomain),
     Mutant("curl loopback userinfo", "userinfo", curl_loopback_userinfo),
     Mutant("curl loopback query decoy", "loopback endpoint", curl_loopback_query_decoy),
+    Mutant("attached semicolon", "제어 연산자", attached_semicolon),
+    Mutant("attached pipe", "제어 연산자", attached_pipe),
+    Mutant("newline chaining", "제어 연산자", newline_chaining),
+    Mutant("background chaining", "제어 연산자", background_chaining),
+    Mutant("missing FIFO holder observation", "서로 다른 PID", missing_holder_observation),
+    Mutant("missing relative config observation", "실제 상태 질문", missing_relative_config_observation),
+    Mutant("wrong cwd presence observation", "실제 상태 질문", wrong_cwd_presence_observation),
+    Mutant("FIFO observation keyword soup", "실제 상태 질문", fifo_keyword_soup),
+    Mutant("working-directory observation keyword soup", "실제 상태 질문", working_directory_keyword_soup),
 )
+
+
+def check_numeric_pid_observations(baseline: dict) -> None:
+    numeric = copy.deepcopy(baseline)
+    commands = numeric["cases"]["03-waiting-for-input"]["observation_commands"]
+    numeric["cases"]["03-waiting-for-input"]["observation_commands"] = [
+        command.replace("READER_PID", "12345").replace("HOLDER_PID", "12346")
+        for command in commands
+    ]
+    with tempfile.TemporaryDirectory(prefix="unix-numeric-pids-") as directory:
+        path = Path(directory) / "numeric.json"
+        path.write_text(json.dumps(numeric, ensure_ascii=False), encoding="utf-8")
+        errors = module.validate(path)
+    if errors:
+        raise RuntimeError(f"실제 숫자 PID 관찰이 거부됐습니다: {errors}")
+    print("PASS numeric reader/holder PID observations")
+
+
+def check_contract_redaction(baseline: dict) -> None:
+    payloads: list[dict] = []
+    for case_id in sorted(module.EXPECTED):
+        output = io.StringIO()
+        with redirect_stdout(output):
+            result = module.main(["check_answers.py", "--show-contract", case_id])
+        if result != 0:
+            raise RuntimeError(f"contract 조회 실패: {case_id}")
+        payload = json.loads(output.getvalue())
+        if payload.get("case_id") != case_id:
+            raise RuntimeError(f"contract case_id 불일치: {case_id}")
+        payloads.append({key: value for key, value in payload.items() if key != "case_id"})
+    if any(payload != payloads[0] for payload in payloads[1:]):
+        raise RuntimeError("contract 조회가 조사 전 사례별 정답 mapping을 노출합니다.")
+    forbidden = {
+        "layer", "primary_cause", "safe_fix", "required_command_kinds",
+        "evidence_facts", "regression_targets",
+    }
+    if forbidden & set(payloads[0]):
+        raise RuntimeError("contract 최상위에 사례별 정답 field가 남았습니다.")
+
+    wrong = copy.deepcopy(baseline)
+    case_id = sorted(module.EXPECTED)[0]
+    spec = module.EXPECTED[case_id]
+    wrong["cases"][case_id]["layer"] = "unknown-layer"
+    errors = "\n".join(module.validate_data(wrong) if hasattr(module, "validate_data") else [])
+    if not errors:
+        with tempfile.TemporaryDirectory(prefix="unix-redaction-") as directory:
+            path = Path(directory) / "wrong.json"
+            path.write_text(json.dumps(wrong, ensure_ascii=False), encoding="utf-8")
+            errors = "\n".join(module.validate(path))
+    leaked_values = {
+        str(spec["layer"]), str(spec["primary_cause"]), str(spec["safe_fix"]),
+        *map(str, spec["evidence_facts"]), *map(str, spec["regression_targets"]),
+    }
+    if not errors or any(value in errors for value in leaked_values):
+        raise RuntimeError(f"validation error가 사례별 정답을 노출합니다: {errors}")
+    print("PASS contract and validation diagnostics redact per-case answers")
 
 
 def main() -> int:
     baseline = json.loads(REFERENCE.read_text(encoding="utf-8"))
+    check_contract_redaction(baseline)
+    check_numeric_pid_observations(baseline)
     if module.validate(REFERENCE):
         print("FAIL answer validator baseline")
         return 1

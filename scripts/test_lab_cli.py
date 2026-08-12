@@ -7,6 +7,7 @@ import importlib.util
 import json
 import os
 import re
+import shutil
 import socket
 import subprocess
 import sys
@@ -19,12 +20,17 @@ ROOT = Path(__file__).resolve().parents[1]
 LAB = ROOT / "exercises/system-investigation/lab.py"
 
 
-def check_process_identity_races() -> None:
-    spec = importlib.util.spec_from_file_location("unix_lab_identity_test", LAB)
+def load_lab_module(name: str):
+    spec = importlib.util.spec_from_file_location(name, LAB)
     if spec is None or spec.loader is None:
         raise RuntimeError("lab.py를 test module로 읽지 못했습니다.")
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)
+    return module
+
+
+def check_process_identity_races() -> None:
+    module = load_lab_module("unix_lab_identity_test")
     case_root = Path("/private/tmp/identity-race-case")
 
     native_token, native_detail = module.probe_process_start_token(os.getpid())
@@ -326,8 +332,104 @@ def alive(pid: int) -> bool:
     return True
 
 
+def check_case03_holder_eof_contract() -> None:
+    module = load_lab_module("unix_lab_holder_test")
+    with tempfile.TemporaryDirectory(prefix="unix-lab-holder-eof-") as directory:
+        destination = Path(directory) / "case"
+        try:
+            created = run("create", "03-waiting-for-input", str(destination))
+            assert_result(created, "case03 holder EOF create", "created=")
+            state = json.loads((destination / ".case.json").read_text(encoding="utf-8"))
+            holder = next(item for item in state["processes"] if item["role"] == "fifo-holder")
+            reader = next(item for item in state["processes"] if item["role"] == "fifo-reader")
+            module.terminate_process(
+                int(holder["pid"]), destination, str(holder["start_token"])
+            )
+            if not module.wait_for_exit(
+                int(reader["pid"]), 2, str(reader["start_token"])
+            ):
+                raise RuntimeError("holder 종료 뒤 reader가 EOF를 받고 종료하지 않았습니다.")
+            output = Path(state["data"]["output"])
+            if output.read_text(encoding="utf-8") != "received=":
+                raise RuntimeError("holder 종료 뒤 reader의 EOF 결과가 올바르지 않습니다.")
+        finally:
+            if destination.exists():
+                destroyed = run("destroy", str(destination))
+                assert_result(destroyed, "case03 holder EOF destroy", "destroyed=")
+    print("PASS scenario03 holder ownership causes EOF boundary")
+
+
+def check_symptom_identity_safety() -> None:
+    with tempfile.TemporaryDirectory(prefix="unix-lab-symptom-identity-") as directory:
+        destination = Path(directory) / "case"
+        state_path = destination / ".case.json"
+        original: bytes | None = None
+        try:
+            created = run("create", "08-signal-not-forwarded", str(destination))
+            assert_result(created, "case08 identity create", "created=")
+            original = state_path.read_bytes()
+            state = json.loads(original)
+            pids = [int(item["pid"]) for item in state["processes"]]
+            wrapper = next(item for item in state["processes"] if item["role"] == "wrapper")
+            wrapper["start_token"] = "tampered-start-token"
+            state_path.write_text(json.dumps(state, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+            result = run("symptom", str(destination))
+            if result.returncode == 0 or "identity" not in result.stderr:
+                raise RuntimeError(
+                    "tampered wrapper identity가 안전 실패하지 않았습니다: "
+                    f"status={result.returncode} stdout={result.stdout!r} stderr={result.stderr!r}"
+                )
+            if not all(alive(pid) for pid in pids):
+                raise RuntimeError("identity 불일치인데 실제 wrapper 또는 worker에 신호를 보냈습니다.")
+        finally:
+            if original is not None and state_path.is_file():
+                state_path.write_bytes(original)
+            if destination.exists():
+                destroyed = run("destroy", str(destination))
+                assert_result(destroyed, "case08 identity destroy", "destroyed=")
+    print("PASS scenario08 symptom refuses reused or tampered PID identity")
+
+
+def check_network_symptom_identity_safety() -> None:
+    for case_id, role in (
+        ("06-address-family-mismatch", "ipv4-server"),
+        ("07-running-not-ready", "readiness-server"),
+    ):
+        with tempfile.TemporaryDirectory(prefix="unix-lab-network-identity-") as directory:
+            destination = Path(directory) / "case"
+            state_path = destination / ".case.json"
+            original: bytes | None = None
+            try:
+                created = run("create", case_id, str(destination))
+                assert_result(created, f"{case_id} identity create", "created=")
+                original = state_path.read_bytes()
+                state = json.loads(original)
+                record = next(item for item in state["processes"] if item["role"] == role)
+                pid = int(record["pid"])
+                record["start_token"] = "tampered-start-token"
+                state_path.write_text(
+                    json.dumps(state, ensure_ascii=False, indent=2) + "\n",
+                    encoding="utf-8",
+                )
+                result = run("symptom", str(destination))
+                if result.returncode == 0 or "identity" not in result.stderr:
+                    raise RuntimeError(f"{case_id}가 tampered server identity로 network probe를 실행했습니다.")
+                if not alive(pid):
+                    raise RuntimeError(f"{case_id} identity 불일치가 실제 server를 종료했습니다.")
+            finally:
+                if original is not None and state_path.is_file():
+                    state_path.write_bytes(original)
+                if destination.exists():
+                    destroyed = run("destroy", str(destination))
+                    assert_result(destroyed, f"{case_id} identity destroy", "destroyed=")
+    print("PASS network symptoms refuse reused or tampered server identity")
+
+
 def main() -> int:
     check_process_identity_races()
+    check_case03_holder_eof_contract()
+    check_symptom_identity_safety()
+    check_network_symptom_identity_safety()
     listed = run("list")
     assert_result(listed, "list", "09-reserved-not-resident")
     case_ids = [line.split("\t", 1)[0] for line in listed.stdout.splitlines() if line.strip()]
@@ -336,7 +438,9 @@ def main() -> int:
     with tempfile.TemporaryDirectory(prefix="unix-lab-cli-") as directory:
         base = Path(directory)
         for case_id in case_ids:
-            destination = base / case_id
+            destination = base / (
+                "case 01; touch INJECTED; #" if case_id == "01-command-resolution" else case_id
+            )
             try:
                 created = run("create", case_id, str(destination))
                 assert_result(created, f"{case_id} create", "created=")
@@ -346,12 +450,30 @@ def main() -> int:
                 for item in state.get("processes", []):
                     if not item.get("start_token"):
                         raise RuntimeError(f"{case_id}: start_token이 없습니다: {item}")
+                if case_id == "01-command-resolution":
+                    env_line = (destination / "scenario.env").read_text(encoding="utf-8").strip()
+                    if not env_line.startswith("PATH="):
+                        raise RuntimeError("case01 scenario.env에 scoped PATH가 없습니다.")
+                    selected = shutil.which("unix-guide-tool", path=env_line.removeprefix("PATH="))
+                    if selected != state["data"]["stale_bin"] + "/unix-guide-tool":
+                        raise RuntimeError(f"case01 scoped PATH가 stale 후보를 선택하지 않습니다: {selected}")
+                    observed = subprocess.run(
+                        [selected], text=True, capture_output=True, timeout=3, check=False
+                    )
+                    if observed.returncode != 42 or "stale" not in observed.stderr:
+                        raise RuntimeError("case01 scoped observation context가 증상을 재현하지 않습니다.")
+                    if (destination / "INJECTED").exists():
+                        raise RuntimeError("case01 destination 문자가 shell command로 실행됐습니다.")
                 pids = [int(item["pid"]) for item in state.get("processes", [])]
                 port = state.get("data", {}).get("port")
                 symptom = run("symptom", str(destination))
                 assert_result(symptom, f"{case_id} symptom", f"case={case_id}")
                 status = run("status", str(destination))
                 assert_result(status, f"{case_id} status", f"case={case_id}")
+                if case_id == "05-working-directory" and not all(
+                    token in status.stdout for token in ("app_dir=", "wrong_dir=")
+                ):
+                    raise RuntimeError("case05 status가 두 실행 디렉터리를 보여 주지 않습니다.")
                 destroyed = run("destroy", str(destination))
                 assert_result(destroyed, f"{case_id} destroy", "destroyed=")
                 if destination.exists() or any(alive(pid) for pid in pids):

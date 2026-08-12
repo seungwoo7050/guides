@@ -141,6 +141,58 @@ def section(text: str, heading: str) -> str:
     return match.group(1).strip() if match else ""
 
 
+def marked_block(text: str, contract_id: str, relative: str) -> str:
+    start = f"<!-- guide-contract:{contract_id}:start -->"
+    end = f"<!-- guide-contract:{contract_id}:end -->"
+    if text.count(start) != 1 or text.count(end) != 1:
+        error(f"marked contract 누락/중복: {relative}: {contract_id}")
+        return ""
+    start_index = text.index(start) + len(start)
+    end_index = text.index(end)
+    if end_index <= start_index:
+        error(f"marked contract 순서 오류: {relative}: {contract_id}")
+        return ""
+    return text[start_index:end_index].strip()
+
+
+def markdown_table_rows(
+    block: str,
+    expected_header: tuple[str, ...],
+    relative: str,
+) -> list[list[str]]:
+    table_lines = [line.strip() for line in block.splitlines() if line.strip().startswith("|")]
+    content_lines = [line.strip() for line in block.splitlines() if line.strip()]
+    if len(table_lines) < 3:
+        error(f"marked contract 표가 비어 있음: {relative}")
+        return []
+
+    def cells(line: str) -> list[str]:
+        if not line.endswith("|"):
+            return []
+        return [value.strip() for value in line[1:-1].split("|")]
+
+    header = cells(table_lines[0])
+    valid = True
+    if len(content_lines) != len(table_lines):
+        error(f"marked contract 표 밖 내용이 있음: {relative}")
+        valid = False
+    if len(header) != len(expected_header) or any(not value for value in header):
+        error(f"marked contract 표 header 열 수/빈 값 오류: {relative}")
+        valid = False
+    separator = cells(table_lines[1])
+    if len(separator) != len(expected_header) or any(
+        re.fullmatch(r":?-{3,}:?", value) is None for value in separator
+    ):
+        error(f"marked contract 표 separator 오류: {relative}")
+        valid = False
+    rows = [cells(line) for line in table_lines[2:]]
+    for index, row in enumerate(rows, 1):
+        if len(row) != len(expected_header) or any(not value for value in row):
+            error(f"marked contract 표 row 오류: {relative}: {index}")
+            valid = False
+    return rows if valid else []
+
+
 def github_slug(value: str) -> str:
     value = re.sub(r"<[^>]+>", "", value).replace("`", "").strip().lower()
     kept = [char for char in value if char in {" ", "-", "_"} or unicodedata.category(char)[0] in {"L", "N"}]
@@ -322,14 +374,145 @@ if GUIDE == "python":
             error(f"reference 미완성 표식: {path.relative_to(ROOT)}")
 
 if GUIDE == "unix-systems":
-    answer = json.loads((ROOT / "exercises/system-investigation/reference/diagnoses.json").read_text(encoding="utf-8"))
-    cases = answer.get("cases", {})
-    expected_cases = {f"{number:02d}-{name}" for number, name in enumerate((
-        "command-resolution", "dangling-symlink", "waiting-for-input", "deleted-open-file",
-        "working-directory", "address-family-mismatch", "running-not-ready",
-        "signal-not-forwarded", "reserved-not-resident"), 1)}
-    if set(cases) != expected_cases:
-        error("Unix 기준 답안은 정확히 아홉 사례여야 합니다.")
+    unix_case_ids = tuple(
+        f"{number:02d}-{name}" for number, name in enumerate((
+            "command-resolution", "dangling-symlink", "waiting-for-input",
+            "deleted-open-file", "working-directory", "address-family-mismatch",
+            "running-not-ready", "signal-not-forwarded", "reserved-not-resident",
+        ), 1)
+    )
+    root_readme_path = ROOT / "README.md"
+    root_readme = root_readme_path.read_text(encoding="utf-8")
+    learning_rows = markdown_table_rows(
+        marked_block(root_readme, "learning-map", "README.md"),
+        ("순서", "문서", "관찰 예제", "직접 수행", "수정 위치", "검증", "완료 뒤 비교·다음"),
+        "README.md learning-map",
+    )
+    if learning_rows:
+        try:
+            orders = [int(row[0]) for row in learning_rows]
+        except ValueError:
+            error("README learning-map 순서는 정수여야 합니다.")
+        else:
+            expected_orders = list(range(orders[0], orders[0] + len(orders))) if orders else []
+            if not orders or orders[0] not in {0, 1} or orders != expected_orders:
+                error("README learning-map 순서는 0 또는 1부터 중복·누락 없이 증가해야 합니다.")
+        if any(row[2] != "—" for row in learning_rows):
+            error("Unix README learning-map의 관찰 예제 열은 모두 —여야 합니다.")
+        mapped_documents: list[str] = []
+        for index, row in enumerate(learning_rows, 1):
+            destinations = re.findall(r"\[[^]]+\]\(([^)#]+)(?:#[^)]*)?\)", row[1])
+            if len(destinations) != 1:
+                error(f"README learning-map 문서 link 수 불일치: row {index}")
+                continue
+            mapped_documents.append(unquote(destinations[0]))
+        if sorted(mapped_documents) != sorted(CONFIG["docs"]):
+            error("README learning-map 문서 link coverage 불일치")
+        case_id_set = set(unix_case_ids)
+        mapped_case_ids = [
+            token
+            for row in learning_rows
+            for token in re.findall(r"`(\d{2}-[a-z0-9-]+)`", row[3])
+        ]
+        if sorted(mapped_case_ids) != sorted(unix_case_ids):
+            error("README learning-map 사례 coverage 불일치")
+        for index, row in enumerate(learning_rows, 1):
+            mapped_cases = [
+                token
+                for token in re.findall(r"`(\d{2}-[a-z0-9-]+)`", row[3])
+                if token in case_id_set
+            ]
+            if not mapped_cases:
+                continue
+            if "workspace/diagnoses.json" not in row[4]:
+                error(f"README learning-map 사례 row의 learner 수정 위치 누락: row {index}")
+            verification_links = re.findall(r"\[[^]]+\]\(([^)]+)\)", row[5])
+            verification_commands = re.findall(r"`([^`]+)`", row[5])
+            has_case_workflow = (
+                "exercises/system-investigation/README.md#사례별-반복"
+                in verification_links
+            )
+            has_workspace_check = "./check.sh workspace" in verification_commands
+            if not (has_case_workflow or has_workspace_check):
+                error(f"README learning-map 사례 row의 검증 경로 누락: row {index}")
+        modification = "\n".join(row[4] for row in learning_rows)
+        verification = "\n".join(row[5] for row in learning_rows)
+        comparison = "\n".join(row[6] for row in learning_rows)
+        if "workspace/diagnoses.json" not in modification:
+            error("README learning-map에 learner 수정 위치가 없습니다.")
+        if "./check.sh workspace" not in verification:
+            error("README learning-map에 learner workspace 검증이 없습니다.")
+        if "reference/diagnoses.json" not in comparison or "reference/diagnoses.json" not in learning_rows[-1][6]:
+            error("README learning-map에 완료 뒤 reference 비교가 없습니다.")
+
+    for concept in sorted(CONFIG["concepts"]):
+        concept_text = (ROOT / concept).read_text(encoding="utf-8")
+        if "## 실습 연결\n" in concept_text:
+            error(f"legacy 실습 연결 heading이 남아 있음: {concept}")
+
+    exercise_relative = "exercises/system-investigation/README.md"
+    exercise_text = (ROOT / exercise_relative).read_text(encoding="utf-8")
+    metadata_matches = re.findall(
+        r"<!-- guide-contract:implementation-annotation\s*\n(.*?)\n-->",
+        exercise_text,
+        re.S,
+    )
+    if len(metadata_matches) != 1:
+        error("Unix expected-evidence annotation 예외 metadata 누락/중복")
+    else:
+        try:
+            metadata = json.loads(metadata_matches[0])
+        except json.JSONDecodeError:
+            error("Unix expected-evidence annotation 예외 metadata JSON 오류")
+        else:
+            expected_metadata = {
+                "artifact": "exercises/system-investigation/reference/diagnoses.json",
+                "mode": "expected-evidence",
+                "scope": "exercises/system-investigation/reference",
+                "walkthrough": "evidence-construction",
+            }
+            if not isinstance(metadata, dict) or metadata != expected_metadata:
+                error("Unix expected-evidence annotation 예외 metadata 불일치")
+            elif not (ROOT / expected_metadata["artifact"]).is_file():
+                error("Unix expected-evidence artifact가 없습니다.")
+
+    evidence_rows = markdown_table_rows(
+        marked_block(exercise_text, "evidence-construction", exercise_relative),
+        ("순서", "작성 필드", "책임", "검증"),
+        f"{exercise_relative} evidence-construction",
+    )
+    if evidence_rows:
+        try:
+            evidence_orders = [int(row[0]) for row in evidence_rows]
+        except ValueError:
+            error("evidence construction 순서는 정수여야 합니다.")
+        else:
+            if evidence_orders != list(range(1, len(evidence_orders) + 1)):
+                error("evidence construction 순서는 1부터 중복·누락 없이 증가해야 합니다.")
+        field_cells = "\n".join(row[1] for row in evidence_rows)
+        for field in (
+            "observation_commands", "expected_evidence", "evidence_facts", "layer",
+            "primary_cause", "safe_fix", "regression_checks", "regression_targets",
+        ):
+            if field_cells.count(f"`{field}`") != 1:
+                error(f"evidence construction field coverage 불일치: {field}")
+
+    implementation_token = re.compile(r"\[Implementation (?:0|[1-9]\d*)(?:-[1-9]\d*)?\]")
+    exercise_root = ROOT / "exercises/system-investigation"
+    for path in exercise_root.rglob("*"):
+        if path.is_file() and path.suffix.lower() in {".py", ".md", ".json", ".sh", ".txt"}:
+            if implementation_token.search(path.read_text(encoding="utf-8")):
+                error(f"analysis/evidence 실습의 Implementation annotation 금지: {path.relative_to(ROOT)}")
+
+    answer_path = ROOT / "exercises/system-investigation/reference/diagnoses.json"
+    try:
+        answer = json.loads(answer_path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        error("Unix 기준 답안 JSON을 읽을 수 없습니다.")
+    else:
+        cases = answer.get("cases", {}) if isinstance(answer, dict) else {}
+        if not isinstance(cases, dict) or set(cases) != set(unix_case_ids):
+            error("Unix 기준 답안은 정확히 아홉 사례여야 합니다.")
 
 reference_roots: list[Path] = []
 for base in (ROOT / "reference", ROOT / "exercises"):

@@ -209,18 +209,11 @@ cat
 
 처음부터 `sudo`, 재설치, 설정 전체 초기화나 강제 종료를 사용하지 않습니다. 이런 변경은 원래 증상을 지우고 새로운 상태를 만들 수 있습니다.
 
-## 실습 연결
-
-[시스템 조사 실습](../../exercises/system-investigation/README.md)의 다음 사례를 수행합니다.
-
-- `01-command-resolution`: 같은 명령 이름이 `PATH` 순서에 따라 다른 실행 파일을 선택하는 상황
-- `05-working-directory`: 서비스가 상대 경로 설정을 찾지 못하는 상황
-
-먼저 `command -v`, `type`, `pwd`, stdout·stderr와 종료 상태만으로 가설을 좁힙니다.
-
 ## 연결 실습
 
-- [사례 01과 05](../../exercises/system-investigation/README.md)에서 PATH와 cwd 증상을 실행 문맥 근거로 분류합니다.
+- [시스템 조사 실습](../../exercises/system-investigation/README.md)의 `01-command-resolution`과 `05-working-directory`를 위한 실행 문맥 모델입니다.
+- 사례 01은 [사용자, 권한과 환경](04-users-permissions-and-environment.md)까지 읽은 뒤 완료합니다. 사례 05는 서비스 supervisor의 cwd까지 다루는 8번 문서 뒤 완료합니다.
+- 지금은 `command -v`, `type`, `pwd`, stdout·stderr와 종료 상태만으로 두 증상의 가설을 좁히고 reference는 열지 않습니다.
 
 ## 완료 기준
 

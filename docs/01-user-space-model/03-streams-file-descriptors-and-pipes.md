@@ -165,17 +165,10 @@ unlink(path)
 7. 종료나 재시작 전에 데이터 손실과 다른 연결 영향을 검토합니다.
 ```
 
-## 실습 연결
-
-- `03-waiting-for-input`: 프로세스가 종료되지 않고 입력 스트림을 기다리는 상태를 조사합니다.
-- `04-deleted-open-file`: 경로는 없지만 프로세스가 열린 파일을 유지하는 상태를 조사합니다.
-- `08-signal-not-forwarded`: wrapper가 자식 수명과 FD를 올바르게 회수하지 않는 상황을 함께 확인합니다.
-
-[시스템 조사 실습](../../exercises/system-investigation/README.md)
-
 ## 연결 실습
 
-- [사례 03과 04](../../exercises/system-investigation/README.md)에서 FIFO 대기와 열린 FD 수명을 확인합니다.
+- [시스템 조사 실습](../../exercises/system-investigation/README.md)의 `04-deleted-open-file`을 지금 완료해 경로가 사라진 뒤에도 열린 FD가 객체를 유지하는 상태를 확인합니다.
+- `03-waiting-for-input`은 프로세스 상태를 다루는 5번 문서 뒤, `08-signal-not-forwarded`는 서비스 수명을 다루는 8번 문서 뒤 완료합니다. 지금은 FIFO writer 참조와 wrapper의 child·FD 소유권을 찾아 둡니다.
 
 ## 완료 기준
 

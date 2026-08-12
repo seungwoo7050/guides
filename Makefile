@@ -1,5 +1,7 @@
 .PHONY: prepare check verify negative-check clean
 
+export PYTHONDONTWRITEBYTECODE := 1
+
 prepare:
 	@./prepare.sh
 

@@ -81,17 +81,19 @@ Unix 계열 환경에서 발생한 문제를 해결하려면 명령을 많이 �
 
 [시스템 조사 실습](../exercises/system-investigation/README.md)은 아홉 개의 재현 가능한 장애 상황을 제공합니다.
 
-| 사례 | 핵심 경계 | 관련 문서 |
-|---|---|---|
-| 01 명령 탐색 우선순위 | `PATH`, 실행 파일 정체성 | 01, 04 |
-| 02 끊어진 심볼릭 링크 | 경로명과 대상 객체 | 02 |
-| 03 입력을 기다리는 프로세스 | 실행 중과 정지처럼 보이는 상태 | 03, 05 |
-| 04 삭제됐지만 열린 파일 | 경로명 수명과 열린 자원 수명 | 02, 03 |
-| 05 잘못된 작업 디렉터리 | 실행 문맥과 상대 경로 | 01, 04, 08 |
-| 06 주소 계열 불일치 | IPv4 리스너와 IPv6 클라이언트 | 07 |
-| 07 실행 중이지만 준비되지 않은 서비스 | running, ready, healthy | 08 |
-| 08 전달되지 않은 종료 시그널 | wrapper, child, ownership | 05, 08 |
-| 09 예약됐지만 상주하지 않은 메모리 | virtual size와 RSS | 06 |
+이 브랜치에는 별도 example이 없습니다. `lab.py`가 생성하는 프로세스·파일·loopback listener는 학습자가 직접 조사하는 exercise fixture이며 완성 답안을 보여 주는 관찰 예제가 아닙니다. 표의 준비 문서를 읽은 직후 사례를 완료하되, 뒤 문서의 보조 비교에서는 같은 기록을 다시 검토합니다.
+
+| 사례 | 핵심 경계 | 핵심 준비 문서 | 완료 시점 | 뒤에서 다시 연결하는 문서 |
+|---|---|---|---|---|
+| `01-command-resolution` | `PATH`, 실행 파일 정체성 | [터미널, 프로세스와 커널](01-user-space-model/01-terminal-process-and-kernel.md), [사용자, 권한과 환경](01-user-space-model/04-users-permissions-and-environment.md) | 4번 문서 뒤 | [시스템 문제 진단](03-services-and-troubleshooting/02-system-troubleshooting.md) |
+| `02-dangling-symlink` | 경로명과 대상 객체 | [파일, 경로와 메타데이터](01-user-space-model/02-files-paths-and-metadata.md) | 2번 문서 뒤 | [시스템 문제 진단](03-services-and-troubleshooting/02-system-troubleshooting.md) |
+| `03-waiting-for-input` | 실행 중과 입력 대기 | [스트림, 파일 디스크립터와 파이프](01-user-space-model/03-streams-file-descriptors-and-pipes.md), [프로세스, 시그널과 작업 제어](02-process-and-resource-observation/01-processes-signals-and-jobs.md) | 5번 문서 뒤 | [시스템 문제 진단](03-services-and-troubleshooting/02-system-troubleshooting.md) |
+| `04-deleted-open-file` | 경로명 수명과 열린 자원 수명 | [파일, 경로와 메타데이터](01-user-space-model/02-files-paths-and-metadata.md), [스트림, 파일 디스크립터와 파이프](01-user-space-model/03-streams-file-descriptors-and-pipes.md) | 3번 문서 뒤 | [프로세스 메모리 관찰](02-process-and-resource-observation/02-process-memory-observation.md)에서 disk와 memory 문제 비교 |
+| `05-working-directory` | 실행 문맥과 상대 경로 | [터미널, 프로세스와 커널](01-user-space-model/01-terminal-process-and-kernel.md), [파일, 경로와 메타데이터](01-user-space-model/02-files-paths-and-metadata.md), [사용자, 권한과 환경](01-user-space-model/04-users-permissions-and-environment.md), [서비스 감독, 로그와 준비 상태](03-services-and-troubleshooting/01-service-supervision-logs-and-readiness.md) | 8번 문서 뒤 | [시스템 문제 진단](03-services-and-troubleshooting/02-system-troubleshooting.md) |
+| `06-address-family-mismatch` | IPv4 listener와 IPv6 client | [네트워크 엔드포인트와 연결 진단](02-process-and-resource-observation/03-network-endpoints-and-diagnosis.md) | 7번 문서 뒤 | [시스템 문제 진단](03-services-and-troubleshooting/02-system-troubleshooting.md) |
+| `07-running-not-ready` | running, ready, healthy | [네트워크 엔드포인트와 연결 진단](02-process-and-resource-observation/03-network-endpoints-and-diagnosis.md), [서비스 감독, 로그와 준비 상태](03-services-and-troubleshooting/01-service-supervision-logs-and-readiness.md) | 8번 문서 뒤 | [시스템 문제 진단](03-services-and-troubleshooting/02-system-troubleshooting.md) |
+| `08-signal-not-forwarded` | wrapper, child, ownership | [스트림, 파일 디스크립터와 파이프](01-user-space-model/03-streams-file-descriptors-and-pipes.md), [프로세스, 시그널과 작업 제어](02-process-and-resource-observation/01-processes-signals-and-jobs.md), [서비스 감독, 로그와 준비 상태](03-services-and-troubleshooting/01-service-supervision-logs-and-readiness.md) | 8번 문서 뒤 | [시스템 문제 진단](03-services-and-troubleshooting/02-system-troubleshooting.md) |
+| `09-reserved-not-resident` | virtual size와 RSS | [프로세스 메모리 관찰](02-process-and-resource-observation/02-process-memory-observation.md) | 6번 문서 뒤 | [시스템 문제 진단](03-services-and-troubleshooting/02-system-troubleshooting.md) |
 
 권장 반복은 다음과 같습니다.
 
@@ -105,7 +107,7 @@ Unix 계열 환경에서 발생한 문제를 해결하려면 명령을 많이 �
 → 다른 사례에 영향을 주지 않았는지 회귀 검사
 ```
 
-완성 답안을 먼저 읽기보다 `skeleton/diagnoses.json`을 작업 공간으로 복사해 직접 조사한 뒤 `reference/diagnoses.json`과 비교합니다.
+`exercises/system-investigation/create-workspace.sh`로 `skeleton/diagnoses.json`을 안전하게 `workspace/diagnoses.json`에 복사합니다. 각 사례의 실제 출력을 조사하고 `exercises/system-investigation`에서 `./check.sh workspace`의 구조 검사와 수동 semantic review를 마친 뒤에만 `reference/diagnoses.json`과 비교합니다. 저장소 검증 명령은 learner workspace를 대신 검사하지 않습니다.
 
 ## 선택 학습 지도
 

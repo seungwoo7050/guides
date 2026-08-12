@@ -292,15 +292,18 @@ layer
 primary_cause
 observation_commands
 expected_evidence
+evidence_facts
 safe_fix
 regression_checks
+regression_targets
 ```
 
 자동 검사에서 정답 문자열을 맞히는 것으로 끝내지 않습니다. 실제 scenario를 생성하고 관찰 명령이 예상한 상태를 보여 주는지 확인합니다.
 
 ## 연결 실습
 
-- [아홉 사례 전체](../../exercises/system-investigation/README.md)에 계층·원인·읽기 전용 명령·근거·회귀 검사를 작성합니다.
+- [아홉 사례 전체](../../exercises/system-investigation/README.md)의 계층·원인·읽기 전용 명령·근거·회귀 검사를 `workspace/diagnoses.json`에서 통합 검토합니다.
+- `exercises/system-investigation`에서 `./check.sh workspace`의 구조 검사를 통과한 뒤 실제 출력과 설명의 인과 관계를 수동 검토하고, 그 다음에만 `reference/diagnoses.json`과 비교합니다.
 
 ## 완료 기준
 

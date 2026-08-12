@@ -40,6 +40,22 @@ system-investigation/
 - `check_answers.py`: 구조화된 진단 계약을 검사합니다.
 - `check.sh`: 시작점, 기준 답안, 오답 거부 능력과 모든 사례 자체 검사를 실행합니다.
 
+이 실습은 실행 코드를 구현하는 project가 아니라 관찰 결과를 구조화하는 analysis/evidence exercise입니다. 따라서 JSON 기준 답안에 Implementation 번호를 강제하지 않고 아래 증거 작성 순서가 학습 지향 construction walkthrough 역할을 대신합니다. `lab.py`, checker와 scenario 코드는 답안 구현이 아니라 재현·검증 infrastructure입니다.
+
+<!-- guide-contract:implementation-annotation
+{"artifact":"exercises/system-investigation/reference/diagnoses.json","mode":"expected-evidence","scope":"exercises/system-investigation/reference","walkthrough":"evidence-construction"}
+-->
+
+<!-- guide-contract:evidence-construction:start -->
+| 순서 | 작성 필드 | 책임 | 검증 |
+|---:|---|---|---|
+| 1 | `observation_commands` | 실제 상태를 바꾸지 않고 가설을 판별할 관찰을 고릅니다. | 허용된 읽기 전용 명령 형태와 사례별 필요한 상태 질문 |
+| 2 | `expected_evidence`, `evidence_facts` | 명령 출력에서 확인할 사실과 반증 조건을 기록합니다. | 구체적 근거 문장과 관찰 가능한 사실 enum |
+| 3 | `layer`, `primary_cause` | 증상을 실패 계층과 하나의 주 원인으로 좁힙니다. | 공개 vocabulary와 사례의 관찰 계약 |
+| 4 | `safe_fix` | 증거를 가장 적게 지우는 최소 복구를 고릅니다. | 공개 vocabulary와 사례의 안전 경계 |
+| 5 | `regression_checks`, `regression_targets` | 정상·실패·수명 조건을 다시 확인할 절차와 보장 결과를 적습니다. | 두 개 이상의 구체적 검사와 회귀 목표 enum |
+<!-- guide-contract:evidence-construction:end -->
+
 ## 시작
 
 저장소 루트에서 준비를 마칩니다.
@@ -67,6 +83,8 @@ cd exercises/system-investigation
 python3 lab.py list
 ```
 
+## 사례별 반복
+
 사례 하나를 만듭니다.
 
 ```sh
@@ -83,6 +101,21 @@ python3 lab.py symptom workspace/case-01
 
 ```sh
 python3 lab.py status workspace/case-01
+```
+
+관찰 명령은 생성한 사례 디렉터리에서 실행하고, `PID`, `PORT` 같은 placeholder는 `status`가 보여 준 해당 사례의 실제 값으로 바꿉니다. 사례 01의 `PATH`는 persistent shell을 바꾸지 않고 생성된 `scenario.env`를 눈으로 확인한 뒤 사례 디렉터리에서 시작한 제한된 subshell에만 직접 구성합니다. 생성 파일을 shell source로 실행하지 않습니다.
+
+```sh
+cd workspace/case-01
+cat scenario.env
+(
+  PATH="$PWD/stale-bin:$PWD/trusted-bin:/usr/bin:/bin"
+  export PATH
+  command -v unix-guide-tool
+  type -a unix-guide-tool
+  printenv PATH
+)
+cd ../..
 ```
 
 조사가 끝나면 남은 프로세스와 임시 자원을 정리합니다.
@@ -136,7 +169,7 @@ python3 lab.py destroy workspace/case-01
 
 `layer`, `primary_cause`, `safe_fix`, `evidence_facts`, `regression_targets`는 자동 검사 가능한 계약입니다. 검사기는 안전을 위해 학습자가 쓴 명령을 실행하지 않고 읽기 전용 명령 형태와 필요한 관찰 종류만 검사합니다. `expected_evidence`와 `regression_checks` 문장의 인과 관계는 실제 출력 및 조사가 끝난 뒤의 기준 답안과 직접 대조합니다. 명령과 설명은 그대로 복사하기보다 실제로 관찰한 경로·PID·port를 반영합니다.
 
-사례별 enum과 필요한 관찰 종류는 답안 source를 열지 않고 조회할 수 있습니다.
+작성 형식, 허용 vocabulary와 읽기 전용 명령 정책은 답안 source를 열지 않고 조회할 수 있습니다. 이 명령은 선택한 사례의 정답 원인·수정·근거 enum을 공개하지 않습니다.
 
 ```sh
 python3 check_answers.py --show-contract 01-command-resolution
@@ -151,7 +184,7 @@ python3 check_answers.py --show-contract 01-command-resolution
 성공 출력의 `STRUCTURE PASS`는 구조화된 계약만 통과했다는 뜻입니다.
 `SEMANTIC REVIEW REQUIRED`에 따라 실제 출력과 기준 답안을 대조해야 완료입니다.
 
-기준 답안은 조사가 끝난 뒤 확인합니다.
+기준 답안은 조사가 끝난 뒤 `reference/diagnoses.json`을 열어 learner 기록과 사례별로 수동 비교합니다. 다음 명령은 그 기준 답안 파일 자체가 repository contract를 만족하는지 검사할 뿐 learner/reference 비교를 수행하지 않습니다.
 
 ```sh
 ./check.sh reference
@@ -219,9 +252,16 @@ ps -p PID -o pid=,vsz=,rss=,etime=,command=
 
 ## 전체 검증
 
-실습 자체의 완전성 검사:
+먼저 learner 답안을 검사하고 실제 출력과 의미를 수동 검토합니다.
 
 ```sh
+./check.sh workspace
+```
+
+그 뒤 `reference/diagnoses.json`을 learner 기록과 수동 비교하고 repository-owned 실습 자체의 완전성을 검사합니다. `./check.sh reference`는 기준 답안 파일 자체만 검사합니다.
+
+```sh
+./check.sh reference
 ./check.sh all
 ```
 
@@ -233,6 +273,8 @@ ps -p PID -o pid=,vsz=,rss=,etime=,command=
 - 아홉 사례가 의도한 증상을 실제로 재현함
 - 각 사례의 최소 수정이 증상을 해결함
 - 생성한 child process와 임시 파일이 정리됨
+
+scenario selftest는 핵심 증상, 대표 최소 복구와 자원 정리를 검사합니다. 학습자가 제안한 모든 `regression_checks`와 `regression_targets`를 대신 실행하지는 않으므로 그 내용과 실제 관찰의 인과 관계는 semantic review에서 별도로 확인합니다.
 
 ## 완료 기준
 
@@ -248,6 +290,10 @@ ps -p PID -o pid=,vsz=,rss=,etime=,command=
 ## 검증
 
 ```sh
+./check.sh workspace
+./check.sh reference
 ./check.sh all
 ../../verify.sh
 ```
+
+`./check.sh all`과 `../../verify.sh`는 learner workspace를 읽지 않습니다. 따라서 `workspace` 검사와 실제 사례 출력에 대한 semantic review를 생략할 수 없습니다.

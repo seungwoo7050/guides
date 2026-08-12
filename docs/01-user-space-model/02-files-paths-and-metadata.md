@@ -228,17 +228,10 @@ macOS에서는 `mount`, `df`, `diskutil` 중 증상에 필요한 최소 도구�
 
 경로에 공백, 개행, glob 문자나 `-`로 시작하는 이름이 있을 수 있습니다. 관찰 명령에서도 인자 경계를 보존하고 지원되는 경우 `--`를 사용합니다.
 
-## 실습 연결
-
-- `02-dangling-symlink`: 링크 자체와 최종 대상의 존재를 구분합니다.
-- `04-deleted-open-file`: 경로가 사라진 뒤에도 열린 파일 객체가 유지되는 상태를 확인합니다.
-- `05-working-directory`: 같은 상대 경로가 실행 위치에 따라 다른 결과를 만드는 상황을 확인합니다.
-
-[시스템 조사 실습](../../exercises/system-investigation/README.md)
-
 ## 연결 실습
 
-- [사례 02와 04](../../exercises/system-investigation/README.md)에서 dangling symlink와 삭제됐지만 열린 파일을 관찰합니다.
+- [시스템 조사 실습](../../exercises/system-investigation/README.md)의 `02-dangling-symlink`를 지금 완료해 링크 자체와 최종 대상을 분리합니다.
+- `04-deleted-open-file`은 다음 FD 문서 뒤, `05-working-directory`는 서비스 실행 문맥까지 읽은 뒤 완료합니다. 지금은 두 사례에서 경로명 수명과 상대 경로 기준을 찾아 둡니다.
 
 ## 완료 기준
 

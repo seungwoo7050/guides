@@ -137,6 +137,197 @@ def missing_roadmap_limit(root: Path) -> None:
     path.write_text(text.replace("## 자동화의 한계\n", "## 자동화 한계 누락\n", 1), encoding="utf-8")
 
 
+def replace_marked(root: Path, relative: str, contract_id: str,
+                   old: str, new: str, *, all_matches: bool = False) -> None:
+    path = root / relative
+    text = path.read_text(encoding="utf-8")
+    start = f"<!-- guide-contract:{contract_id}:start -->"
+    end = f"<!-- guide-contract:{contract_id}:end -->"
+    if text.count(start) != 1 or text.count(end) != 1:
+        raise RuntimeError(f"contract marker mismatch: {relative}: {contract_id}")
+    before, marked = text.split(start, 1)
+    block, after = marked.split(end, 1)
+    if old not in block:
+        raise RuntimeError(f"contract value missing: {relative}: {old}")
+    changed = block.replace(old, new) if all_matches else block.replace(old, new, 1)
+    path.write_text(before + start + changed + end + after, encoding="utf-8")
+
+
+def missing_learning_map_doc(root: Path) -> None:
+    replace_marked(
+        root,
+        "README.md",
+        "learning-map",
+        "docs/01-user-space-model/02-files-paths-and-metadata.md",
+        "docs/00-roadmap.md",
+    )
+
+
+def missing_learning_map_edit_path(root: Path) -> None:
+    replace_marked(
+        root,
+        "README.md",
+        "learning-map",
+        "workspace/diagnoses.json",
+        "workspace/answers.json",
+        all_matches=True,
+    )
+
+
+def missing_evidence_exemption(root: Path) -> None:
+    path = root / "exercises/system-investigation/README.md"
+    text = path.read_text(encoding="utf-8")
+    marker = "<!-- guide-contract:implementation-annotation\n"
+    if text.count(marker) != 1:
+        raise RuntimeError("implementation exemption marker mismatch")
+    path.write_text(text.replace(marker, "<!-- guide-contract:implementation-policy\n", 1), encoding="utf-8")
+
+
+def missing_evidence_field(root: Path) -> None:
+    replace_marked(
+        root,
+        "exercises/system-investigation/README.md",
+        "evidence-construction",
+        "`safe_fix`",
+        "`safe_repair`",
+    )
+
+
+def forbidden_implementation_annotation(root: Path) -> None:
+    path = root / "exercises/system-investigation/reference/diagnoses.json"
+    data = json.loads(path.read_text(encoding="utf-8"))
+    data["cases"]["01-command-resolution"]["expected_evidence"] += " [Implementation 1]"
+    path.write_text(json.dumps(data, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+
+
+def duplicate_legacy_connection(root: Path) -> None:
+    path = concepts(root)[0]
+    text = path.read_text(encoding="utf-8")
+    anchor = "## 연결 실습\n"
+    if text.count(anchor) != 1:
+        raise RuntimeError("connection heading mismatch")
+    path.write_text(text.replace(anchor, "## 실습 연결\n\n이전 중복 절입니다.\n\n" + anchor, 1), encoding="utf-8")
+
+
+def malformed_learning_map_row(root: Path) -> None:
+    path = root / "README.md"
+    text = path.read_text(encoding="utf-8")
+    start = "<!-- guide-contract:learning-map:start -->"
+    end = "<!-- guide-contract:learning-map:end -->"
+    before, marked = text.split(start, 1)
+    block, after = marked.split(end, 1)
+    lines = block.splitlines()
+    for index, line in enumerate(lines):
+        if line.startswith("| 2 |"):
+            lines[index] = "| 2 | malformed |"
+            break
+    else:
+        raise RuntimeError("learning-map data row missing")
+    path.write_text(before + start + "\n".join(lines) + end + after, encoding="utf-8")
+
+
+def scalar_evidence_metadata(root: Path) -> None:
+    path = root / "exercises/system-investigation/README.md"
+    text = path.read_text(encoding="utf-8")
+    pattern = re.compile(
+        r"(<!-- guide-contract:implementation-annotation\s*\n).*?(\n-->)",
+        re.S,
+    )
+    changed, count = pattern.subn(r"\1[]\2", text, count=1)
+    if count != 1:
+        raise RuntimeError("implementation metadata mismatch")
+    path.write_text(changed, encoding="utf-8")
+
+
+def learning_map_doc_as_code(root: Path) -> None:
+    target = "docs/01-user-space-model/02-files-paths-and-metadata.md"
+    replace_marked(
+        root,
+        "README.md",
+        "learning-map",
+        f"[파일, 경로와 메타데이터]({target})",
+        f"`{target}`",
+    )
+
+
+def one_case_missing_edit_path(root: Path) -> None:
+    path = root / "README.md"
+    text = path.read_text(encoding="utf-8")
+    start = "<!-- guide-contract:learning-map:start -->"
+    end = "<!-- guide-contract:learning-map:end -->"
+    before, marked = text.split(start, 1)
+    block, after = marked.split(end, 1)
+    lines = block.splitlines()
+    for index, line in enumerate(lines):
+        if "`02-dangling-symlink`" in line:
+            lines[index] = line.replace("workspace/diagnoses.json", "workspace/answers.json", 1)
+            break
+    else:
+        raise RuntimeError("learning-map case row missing")
+    path.write_text(before + start + "\n".join(lines) + end + after, encoding="utf-8")
+
+
+def one_case_missing_verification(root: Path) -> None:
+    path = root / "README.md"
+    text = path.read_text(encoding="utf-8")
+    start = "<!-- guide-contract:learning-map:start -->"
+    end = "<!-- guide-contract:learning-map:end -->"
+    before, marked = text.split(start, 1)
+    block, after = marked.split(end, 1)
+    lines = block.splitlines()
+    for index, line in enumerate(lines):
+        if "`02-dangling-symlink`" in line:
+            cells = line.split("|")
+            if len(cells) != 9:
+                raise RuntimeError("learning-map case column mismatch")
+            cells[6] = " — "
+            lines[index] = "|".join(cells)
+            break
+    else:
+        raise RuntimeError("learning-map case row missing")
+    path.write_text(before + start + "\n".join(lines) + end + after, encoding="utf-8")
+
+
+def learning_map_order_gap(root: Path) -> None:
+    replace_marked(root, "README.md", "learning-map", "| 5 |", "| 50 |")
+
+
+def invalid_reference_json(root: Path) -> None:
+    path = root / "exercises/system-investigation/reference/diagnoses.json"
+    path.write_text("[\n", encoding="utf-8")
+
+
+def unknown_learning_map_case(root: Path) -> None:
+    replace_marked(
+        root,
+        "README.md",
+        "learning-map",
+        "`02-dangling-symlink`",
+        "`02-dangling-symlink`, `99-nonexistent-case`",
+    )
+
+
+def case_uses_reference_verification(root: Path) -> None:
+    path = root / "README.md"
+    text = path.read_text(encoding="utf-8")
+    start = "<!-- guide-contract:learning-map:start -->"
+    end = "<!-- guide-contract:learning-map:end -->"
+    before, marked = text.split(start, 1)
+    block, after = marked.split(end, 1)
+    lines = block.splitlines()
+    for index, line in enumerate(lines):
+        if "`02-dangling-symlink`" in line:
+            cells = line.split("|")
+            if len(cells) != 9:
+                raise RuntimeError("learning-map case column mismatch")
+            cells[6] = " `./check.sh reference` "
+            lines[index] = "|".join(cells)
+            break
+    else:
+        raise RuntimeError("learning-map case row missing")
+    path.write_text(before + start + "\n".join(lines) + end + after, encoding="utf-8")
+
+
 MUTANTS = (
     Mutant("arbitrary root file outside exact manifest", arbitrary_root),
     Mutant("unexpected numbered document", extra_doc),
@@ -153,6 +344,21 @@ MUTANTS = (
     Mutant("copied pedagogy rubric", copied_rubric),
     Mutant("unfinished reference", unfinished_reference),
     Mutant("missing roadmap automation limit", missing_roadmap_limit),
+    Mutant("missing README learning-map document", missing_learning_map_doc),
+    Mutant("missing README learner edit path", missing_learning_map_edit_path),
+    Mutant("missing expected-evidence exemption", missing_evidence_exemption),
+    Mutant("missing evidence construction field", missing_evidence_field),
+    Mutant("forbidden implementation annotation", forbidden_implementation_annotation),
+    Mutant("duplicate legacy exercise connection", duplicate_legacy_connection),
+    Mutant("malformed README learning-map row", malformed_learning_map_row),
+    Mutant("scalar expected-evidence metadata", scalar_evidence_metadata),
+    Mutant("README document path is code, not link", learning_map_doc_as_code),
+    Mutant("one case row missing learner edit path", one_case_missing_edit_path),
+    Mutant("one case row missing verification", one_case_missing_verification),
+    Mutant("README learning-map order gap", learning_map_order_gap),
+    Mutant("invalid reference JSON", invalid_reference_json),
+    Mutant("unknown README learning-map case", unknown_learning_map_case),
+    Mutant("case row uses reference verification", case_uses_reference_verification),
 )
 
 
@@ -195,6 +401,11 @@ def main() -> int:
             result = run_validator(target)
             if result.returncode == 0:
                 print(f"FAIL mutant survived: {mutant.name}", file=sys.stderr); return 1
+            diagnostics = result.stdout + result.stderr
+            if "VALIDATOR RESULT: FAIL" not in diagnostics or "Traceback" in diagnostics:
+                print(f"FAIL validator crashed for mutant: {mutant.name}", file=sys.stderr)
+                print(diagnostics, file=sys.stderr)
+                return 1
             print(f"PASS mutant rejected: {mutant.name}")
     print(f"VALIDATOR MUTANTS: PASS ({len(MUTANTS)})")
     return 0

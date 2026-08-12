@@ -250,16 +250,10 @@ wrapper가 별도 작업이 필요 없다면 child로 `exec`해 PID와 시그널
 
 강제 종료 `SIGKILL`은 handler와 정리 경로를 실행하지 못합니다. 데이터 보존과 증거 수집이 필요한 경우 마지막 수단으로 사용합니다.
 
-## 실습 연결
-
-- `03-waiting-for-input`: 출력이 없는 프로세스가 FIFO 입력을 기다리는 상태를 확인합니다.
-- `08-signal-not-forwarded`: wrapper 종료 후 child가 남는 상태를 확인합니다.
-
-[시스템 조사 실습](../../exercises/system-investigation/README.md)
-
 ## 연결 실습
 
-- [사례 03과 08](../../exercises/system-investigation/README.md)에서 대기 process와 signal wrapper 소유권을 추적합니다.
+- [시스템 조사 실습](../../exercises/system-investigation/README.md)의 `03-waiting-for-input`을 지금 완료해 reader와 FIFO holder의 상태·수명을 함께 추적합니다.
+- `08-signal-not-forwarded`는 서비스 정상 종료까지 읽은 뒤 완료합니다. 지금은 wrapper와 worker의 PID·PPID·process group·시그널 소유권을 기록합니다.
 
 ## 완료 기준
 

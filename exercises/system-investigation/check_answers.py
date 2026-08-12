@@ -43,8 +43,11 @@ EXPECTED: dict[str, dict[str, Any]] = {
         "layer": "process-io",
         "primary_cause": "waiting-for-input",
         "safe_fix": "provide-or-close-input",
-        "command_groups": [("ps ",), ("lsof", "fifo")],
-        "command_kinds": [("process-status",), ("open-file-owner", "fifo-object")],
+        "command_groups": [("ps ",), ("lsof",)],
+        "command_kinds": [
+            ("reader-holder-status",),
+            ("fifo-process-owner",),
+        ],
         "evidence_groups": [("reader",), ("fifo",), ("입력", "input", "eof")],
         "evidence_facts": ["reader-process-remains-alive", "reader-is-blocked-on-fifo", "holder-prevents-eof"],
         "regression_targets": ["valid-input-produces-output-and-exit", "reader-and-holder-are-gone-after-cleanup"],
@@ -63,8 +66,16 @@ EXPECTED: dict[str, dict[str, Any]] = {
         "layer": "execution-context",
         "primary_cause": "working-directory-mismatch",
         "safe_fix": "use-explicit-config-or-cwd",
-        "command_groups": [("pwd",), ("lsof", "ps ")],
-        "command_kinds": [("cwd-shell",), ("process-cwd", "process-status")],
+        "command_groups": [
+            ("pathlib.path",),
+            ("app/config/service.json",),
+            ("wrong-run-dir/config/service.json",),
+        ],
+        "command_kinds": [
+            ("relative-config-source",),
+            ("app-config-present",),
+            ("wrong-cwd-config-absent",),
+        ],
         "evidence_groups": [("config",), ("상대", "relative"), ("디렉터리", "cwd")],
         "evidence_facts": ["configured-path-is-relative", "wrong-cwd-lacks-config", "app-cwd-has-config"],
         "regression_targets": [
@@ -154,7 +165,7 @@ SAFE_COMMAND_FORMS = (
     ("python3", "-c"),
     ("python", "-c"),
 )
-SHELL_CONTROL_TOKENS = {";", "&&", "||", "|", ">", ">>", "<", "<<"}
+SHELL_CONTROL_CHARACTERS = frozenset("&|<>")
 SAFE_PYTHON_OBSERVATIONS = (
     re.compile(r'''^import socket;\s*print\(socket\.getaddrinfo\(["']localhost["'],\s*0\)\)$'''),
     re.compile(
@@ -165,6 +176,18 @@ SAFE_PYTHON_OBSERVATIONS = (
     ),
 )
 
+SCALAR_FIELDS = ("layer", "primary_cause", "safe_fix")
+SCALAR_VOCABULARIES = {
+    field: sorted({str(spec[field]) for spec in EXPECTED.values()})
+    for field in SCALAR_FIELDS
+}
+EVIDENCE_FACT_VOCABULARY = sorted(
+    {str(value) for spec in EXPECTED.values() for value in spec["evidence_facts"]}
+)
+REGRESSION_TARGET_VOCABULARY = sorted(
+    {str(value) for spec in EXPECTED.values() for value in spec["regression_targets"]}
+)
+
 
 def text_contains_any(text: str, alternatives: tuple[str, ...]) -> bool:
     lowered = text.casefold()
@@ -173,17 +196,19 @@ def text_contains_any(text: str, alternatives: tuple[str, ...]) -> bool:
 
 def observation_command_error(command: str) -> str | None:
     """Validate an inspect-only command shape without executing learner input."""
-    if "`" in command or "$(" in command:
-        return "명령 치환은 자동 검수 가능한 읽기 전용 관찰 명령이 아닙니다."
+    if "`" in command or "$(" in command or any(
+        character in command for character in SHELL_CONTROL_CHARACTERS | {"\r", "\n"}
+    ):
+        return "명령 치환·제어 연산자·리다이렉션은 읽기 전용 관찰 명령에 사용할 수 없습니다."
     try:
         tokens = shlex.split(command)
     except ValueError:
         return "shell 인용 문법을 해석할 수 없습니다."
     if not tokens:
         return "빈 명령입니다."
-    if any(token in SHELL_CONTROL_TOKENS or ">" in token or "<" in token for token in tokens):
-        return "파이프·리다이렉션·명령 연결은 관찰 명령 계약에서 허용하지 않습니다."
     lowered = tuple(token.casefold() for token in tokens)
+    if ";" in command and lowered[0] not in {"python", "python3"}:
+        return "명령 치환·제어 연산자·리다이렉션은 읽기 전용 관찰 명령에 사용할 수 없습니다."
     if not any(lowered[: len(form)] == form for form in SAFE_COMMAND_FORMS):
         return "허용된 읽기 전용 관찰 명령 형태가 아닙니다."
     if lowered[0] == "ss":
@@ -203,7 +228,7 @@ def observation_command_error(command: str) -> str | None:
         if endpoint.hostname not in {"localhost", "127.0.0.1", "::1"}:
             return "curl 관찰 대상은 실습의 loopback endpoint여야 합니다."
     if lowered[0] in {"python", "python3"}:
-        code = tokens[2] if len(tokens) > 2 else ""
+        code = tokens[2] if len(tokens) == 3 else ""
         if not any(pattern.fullmatch(code) for pattern in SAFE_PYTHON_OBSERVATIONS):
             return "Python -c는 문서에 제시된 세 가지 loopback socket 관찰 형태만 허용합니다."
     return None
@@ -231,12 +256,23 @@ def observation_command_kinds(command: str) -> set[str]:
         kinds.add("cwd-shell")
     if executable == "ps" and "-p" in lowered:
         kinds.add("process-status")
+        pid_index = lowered.index("-p") + 1
+        pid_operand = tokens[pid_index] if pid_index < len(tokens) else ""
+        pid_targets = pid_operand.split(",")
+        if len(pid_targets) == 2 and all(
+            target in {"READER_PID", "HOLDER_PID"} or target.isdigit() and int(target) > 0
+            for target in pid_targets
+        ) and pid_targets[0] != pid_targets[1]:
+            kinds.add("reader-holder-status")
         if "ppid" in text and "pgid" in text:
             kinds.add("process-ownership")
         if "vsz" in text and "rss" in text:
             kinds.add("memory-ps")
     if executable == "lsof":
         kinds.add("open-file-owner")
+        lsof_target = tokens[lowered.index("-p") + 1] if "-p" in lowered and lowered.index("-p") + 1 < len(tokens) else ""
+        if lsof_target in {"READER_PID", "HOLDER_PID"} or lsof_target.isdigit() and int(lsof_target) > 0:
+            kinds.add("fifo-process-owner")
         if "cwd" in text:
             kinds.add("process-cwd")
         if "itcp" in text or "listen" in text:
@@ -264,6 +300,17 @@ def observation_command_kinds(command: str) -> set[str]:
         kinds.add("health-request")
     if executable == "grep" and "sigterm" in text and "wrapper-events" in text:
         kinds.add("sigterm-event")
+    if (
+        executable == "grep"
+        and len(tokens) == 3
+        and re.fullmatch(r"path\s*=\s*pathlib\.Path\(['\"]config/service\.json['\"]\)", tokens[1])
+        and tokens[2] == "app/service.py"
+    ):
+        kinds.add("relative-config-source")
+    if lowered == ("test", "-e", "app/config/service.json"):
+        kinds.add("app-config-present")
+    if lowered == ("test", "!", "-e", "wrong-run-dir/config/service.json"):
+        kinds.add("wrong-cwd-config-absent")
     return kinds
 
 
@@ -280,9 +327,7 @@ def validate_exact_list(
         errors.append(prefix + f"{field}에는 문서에 정의된 enum 목록이 필요합니다.")
         return
     if len(value) != len(set(value)) or set(value) != set(expected):
-        errors.append(
-            prefix + f"{field}가 관찰된 의미 계약과 일치하지 않습니다: {', '.join(expected)}"
-        )
+        errors.append(prefix + f"{field}가 이 사례에서 관찰된 의미 계약과 일치하지 않습니다.")
 
 
 def load_json(path: Path) -> Any:
@@ -327,10 +372,10 @@ def validate(path: Path) -> list[str]:
             errors.append(prefix + "답은 object여야 합니다.")
             continue
 
-        for field in ("layer", "primary_cause", "safe_fix"):
+        for field in SCALAR_FIELDS:
             value = answer.get(field)
             if value != spec[field]:
-                errors.append(prefix + f"{field}는 {spec[field]!r}이어야 합니다.")
+                errors.append(prefix + f"{field}가 이 사례의 관찰 계약과 일치하지 않습니다.")
 
         commands = answer.get("observation_commands")
         if not isinstance(commands, list) or len(commands) < 2 or not all(isinstance(v, str) and v.strip() for v in commands):
@@ -350,10 +395,26 @@ def validate(path: Path) -> list[str]:
                     errors.append(prefix + f"관찰 단계에 위험하거나 상태를 크게 바꾸는 명령이 있습니다: {fragment}")
             for group in spec["command_groups"]:
                 if not text_contains_any(command_text, group):
-                    errors.append(prefix + "관찰 명령에 필요한 근거 종류가 빠졌습니다: " + " / ".join(group))
+                    errors.append(prefix + "관찰 명령에 필요한 근거 종류가 빠졌습니다.")
             for group in spec["command_kinds"]:
                 if not any(kind in command_kinds for kind in group):
-                    errors.append(prefix + "관찰 명령이 실제 상태 질문을 대상으로 하지 않습니다: " + " / ".join(group))
+                    errors.append(prefix + "관찰 명령이 사례의 실제 상태 질문을 충분히 다루지 않습니다.")
+            if case_id == "03-waiting-for-input":
+                ps_targets: set[str] = set()
+                lsof_targets: set[str] = set()
+                for command in commands:
+                    tokens = shlex.split(command)
+                    lowered = tuple(token.casefold() for token in tokens)
+                    if lowered and lowered[0] == "ps" and "-p" in lowered:
+                        index = lowered.index("-p") + 1
+                        if index < len(tokens):
+                            ps_targets.update(tokens[index].split(","))
+                    if lowered and lowered[0] == "lsof" and "-p" in lowered:
+                        index = lowered.index("-p") + 1
+                        if index < len(tokens):
+                            lsof_targets.add(tokens[index])
+                if len(lsof_targets) != 2 or ps_targets != lsof_targets:
+                    errors.append(prefix + "reader와 holder의 서로 다른 PID를 ps와 lsof에서 일관되게 관찰해야 합니다.")
 
         evidence = answer.get("expected_evidence")
         if not isinstance(evidence, str) or len(evidence.strip()) < 40 or "TODO" in evidence.upper():
@@ -361,7 +422,7 @@ def validate(path: Path) -> list[str]:
         else:
             for group in spec["evidence_groups"]:
                 if not text_contains_any(evidence, group):
-                    errors.append(prefix + "예상 근거에 핵심 상태가 빠졌습니다: " + " / ".join(group))
+                    errors.append(prefix + "예상 근거에 이 사례의 핵심 상태가 빠졌습니다.")
 
         validate_exact_list(answer, spec, "evidence_facts", prefix, errors)
 
@@ -381,16 +442,35 @@ def main(argv: list[str]) -> int:
         if case_id not in EXPECTED:
             print(f"알 수 없는 사례: {case_id}", file=sys.stderr)
             return 2
-        spec = EXPECTED[case_id]
         contract = {
             "schema_version": 2,
             "case_id": case_id,
-            "layer": spec["layer"],
-            "primary_cause": spec["primary_cause"],
-            "safe_fix": spec["safe_fix"],
-            "required_command_kinds": spec["command_kinds"],
-            "evidence_facts": spec["evidence_facts"],
-            "regression_targets": spec["regression_targets"],
+            "fields": {
+                "layer": {"type": "string", "allowed_values": SCALAR_VOCABULARIES["layer"]},
+                "primary_cause": {
+                    "type": "string",
+                    "allowed_values": SCALAR_VOCABULARIES["primary_cause"],
+                },
+                "observation_commands": {
+                    "type": "array[string]",
+                    "min_items": 2,
+                    "policy": "read-only commands; no shell control, substitution, or redirection",
+                },
+                "expected_evidence": {"type": "string", "min_length": 40},
+                "evidence_facts": {
+                    "type": "array[string]",
+                    "allowed_values": EVIDENCE_FACT_VOCABULARY,
+                },
+                "safe_fix": {
+                    "type": "string",
+                    "allowed_values": SCALAR_VOCABULARIES["safe_fix"],
+                },
+                "regression_checks": {"type": "array[string]", "min_items": 2},
+                "regression_targets": {
+                    "type": "array[string]",
+                    "allowed_values": REGRESSION_TARGET_VOCABULARY,
+                },
+            },
         }
         print(json.dumps(contract, ensure_ascii=False, indent=2))
         return 0

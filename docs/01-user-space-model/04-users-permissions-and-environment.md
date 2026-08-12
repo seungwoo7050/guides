@@ -230,16 +230,10 @@ relative path: ./config.json
 
 `chmod -R 777`, 무조건적인 `sudo`, 보안 정책 전체 비활성화는 원인 분석이 아닙니다.
 
-## 실습 연결
-
-- `01-command-resolution`: `PATH` 앞쪽의 오래된 실행 파일을 확인합니다.
-- `05-working-directory`: 서비스와 대화형 셸의 작업 디렉터리 차이를 확인합니다.
-
-[시스템 조사 실습](../../exercises/system-investigation/README.md)
-
 ## 연결 실습
 
-- [사례 01과 05](../../exercises/system-investigation/README.md)에서 PATH와 cwd를 권한 상승 없이 조사합니다.
+- [시스템 조사 실습](../../exercises/system-investigation/README.md)의 `01-command-resolution`을 지금 완료해 `PATH` 앞쪽의 오래된 실행 파일을 권한 상승 없이 확인합니다.
+- `05-working-directory`는 서비스 supervisor의 실행 문맥까지 읽은 뒤 완료합니다. 지금은 대화형 셸과 다른 cwd에서 상대 설정 경로가 어떻게 달라지는지 기록합니다.
 
 ## 완료 기준
 

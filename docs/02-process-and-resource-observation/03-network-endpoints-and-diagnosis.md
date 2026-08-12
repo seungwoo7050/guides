@@ -255,16 +255,10 @@ container internal port
 
 외부 대상에 무단 scan을 수행하지 않습니다. 실습은 loopback과 OS가 배정한 임시 port만 사용합니다.
 
-## 실습 연결
-
-- `06-address-family-mismatch`: IPv4 listener에 IPv6 loopback으로 연결해 실패 계층을 확인합니다.
-- `07-running-not-ready`: TCP listener는 존재하지만 health 요청이 실패하는 다음 계층을 확인합니다.
-
-[시스템 조사 실습](../../exercises/system-investigation/README.md)
-
 ## 연결 실습
 
-- [사례 06과 07](../../exercises/system-investigation/README.md)에서 IPv4/IPv6 불일치와 running/not-ready를 분리합니다.
+- [시스템 조사 실습](../../exercises/system-investigation/README.md)의 `06-address-family-mismatch`를 지금 완료해 IPv4 listener와 IPv6 client의 endpoint 차이를 확인합니다.
+- `07-running-not-ready`는 다음 서비스 문서 뒤 완료합니다. 지금은 TCP listener 존재와 application health 성공을 서로 다른 근거로 기록합니다.
 
 ## 완료 기준
 

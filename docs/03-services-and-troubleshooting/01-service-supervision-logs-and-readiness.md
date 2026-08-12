@@ -260,17 +260,10 @@ container filesystem path
 
 진단 기록에는 host/container 어느 범위에서 명령을 실행했는지 적습니다. image, Compose, network, volume, deployment와 backup의 구체 설계는 `guide-web-infrastructure`가 담당합니다.
 
-## 실습 연결
-
-- `05-working-directory`: supervisor와 대화형 셸의 작업 디렉터리 차이를 조사합니다.
-- `07-running-not-ready`: process와 listener는 존재하지만 health가 503인 상태를 조사합니다.
-- `08-signal-not-forwarded`: wrapper가 종료 요청을 child에게 전달하지 않는 상태를 조사합니다.
-
-[시스템 조사 실습](../../exercises/system-investigation/README.md)
-
 ## 연결 실습
 
-- [사례 07과 08](../../exercises/system-investigation/README.md)에서 readiness dependency와 signal forwarding을 검증합니다.
+- [시스템 조사 실습](../../exercises/system-investigation/README.md)의 `05-working-directory`, `07-running-not-ready`, `08-signal-not-forwarded`를 지금 완료합니다.
+- supervisor와 대화형 셸의 cwd, process/listener와 health, wrapper와 worker의 종료 소유권을 각각 독립 근거로 검증합니다.
 
 ## 완료 기준
 

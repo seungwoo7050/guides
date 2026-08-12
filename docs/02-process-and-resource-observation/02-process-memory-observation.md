@@ -189,16 +189,10 @@ cache hit와 성능을 위해 메모리를 유지할 수 있습니다. 최대 �
 
 관찰 자체가 비용을 만들 수 있습니다. 매우 상세한 mapping 수집이나 profiler는 짧은 대표 구간에서 사용합니다.
 
-## 실습 연결
-
-- `09-reserved-not-resident`: 큰 익명 mapping을 예약하고 일부만 접근한 프로세스에서 virtual size와 RSS를 비교합니다.
-- `04-deleted-open-file`: disk space 문제와 memory 문제를 구분하는 연습으로 함께 사용합니다.
-
-[시스템 조사 실습](../../exercises/system-investigation/README.md)
-
 ## 연결 실습
 
-- [사례 09](../../exercises/system-investigation/README.md)에서 virtual reservation과 RSS를 측정해 누수 오판을 반증합니다.
+- [시스템 조사 실습](../../exercises/system-investigation/README.md)의 `09-reserved-not-resident`를 지금 완료해 virtual reservation과 RSS를 측정하고 누수 오판을 반증합니다.
+- 이미 완료한 `04-deleted-open-file`은 disk space와 memory 문제를 구분하는 보조 비교로만 다시 봅니다.
 
 ## 완료 기준
 

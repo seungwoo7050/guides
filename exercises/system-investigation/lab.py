@@ -805,6 +805,23 @@ def load_state(root: Path) -> dict[str, Any]:
     return state
 
 
+def process_record(state: dict[str, Any], role: str) -> dict[str, Any]:
+    matches = [item for item in state["processes"] if item["role"] == role]
+    if len(matches) != 1:
+        raise LabError(f"사례 process role이 정확히 하나가 아닙니다: {role}")
+    return matches[0]
+
+
+def recorded_process_identity(
+    state: dict[str, Any], root: Path, role: str
+) -> tuple[str, str, dict[str, Any]]:
+    record = process_record(state, role)
+    identity, detail = classify_case_process(
+        int(record["pid"]), root, str(record["start_token"])
+    )
+    return identity, detail, record
+
+
 def new_state(case_id: str, root: Path) -> dict[str, Any]:
     return {
         "schema_version": 2,
@@ -1281,17 +1298,22 @@ def symptom(root: Path) -> None:
             print(f"stderr={exc.__class__.__name__}: {exc}")
             print("exit_status=1")
     elif case_id == "03-waiting-for-input":
-        reader = int(data["reader_pid"])
+        reader_identity, _, reader_record = recorded_process_identity(state, root, "fifo-reader")
+        holder_identity, _, holder_record = recorded_process_identity(state, root, "fifo-holder")
+        reader = int(reader_record["pid"])
         output = Path(data["output"])
         print(f"reader_pid={reader}")
-        print(f"reader_alive={process_alive(reader)}")
+        print(f"holder_pid={holder_record['pid']}")
+        print(f"reader_alive={reader_identity == 'owned'}")
+        print(f"holder_alive={holder_identity == 'owned'}")
         print(f"output_exists={output.exists()}")
         print("elapsed_without_output=true")
     elif case_id == "04-deleted-open-file":
-        pid = int(data["writer_pid"])
+        writer_identity, _, writer_record = recorded_process_identity(state, root, "deleted-writer")
+        pid = int(writer_record["pid"])
         path = Path(data["deleted_path"])
         print(f"writer_pid={pid}")
-        print(f"writer_alive={process_alive(pid)}")
+        print(f"writer_alive={writer_identity == 'owned'}")
         print(f"path_exists={path.exists()}")
     elif case_id == "05-working-directory":
         result = subprocess.run(
@@ -1306,6 +1328,9 @@ def symptom(root: Path) -> None:
         print(f"stderr={result.stderr.strip()!r}")
         print(f"exit_status={result.returncode}")
     elif case_id == "06-address-family-mismatch":
+        server_identity, _, _ = recorded_process_identity(state, root, "ipv4-server")
+        if server_identity != "owned":
+            raise LabError(f"IPv4 server identity가 현재 사례와 일치하지 않습니다: {server_identity}")
         try:
             ipv6_connect(int(data["port"]))
         except OSError as exc:
@@ -1316,22 +1341,37 @@ def symptom(root: Path) -> None:
             print("unexpected_ipv6_success=true")
             print("exit_status=0")
     elif case_id == "07-running-not-ready":
+        server_identity, _, _ = recorded_process_identity(state, root, "readiness-server")
+        if server_identity != "owned":
+            raise LabError(f"readiness server identity가 현재 사례와 일치하지 않습니다: {server_identity}")
         status_code, body = http_health(int(data["port"]))
         print(f"service_pid={data['server_pid']}")
-        print(f"process_alive={process_alive(int(data['server_pid']))}")
+        print(f"process_alive={server_identity == 'owned'}")
         print(f"health_status={status_code}")
         print(f"health_body={body!r}")
     elif case_id == "08-signal-not-forwarded":
-        wrapper = int(data["wrapper_pid"])
-        worker = int(data["worker_pid"])
-        if process_alive(wrapper):
-            os.kill(wrapper, signal.SIGTERM)
-            wait_for_exit(wrapper, 2)
-        print(f"wrapper_alive={process_alive(wrapper)}")
-        print(f"worker_alive={process_alive(worker)}")
+        wrapper_identity, wrapper_detail, wrapper_record = recorded_process_identity(
+            state, root, "wrapper"
+        )
+        if wrapper_identity == "owned":
+            terminate_process(
+                int(wrapper_record["pid"]), root, str(wrapper_record["start_token"])
+            )
+        elif wrapper_identity != "gone":
+            raise LabError(
+                "wrapper identity를 안전하게 확인하지 못해 증상 신호를 보내지 않았습니다: "
+                f"{wrapper_identity} {wrapper_detail or '<detail unavailable>'}"
+            )
+        worker_identity, _, worker_record = recorded_process_identity(state, root, "worker")
+        print(f"wrapper_alive=false")
+        print(f"worker_alive={worker_identity == 'owned'}")
+        print(f"worker_pid={worker_record['pid']}")
         print(f"events={data['events']}")
     elif case_id == "09-reserved-not-resident":
-        pid = int(data["memory_pid"])
+        memory_identity, _, memory_record = recorded_process_identity(state, root, "memory-reserver")
+        if memory_identity != "owned":
+            raise LabError(f"memory process identity가 현재 사례와 일치하지 않습니다: {memory_identity}")
+        pid = int(memory_record["pid"])
         vsz, rss = memory_stats(pid)
         print(f"memory_pid={pid}")
         print(f"reserved_bytes={data['reserved_bytes']}")
@@ -1348,7 +1388,8 @@ def status(root: Path) -> None:
     print(f"root={state['root']}")
     for item in state["processes"]:
         pid = int(item["pid"])
-        print(f"process role={item['role']} pid={pid} alive={process_alive(pid)}")
+        identity, _ = classify_case_process(pid, root, str(item["start_token"]))
+        print(f"process role={item['role']} pid={pid} alive={identity == 'owned'} identity={identity}")
     data = state["data"]
     for key in sorted(data):
         if key.endswith("_pid") or key in {"port", "fifo", "deleted_path", "dependency", "wrong_dir", "app_dir"}:
@@ -1427,14 +1468,24 @@ def selftest_case(case_id: str, root: Path, *, fixed_worker_term_exit: int = 0) 
         elif case_id == "02-dangling-symlink":
             current = root / "current"
             assert_true(current.is_symlink() and not current.exists(), "끊어진 symlink 상태가 아닙니다.")
+            valid_config = root / data["valid_target"] / "config.ini"
+            original_release = valid_config.read_bytes()
             replacement = root / "current.next"
             os.symlink(data["valid_target"], replacement)
             os.replace(replacement, current)
             text = (current / "config.ini").read_text(encoding="utf-8")
             assert_true("status=ready" in text, "symlink 교체 뒤 대상을 읽지 못했습니다.")
+            assert_true(
+                valid_config.read_bytes() == original_release,
+                "symlink 교체가 기존 release 내용을 변경했습니다.",
+            )
         elif case_id == "03-waiting-for-input":
             reader = int(data["reader_pid"])
-            assert_true(process_alive(reader) and not Path(data["output"]).exists(), "입력 대기 상태가 아닙니다.")
+            holder = int(data["holder_pid"])
+            assert_true(
+                process_alive(reader) and process_alive(holder) and not Path(data["output"]).exists(),
+                "reader와 holder가 함께 유지하는 입력 대기 상태가 아닙니다.",
+            )
             with Path(data["fifo"]).open("w", encoding="utf-8") as stream:
                 stream.write("resume\n")
             assert_true(wait_for_exit(reader, 2), "입력 제공 뒤 reader가 종료하지 않았습니다.")
@@ -1445,6 +1496,15 @@ def selftest_case(case_id: str, root: Path, *, fixed_worker_term_exit: int = 0) 
             record = next(item for item in state["processes"] if int(item["pid"]) == pid)
             terminate_process(pid, root, record.get("start_token"))
             assert_true(not process_alive(pid), "writer 종료 뒤 FD가 정리되지 않았습니다.")
+            reopened = Path(data["deleted_path"])
+            reopened.write_text("reopened\n", encoding="utf-8")
+            before_append = reopened.stat().st_size
+            with reopened.open("a", encoding="utf-8") as stream:
+                stream.write("next-record\n")
+            assert_true(
+                reopened.stat().st_size > before_append,
+                "새 경로로 다시 연 로그의 크기가 증가하지 않았습니다.",
+            )
         elif case_id == "05-working-directory":
             bad = subprocess.run([PYTHON, data["script"]], cwd=data["wrong_dir"], capture_output=True, text=True, check=False)
             assert_true(bad.returncode == 2 and "config_error" in bad.stderr, "잘못된 cwd 증상이 재현되지 않았습니다.")
