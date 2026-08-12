@@ -23,6 +23,22 @@ descendant = subprocess.Popen([sys.executable, "-c", "import time; time.sleep(30
 leader_file.write_text(f"{os.getpid()} {descendant.pid}\\n", encoding="utf-8")
 descendant.wait()
 """
+STUBBORN_CHILD = """
+import os
+from pathlib import Path
+import subprocess
+import sys
+import time
+leader_file = Path(sys.argv[1])
+ready_file = Path(sys.argv[2])
+descendant_source = "import os, signal, sys, time; from pathlib import Path; signal.signal(signal.SIGTERM, signal.SIG_IGN); Path(sys.argv[1]).write_text(str(os.getpid()), encoding='utf-8'); time.sleep(30)"
+descendant = subprocess.Popen([sys.executable, "-c", descendant_source, str(ready_file)])
+deadline = time.monotonic() + 5
+while not ready_file.is_file() and descendant.poll() is None and time.monotonic() < deadline:
+    time.sleep(0.02)
+leader_file.write_text(f"{os.getpid()} {descendant.pid}\\n", encoding="utf-8")
+time.sleep(30)
+"""
 
 
 def exists(pid: int) -> bool:
@@ -79,7 +95,34 @@ def main() -> int:
             raise AssertionError(f"timeout runner contract 실패: {timed.returncode}\\n{timed.stdout}\\n{timed.stderr}")
         wait_gone([int(value) for value in pid_file.read_text(encoding="utf-8").split()])
 
-    print("[PASS] owned process-group signal/timeout cleanup; residual=0")
+    with tempfile.TemporaryDirectory(prefix="guide-runner-stubborn-") as temporary:
+        pid_file = Path(temporary) / "pids"
+        ready_file = Path(temporary) / "ready"
+        stubborn = subprocess.run(
+            [
+                sys.executable,
+                str(RUNNER),
+                "0.3",
+                "--",
+                sys.executable,
+                "-c",
+                STUBBORN_CHILD,
+                str(pid_file),
+                str(ready_file),
+            ],
+            capture_output=True,
+            text=True,
+            check=False,
+            timeout=10,
+        )
+        if stubborn.returncode != 124 or not pid_file.is_file() or not ready_file.is_file():
+            raise AssertionError(
+                f"SIGTERM 무시 descendant fixture 실패: {stubborn.returncode}\n"
+                f"{stubborn.stdout}\n{stubborn.stderr}"
+            )
+        wait_gone([int(value) for value in pid_file.read_text(encoding="utf-8").split()])
+
+    print("[PASS] owned process-group signal/timeout/stubborn-descendant cleanup; residual=0")
     return 0
 
 

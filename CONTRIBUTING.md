@@ -16,6 +16,8 @@
 - 짧고 독립적인 프로그램은 `examples`에 둡니다.
 - 구현 문제가 필요하면 `exercises` 아래에 `skeleton`과 `reference`를 함께 둡니다.
 - `skeleton`은 무엇을 완성해야 하는지 드러나야 하며, `reference`에는 `TODO`나 임시 반환값을 남기지 않습니다.
+- tracked `skeleton`은 read-only negative fixture로 보존하고 학습자는 생성 도구로 만든 ignored `workspace`만 수정하게 합니다.
+- 학습용 Implementation 번호는 완성 reference나 좁은 관찰 example의 주요 책임에만 둡니다. skeleton, test, fixture, checker와 repository validator에는 정답 구현 순서를 넣지 않습니다.
 - 검사기는 정답 파일의 문구나 소스 구조보다 실제 입력과 출력을 확인해야 합니다.
 - 임시 파일은 고유한 디렉터리에 만들고 종료 경로마다 정리합니다.
 - 비밀번호, 인증서, 빌드 결과와 실행 중 생성된 보고서는 추적하지 않습니다.
@@ -28,10 +30,11 @@
 make check
 ```
 
-Docker와 브라우저를 사용할 수 있다면 전체 검증도 실행합니다.
+전체 검증은 현재 source와 Git index를 기록한 뒤 실행합니다.
 
 ```sh
-make verify
+./prepare.sh
+./verify.sh
 ```
 
 커밋 전에는 추적 범위와 공백 오류를 다시 확인합니다.

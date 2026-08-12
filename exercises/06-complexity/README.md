@@ -4,6 +4,8 @@
 
 입력 표현 길이를 기준으로 하한·certificate·환원 방향을 검토 가능한 증명으로 작성한다.
 
+답은 저장소 밖 개인 학습 노트에 기록한다. 아래 check box는 자동 정답 형식이 아니라 짝 검토자가 대응하는 증명 문장과 반례를 찾기 위한 rubric이다.
+
 ## 문제 A — 비교 정렬 하한
 
 서로 다른 `n`개 원소의 모든 순열을 comparison decision tree가 구분해야 한다는 사실에서 최악 비교 횟수 `Ω(n log n)`을 설명한다.
@@ -15,6 +17,7 @@
 [ ] 높이 h의 이진 tree leaf 상한
 [ ] log(n!) = Ω(n log n)의 근거
 [ ] counting/radix sort에 그대로 적용되지 않는 이유
+[ ] 같은 key와 원래 record id를 가진 입력에서 안정 정렬의 상대 순서 보존
 ```
 
 ## 문제 B — NP membership
@@ -50,7 +53,8 @@ Hamiltonian Cycle decision problem의 certificate와 verifier를 정의한다.
 - 비교 정렬: decision tree가 서로 다른 `n!`개 순열을 구분하므로 leaf가 최소
   `n!`개이고, 높이 `h`인 이진 tree의 leaf가 최대 `2^h`개라서
   `h >= log2(n!) = Omega(n log n)`이다. 이 주장은 key를 비교해서만 정보를 얻는
-  알고리즘에 한정되므로 counting/radix sort와 모순되지 않는다.
+  알고리즘에 한정되므로 counting/radix sort와 모순되지 않는다. 같은 key를 가진
+  record에는 원래 id를 붙여 stable pass 전후 상대 순서가 보존되는지도 확인한다.
 - NP membership: certificate는 모든 정점을 정확히 한 번 나열한 뒤 첫 정점으로
   돌아오는 순서다. 길이는 입력에 대해 다항식이고, 중복·누락과 연속 edge 및 마지막
   edge를 다항 시간에 검사해야 한다.
@@ -61,6 +65,7 @@ Hamiltonian Cycle decision problem의 certificate와 verifier를 정의한다.
 ## 완료 기준
 
 - comparison tree leaf 수에서 최악 `Ω(n log n)` 비교 하한을 단계별로 유도한다.
+- 같은 key의 record id로 안정성과 단순 정렬 결과의 차이를 검토한다.
 - Hamiltonian Cycle certificate의 크기와 verifier 연산 수를 입력 크기의 다항식으로 제한한다.
 - `A ≤p B`의 변환 시간·결과 크기·양방향 의미 보존을 모두 제출한다.
 
@@ -71,7 +76,7 @@ Hamiltonian Cycle decision problem의 certificate와 verifier를 정의한다.
 
 ## 검증
 
-짝 검토자는 각 check box를 단순 표시하지 말고 대응하는 증명 문장을 가리킨다. 문서 링크와 rubric 구조는 루트에서 확인한다.
+짝 검토자는 개인 학습 노트의 각 check box를 단순 표시하지 말고 대응하는 증명 문장을 가리킨다. 문서 링크와 rubric 구조는 루트에서 확인하지만 다음 명령은 노트의 수학적 타당성을 자동 채점하지 않는다.
 
 ```sh
 make docs-check

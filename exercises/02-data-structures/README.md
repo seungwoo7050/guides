@@ -6,12 +6,14 @@
 
 ## 구현 대상
 
-[capstone skeleton](../07-verified-algorithms-capstone/skeleton/algorithms.py)의 다음 함수를 구현한다.
+[capstone skeleton](../07-verified-algorithms-capstone/skeleton/algorithms.py)은 공개 signature와 미완성 경계를 확인하는 read-only 시작점이다. 생성 도구로 복사한 `../07-verified-algorithms-capstone/workspace/algorithms.py`에서 다음 함수를 구현한다.
 
 - `prefix_sums`
 - `range_sum`
 - `lower_bound`
 - `red_black_height`
+
+DSU는 이 checker stage의 구현 함수가 아니다. 개인 학습 노트에서 `parent`와 component size가 union·path compression 뒤 어떻게 바뀌는지 trace하고, Part 4의 `kruskal_mst`에서 같은 불변식을 실제 구현한다.
 
 ## 계약
 
@@ -37,9 +39,11 @@
 
 ## 실행
 
+저장소 루트에서 workspace를 한 번 생성한 뒤 stage를 검사한다. 기존 workspace가 있으면 생성 명령은 덮어쓰지 않고 실패하므로 한 번만 실행한다.
+
 ```sh
-cd exercises/07-verified-algorithms-capstone
-python3 check.py --impl workspace --stage data-structures --expect pass
+scripts/new-workspace.sh exercises/07-verified-algorithms-capstone
+make stage-check STAGE=data-structures
 ```
 
 ## 구현 뒤 설명
@@ -53,6 +57,7 @@ python3 check.py --impl workspace --stage data-structures --expect pass
 - prefix sum과 range sum이 빈 구간·전체 구간·범위 오류 사례를 통과한다.
 - lower bound가 빈 수열, 중복, 양끝 target에서 `bisect_left`와 일치한다.
 - 레드블랙 검증기가 BST·root 색·red-red·black-height 결함을 각각 거부한다.
+- DSU trace에서 대표와 component size의 owner를 구분하고 같은 집합 union이 상태를 바꾸지 않음을 보인다.
 
 ## 자기 설명
 
@@ -61,10 +66,4 @@ python3 check.py --impl workspace --stage data-structures --expect pass
 
 ## 검증
 
-안전한 workspace를 만든 뒤 해당 stage만 실행한다.
-
-```sh
-scripts/new-workspace.sh exercises/07-verified-algorithms-capstone
-cd exercises/07-verified-algorithms-capstone
-python3 check.py --impl workspace --stage data-structures --expect pass
-```
+저장소 루트에서 `make stage-check STAGE=data-structures`를 다시 실행한다.

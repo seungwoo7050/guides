@@ -11,18 +11,18 @@ from pathlib import Path
 import stat
 import sys
 
-IGNORED_PARTS = {
-    ".git",
-    ".guide",
-    ".pytest_cache",
-    ".venv",
-    "__pycache__",
-    "build",
-    "dist",
-    "htmlcov",
-    "workspace",
-}
+ROOT_STATE_DIRECTORIES = {Path(".git"), Path(".guide")}
+LEARNER_WORKSPACE = Path("exercises/07-verified-algorithms-capstone/workspace")
 IGNORED_NAMES = {".DS_Store"}
+
+
+def ignored_directory(root: Path, path: Path) -> bool:
+    relative = path.relative_to(root)
+    return (
+        relative in ROOT_STATE_DIRECTORIES
+        or relative == LEARNER_WORKSPACE
+        or path.name == "__pycache__"
+    )
 
 
 def file_digest(path: Path) -> str:
@@ -39,9 +39,9 @@ def records(root: Path) -> list[dict[str, object]]:
         base = Path(directory)
         traversable: list[str] = []
         for name in sorted(names):
-            if name in IGNORED_PARTS or name in IGNORED_NAMES:
-                continue
             path = base / name
+            if name in IGNORED_NAMES or ignored_directory(root, path):
+                continue
             metadata = path.lstat()
             relative = path.relative_to(root).as_posix()
             if stat.S_ISLNK(metadata.st_mode):

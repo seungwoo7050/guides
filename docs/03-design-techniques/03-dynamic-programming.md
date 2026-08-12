@@ -116,7 +116,7 @@ else:
 
 ## 연결 실습
 
-[설계 기법 exercise](../../exercises/03-design-techniques/README.md)에서 0/1 knapsack과 LCS를 작은 exhaustive oracle과 비교하고, 갱신 순서를 바꾼 결함 입력을 고정한다.
+[설계 기법 exercise](../../exercises/03-design-techniques/README.md)에서 0/1 knapsack과 LCS를 작은 exhaustive oracle과 비교한다. 갱신 순서를 바꾼 결함 입력과 상태 trace는 개인 학습 노트에 고정하며, repository-owned 자동 known-bad fixture와 구분한다.
 
 ## 완료 기준
 

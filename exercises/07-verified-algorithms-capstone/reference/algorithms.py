@@ -12,6 +12,8 @@ import heapq
 from typing import Iterable, Sequence
 
 
+# [Implementation 1] 누적 배열이 구간 질의의 상태를 소유하게 한다.
+# 첫 0 sentinel을 두면 모든 반열린 구간을 두 누적값의 차이라는 한 계약으로 처리할 수 있다.
 def prefix_sums(values: Sequence[int]) -> list[int]:
     prefix = [0]
     total = 0
@@ -27,6 +29,8 @@ def range_sum(prefix: Sequence[int], start: int, stop: int) -> int:
     return prefix[stop] - prefix[start]
 
 
+# [Implementation 2] 정렬은 호출자 전조건으로 두고 후보 구간의 경계만 소유한다.
+# [lo, hi) 안에 첫 삽입 위치가 있다는 불변식이 종료 시 하나의 위치로 수렴한다.
 def lower_bound(values: Sequence[int], target: int) -> int:
     lo = 0
     hi = len(values)
@@ -39,6 +43,8 @@ def lower_bound(values: Sequence[int], target: int) -> int:
     return lo
 
 
+# [Implementation 7] 그래프 함수가 공유할 정점 경계와 미방문 상태를 먼저 고정한다.
+# BFS에서는 None이 아직 발견되지 않은 거리이며 queue에 넣는 순간 최초 거리가 확정된다.
 def _validate_vertex(vertex_count: int, vertex: int) -> None:
     if not 0 <= vertex < vertex_count:
         raise ValueError(f"정점 {vertex}가 0..{vertex_count - 1} 범위를 벗어났습니다.")
@@ -64,6 +70,8 @@ def bfs_distances(graph: Sequence[Sequence[int]], start: int) -> list[int | None
     return distance
 
 
+# [Implementation 8] 일회성 edge 입력을 adjacency가 소유한 뒤 nonnegative 최단 경로를 확장한다.
+# heap의 값이 현재 distance와 다르면 이미 더 나은 경로가 소유권을 넘겨받은 stale entry다.
 def dijkstra(
     vertex_count: int,
     edges: Iterable[tuple[int, int, int]],
@@ -96,6 +104,8 @@ def dijkstra(
     return distance
 
 
+# [Implementation 4] best[c]는 지금까지 처리한 물건으로 capacity c에서 얻는 최적값이다.
+# capacity를 역순으로 방문해야 현재 물건의 값이 같은 iteration에서 다시 사용되지 않는다.
 def knapsack_01(items: Sequence[tuple[int, int]], capacity: int) -> int:
     if capacity < 0:
         raise ValueError("capacity는 음수일 수 없습니다.")
@@ -113,6 +123,8 @@ def knapsack_01(items: Sequence[tuple[int, int]], capacity: int) -> int:
     return best[capacity]
 
 
+# [Implementation 5] 가장 일찍 끝나는 구간이 이후 선택을 위한 frontier를 소유한다.
+# 종료·시작 순 tie-break는 같은 최적 개수에서도 결과를 결정적으로 유지한다.
 def select_intervals(intervals: Sequence[tuple[int, int]]) -> list[tuple[int, int]]:
     normalized = list(intervals)
     if any(start >= stop for start, stop in normalized):
@@ -128,6 +140,8 @@ def select_intervals(intervals: Sequence[tuple[int, int]]) -> list[tuple[int, in
     return selected
 
 
+# [Implementation 3] node 구조와 subtree 검증 결과를 같은 red-black 계약으로 묶는다.
+# 재귀 호출은 key bound를 인자로 전달하고 black height를 반환하며 색·BST·red-red 위반은 즉시 실패시킨다.
 @dataclass
 class RedBlackNode:
     key: int
@@ -168,6 +182,8 @@ def red_black_height(root: RedBlackNode | None) -> int:
     return visit(root, None, None)
 
 
+# [Implementation 9] DSU가 component 대표와 size를 소유하고 Kruskal은 선택 edge를 소유한다.
+# union 성공만 certificate에 넣어 cycle을 막고 V-1개에 못 미치면 disconnected 상태로 실패한다.
 class _DisjointSet:
     def __init__(self, size: int) -> None:
         self.parent = list(range(size))
@@ -228,6 +244,8 @@ def kruskal_mst(
     return total, chosen
 
 
+# [Implementation 10] edge를 반복 가능한 상태로 고정해 경로 edge 수별 relaxation을 수행한다.
+# 마지막 추가 개선은 시작점에서 도달 가능한 음수 cycle이라는 별도 실패 상태다.
 def bellman_ford(
     vertex_count: int,
     edges: Sequence[tuple[int, int, int]],
@@ -265,6 +283,8 @@ def bellman_ford(
     return distance
 
 
+# [Implementation 12] prefix table이 pattern의 proper-prefix 상태와 fallback 경로를 소유한다.
+# 빈 pattern 계약을 먼저 끝내고 mismatch 때 이미 확인한 text를 다시 읽지 않는다.
 def kmp_find(text: str, pattern: str) -> int:
     if pattern == "":
         return 0
@@ -289,6 +309,8 @@ def kmp_find(text: str, pattern: str) -> int:
     return -1
 
 
+# [Implementation 11] flow matrix 자체를 원본 directed edge의 검증 가능한 certificate로 유지한다.
+# residual path는 기존 역방향 flow를 먼저 취소한 뒤 새 flow를 보내 capacity와 conservation을 보존한다.
 def max_flow(
     capacity: Sequence[Sequence[int]],
     source: int,
@@ -351,6 +373,8 @@ def max_flow(
         total += amount
 
 
+# [Implementation 6] previous와 current row가 두 문자열 prefix의 LCS 상태를 번갈아 소유한다.
+# 짧은 문자열을 열 축으로 두어 recurrence는 유지하면서 추가 공간을 제한한다.
 def lcs_length(left: str, right: str) -> int:
     if len(right) > len(left):
         left, right = right, left

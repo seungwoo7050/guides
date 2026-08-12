@@ -255,6 +255,17 @@ def main() -> int:
             stream.write("\nstale source mutant\n")
         reject("stale source", invoke(stale, fixture / "stale.log"), "source가 prepare 이후")
 
+        stale_role = fixture / "stale-role"
+        shutil.copytree(prepared, stale_role, symlinks=True)
+        hidden_before = stale_role / "docs/workspace/unexpected.md"
+        hidden_before.parent.mkdir()
+        hidden_before.write_text("# workspace 이름을 쓴 source mutant\n", encoding="utf-8")
+        reject(
+            "role-aware workspace source",
+            invoke(stale_role, fixture / "stale-role.log"),
+            "source가 prepare 이후",
+        )
+
         stale_tool = fixture / "stale-tool"
         shutil.copytree(prepared, stale_tool, symlinks=True)
         marker = stale_tool / MARKER
@@ -263,7 +274,7 @@ def main() -> int:
         marker.write_text(json.dumps(payload) + "\n", encoding="utf-8")
         reject("stale tool", invoke(stale_tool, fixture / "stale-tool.log"), "Git 버전")
 
-    print("[PASS] prepare marker negative suite: missing/corrupt/source-stale/tool-stale 4/4")
+    print("[PASS] prepare marker negative suite: missing/corrupt/source-stale/role-stale/tool-stale 5/5")
     return 0
 
 

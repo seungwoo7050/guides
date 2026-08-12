@@ -12,6 +12,8 @@ graph 입력 전조건, 최적화 불변식, 오류 결과를 독립 oracle과 �
 - `bellman_ford`
 - `max_flow`
 
+위상 순서·SCC·이분 매칭은 현재 checker stage의 별도 공개 함수가 아니다. 개인 학습 노트에 directed cycle을 거부하는 위상 정렬 trace, SCC의 양방향 reachability 근거, matching을 unit-capacity flow로 옮기는 정점·edge 대응을 기록한다.
+
 ## 공통 계약
 
 - 정점은 `0..vertex_count-1`다.
@@ -36,8 +38,7 @@ graph 입력 전조건, 최적화 불변식, 오류 결과를 독립 oracle과 �
 ## 실행
 
 ```sh
-cd exercises/07-verified-algorithms-capstone
-python3 check.py --impl workspace --stage graphs --expect pass
+make stage-check STAGE=graphs
 ```
 
 ## 결함 분석
@@ -50,6 +51,7 @@ python3 check.py --impl workspace --stage graphs --expect pass
 - Kruskal 결과가 작은 graph의 모든 spanning tree 중 최소이며 disconnected 입력을 거부한다.
 - 최대 유량 값이 작은 network의 최소 cut과 같고, 반환 flow가 capacity와
   conservation을 만족하며, 잘못된 capacity matrix를 거부한다.
+- 자동 stage 밖의 위상 순서·SCC·matching 계약을 개인 학습 노트의 trace 또는 certificate로 검토한다.
 
 ## 자기 설명
 
@@ -59,7 +61,7 @@ python3 check.py --impl workspace --stage graphs --expect pass
 ## 검증
 
 ```sh
-cd exercises/07-verified-algorithms-capstone
-python3 check.py --impl workspace --stage graphs --expect pass
-python3 check.py --impl broken/missed-negative-cycle --stage graphs --expect fail
+make stage-check STAGE=graphs
 ```
+
+workspace의 `all` 통과 뒤 repository-owned negative-cycle 결함 방향은 루트 `make checker-check`로 확인한다.

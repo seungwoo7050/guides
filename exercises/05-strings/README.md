@@ -27,17 +27,19 @@ KMP의 전처리 상태와 fallback을 표준 검색 및 경계 입력으로 검
 ## 실행
 
 ```sh
-cd exercises/07-verified-algorithms-capstone
-python3 check.py --impl workspace --stage strings --expect pass
+make stage-check STAGE=strings
 ```
 
 `broken/empty-pattern`은 일반 입력에서 맞아 보여도 빈 패턴 계약을 어긴다.
+
+Rabin–Karp와 Z algorithm은 현재 checker stage의 별도 구현 함수가 아니다. 개인 학습 노트에 hash 일치 뒤 실제 문자를 확인해야 하는 충돌 입력을 남긴다. Z-box의 `[left,right)` 상태 trace는 선택 확장이다.
 
 ## 완료 기준
 
 - 빈 pattern, 더 긴 pattern, 일치 없음 결과가 Python 검색 계약과 일치한다.
 - 반복 문자와 긴 접두사 뒤 mismatch에서 첫 일치 위치를 정확히 반환한다.
 - 고정 시드 짧은 문자열 전체에서 표준 `find` 결과와 일치한다.
+- 자동 stage 밖의 Rabin–Karp 충돌 처리를 개인 학습 노트에서 설명한다.
 
 ## 자기 설명
 
@@ -47,7 +49,7 @@ python3 check.py --impl workspace --stage strings --expect pass
 ## 검증
 
 ```sh
-cd exercises/07-verified-algorithms-capstone
-python3 check.py --impl workspace --stage strings --expect pass
-python3 check.py --impl broken/empty-pattern --stage strings --expect fail
+make stage-check STAGE=strings
 ```
+
+workspace의 `all` 통과 뒤 repository-owned empty-pattern 결함 방향은 루트 `make checker-check`로 확인한다.

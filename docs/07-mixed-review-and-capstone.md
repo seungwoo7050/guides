@@ -110,6 +110,7 @@ python3 check.py --impl workspace --stage all --expect pass
 ```
 
 앞 stage 검사가 통과해도 뒤 함수를 미리 구현할 필요는 없다.
+checker stage는 선택한 함수군만 실행하므로 같은 workspace에 구현을 누적하고 `all`로 전체 회귀를 확인한다. `all` 통과 전에는 reference를 열지 않는다.
 
 ## 6. 실패 기록
 
@@ -126,7 +127,7 @@ python3 check.py --impl workspace --stage all --expect pass
 - 비용
 - 구현
 수정:
-추가한 regression test:
+개인 학습 노트에 보존한 regression 입력·expected result:
 ```
 
 “실수했다”로 끝내지 않는다. 같은 종류의 실수를 막을 수 있는 관찰 가능한 규칙을 남긴다.
@@ -143,11 +144,11 @@ python3 check.py --impl workspace --stage all --expect pass
 
 ## 연결 실습
 
-[검증 capstone](../exercises/07-verified-algorithms-capstone/README.md)에서 안전한 workspace를 만든 뒤 stage별로 구현한다. reference·skeleton·네 결함 fixture·비종료 fixture가 각각 기대한 결과를 내는지도 확인한다.
+[검증 capstone](../exercises/07-verified-algorithms-capstone/README.md)에서 안전한 workspace를 만든 뒤 stage별로 구현한다. workspace의 `all` 통과 뒤 reference·skeleton·네 오답 fixture·비종료 fixture가 각각 기대한 결과를 내는지도 확인한다.
 
 ## 완료 기준
 
-- 모든 stage reference 검사와 완성한 workspace 전체 검사가 통과한다.
+- 완성한 workspace의 각 stage와 `all` 검사가 통과하고, 그 뒤 reference baseline도 통과함을 확인한다.
 - skeleton은 의도한 `NotImplementedError`, 결함 fixture는 해당 계약 위반으로 거부된다.
 - 선택한 두 알고리즘의 계약·정확성·비용과 최소 실패 입력을 코드 없이 설명한다.
 
@@ -162,4 +163,4 @@ python3 check.py --impl workspace --stage all --expect pass
 
 ## 연습
 
-[Exercise 로드맵](../exercises/README.md)의 1–6단계를 완료한 뒤 capstone workspace에서 전체 stage를 통과시킨다. 최종적으로 결함 fixture 네 개가 각각 어떤 계약을 깨뜨리는지 최소 반례와 함께 설명한다.
+[Exercise 로드맵](../exercises/README.md)의 1–6단계를 완료한 뒤 capstone workspace에서 전체 stage를 통과시킨다. 최종적으로 오답 fixture 네 개가 각각 어떤 계약을 깨뜨리는지 최소 반례와 함께 설명하고, 비종료 fixture가 논리 오답과 다른 timeout 결과여야 하는 이유를 기록한다.

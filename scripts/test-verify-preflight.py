@@ -17,6 +17,12 @@ def prove_optional_lock_safety() -> None:
     verify_text = (ROOT / "verify.sh").read_text(encoding="utf-8")
     if "GIT_OPTIONAL_LOCKS=0" not in verify_text:
         raise AssertionError("verify가 Git optional index refresh를 비활성화하지 않았습니다")
+    if "--exclude=workspace" in verify_text:
+        raise AssertionError("verify가 임의 workspace 이름의 source를 전역으로 제외합니다")
+    if "--exclude='/.git'" not in verify_text or "--exclude='/.git/'" in verify_text:
+        raise AssertionError("verify가 worktree의 .git file과 일반 checkout의 .git directory를 모두 제외하지 않습니다")
+    if "--exclude='/exercises/07-verified-algorithms-capstone/workspace/'" not in verify_text:
+        raise AssertionError("verify가 canonical learner workspace만 제외하지 않습니다")
     with tempfile.TemporaryDirectory(prefix="guide-algorithms-index-") as temporary:
         repository = Path(temporary) / "repo"
         repository.mkdir()

@@ -6,16 +6,34 @@ import importlib.util
 import os
 from pathlib import Path
 import random
+import stat
 import sys
 import unittest
 
 ROOT = Path(__file__).resolve().parents[1]
 IMPLEMENTATION = os.environ.get("EXERCISE_IMPL_PATH", "reference")
-IMPLEMENTATION_PATH = (ROOT / IMPLEMENTATION / "algorithms.py").resolve()
+IMPLEMENTATION_RELATIVE = Path(IMPLEMENTATION)
+if (
+    not IMPLEMENTATION
+    or IMPLEMENTATION_RELATIVE.is_absolute()
+    or any(part in {"", ".", ".."} for part in IMPLEMENTATION_RELATIVE.parts)
+):
+    raise RuntimeError("implementation path가 exercise 밖을 가리킵니다.")
+IMPLEMENTATION_DIRECTORY = ROOT
+for part in IMPLEMENTATION_RELATIVE.parts:
+    IMPLEMENTATION_DIRECTORY = IMPLEMENTATION_DIRECTORY / part
+    metadata = IMPLEMENTATION_DIRECTORY.lstat()
+    if stat.S_ISLNK(metadata.st_mode) or not stat.S_ISDIR(metadata.st_mode):
+        raise RuntimeError("implementation directory는 symbolic link가 아닌 directory여야 합니다.")
+IMPLEMENTATION_PATH = IMPLEMENTATION_DIRECTORY / "algorithms.py"
+implementation_metadata = IMPLEMENTATION_PATH.lstat()
+if stat.S_ISLNK(implementation_metadata.st_mode) or not stat.S_ISREG(
+    implementation_metadata.st_mode
+):
+    raise RuntimeError("implementation file은 symbolic link가 아닌 regular file이어야 합니다.")
+IMPLEMENTATION_PATH = IMPLEMENTATION_PATH.resolve(strict=True)
 if ROOT not in IMPLEMENTATION_PATH.parents:
     raise RuntimeError("implementation path가 exercise 밖을 가리킵니다.")
-if not IMPLEMENTATION_PATH.is_file():
-    raise RuntimeError(f"implementation file이 없습니다: {IMPLEMENTATION_PATH}")
 
 spec = importlib.util.spec_from_file_location("exercise_subject", IMPLEMENTATION_PATH)
 assert spec is not None and spec.loader is not None

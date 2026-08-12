@@ -211,7 +211,9 @@ PY
   "$STATE_TOOL" manifest --root "$ROOT" --output "$SOURCE_BEFORE"
   mkdir -p -- "$COPY_ROOT"
   python3 "$ROOT/scripts/run_with_timeout.py" 60 -- \
-    rsync -a --exclude=.git --exclude=.guide --exclude=workspace --exclude=__pycache__ --exclude='*.pyc' "$ROOT/" "$COPY_ROOT/" &
+    rsync -a --exclude='/.git' --exclude='/.guide/' \
+      --exclude='/exercises/07-verified-algorithms-capstone/workspace/' \
+      --exclude='__pycache__/' --exclude='*.py[co]' "$ROOT/" "$COPY_ROOT/" &
   STEP_PID=$!
   wait "$STEP_PID" || preflight_fail '격리 source 복사가 실패했습니다.'
   STEP_PID=""

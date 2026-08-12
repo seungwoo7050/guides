@@ -2,7 +2,7 @@ SHELL := /bin/bash
 PYTHON ?= python3
 CAPSTONE := exercises/07-verified-algorithms-capstone
 STAGE ?= all
-IMPL ?= reference
+IMPL ?= workspace
 
 .PHONY: prepare verify check docs-check meta-check marker-safety-check workspace-check log-safety-check runner-safety-check checker-check \
 	skeleton-check reference-check failure-check timeout-check stage-check clean

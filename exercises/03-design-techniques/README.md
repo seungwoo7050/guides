@@ -39,19 +39,21 @@
 ## 실행
 
 ```sh
-cd exercises/07-verified-algorithms-capstone
-python3 check.py --impl workspace --stage design-techniques --expect pass
+make stage-check STAGE=design-techniques
 ```
 
 ## 결함 분석
 
 `broken/wrong-greedy`는 시작 시간이 빠른 구간부터 고른다. 검사가 어떤 입력에서 이를 거부하는지 찾아 최소화한다.
 
+0/1 knapsack의 capacity를 오름차순으로 갱신해 같은 물건을 여러 번 쓰게 되는 최소 입력은 저장소 밖 개인 학습 노트에 남긴다. 현재 repository-owned known-bad fixture가 자동 거부하는 대상은 wrong-greedy이며, DP 갱신 순서 반례는 수동 evidence다.
+
 ## 완료 기준
 
 - knapsack 구현이 음수 value와 아무것도 고르지 않는 선택을 올바르게 처리한다.
 - interval 결과가 최대 개수이며 `(end,start)` tie-break로 결정적이다.
 - LCS 길이가 빈 문자열과 짧은 전수 입력에서 subsequence oracle과 일치한다.
+- 0/1 knapsack의 잘못된 오름차순 갱신을 깨뜨리는 입력과 상태 trace를 개인 학습 노트에 남긴다.
 
 ## 자기 설명
 
@@ -61,7 +63,7 @@ python3 check.py --impl workspace --stage design-techniques --expect pass
 ## 검증
 
 ```sh
-cd exercises/07-verified-algorithms-capstone
-python3 check.py --impl workspace --stage design-techniques --expect pass
-python3 check.py --impl broken/wrong-greedy --stage design-techniques --expect fail
+make stage-check STAGE=design-techniques
 ```
+
+workspace의 `all` 통과 뒤 repository-owned wrong-greedy 방향은 루트 `make checker-check`로 확인한다.

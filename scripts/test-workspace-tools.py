@@ -83,7 +83,7 @@ def main() -> int:
     with tempfile.TemporaryDirectory(prefix="guide-algorithms-workspace-signal-") as temporary:
         _root, script, exercise = fixture(Path(temporary))
         environment = os.environ.copy()
-        environment["GUIDE_WORKSPACE_TEST_PAUSE"] = "10"
+        environment["GUIDE_WORKSPACE_TEST_AFTER_LOCK_MKDIR"] = "10"
         process = subprocess.Popen(
             [str(script), str(exercise)],
             cwd=script.parents[1],

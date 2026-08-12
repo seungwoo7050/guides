@@ -111,7 +111,7 @@ offline reverse processing, rollback DSU, dynamic connectivity 같은 다른 설
 
 ## 연결 실습
 
-[자료구조 exercise](../../exercises/02-data-structures/README.md)의 MST 준비 단계에서 DSU의 대표·size 불변식을 추적하고, 같은 집합 union이 상태를 바꾸지 않는지 확인한다.
+[자료구조 exercise](../../exercises/02-data-structures/README.md)에서는 개인 학습 노트로 DSU의 대표·size 불변식을 추적하고 같은 집합 union이 상태를 바꾸지 않는지 확인한다. 실제 DSU 구현은 Part 4의 [그래프 exercise](../../exercises/04-graphs/README.md)에서 `kruskal_mst`와 함께 완성한다.
 
 ## 완료 기준
 
@@ -129,4 +129,4 @@ offline reverse processing, rollback DSU, dynamic connectivity 같은 다른 설
 
 ## 연습
 
-[자료구조 exercise](../../exercises/02-data-structures/README.md)에서 Kruskal이 사용하는 DSU 불변식과 동적 배열 append의 aggregate 분석을 작성한다.
+[자료구조 exercise](../../exercises/02-data-structures/README.md)에서 DSU 불변식과 동적 배열 append의 aggregate 분석을 개인 학습 노트에 작성하고, [그래프 exercise](../../exercises/04-graphs/README.md)의 Kruskal 구현에서 그 불변식을 적용한다.

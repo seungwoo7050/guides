@@ -24,6 +24,8 @@ workspace=$exercise/workspace
 lock=$exercise/.workspace-create.lock
 staging=
 lock_held=0
+lock_acquiring=0
+pending_signal=0
 
 [ -d "$skeleton" ] && [ ! -L "$skeleton" ] || fail '일반 skeleton 디렉터리가 필요합니다'
 [ -x "$publisher" ] || fail '원자적 workspace 게시 도구가 없습니다'
@@ -42,6 +44,10 @@ cleanup() {
 }
 stop_on_signal() {
     code=$1
+    if [ "$lock_acquiring" -eq 1 ]; then
+        pending_signal=$code
+        return 0
+    fi
     trap - EXIT HUP INT TERM
     cleanup
     exit "$code"
@@ -51,8 +57,21 @@ trap 'stop_on_signal 129' HUP
 trap 'stop_on_signal 130' INT
 trap 'stop_on_signal 143' TERM
 
-mkdir -- "$lock" 2>/dev/null || fail '다른 workspace 생성 작업이 진행 중입니다'
-lock_held=1
+lock_acquiring=1
+if sh -c 'trap "" HUP INT TERM; exec mkdir -- "$1"' _ "$lock" 2>/dev/null; then
+    if [ -n "${GUIDE_WORKSPACE_TEST_AFTER_LOCK_MKDIR:-}" ]; then
+        sleep "$GUIDE_WORKSPACE_TEST_AFTER_LOCK_MKDIR" || :
+    fi
+    lock_held=1
+    lock_acquired=1
+else
+    lock_acquired=0
+fi
+lock_acquiring=0
+if [ "$pending_signal" -ne 0 ]; then
+    stop_on_signal "$pending_signal"
+fi
+[ "$lock_acquired" -eq 1 ] || fail '다른 workspace 생성 작업이 진행 중입니다'
 if [ -n "${GUIDE_WORKSPACE_TEST_PAUSE:-}" ]; then
     sleep "$GUIDE_WORKSPACE_TEST_PAUSE"
 fi

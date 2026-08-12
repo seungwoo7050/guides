@@ -4,28 +4,21 @@
 from __future__ import annotations
 
 import ast
+from collections import Counter
+import io
 import os
 from pathlib import Path
 import re
 import stat
 import sys
+import tokenize
 from urllib.parse import unquote
 
 ROOT = Path(os.environ.get("GUIDE_ROOT", Path(__file__).resolve().parents[1])).resolve()
 MANIFEST = ROOT / "scripts/layout-manifest.txt"
-IGNORED_PARTS = {
-    ".git",
-    ".guide",
-    ".pytest_cache",
-    ".venv",
-    "__pycache__",
-    "build",
-    "dist",
-    "htmlcov",
-    "workspace",
-}
 IGNORED_NAMES = {".DS_Store"}
-CORE_DOCS = {
+LEARNER_WORKSPACE = Path("exercises/07-verified-algorithms-capstone/workspace")
+CORE_DOCS = (
     "docs/01-foundations/01-problem-contracts-and-counterexamples.md",
     "docs/01-foundations/02-asymptotic-analysis.md",
     "docs/01-foundations/03-recurrences-and-divide-and-conquer.md",
@@ -46,7 +39,7 @@ CORE_DOCS = {
     "docs/06-complexity/02-complexity-classes-and-reductions.md",
     "docs/07-mixed-review-and-capstone.md",
     "docs/80-extended-practice.md",
-}
+)
 EXERCISES = (
     "exercises/01-analysis-and-counterexamples",
     "exercises/02-data-structures",
@@ -102,6 +95,37 @@ LEGACY_PATHS = {
     "exercises/verified-algorithms",
 }
 ERRORS: list[str] = []
+README_MAPPING_HEADER = (
+    "| 순서 | 문서 | 관찰 예제 | 직접 수행 | 수정 위치 | 검증 | 완료 뒤 비교·다음 |"
+)
+README_MAPPING_DOCS = ("docs/00-roadmap.md", *CORE_DOCS)
+README_MAPPING_EXERCISES = tuple(
+    f"{exercise}/README.md" for exercise in EXERCISES
+)
+IMPLEMENTATION_REFERENCE = Path(
+    "exercises/07-verified-algorithms-capstone/reference/algorithms.py"
+)
+IMPLEMENTATION_README = Path("exercises/07-verified-algorithms-capstone/README.md")
+PUBLIC_ALGORITHM_FUNCTIONS = (
+    "prefix_sums",
+    "range_sum",
+    "lower_bound",
+    "bfs_distances",
+    "dijkstra",
+    "knapsack_01",
+    "select_intervals",
+    "red_black_height",
+    "kruskal_mst",
+    "bellman_ford",
+    "kmp_find",
+    "max_flow",
+    "lcs_length",
+)
+MARKER_OPEN = "[" + "Implementation "
+IMPLEMENTATION_MARKER = re.compile(
+    re.escape(MARKER_OPEN) + r"(?P<identifier>0|[1-9][0-9]*(?:-[1-9][0-9]*)?)\]"
+)
+ANY_IMPLEMENTATION_MARKER = re.compile(re.escape(MARKER_OPEN) + r"[^\]\n]+\]")
 
 
 def report(message: str) -> None:
@@ -110,7 +134,16 @@ def report(message: str) -> None:
 
 def ignored(path: Path) -> bool:
     relative = path.relative_to(ROOT)
-    return path.name in IGNORED_NAMES or any(part in IGNORED_PARTS for part in relative.parts)
+    root_state = bool(relative.parts) and relative.parts[0] in {".git", ".guide"}
+    learner_workspace = (
+        relative == LEARNER_WORKSPACE or LEARNER_WORKSPACE in relative.parents
+    )
+    return (
+        path.name in IGNORED_NAMES
+        or root_state
+        or "__pycache__" in relative.parts
+        or learner_workspace
+    )
 
 
 def source_files() -> set[str]:
@@ -352,10 +385,29 @@ def check_versions_and_navigation() -> None:
     readme_path = ROOT / "README.md"
     roadmap = roadmap_path.read_text(encoding="utf-8") if roadmap_path.is_file() else ""
     readme = readme_path.read_text(encoding="utf-8") if readme_path.is_file() else ""
-    for path in sorted(CORE_DOCS):
+    roadmap_doc_positions: list[int] = []
+    for path in CORE_DOCS:
         relative_from_docs = Path(path).relative_to("docs").as_posix()
-        if relative_from_docs not in roadmap and Path(path).name not in roadmap:
-            report(f"roadmap 정본 문서 누락: {path}")
+        count = roadmap.count(relative_from_docs)
+        if count != 1:
+            report(f"roadmap 정본 문서는 정확히 한 번이어야 합니다: {path} -> {count}")
+        roadmap_doc_positions.append(roadmap.find(relative_from_docs))
+    if all(position >= 0 for position in roadmap_doc_positions) and roadmap_doc_positions != sorted(
+        roadmap_doc_positions
+    ):
+        report("roadmap 정본 문서 순서 오류")
+
+    roadmap_exercise_positions: list[int] = []
+    for exercise in EXERCISES:
+        target = f"../{exercise}/README.md"
+        count = roadmap.count(target)
+        if count != 1:
+            report(f"roadmap exercise 대응은 정확히 한 번이어야 합니다: {target} -> {count}")
+        roadmap_exercise_positions.append(roadmap.find(target))
+    if all(position >= 0 for position in roadmap_exercise_positions) and roadmap_exercise_positions != sorted(
+        roadmap_exercise_positions
+    ):
+        report("roadmap exercise 대응 순서 오류")
     roadmap_requirements = (
         "## 대상 독자",
         "## 선행지식과 지원 환경",
@@ -375,6 +427,432 @@ def check_versions_and_navigation() -> None:
             report(f"README 정본 명령 누락: {command}")
 
 
+def check_readme_learning_map() -> None:
+    path = ROOT / "README.md"
+    if not path.is_file():
+        return
+    readme = path.read_text(encoding="utf-8")
+    mapping = section(readme, "단계별 학습 지도")
+    if not mapping:
+        report("README 단계별 학습 지도 누락")
+        return
+    if mapping.count(README_MAPPING_HEADER) != 1:
+        report("README ordered mapping canonical field 누락/중복")
+
+    doc_positions: list[int] = []
+    for relative in README_MAPPING_DOCS:
+        count = mapping.count(relative)
+        position = mapping.find(relative)
+        if count != 1:
+            report(f"README ordered mapping 문서는 정확히 한 번이어야 합니다: {relative} -> {count}")
+        doc_positions.append(position)
+    if all(position >= 0 for position in doc_positions) and doc_positions != sorted(
+        doc_positions
+    ):
+        report("README ordered mapping 문서 순서 오류")
+
+    exercise_positions: list[int] = []
+    for relative in README_MAPPING_EXERCISES:
+        count = mapping.count(relative)
+        position = mapping.find(relative)
+        if count != 1:
+            report(f"README ordered mapping exercise는 정확히 한 번이어야 합니다: {relative} -> {count}")
+        exercise_positions.append(position)
+    if all(position >= 0 for position in exercise_positions) and exercise_positions != sorted(
+        exercise_positions
+    ):
+        report("README ordered mapping exercise 순서 오류")
+
+    required_mapping_contracts = (
+        "저장소 밖 개인 학습 노트",
+        "exercises/07-verified-algorithms-capstone/workspace/algorithms.py",
+        "scripts/new-workspace.sh exercises/07-verified-algorithms-capstone",
+        "make stage-check STAGE=data-structures",
+        "make stage-check STAGE=design-techniques",
+        "make stage-check STAGE=graphs",
+        "make stage-check STAGE=strings",
+        "make stage-check STAGE=all",
+        "통과 뒤 `reference/`",
+        "docs/80-extended-practice.md",
+    )
+    for contract in required_mapping_contracts:
+        if contract not in mapping:
+            report(f"README ordered mapping 학습 계약 누락: {contract}")
+    if "별도 `examples/`가 없다" not in readme or "| — |" not in mapping:
+        report("README example 부재 계약 누락")
+    manual_contracts = ("make docs-check", "수학적 타당성", "채점하지 않")
+    if any(contract not in readme for contract in manual_contracts):
+        report("README 분석 evidence의 manual review 경계 누락")
+
+
+def top_level_definitions(
+    tree: ast.Module,
+) -> dict[str, list[ast.FunctionDef | ast.ClassDef]]:
+    result: dict[str, list[ast.FunctionDef | ast.ClassDef]] = {}
+    for node in tree.body:
+        if isinstance(node, (ast.FunctionDef, ast.ClassDef)):
+            result.setdefault(node.name, []).append(node)
+    return result
+
+
+def one_definition(
+    definitions: dict[str, list[ast.FunctionDef | ast.ClassDef]],
+    name: str,
+    expected_type: type[ast.FunctionDef] | type[ast.ClassDef],
+) -> ast.FunctionDef | ast.ClassDef | None:
+    candidates = definitions.get(name, [])
+    if len(candidates) != 1 or not isinstance(candidates[0], expected_type):
+        return None
+    return candidates[0]
+
+
+def class_field_contract(node: ast.ClassDef) -> tuple[tuple[str, ...], tuple[tuple[str, str, str], ...]]:
+    decorators = tuple(
+        ast.dump(decorator, include_attributes=False) for decorator in node.decorator_list
+    )
+    fields: list[tuple[str, str, str]] = []
+    for statement in node.body:
+        if isinstance(statement, ast.AnnAssign) and isinstance(statement.target, ast.Name):
+            fields.append(
+                (
+                    statement.target.id,
+                    ast.dump(statement.annotation, include_attributes=False),
+                    ast.dump(statement.value, include_attributes=False)
+                    if statement.value is not None
+                    else "",
+                )
+            )
+    return decorators, tuple(fields)
+
+
+def check_skeleton_contract() -> None:
+    reference_path = ROOT / IMPLEMENTATION_REFERENCE
+    skeleton_path = ROOT / "exercises/07-verified-algorithms-capstone/skeleton/algorithms.py"
+    if not reference_path.is_file() or not skeleton_path.is_file():
+        return
+    try:
+        reference_tree = ast.parse(
+            reference_path.read_text(encoding="utf-8"),
+            filename=IMPLEMENTATION_REFERENCE.as_posix(),
+        )
+        skeleton_tree = ast.parse(
+            skeleton_path.read_text(encoding="utf-8"),
+            filename=skeleton_path.relative_to(ROOT).as_posix(),
+        )
+    except SyntaxError:
+        return
+
+    expected_import_tree = ast.parse(
+        "from __future__ import annotations\n"
+        "from dataclasses import dataclass\n"
+        "from typing import Iterable, Sequence\n"
+    )
+    expected_imports = tuple(
+        ast.dump(node, include_attributes=False) for node in expected_import_tree.body
+    )
+    skeleton_imports = tuple(
+        ast.dump(node, include_attributes=False)
+        for node in skeleton_tree.body
+        if isinstance(node, (ast.Import, ast.ImportFrom))
+    )
+    if skeleton_imports != expected_imports:
+        report("skeleton import 계약은 공개 자료형·type hint에 필요한 범위로 제한합니다")
+
+    reference_defs = top_level_definitions(reference_tree)
+    skeleton_defs = top_level_definitions(skeleton_tree)
+    allowed_skeleton_definitions = {
+        "_missing",
+        "RedBlackNode",
+        *PUBLIC_ALGORITHM_FUNCTIONS,
+    }
+    unexpected_definitions = sorted(set(skeleton_defs) - allowed_skeleton_definitions)
+    if unexpected_definitions:
+        report(f"skeleton에 정답 helper 또는 예상 밖 정의가 있습니다: {unexpected_definitions}")
+    for name in sorted(allowed_skeleton_definitions):
+        count = len(skeleton_defs.get(name, []))
+        if count != 1:
+            report(f"skeleton top-level 정의는 정확히 한 번이어야 합니다: {name} -> {count}")
+    for statement in skeleton_tree.body:
+        allowed_statement = isinstance(statement, (ast.Import, ast.ImportFrom, ast.FunctionDef, ast.ClassDef))
+        if isinstance(statement, ast.Expr) and isinstance(statement.value, ast.Constant) and isinstance(
+            statement.value.value, str
+        ):
+            allowed_statement = True
+        if not allowed_statement:
+            report(f"skeleton top-level 실행·상태 누출 금지: {type(statement).__name__}")
+
+    reference_functions = {
+        name
+        for name, nodes in reference_defs.items()
+        if len(nodes) == 1 and isinstance(nodes[0], ast.FunctionDef)
+    }
+    skeleton_functions = {
+        name
+        for name, nodes in skeleton_defs.items()
+        if len(nodes) == 1 and isinstance(nodes[0], ast.FunctionDef)
+    }
+    expected_public = set(PUBLIC_ALGORITHM_FUNCTIONS)
+    if {name for name in reference_functions if not name.startswith("_")} != expected_public:
+        report("reference 공개 함수 inventory가 canonical contract와 다릅니다")
+    if {name for name in skeleton_functions if not name.startswith("_")} != expected_public:
+        report("skeleton 공개 함수 inventory가 reference와 다릅니다")
+
+    for name in PUBLIC_ALGORITHM_FUNCTIONS:
+        reference = one_definition(reference_defs, name, ast.FunctionDef)
+        skeleton = one_definition(skeleton_defs, name, ast.FunctionDef)
+        if not isinstance(reference, ast.FunctionDef) or not isinstance(
+            skeleton, ast.FunctionDef
+        ):
+            continue
+        reference_signature = (
+            ast.dump(reference.args, include_attributes=False),
+            ast.dump(reference.returns, include_attributes=False),
+        )
+        skeleton_signature = (
+            ast.dump(skeleton.args, include_attributes=False),
+            ast.dump(skeleton.returns, include_attributes=False),
+        )
+        if skeleton_signature != reference_signature:
+            report(f"skeleton 공개 함수 signature 불일치: {name}")
+        expected_boundary = (
+            len(skeleton.body) == 1
+            and isinstance(skeleton.body[0], ast.Return)
+            and isinstance(skeleton.body[0].value, ast.Call)
+            and isinstance(skeleton.body[0].value.func, ast.Name)
+            and skeleton.body[0].value.func.id == "_missing"
+            and len(skeleton.body[0].value.args) == 1
+            and isinstance(skeleton.body[0].value.args[0], ast.Constant)
+            and skeleton.body[0].value.args[0].value == name
+        )
+        if not expected_boundary:
+            report(f"skeleton 함수가 designated _missing 경계를 벗어났습니다: {name}")
+
+    reference_node = one_definition(reference_defs, "RedBlackNode", ast.ClassDef)
+    skeleton_node = one_definition(skeleton_defs, "RedBlackNode", ast.ClassDef)
+    if not isinstance(reference_node, ast.ClassDef) or not isinstance(
+        skeleton_node, ast.ClassDef
+    ):
+        report("RedBlackNode 공개 자료형이 reference 또는 skeleton에 없습니다")
+    elif class_field_contract(reference_node) != class_field_contract(skeleton_node):
+        report("skeleton RedBlackNode field·decorator 계약이 reference와 다릅니다")
+    elif any(not isinstance(statement, ast.AnnAssign) for statement in skeleton_node.body):
+        report("skeleton RedBlackNode에 field 계약 외 구현을 두지 않습니다")
+
+    missing = one_definition(skeleton_defs, "_missing", ast.FunctionDef)
+    missing_boundary = (
+        isinstance(missing, ast.FunctionDef)
+        and len(missing.body) == 1
+        and isinstance(missing.body[0], ast.Raise)
+        and isinstance(missing.body[0].exc, ast.Call)
+        and isinstance(missing.body[0].exc.func, ast.Name)
+        and missing.body[0].exc.func.id == "NotImplementedError"
+    )
+    if not missing_boundary:
+        report("skeleton _missing의 NotImplementedError 경계가 다릅니다")
+
+
+def check_implementation_annotations(actual: set[str]) -> None:
+    markers_by_path: dict[str, list[str]] = {}
+    for relative in sorted(actual):
+        path = ROOT / relative
+        if not path.is_file():
+            continue
+        try:
+            text = path.read_text(encoding="utf-8")
+        except (OSError, UnicodeDecodeError):
+            continue
+        occurrences = ANY_IMPLEMENTATION_MARKER.findall(text)
+        if text.count(MARKER_OPEN) != len(occurrences):
+            report(f"Implementation marker 닫힘·형식 오류: {relative}")
+        if not occurrences:
+            continue
+        identifiers: list[str] = []
+        for occurrence in occurrences:
+            match = IMPLEMENTATION_MARKER.fullmatch(occurrence)
+            if match is None:
+                report(f"Implementation marker 형식 오류: {relative}: {occurrence}")
+                continue
+            identifiers.append(match.group("identifier"))
+        markers_by_path[relative] = identifiers
+
+    reference_relative = IMPLEMENTATION_REFERENCE.as_posix()
+    for relative in sorted(markers_by_path):
+        if relative != reference_relative:
+            report(f"Implementation marker 금지 경로: {relative}")
+
+    reference_path = ROOT / IMPLEMENTATION_REFERENCE
+    if not reference_path.is_file():
+        return
+    reference_text = reference_path.read_text(encoding="utf-8")
+    identifiers = markers_by_path.get(reference_relative, [])
+    counts = Counter(identifiers)
+    if not identifiers:
+        report("reference Implementation anchor가 없습니다")
+    for identifier, count in sorted(counts.items()):
+        if count != 1:
+            report(f"reference Implementation anchor 중복: {identifier} -> {count}")
+
+    def identifier_key(identifier: str) -> tuple[int, ...]:
+        return tuple(int(part) for part in identifier.split("-"))
+
+    top_levels = sorted(
+        int(identifier) for identifier in counts if "-" not in identifier
+    )
+    if top_levels:
+        first = 0 if top_levels[0] == 0 else 1
+        expected_top_levels = list(range(first, top_levels[-1] + 1))
+        if top_levels != expected_top_levels:
+            report(
+                "Implementation top-level 번호는 간격 없이 연속이어야 합니다: "
+                f"{top_levels}"
+            )
+    for top_level in top_levels:
+        children = sorted(
+            int(identifier.split("-", 1)[1])
+            for identifier in counts
+            if identifier.startswith(f"{top_level}-")
+            and identifier.count("-") == 1
+        )
+        if children and children != list(range(1, children[-1] + 1)):
+            report(
+                f"Implementation {top_level} substep은 1부터 연속이어야 합니다: {children}"
+            )
+    for identifier in counts:
+        if "-" in identifier and int(identifier.split("-", 1)[0]) not in top_levels:
+            report(f"Implementation substep의 top-level anchor가 없습니다: {identifier}")
+
+    comment_identifiers: list[str] = []
+    marker_lines: dict[str, int] = {}
+    try:
+        tokens = tokenize.generate_tokens(io.StringIO(reference_text).readline)
+        for token in tokens:
+            if token.type != tokenize.COMMENT:
+                continue
+            for match in IMPLEMENTATION_MARKER.finditer(token.string):
+                identifier = match.group("identifier")
+                comment_identifiers.append(identifier)
+                marker_lines[identifier] = token.start[0]
+    except tokenize.TokenError as error:
+        report(f"reference tokenization 실패: {error}")
+    if Counter(comment_identifiers) != counts:
+        report("Implementation anchor는 Python comment token이어야 합니다")
+
+    try:
+        tree = ast.parse(reference_text, filename=reference_relative)
+    except SyntaxError:
+        tree = None
+    primary_symbols: dict[str, str] = {}
+    public_symbol_owners: dict[str, str] = {}
+    if tree is not None:
+        definitions = sorted(
+            (
+                (node.lineno, node.name)
+                for node in tree.body
+                if isinstance(node, (ast.FunctionDef, ast.ClassDef))
+            ),
+            key=lambda item: item[0],
+        )
+        for identifier in identifiers:
+            marker_line = marker_lines.get(identifier)
+            if marker_line is None:
+                continue
+            following = next(
+                (name for line, name in definitions if line > marker_line),
+                None,
+            )
+            if following is None:
+                report(f"Implementation {identifier} 뒤에 top-level symbol이 없습니다")
+            else:
+                primary_symbols[identifier] = following
+
+        public_symbols = {*PUBLIC_ALGORITHM_FUNCTIONS, "RedBlackNode"}
+        ordered_markers = sorted(
+            ((line, identifier) for identifier, line in marker_lines.items()),
+            key=lambda item: item[0],
+        )
+        for line, symbol in definitions:
+            if symbol not in public_symbols:
+                continue
+            preceding = [
+                identifier
+                for marker_line, identifier in ordered_markers
+                if marker_line < line
+            ]
+            if preceding:
+                public_symbol_owners[symbol] = preceding[-1]
+        missing_public_coverage = sorted(public_symbols - set(public_symbol_owners))
+        if missing_public_coverage:
+            report(f"Implementation annotation public API coverage 누락: {missing_public_coverage}")
+
+    readme_path = ROOT / IMPLEMENTATION_README
+    if not readme_path.is_file():
+        return
+    readme = readme_path.read_text(encoding="utf-8")
+    index = section(readme, "기준 구현 읽기 순서")
+    index_rows: dict[str, list[str]] = {}
+    index_ids: list[str] = []
+    for line in index.splitlines():
+        cells = [cell.strip() for cell in line.strip().strip("|").split("|")]
+        if not cells or re.fullmatch(r"\d+(?:-\d+)?", cells[0]) is None:
+            continue
+        identifier = cells[0]
+        index_ids.append(identifier)
+        if identifier in index_rows:
+            report(f"capstone README Implementation index row 중복: {identifier}")
+        index_rows[identifier] = cells[1:]
+
+    expected_ids = sorted(counts, key=identifier_key)
+    if index_ids != expected_ids or set(index_rows) != set(counts):
+        report(
+            "capstone README·source Implementation 번호 대응 불일치: "
+            f"source={expected_ids}, index={index_ids}"
+        )
+    for identifier, symbol in primary_symbols.items():
+        cells = index_rows.get(identifier, [])
+        symbol_cell = cells[0] if cells else ""
+        if f"`{symbol}`" not in symbol_cell:
+            report(
+                f"capstone README Implementation {identifier} row가 source anchor symbol을 가리키지 않습니다: {symbol}"
+            )
+    for symbol, identifier in sorted(public_symbol_owners.items()):
+        cells = index_rows.get(identifier, [])
+        symbol_cell = cells[0] if cells else ""
+        if f"`{symbol}`" not in symbol_cell:
+            report(
+                f"capstone README Implementation {identifier} row에 nearest-anchor public symbol이 없습니다: {symbol}"
+            )
+    for symbol in (*PUBLIC_ALGORITHM_FUNCTIONS, "RedBlackNode"):
+        if f"`{symbol}`" not in index:
+            report(f"capstone README Implementation index public symbol 누락: {symbol}")
+    index_contracts = (
+        "reference/algorithms.py",
+        "Git 작성 이력",
+        "권장 구현 순서",
+        "workspace",
+        "`all`",
+        "Implementation 0이 없다",
+        "중간 CLI도 없다",
+    )
+    for contract in index_contracts:
+        if contract not in index:
+            report(f"capstone README Implementation scope 계약 누락: {contract}")
+    if "Implementation 0이 없다" in index and "0" in counts:
+        report("Implementation 0 면제 선언과 source anchor가 충돌합니다")
+
+
+def check_learner_defaults() -> None:
+    makefile_path = ROOT / "Makefile"
+    checker_path = ROOT / "exercises/07-verified-algorithms-capstone/check.py"
+    makefile = makefile_path.read_text(encoding="utf-8") if makefile_path.is_file() else ""
+    checker = checker_path.read_text(encoding="utf-8") if checker_path.is_file() else ""
+    if not re.search(r"^IMPL\s*\?=\s*workspace\s*$", makefile, flags=re.MULTILINE):
+        report("learner stage-check 기본 구현은 workspace여야 합니다")
+    if re.search(r'^\s*default\s*=\s*"workspace",\s*$', checker, flags=re.MULTILINE) is None:
+        report("capstone checker --impl 기본값은 workspace여야 합니다")
+    if re.search(r'["\']EXERCISE_IMPL["\']', checker):
+        report("capstone checker --impl 기본값을 외부 환경으로 reference에 바꾸지 않습니다")
+
+
 def main() -> int:
     actual = source_files()
     check_exact_tree(actual)
@@ -382,6 +860,10 @@ def main() -> int:
     check_exercise_pedagogy()
     check_sources(actual)
     check_versions_and_navigation()
+    check_readme_learning_map()
+    check_skeleton_contract()
+    check_implementation_annotations(actual)
+    check_learner_defaults()
     if ERRORS:
         print(f"guide-algorithms 검증 실패: {len(ERRORS)}건", file=sys.stderr)
         for error in ERRORS:

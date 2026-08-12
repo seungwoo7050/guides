@@ -6,7 +6,7 @@
 
 ## 선행지식과 지원 환경
 
-함수·조건문·반복문·배열을 작성하고 작은 입력의 실행 상태를 손으로 추적할 수 있어야 한다. 자동 검증은 Python 3.12 이상, Git, POSIX shell과 `make`가 있는 macOS 또는 Linux를 지원한다. core 문서의 계약과 증명은 언어 중립이지만, 저장소가 제공하는 skeleton·reference·oracle은 Python용이다. C++20 구현은 선택 확장이며 동일한 자동 완료 판정을 제공하지 않는다.
+함수·조건문·반복문·배열을 작성하고 작은 입력의 실행 상태를 손으로 추적할 수 있어야 한다. 공식 준비와 자동 검증은 Python 3.12 이상, Git, POSIX shell, Bash, `make`, `rsync`가 있는 macOS 또는 Linux를 지원한다. core 문서의 계약과 증명은 언어 중립이지만, 저장소가 제공하는 skeleton·reference·oracle은 Python용이다. C++20 구현은 선택 확장이며 동일한 자동 완료 판정을 제공하지 않는다.
 
 ## 종료 능력
 
@@ -33,7 +33,7 @@
 
 ## 학습 순서
 
-Part 1–7과 대응 exercise는 **필수 경로**다. 뒤의 선택 확장은 필수 경로의 완료 기준을 대신하지 않는다.
+Part 1–7과 대응 exercise는 **필수 경로**다. 모든 문서를 먼저 읽고 구현을 몰아서 하는 대신 각 Part의 문서를 읽은 직후 대응 exercise를 진행한다. Part 2–5의 구현은 하나의 learner-owned workspace에 누적하고, 뒤의 선택 확장은 필수 경로의 완료 기준을 대신하지 않는다.
 
 ### Part 1. 분석과 정확성의 언어
 
@@ -89,15 +89,17 @@ Part 1–7과 대응 exercise는 **필수 경로**다. 뒤의 선택 확장은 �
 
 ## Exercise 대응
 
-| 학습 구간 | Exercise | 자동 검증 |
-|---|---|---|
-| Part 1 | [분석과 반례](../exercises/01-analysis-and-counterexamples/README.md) | 서술형 rubric |
-| Part 2 | [자료구조](../exercises/02-data-structures/README.md) | prefix sum, lower bound, 레드블랙트리 |
-| Part 3 | [설계 기법](../exercises/03-design-techniques/README.md) | 배낭, 구간 선택, LCS |
-| Part 4 | [그래프](../exercises/04-graphs/README.md) | BFS, Dijkstra, Kruskal, Bellman–Ford, 최대 유량 |
-| Part 5 | [문자열](../exercises/05-strings/README.md) | KMP와 표준 검색 동치 검사 |
-| Part 6 | [복잡도](../exercises/06-complexity/README.md) | 서술형 rubric |
-| Part 7 | [검증 capstone](../exercises/07-verified-algorithms-capstone/README.md) | 전체 reference·skeleton·결함 fixture |
+별도 `examples/`는 없다. 문서의 trace와 의사코드를 관찰한 뒤, 서술 증거는 저장소 밖 개인 학습 노트에 쓰고 실행 구현은 안전하게 생성한 `workspace/algorithms.py`에서만 수정한다. `skeleton/`은 read-only 시작 계약이고 `reference/`는 learner workspace의 `all` 통과 뒤에 확인한다.
+
+| 학습 구간 | 관찰 예제 | 직접 수행 | 수정·기록 위치 | 완료 검증 | 다음 |
+|---|---|---|---|---|---|
+| Part 1 | — | [분석과 반례](../exercises/01-analysis-and-counterexamples/README.md)의 공통 기록과 A·B·C 초안 | 저장소 밖 개인 학습 노트 | 수동 rubric·짝 검토 | Part 2 뒤 A, Part 3 뒤 B, Part 4 뒤 C를 다시 완성 |
+| Part 2 | — | [자료구조](../exercises/02-data-structures/README.md) 구현과 DSU trace | `workspace/algorithms.py`와 개인 학습 노트 | checker `data-structures` stage | Part 1 A 보완 후 Part 3 |
+| Part 3 | — | [설계 기법](../exercises/03-design-techniques/README.md) 구현과 DP 반례 | 같은 workspace와 개인 학습 노트 | checker `design-techniques` stage | Part 1 B 보완 후 Part 4 |
+| Part 4 | — | [그래프](../exercises/04-graphs/README.md) 구현과 자동 stage 밖 개념의 trace | 같은 workspace와 개인 학습 노트 | checker `graphs` stage | Part 1 C 보완 후 Part 5 |
+| Part 5 | — | [문자열](../exercises/05-strings/README.md) 구현과 자동 stage 밖 개념의 trace | 같은 workspace와 개인 학습 노트 | checker `strings` stage | Part 6 |
+| Part 6 | — | [복잡도](../exercises/06-complexity/README.md)의 하한·안정성·certificate·reduction 설명 | 저장소 밖 개인 학습 노트 | 수동 rubric·짝 검토 | Part 7 |
+| Part 7 | — | [검증 capstone](../exercises/07-verified-algorithms-capstone/README.md) 전체와 실패·회귀 증거 | 같은 workspace와 저장소 밖 개인 학습 노트 | checker `all` stage | 통과 뒤 reference·결함 fixture를 비교하고 선택 확장 |
 
 ## 권장 반복 방식
 
@@ -112,12 +114,13 @@ Part 1–7과 대응 exercise는 **필수 경로**다. 뒤의 선택 확장은 �
 7. 기준 풀이와 동치 검사를 수행한다.
 8. 실패 입력을 최소화하고 수정 뒤 다시 실행한다.
 
-완성 예제를 읽는 것만으로 완료하지 않는다. 구현을 닫고 같은 계약을 다시 작성할 수 있어야 한다.
+완성 예제를 읽는 것만으로 완료하지 않는다. Part 2를 시작할 때 한 번 만든 workspace를 이후 stage에도 누적해 사용하고, `all` 통과 뒤에만 reference를 읽는다. 구현을 닫고 같은 계약을 다시 작성할 수 있어야 한다.
 
 ## 완료 기준
 
-- Part 1–7의 문서와 대응 exercise에서 요구하는 관찰 가능한 증거를 모두 남긴다.
-- verified algorithms capstone의 reference 20개 검사를 통과시키고 skeleton과 known-bad fixture가 지정된 이유로 실패함을 설명한다.
+- Part 1–7의 문서와 대응 exercise에서 요구하는 관찰 가능한 구현 또는 개인 학습 노트의 증거를 모두 남긴다.
+- verified algorithms capstone의 workspace가 20개 검사를 통과하게 하고, 그 뒤 reference와 설계 선택을 비교한다.
+- repository baseline인 reference는 통과하고 skeleton·known-bad·timeout fixture는 지정된 이유로 거부됨을 확인한다.
 - 새로운 실패 입력을 최소화하고 계약·복잡도·정확성 근거와 수정 뒤 회귀 결과를 함께 기록한다.
 
 ## 자동 검증의 한계

@@ -8,28 +8,55 @@ import os
 import signal
 import subprocess
 import sys
+import time
 
 process: subprocess.Popen[bytes] | None = None
 
 
+def group_exists() -> bool:
+    if process is None:
+        return False
+    try:
+        os.killpg(process.pid, 0)
+    except ProcessLookupError:
+        return False
+    except PermissionError:
+        return True
+    return True
+
+
+def wait_group_gone(seconds: float) -> bool:
+    deadline = time.monotonic() + seconds
+    while time.monotonic() < deadline:
+        if not group_exists():
+            return True
+        time.sleep(0.02)
+    return not group_exists()
+
+
 def terminate_owned_group() -> None:
     global process
-    if process is None or process.poll() is not None:
+    if process is None or not group_exists():
         return
     try:
         os.killpg(process.pid, signal.SIGTERM)
     except ProcessLookupError:
         return
-    try:
-        process.wait(timeout=2)
+    if process.poll() is None:
+        try:
+            process.wait(timeout=2)
+        except subprocess.TimeoutExpired:
+            pass
+    if wait_group_gone(2):
         return
-    except subprocess.TimeoutExpired:
-        pass
     try:
         os.killpg(process.pid, signal.SIGKILL)
     except ProcessLookupError:
         pass
-    process.wait()
+    if process.poll() is None:
+        process.wait()
+    if not wait_group_gone(2):
+        raise RuntimeError("종료한 owned process group이 남았습니다")
 
 
 def handle_signal(signum: int, _frame: object) -> None:
@@ -51,7 +78,9 @@ def main() -> int:
         signal.signal(signum, handle_signal)
     process = subprocess.Popen(command, start_new_session=True)
     try:
-        return process.wait(timeout=arguments.seconds)
+        returncode = process.wait(timeout=arguments.seconds)
+        terminate_owned_group()
+        return returncode
     except subprocess.TimeoutExpired:
         print(
             f"시간 제한 {arguments.seconds:g}초를 초과했습니다: {' '.join(command)}",

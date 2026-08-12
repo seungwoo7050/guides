@@ -79,9 +79,20 @@ source = random.Random(20260201)
 
 ## Capstone
 
+학습자 구현은 `workspace/algorithms.py`에 둔다. 저장소 루트에서 workspace를 한 번 만들고, Part 2–5의 구현을 같은 파일에 누적한다.
+
 ```sh
+scripts/new-workspace.sh exercises/07-verified-algorithms-capstone
 cd exercises/07-verified-algorithms-capstone
-python3 check.py --impl reference --stage all --expect pass
+python3 check.py --impl workspace --stage data-structures --expect pass
+python3 check.py --impl workspace --stage design-techniques --expect pass
+python3 check.py --impl workspace --stage graphs --expect pass
+python3 check.py --impl workspace --stage strings --expect pass
+python3 check.py --impl workspace --stage all --expect pass
 ```
 
-학습자 구현은 `workspace/algorithms.py`에 둔다. 저장소 루트에서 `scripts/new-workspace.sh exercises/07-verified-algorithms-capstone`을 실행하면 기존 학습자 파일을 덮어쓰지 않는 방식으로 처음 workspace를 만든다.
+생성 도구는 기존 학습자 파일을 덮어쓰지 않는다. `skeleton/`은 read-only 시작 계약이며 `reference/`는 workspace의 `all` 통과 뒤에만 읽는다. 이후 다음 명령으로 repository-owned baseline도 같은 공개 검사를 통과하는지 확인하고 자신의 상태·불변식 선택과 비교한다.
+
+```sh
+python3 check.py --impl reference --stage all --expect pass
+```
