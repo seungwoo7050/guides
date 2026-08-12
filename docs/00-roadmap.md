@@ -47,36 +47,37 @@
 
 ## 읽는 순서
 
-| 단계 | 문서 | 종료 능력 | 연결 실습 |
+| 단계 | 문서 | 종료 능력 | 실습 시작 |
 |---:|---|---|---|
 | 0 | 이 문서 | 범위와 선행 관계를 결정한다. | - |
-| 1 | [Application Context와 Bean 수명](01-spring-core/01-application-context-and-lifecycle.md) | 객체 그래프와 proxy 경계를 추적한다. | [application-boundaries](../exercises/application-boundaries/README.md) |
-| 2 | [설정·프로필·준비 상태](01-spring-core/02-configuration-profiles-and-readiness.md) | 잘못된 설정을 시작 단계에서 거부한다. | application-boundaries |
-| 3 | [MVC 검증과 ProblemDetail](02-web-and-security/01-mvc-validation-and-problem-detail.md) | HTTP·업무·인프라 오류를 구분한다. | application-boundaries |
-| 4 | [Spring Security 요청 모델](02-web-and-security/02-spring-security-request-model.md) | 인증과 권한 판단 위치를 설명한다. | [security-boundaries](../exercises/security-boundaries/README.md) |
-| 5 | [권한·소유권·CSRF](02-web-and-security/03-authentication-authorization-and-csrf.md) | 객체 권한과 브라우저 요청 위조를 검사한다. | security-boundaries |
-| 6 | [JPA 트랜잭션과 잠금](03-persistence-and-cache/01-jpa-transactions-and-locking.md) | 실제 proxy 호출과 잠금 경계를 검증한다. | [transaction-locking](../exercises/transaction-locking/README.md) |
-| 7 | [Flyway와 스키마 연결](03-persistence-and-cache/02-flyway-and-schema-integration.md) | 빈 DB에서 스키마를 재현한다. | transaction-locking |
-| 8 | [Spring Data Redis](03-persistence-and-cache/03-spring-data-redis.md) | 캐시 장애를 정확성 경계 밖에 둔다. | [idempotency-outbox](../exercises/idempotency-outbox/README.md) |
+| 1 | [Application Context와 Bean 수명](01-spring-core/01-application-context-and-lifecycle.md) | 객체 그래프와 proxy 경계를 추적한다. | 3 뒤 시작 |
+| 2 | [설정·프로필·준비 상태](01-spring-core/02-configuration-profiles-and-readiness.md) | 잘못된 설정을 시작 단계에서 거부한다. | 3 뒤 시작 |
+| 3 | [MVC 검증과 ProblemDetail](02-web-and-security/01-mvc-validation-and-problem-detail.md) | HTTP·업무·인프라 오류를 구분한다. | [application-boundaries](../exercises/application-boundaries/README.md) |
+| 4 | [Spring Security 요청 모델](02-web-and-security/02-spring-security-request-model.md) | 인증과 권한 판단 위치를 설명한다. | 5 뒤 시작 |
+| 5 | [권한·소유권·CSRF](02-web-and-security/03-authentication-authorization-and-csrf.md) | 객체 권한과 브라우저 요청 위조를 검사한다. | [security-boundaries](../exercises/security-boundaries/README.md) |
+| 6 | [JPA 트랜잭션과 잠금](03-persistence-and-cache/01-jpa-transactions-and-locking.md) | 실제 proxy 호출과 잠금 경계를 검증한다. | 7 뒤 시작 |
+| 7 | [Flyway와 스키마 연결](03-persistence-and-cache/02-flyway-and-schema-integration.md) | 빈 DB에서 스키마를 재현한다. | [transaction-locking](../exercises/transaction-locking/README.md) |
+| 8 | [Spring Data Redis](03-persistence-and-cache/03-spring-data-redis.md) | 캐시 장애를 정확성 경계 밖에 둔다. | 10 뒤 시작 |
 | 9 | [Spring Kafka와 Avro](04-distributed-adapters/01-spring-kafka-and-avro.md) | listener·serializer·ack를 연결한다. | [kafka-avro-contract](../exercises/kafka-avro-contract/README.md) |
-| 10 | [Outbox와 스케줄링](04-distributed-adapters/02-outbox-and-scheduling.md) | Spring transaction과 발행 작업을 분리한다. | idempotency-outbox |
+| 10 | [Outbox와 스케줄링](04-distributed-adapters/02-outbox-and-scheduling.md) | Spring transaction과 발행 작업을 분리한다. | [idempotency-outbox](../exercises/idempotency-outbox/README.md) |
 | 11 | [Resilience4j HTTP 클라이언트](04-distributed-adapters/03-resilience4j-http-clients.md) | 업무 거절과 의존성 장애를 다르게 기록한다. | [resilient-http-client](../exercises/resilient-http-client/README.md) |
-| 12 | [테스트 경계](05-quality-and-operations/01-test-boundaries-testcontainers-and-wiremock.md) | 단위·slice·통합 검사를 배치한다. | 모든 실습 |
-| 13 | [Actuator와 애플리케이션 관측성](05-quality-and-operations/02-actuator-metrics-logging-and-tracing.md) | 운영 판단에 필요한 신호를 노출한다. | [single-service-capstone](../exercises/single-service-capstone/README.md) |
-| 14 | [단일 서비스 통합 과제](06-capstone.md) | 한 서비스 안의 경계를 통합 검증한다. | single-service-capstone |
+| 12 | [테스트 경계](05-quality-and-operations/01-test-boundaries-testcontainers-and-wiremock.md) | 단위·slice·통합 검사를 배치한다. | 앞선 실습의 검증을 재해석하고 이후 capstone에 적용 |
+| 13 | [Actuator와 애플리케이션 관측성](05-quality-and-operations/02-actuator-metrics-logging-and-tracing.md) | 운영 판단에 필요한 신호를 노출한다. | 14 뒤 시작 |
+| 14 | [단일 서비스 통합 과제](06-capstone.md) | 한 서비스 안의 경계를 통합 검증한다. | [single-service-capstone](../exercises/single-service-capstone/README.md) |
 
-HTTP와 PostgreSQL만 사용하는 첫 Spring 애플리케이션은 1~7장을 먼저 완료할 수 있다. Redis·Kafka·외부 호출은 실제로 사용하는 어댑터 장만 이어서 읽는다. 다만 최종 과제 전에 12~13장은 반드시 완료한다.
+Primary capstone 경로는 1~13을 순서대로 마친 뒤 14를 수행한다. HTTP와 PostgreSQL까지만 필요한 독자는 1~7에서 일단 종료할 수 있고, capstone을 수행하지 않는 독자만 8~11의 어댑터 장을 실제 사용 범위에 맞게 선택해 읽을 수 있다.
 
 ## 실습 방식
 
-각 실습은 같은 문제를 가진 두 구현으로 구성된다.
+각 실습은 같은 공개 test 계약을 공유하는 canonical 시작점과 완료 구현, 그리고 학습자 소유 작업 공간으로 구성된다.
 
 ```text
-skeleton  → 의도한 실패를 재현하고 직접 수정한다.
-reference → 테스트가 요구하는 최종 계약을 비교한다.
+skeleton  → tracked designated-failure baseline이며 직접 수정하지 않는다.
+workspace → new-workspace로 만든 복사본에서 지정 실패를 관찰하고 src/main만 수정·검증한다.
+reference → workspace가 PASS한 뒤 설계 선택과 권장 구현 순서를 비교한다.
 ```
 
-reference를 먼저 복사하지 않는다. README의 실패 조건을 재현하고, 테스트가 어떤 외부 효과와 최종 상태를 검사하는지 확인한 뒤 구현한다.
+reference를 먼저 열거나 복사하지 않는다. 실습 README의 실패 조건을 workspace에서 재현하고, 테스트가 어떤 외부 효과와 최종 상태를 검사하는지 확인한 뒤 구현한다.
 
 저장소를 clone하거나 linked worktree로 연 직후에는 루트에서 다음 두 명령을 실행한다.
 

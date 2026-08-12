@@ -7,6 +7,7 @@ import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 import java.util.UUID;
 
+// [Implementation 3] aggregate가 가용 수량 state와 차감 불변식을 함께 소유한다.
 @Entity
 @Table(name = "inventory_item")
 public class InventoryItem {

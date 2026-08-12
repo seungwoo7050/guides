@@ -8,6 +8,7 @@ import org.springframework.web.client.RestClient;
 
 @Configuration
 public class DecisionClientConfiguration {
+  // [Implementation 2] typed timeout을 실제 HTTP transport resource에 적용한다.
   @Bean
   RestClient decisionRestClient(RestClient.Builder builder, DecisionClientProperties properties) {
     var factory = new SimpleClientHttpRequestFactory();

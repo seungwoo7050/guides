@@ -4,6 +4,7 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
+// [Implementation 5-1] @EnableScheduling과 outbox delay 설정을 받아 publisher 호출 수명을 소유한다.
 @Component
 @ConditionalOnProperty(
     name = "guide.outbox.scheduler-enabled",

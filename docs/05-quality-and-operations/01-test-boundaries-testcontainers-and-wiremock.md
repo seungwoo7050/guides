@@ -73,3 +73,5 @@ skeleton을 수정한 학습자는 해당 경로에서 test가 통과하는 것�
 ```
 
 필수 검사가 실행되지 못하면 전체 결과는 실패다. `SKIP`을 성공으로 바꾸지 않는다.
+
+다음 [Actuator와 애플리케이션 관측성](02-actuator-metrics-logging-and-tracing.md)에서 이 test evidence를 운영 신호와 연결한다.

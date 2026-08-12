@@ -52,4 +52,4 @@ Micrometer test는 다음을 확인할 수 있다.
 - 민감하거나 high-cardinality tag가 추가되지 않는다.
 - health contributor가 의도한 group에만 포함된다.
 
-[단일 서비스 통합 과제](../../exercises/single-service-capstone/README.md)는 생성 성공, 정책 거절과 Outbox 상태를 DB뿐 아니라 application metric으로도 확인한다. 수집·alert·runbook은 `guide-web-infrastructure`에서 이어진다.
+[단일 서비스 통합 과제 문서](../06-capstone.md)에서 생성 성공, 정책 거절과 Outbox 상태를 DB뿐 아니라 application metric으로도 확인할 최종 계약을 먼저 읽는다. 수집·alert·runbook은 `guide-web-infrastructure`에서 이어진다.

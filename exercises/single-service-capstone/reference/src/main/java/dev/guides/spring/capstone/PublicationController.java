@@ -21,6 +21,7 @@ public final class PublicationController {
     this.service = service;
   }
 
+  // [Implementation 8] principal·idempotency header·body를 201·200 응답에 연결한다.
   @PostMapping
   public ResponseEntity<PublicationResponse> create(
       Authentication authentication,

@@ -13,6 +13,7 @@ import org.apache.avro.io.EncoderFactory;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.stereotype.Component;
 
+// [Implementation 2] 한 schema owner로 encode·decode하고 malformed payload를 경계에서 거부한다.
 @Component
 public class AvroEventCodec {
   private final Schema schema;

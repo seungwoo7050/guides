@@ -20,6 +20,7 @@ public final class PublicationService {
     this.metrics = metrics;
   }
 
+  // [Implementation 7] cache→DB→policy→writer 순서와 outcome metric을 조립한다.
   public PublicationResult create(
       String actorId,
       String idempotencyKey,

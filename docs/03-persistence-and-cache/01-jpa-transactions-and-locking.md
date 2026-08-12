@@ -77,6 +77,6 @@ advisory lock은 편의적인 application protocol이므로 key 생성 규칙과
 
 어떤 전략을 선택하든 최종 데이터베이스 상태와 성공 요청 수를 동시에 검사한다. isolation·MVCC의 일반 이론은 `guide-database-systems`에서 다룬다.
 
-## 실습
+## 다음 단계
 
-[트랜잭션 잠금 실습](../../exercises/transaction-locking/README.md)은 PostgreSQL에서 동시에 20개 요청을 실행하고 정확히 허용 가능한 요청만 성공하는지 검증한다.
+[Flyway와 스키마 연결](02-flyway-and-schema-integration.md)에서 잠금이 보호하는 state와 데이터베이스 제약·migration 수명을 먼저 고정한다. 트랜잭션 잠금 실습은 그 문서까지 읽은 뒤 시작한다.

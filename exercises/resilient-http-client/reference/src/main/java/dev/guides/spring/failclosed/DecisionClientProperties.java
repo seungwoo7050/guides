@@ -9,6 +9,7 @@ import java.time.Duration;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.validation.annotation.Validated;
 
+// [Implementation 1] URL·양수 timeout·bounded attempt를 시작 단계에서 검증한다.
 @ConfigurationProperties("clients.decision")
 @Validated
 public record DecisionClientProperties(

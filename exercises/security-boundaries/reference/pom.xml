@@ -10,6 +10,7 @@
     <relativePath>../../../pom.xml</relativePath>
   </parent>
   <artifactId>security-boundaries-reference</artifactId>
+  <!-- [Implementation 0] 업무 코드 전에 MVC·검증·보안 dependency 경계를 고정한다. -->
   <dependencies>
     <dependency>
       <groupId>org.springframework.boot</groupId>

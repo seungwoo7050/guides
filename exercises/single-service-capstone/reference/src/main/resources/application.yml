@@ -1,3 +1,4 @@
+# [Implementation 1] typed property와 DB·cache·adapter·관측성 설정을 한 시작 계약으로 묶는다.
 spring:
   jpa:
     hibernate:

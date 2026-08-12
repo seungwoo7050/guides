@@ -5,6 +5,7 @@ clients:
     connect-timeout: 200ms
     read-timeout: 500ms
     max-attempts: 2
+# [Implementation 4] dependency failure만 breaker에 기록하고 업무 거절은 제외한다.
 resilience4j:
   circuitbreaker:
     instances:

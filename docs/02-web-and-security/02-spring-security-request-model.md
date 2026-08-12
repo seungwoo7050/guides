@@ -81,4 +81,4 @@ public ProjectResponse rename(long projectId, String title) { ... }
 
 `@EnableMethodSecurity`가 실제로 활성화되어야 하며, 같은 클래스 안의 자기 호출로 우회하지 않는지 확인한다. URL 권한과 method 권한은 서로 대체 관계가 아니다.
 
-[Security 경계 실습](../../exercises/security-boundaries/README.md)에서 인증 없음, 역할 부족, 객체 소유권과 CSRF 실패를 실제 MockMvc 요청으로 구분한다.
+다음 [권한·소유권·CSRF](03-authentication-authorization-and-csrf.md)에서 browser 변경 요청과 객체 단위 권한까지 닫은 뒤 Security 경계 실습을 시작한다.

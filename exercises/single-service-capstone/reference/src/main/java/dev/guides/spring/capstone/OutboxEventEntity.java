@@ -7,6 +7,7 @@ import jakarta.persistence.Table;
 import java.time.Instant;
 import java.util.UUID;
 
+// [Implementation 3-1] Outbox entity가 publication event의 pending·published state를 소유한다.
 @Entity
 @Table(name = "outbox_event")
 public class OutboxEventEntity {

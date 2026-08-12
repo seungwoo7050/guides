@@ -10,6 +10,7 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
+// [Implementation 4] 입력 오류와 업무 정책 위반을 서로 다른 ProblemDetail로 번역한다.
 @RestControllerAdvice
 public final class ProblemDetailsAdvice {
   @ExceptionHandler(PolicyViolationException.class)

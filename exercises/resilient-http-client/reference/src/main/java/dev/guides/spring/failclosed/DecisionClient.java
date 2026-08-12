@@ -16,6 +16,7 @@ public class DecisionClient {
     this.maxAttempts = properties.maxAttempts();
   }
 
+  // [Implementation 3] 같은 request로 bounded retry하고 업무 거절과 장애를 분리한다.
   @CircuitBreaker(name = "decisionClient")
   public DecisionResponse check(DecisionRequest request) {
     DependencyUnavailableException lastFailure = null;

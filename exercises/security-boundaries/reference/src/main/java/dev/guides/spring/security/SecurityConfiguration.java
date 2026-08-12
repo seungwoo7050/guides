@@ -18,6 +18,7 @@ import org.springframework.security.web.AuthenticationEntryPoint;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.access.AccessDeniedHandler;
 
+// [Implementation 4] 사용자·password encoder와 method security의 닫힌 baseline을 구성한다.
 @Configuration(proxyBeanMethods = false)
 @EnableMethodSecurity
 public class SecurityConfiguration {
@@ -40,6 +41,7 @@ public class SecurityConfiguration {
         .createDelegatingPasswordEncoder();
   }
 
+  // [Implementation 4-1] health 외에는 인증을 요구하고 기본 CSRF와 401·403 경계를 유지한다.
   @Bean
   SecurityFilterChain securityFilterChain(HttpSecurity http, JsonMapper mapper)
       throws Exception {

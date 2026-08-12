@@ -26,6 +26,7 @@ public class OutboxPublisher {
     this.retryDelay = retryDelay;
   }
 
+  // [Implementation 5] due batch의 발행 성공·실패를 Outbox state로 결정적으로 남긴다.
   @Transactional
   public int publishDueEvents() {
     Instant now = Instant.now();

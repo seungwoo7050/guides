@@ -18,6 +18,7 @@ public class InventoryService {
     repository.save(new InventoryItem(id, initialQuantity));
   }
 
+  // [Implementation 5] transaction이 lock 획득부터 aggregate mutation과 commit까지 소유한다.
   @Transactional
   public boolean reserve(UUID id, long quantity) {
     InventoryItem item = repository.findByIdForUpdate(id).orElseThrow();

@@ -41,6 +41,7 @@ public class PublicationWriter {
         .map(PublicationEntity::toResponse);
   }
 
+  // [Implementation 5] advisory lock 뒤 재조회하고 publication·Outbox를 한 transaction에 쓴다.
   @Transactional
   public PublicationResult createOrFind(
       String actorId,

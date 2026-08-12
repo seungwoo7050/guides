@@ -20,6 +20,7 @@ public class EventPublisher {
     this.topic = topic;
   }
 
+  // [Implementation 4] aggregate key를 보존하고 bounded send 완료를 확인한다.
   public void publish(String key, TaskSubmitted event) {
     try {
       kafka.send(topic, key, codec.encode(event)).get(10, TimeUnit.SECONDS);

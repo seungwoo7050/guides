@@ -3,6 +3,7 @@
   <modelVersion>4.0.0</modelVersion>
   <parent><groupId>dev.guides</groupId><artifactId>backend-spring-boot-guide-parent</artifactId><version>1.0.0</version><relativePath>../../../pom.xml</relativePath></parent>
   <artifactId>idempotency-outbox-reference</artifactId>
+  <!-- [Implementation 0] 업무 코드 전에 JPA·Redis·Flyway·PostgreSQL dependency 경계를 고정한다. -->
   <dependencies>
     <dependency><groupId>org.springframework.boot</groupId><artifactId>spring-boot-starter-data-jpa</artifactId></dependency>
     <dependency><groupId>org.springframework.boot</groupId><artifactId>spring-boot-starter-data-redis</artifactId></dependency>

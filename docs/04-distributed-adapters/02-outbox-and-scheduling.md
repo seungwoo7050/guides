@@ -67,4 +67,4 @@ scheduler가 같은 instance에서 겹쳐 실행되지 않는지, 여러 instanc
 
 ## 실습
 
-[멱등성과 Outbox 실습](../../exercises/idempotency-outbox/README.md)은 첫 발행 실패를 저장하고 다음 실행에서 같은 행을 복구한다. [단일 서비스 통합 과제](../../exercises/single-service-capstone/README.md)는 업무 entity와 Outbox 행이 함께 저장되는지 확인한다.
+[멱등성과 Outbox 실습](../../exercises/idempotency-outbox/README.md)은 Redis를 힌트로 제한하면서 첫 발행 실패를 저장하고 다음 실행에서 같은 행을 복구한다. Capstone의 통합 Outbox는 primary path의 나머지 문서를 마친 뒤 검증한다.

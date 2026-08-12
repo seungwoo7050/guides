@@ -111,9 +111,9 @@ Filter / SecurityFilterChain
 
 Controller가 entity를 직접 받고 반환하면 외부 계약, 저장 모델과 lazy loading이 한 경계에 섞인다. 요청·응답 DTO와 entity를 분리한다.
 
-## 실습
+## 다음 단계
 
-[애플리케이션 경계 실습](../../exercises/application-boundaries/README.md)에서 설정 Bean, Controller, validation과 예외 변환이 하나의 Context에 연결되는 과정을 확인한다. 다음 질문에 답할 수 있어야 완료다.
+[설정·프로필·준비 상태](02-configuration-profiles-and-readiness.md)에서 이 객체 그래프가 어떤 설정으로 시작되고 실패하는지 이어서 확인한다. 애플리케이션 경계 실습은 MVC 입력·오류 계약까지 읽은 뒤 시작한다. 다음 질문은 그 실습까지 가져간다.
 
 - 어떤 객체가 Context에 의해 생성되는가?
 - 요청별 값이 singleton 필드에 남지 않는가?

@@ -6,6 +6,7 @@ import java.util.UUID;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Component;
 
+// [Implementation 3] Redis는 양수 TTL의 복구 가능한 조회 힌트로만 사용한다.
 @Component
 public class RedisIdempotencyHintStore implements IdempotencyHintStore {
   private static final String PREFIX = "guide:idempotency:";

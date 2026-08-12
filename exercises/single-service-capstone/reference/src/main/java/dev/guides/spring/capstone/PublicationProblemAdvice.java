@@ -7,6 +7,7 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.method.annotation.HandlerMethodValidationException;
 
+// [Implementation 8-1] 입력·업무 거절·의존성 실패를 400·409·503 문제 계약으로 번역한다.
 @RestControllerAdvice
 public final class PublicationProblemAdvice {
   @ExceptionHandler(PolicyRejectedException.class)

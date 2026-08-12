@@ -1,3 +1,4 @@
+# [Implementation 3] producer·consumer serializer와 topic·manual ack 계약을 함께 고정한다.
 spring:
   kafka:
     bootstrap-servers: localhost:9092

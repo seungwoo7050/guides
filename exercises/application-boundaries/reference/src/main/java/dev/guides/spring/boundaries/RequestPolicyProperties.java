@@ -6,6 +6,7 @@ import jakarta.validation.constraints.NotNull;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.validation.annotation.Validated;
 
+// [Implementation 1] 설정을 binding할 때 최소·최대 교차 불변식까지 함께 거부한다.
 @ConfigurationProperties("request.policy")
 @Validated
 public record RequestPolicyProperties(

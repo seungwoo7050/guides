@@ -28,6 +28,7 @@ public class OperationService {
     this.hints = hints;
   }
 
+  // [Implementation 4] hint miss 뒤 advisory lock·DB 재조회·operation과 Outbox 저장을 묶는다.
   @Transactional
   public OperationResult apply(String key, long quantity) {
     if (key == null || key.isBlank()) throw new IllegalArgumentException("멱등성 키가 필요합니다.");
@@ -67,6 +68,7 @@ public class OperationService {
     }
   }
 
+  // [Implementation 4-1] commit 뒤 cache를 채우며 실패해도 DB 결과를 되돌리지 않는다.
   private void cacheAfterCommit(String key, OperationResult result) {
     TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
       @Override

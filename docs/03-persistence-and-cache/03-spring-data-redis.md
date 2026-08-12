@@ -61,6 +61,6 @@ Spring Data의 connection exception을 Controller까지 노출하지 않는다. 
 
 기법을 무조건 추가하기 전에 cache miss latency와 원본 부하를 측정한다.
 
-## 실습
+## 다음 단계
 
-[멱등성과 Outbox 실습](../../exercises/idempotency-outbox/README.md)은 Redis를 커밋된 결과의 빠른 힌트로만 사용한다. Redis가 실패해도 PostgreSQL의 고유 제약과 transaction이 중복 상태 변경을 막는지 확인한다. 멱등성·재전달의 일반 원리는 `guide-distributed-services`가 소유한다.
+[Spring Kafka와 Avro](../04-distributed-adapters/01-spring-kafka-and-avro.md)에서 비동기 전달 계약을 먼저 다룬다. Redis와 Outbox를 결합하는 멱등성 실습은 Kafka 실습과 Outbox 문서까지 마친 뒤 시작한다. 멱등성·재전달의 일반 원리는 `guide-distributed-services`가 소유한다.

@@ -4,6 +4,7 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import org.springframework.stereotype.Component;
 
+// [Implementation 1] project state와 owner 판정의 정본을 한 component가 소유한다.
 @Component
 public final class ProjectStore {
   private final Map<Long, ProjectResponse> projects = new ConcurrentHashMap<>();

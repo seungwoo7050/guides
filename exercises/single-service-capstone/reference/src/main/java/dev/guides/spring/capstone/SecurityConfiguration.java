@@ -40,6 +40,7 @@ public class SecurityConfiguration {
             .build());
   }
 
+  // [Implementation 9] stateless editor API만 열고 나머지는 deny-all·401·403으로 닫는다.
   @Bean
   SecurityFilterChain securityFilterChain(
       HttpSecurity http,

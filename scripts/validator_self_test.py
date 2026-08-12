@@ -225,6 +225,268 @@ def remove_int_reset(root: Path) -> None:
     )
 
 
+def implementation_token(number: str) -> str:
+    return "[" + "Implementation " + number + "]"
+
+
+def remove_learning_map_doc(root: Path) -> None:
+    path = root / "README.md"
+    replace(
+        path,
+        "(docs/03-persistence-and-cache/03-spring-data-redis.md)",
+        "(docs/90-appendix/02-command-and-troubleshooting.md)",
+    )
+
+
+def remove_learning_workspace(root: Path) -> None:
+    path = root / "README.md"
+    replace(
+        path,
+        ".workspace/application-boundaries/src/main",
+        ".workspace/application-boundaries/src/other",
+    )
+
+
+def remove_learning_check(root: Path) -> None:
+    path = root / "README.md"
+    replace(
+        path,
+        "./scripts/check-workspace.sh application-boundaries",
+        "./scripts/check-workspace.sh missing-application-boundaries",
+    )
+
+
+def swap_learning_exercise_contracts(root: Path) -> None:
+    path = root / "README.md"
+    lines = path.read_text(encoding="utf-8").splitlines(keepends=True)
+    application = next(
+        (index for index, line in enumerate(lines) if line.startswith("| 1~3 |")),
+        None,
+    )
+    security = next(
+        (index for index, line in enumerate(lines) if line.startswith("| 4~5 |")),
+        None,
+    )
+    if application is None or security is None:
+        raise RuntimeError("학습 순서 실습 swap row를 찾지 못했습니다.")
+    lines[application] = lines[application].replace(
+        "application-boundaries", "security-boundaries"
+    )
+    lines[security] = lines[security].replace(
+        "security-boundaries", "application-boundaries"
+    )
+    path.write_text("".join(lines), encoding="utf-8")
+
+
+def displace_learning_contract_columns(root: Path) -> None:
+    path = root / "README.md"
+    replace(
+        path,
+        "| `.workspace/application-boundaries/src/main` | "
+        "`./scripts/check-workspace.sh application-boundaries` |",
+        "| `./scripts/check-workspace.sh application-boundaries` | "
+        "`.workspace/application-boundaries/src/main` |",
+    )
+
+
+def remove_learning_handoff(root: Path) -> None:
+    path = root / "docs/01-spring-core/01-application-context-and-lifecycle.md"
+    replace(
+        path,
+        "(02-configuration-profiles-and-readiness.md)",
+        "(../02-web-and-security/01-mvc-validation-and-problem-detail.md)",
+    )
+
+
+def duplicate_implementation_anchor(root: Path) -> None:
+    path = root / (
+        "exercises/application-boundaries/reference/src/main/java/"
+        "dev/guides/spring/boundaries/RequestPolicyProperties.java"
+    )
+    path.write_text(
+        path.read_text(encoding="utf-8")
+        + f"\n// {implementation_token('1')} 중복 anchor를 주입한다.\n",
+        encoding="utf-8",
+    )
+
+
+def gap_implementation_top_level(root: Path) -> None:
+    readme = root / "exercises/application-boundaries/README.md"
+    source = root / (
+        "exercises/application-boundaries/reference/src/main/java/"
+        "dev/guides/spring/boundaries/PreviewController.java"
+    )
+    replace(readme, "| 3 | [`PreviewController.preview`]", "| 5 | [`PreviewController.preview`]")
+    replace(source, implementation_token("3"), implementation_token("5"))
+
+
+def gap_implementation_substep(root: Path) -> None:
+    readme = root / "exercises/security-boundaries/README.md"
+    source = root / (
+        "exercises/security-boundaries/reference/src/main/java/"
+        "dev/guides/spring/security/SecurityConfiguration.java"
+    )
+    replace(readme, "| 4-1 |", "| 4-2 |")
+    replace(source, implementation_token("4-1"), implementation_token("4-2"))
+
+
+def add_malformed_implementation_label(root: Path) -> None:
+    path = root / (
+        "exercises/application-boundaries/reference/src/main/java/"
+        "dev/guides/spring/boundaries/PreviewRequest.java"
+    )
+    path.write_text(
+        path.read_text(encoding="utf-8")
+        + f"\n// {implementation_token('01')} 잘못된 번호를 주입한다.\n",
+        encoding="utf-8",
+    )
+
+
+def add_empty_malformed_implementation_label(root: Path) -> None:
+    path = root / (
+        "exercises/application-boundaries/reference/src/main/java/"
+        "dev/guides/spring/boundaries/PreviewRequest.java"
+    )
+    malformed = "[" + "Implementation]"
+    path.write_text(
+        path.read_text(encoding="utf-8")
+        + f"\n// {malformed} 빈 번호를 주입한다.\n",
+        encoding="utf-8",
+    )
+
+
+def add_skeleton_implementation_anchor(root: Path) -> None:
+    path = root / (
+        "exercises/application-boundaries/skeleton/src/main/java/"
+        "dev/guides/spring/boundaries/PreviewController.java"
+    )
+    path.write_text(
+        path.read_text(encoding="utf-8")
+        + f"\n// {implementation_token('9')} skeleton 정답 순서를 주입한다.\n",
+        encoding="utf-8",
+    )
+
+
+def add_test_implementation_anchor(root: Path) -> None:
+    path = root / (
+        "exercises/application-boundaries/reference/src/test/java/"
+        "dev/guides/spring/boundaries/PreviewControllerTest.java"
+    )
+    path.write_text(
+        path.read_text(encoding="utf-8")
+        + f"\n// {implementation_token('9')} repository test anchor를 주입한다.\n",
+        encoding="utf-8",
+    )
+
+
+def add_script_implementation_anchor(root: Path) -> None:
+    path = root / "scripts/guide_state.py"
+    path.write_text(
+        path.read_text(encoding="utf-8")
+        + f"\n# {implementation_token('9')} validator infrastructure anchor를 주입한다.\n",
+        encoding="utf-8",
+    )
+
+
+def add_makefile_implementation_anchor(root: Path) -> None:
+    path = root / "Makefile"
+    path.write_text(
+        path.read_text(encoding="utf-8")
+        + f"\n# {implementation_token('9')} Makefile anchor를 주입한다.\n",
+        encoding="utf-8",
+    )
+
+
+def add_properties_implementation_anchor(root: Path) -> None:
+    path = root / ".mvn/wrapper/maven-wrapper.properties"
+    path.write_text(
+        path.read_text(encoding="utf-8")
+        + f"\n# {implementation_token('9')} properties anchor를 주입한다.\n",
+        encoding="utf-8",
+    )
+
+
+def add_java_string_implementation_anchor(root: Path) -> None:
+    path = root / (
+        "exercises/application-boundaries/reference/src/main/java/"
+        "dev/guides/spring/boundaries/PreviewController.java"
+    )
+    token = implementation_token("9")
+    replace(
+        path,
+        "public final class PreviewController {\n",
+        "public final class PreviewController {\n"
+        f'  private static final String DECOY = "{token}";\n',
+    )
+
+
+def add_sql_direct_implementation_anchor(root: Path) -> None:
+    path = root / (
+        "exercises/idempotency-outbox/reference/src/main/resources/db/migration/"
+        "V1__create_operation_and_outbox.sql"
+    )
+    path.write_text(
+        path.read_text(encoding="utf-8")
+        + f"\n-- {implementation_token('9')} migration direct anchor를 주입한다.\n",
+        encoding="utf-8",
+    )
+
+
+def add_avsc_implementation_anchor(root: Path) -> None:
+    path = root / (
+        "exercises/kafka-avro-contract/reference/src/main/resources/avro/"
+        "task-submitted.avsc"
+    )
+    payload = json.loads(path.read_text(encoding="utf-8"))
+    payload["doc"] = implementation_token("1")
+    path.write_text(
+        json.dumps(payload, ensure_ascii=False, indent=2) + "\n",
+        encoding="utf-8",
+    )
+
+
+def remove_avsc_sidecar_anchor(root: Path) -> None:
+    path = root / "exercises/kafka-avro-contract/README.md"
+    replace(path, implementation_token("1"), "1")
+
+
+def point_sidecar_at_skeleton(root: Path) -> None:
+    path = root / "exercises/kafka-avro-contract/README.md"
+    replace(
+        path,
+        "reference/src/main/resources/avro/task-submitted.avsc",
+        "skeleton/src/main/resources/avro/task-submitted.avsc",
+    )
+
+
+def check_markdown_context_decoys(base: Path, temporary: Path) -> None:
+    fixture = temporary / "markdown-context-decoys"
+    copy_source(base, fixture)
+    path = fixture / "README.md"
+    text = path.read_text(encoding="utf-8")
+    text += (
+        "\n설명에서 쓰는 inline label은 `"
+        + implementation_token("97")
+        + "`처럼 실제 anchor가 아니다.\n\n"
+        "```sh\n"
+        "# "
+        + implementation_token("98")
+        + " fenced shell 예시도 heading이나 anchor가 아니다.\n"
+        "```\n\n"
+        "| shell 예시 |\n"
+        "|---|\n"
+        "| # 표 안의 shell comment는 heading이 아니다. |\n"
+    )
+    path.write_text(text, encoding="utf-8")
+    result = run_validator(fixture)
+    if result.returncode != 0:
+        raise RuntimeError(
+            "Markdown fence·inline code·table shell decoy를 오탐했습니다.\n"
+            f"{result.stdout}"
+        )
+    print("[PASS] Markdown fence·inline code·table shell decoy 허용")
+
+
 MUTANTS: tuple[tuple[str, Callable[[Path], None], str], ...] = (
     ("exact-tree-missing", remove_roadmap, "정확한 managed tree가 다릅니다"),
     ("exact-tree-extra", add_managed_file, "정확한 managed tree가 다릅니다"),
@@ -247,6 +509,27 @@ MUTANTS: tuple[tuple[str, Callable[[Path], None], str], ...] = (
     ("public-command", remove_public_clean_command, "공개 명령이 없습니다: make clean"),
     ("broad-generated-ignore", broaden_generated_ignore, "learner target/.workspace를 광범위하게 제외"),
     ("signal-reset", remove_int_reset, "process-group signal helper 계약"),
+    ("learning-map-doc", remove_learning_map_doc, "문서 grouping이 다릅니다"),
+    ("learning-map-workspace", remove_learning_workspace, "수정 위치 cell이 다릅니다"),
+    ("learning-map-check", remove_learning_check, "검증 cell이 다릅니다"),
+    ("learning-map-exercise-swap", swap_learning_exercise_contracts, "docs와 실습 연결이 다릅니다"),
+    ("learning-map-column-displacement", displace_learning_contract_columns, "수정 위치 cell이 다릅니다"),
+    ("learning-handoff", remove_learning_handoff, "필수 학습 handoff link가 없습니다"),
+    ("implementation-duplicate", duplicate_implementation_anchor, "anchor가 index의 기준 파일과 일치하지 않습니다"),
+    ("implementation-top-gap", gap_implementation_top_level, "top-level 번호가 1부터 연속하지 않습니다"),
+    ("implementation-substep-gap", gap_implementation_substep, "substep 번호가 1부터 연속하지 않습니다"),
+    ("implementation-malformed", add_malformed_implementation_label, "label 형식이 잘못되었습니다"),
+    ("implementation-empty-malformed", add_empty_malformed_implementation_label, "label 형식이 잘못되었습니다"),
+    ("implementation-skeleton", add_skeleton_implementation_anchor, "annotation 금지 위치"),
+    ("implementation-test", add_test_implementation_anchor, "annotation 금지 위치"),
+    ("implementation-script", add_script_implementation_anchor, "annotation 금지 위치"),
+    ("implementation-makefile", add_makefile_implementation_anchor, "annotation 금지 위치"),
+    ("implementation-properties", add_properties_implementation_anchor, "annotation 금지 위치"),
+    ("implementation-java-string", add_java_string_implementation_anchor, "source anchor는 허용된 comment"),
+    ("implementation-sql-direct", add_sql_direct_implementation_anchor, "versioned migration Implementation은 README sidecar"),
+    ("implementation-avsc", add_avsc_implementation_anchor, "annotation 금지 위치"),
+    ("implementation-sidecar", remove_avsc_sidecar_anchor, "source anchor 대상 형식이 잘못되었습니다"),
+    ("implementation-skeleton-sidecar", point_sidecar_at_skeleton, "scope reference 밖을 가리킵니다"),
 )
 
 
@@ -564,6 +847,7 @@ def main() -> int:
                     )
                 print(f"[PASS] validator mutant: {name}")
 
+            check_markdown_context_decoys(base, temporary)
             check_learner_sentinels(base, temporary)
             check_workspace_safety(base, temporary)
             check_marker_contract(temporary)

@@ -6,6 +6,7 @@ import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 import java.util.UUID;
 
+// [Implementation 2] PostgreSQL row가 멱등 처리 완료 결과의 정본을 소유한다.
 @Entity
 @Table(name = "operation_record")
 public class OperationRecord {

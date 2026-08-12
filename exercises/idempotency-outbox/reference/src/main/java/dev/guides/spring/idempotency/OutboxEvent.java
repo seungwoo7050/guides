@@ -7,6 +7,7 @@ import jakarta.persistence.Table;
 import java.time.Instant;
 import java.util.UUID;
 
+// [Implementation 2-1] Outbox entity가 pending·published·retry state 전이를 소유한다.
 @Entity
 @Table(name = "outbox_event")
 public class OutboxEvent {

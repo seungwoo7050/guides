@@ -17,11 +17,35 @@
 
 ## 검증
 
-canonical skeleton의 `PreviewController`는 최대 경계를 빠뜨린 고정 실패 fixture다. tracked skeleton은 수정하지 않고 학습자 workspace에서 양쪽 경계를 구현한다.
+canonical skeleton의 `PreviewController`는 최대 경계를 빠뜨린 고정 실패 fixture다. tracked skeleton은 수정하지 않고 학습자 workspace에 누락된 최대 경계를 추가해 최소·최대 경계를 함께 보존한다.
+
+저장소 루트에서 learner-owned workspace를 만들고 검사한다.
 
 ```sh
 ./scripts/new-workspace.sh application-boundaries
-#학습 구현: .workspace/application-boundaries/src/main을 수정한다.
-./scripts/check-workspace.sh application-boundaries
+./scripts/check-workspace.sh application-boundaries  # 먼저 지정 실패를 확인한다.
+# 학습 구현: .workspace/application-boundaries/src/main을 수정한다.
+./scripts/check-workspace.sh application-boundaries  # 수정 뒤 PASS를 확인한다.
+```
+
+## 완료 뒤 reference walkthrough
+
+workspace 검증이 성공한 뒤에만 `reference` source를 연다. `exercises/application-boundaries/reference` 전체가 하나의 numbering scope이며, 다음 번호는 실제 과거 작성 순서가 아니라 완료 구현을 다시 만들 때의 권장 construction order다.
+
+<!-- implementation-order:start scope=exercises/application-boundaries/reference semantics=recommended -->
+| 번호 | 기준 파일·symbol | 먼저 고정하는 책임 |
+|---:|---|---|
+| 0 | [`pom.xml`](reference/pom.xml) | Spring MVC·validation·Actuator dependency 경계를 고정한다. |
+| 1 | [`RequestPolicyProperties`](reference/src/main/java/dev/guides/spring/boundaries/RequestPolicyProperties.java) | 설정 binding과 최소·최대 교차 불변식을 Context 시작 과정에서 검증한다. |
+| 2 | [`PreviewRequest`](reference/src/main/java/dev/guides/spring/boundaries/PreviewRequest.java) | transport 입력의 형식 경계를 업무 정책과 분리한다. |
+| 3 | [`PreviewController.preview`](reference/src/main/java/dev/guides/spring/boundaries/PreviewController.java) | 검증된 입력에 category와 quantity 업무 정책을 적용한다. |
+| 4 | [`ProblemDetailsAdvice`](reference/src/main/java/dev/guides/spring/boundaries/ProblemDetailsAdvice.java) | validation과 policy 실패를 서로 다른 HTTP 문제 계약으로 번역한다. |
+<!-- implementation-order:end -->
+
+다음 명령은 canonical comparator 자체의 test이며 learner workspace 검증을 대신하지 않는다.
+
+```sh
 ./scripts/mvn-guide.sh -pl :application-boundaries-reference -am test
 ```
+
+비교를 마치면 [Spring Security 요청 모델](../../docs/02-web-and-security/02-spring-security-request-model.md)로 진행한다.

@@ -23,6 +23,7 @@ public class ProjectController {
     return projects.find(projectId);
   }
 
+  // [Implementation 3] request 검증과 object 권한 확인을 state mutation 앞에 둔다.
   @PostMapping("/{projectId}/rename")
   @PreAuthorize("@projectAccess.canEdit(#projectId, authentication.name)")
   public ProjectResponse rename(

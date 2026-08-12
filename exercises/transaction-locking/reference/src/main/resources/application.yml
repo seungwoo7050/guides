@@ -1,4 +1,4 @@
-
+# [Implementation 1] datasource와 Flyway·schema validation의 시작 수명을 연결한다.
 spring:
   datasource:
     url: jdbc:postgresql://localhost:5432/locking

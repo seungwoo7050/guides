@@ -9,6 +9,7 @@ import java.util.Optional;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Component;
 
+// [Implementation 6] cache가 actor/key digest와 TTL을 소유하되 DB 정확성을 뒤집지 않는다.
 @Component
 public class PublicationCache {
   private final StringRedisTemplate redis;

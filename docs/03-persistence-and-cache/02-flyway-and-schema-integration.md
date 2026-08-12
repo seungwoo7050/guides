@@ -56,4 +56,4 @@ constraint fk_project_owner foreign key (owner_id) references account(id)
 - rollback binary와의 schema 호환성
 - migration 실패 시 readiness가 성공하지 않음
 
-[트랜잭션 잠금 실습](../../exercises/transaction-locking/README.md)과 [단일 서비스 통합 과제](../../exercises/single-service-capstone/README.md)가 빈 PostgreSQL에서 migration을 실행한다.
+[트랜잭션 잠금 실습](../../exercises/transaction-locking/README.md)에서 빈 PostgreSQL migration, mapping validation과 동시 차감의 최종 불변식을 함께 확인한다. Capstone migration은 primary path의 나머지 단계를 마친 뒤 최종 실습에서 검증한다.

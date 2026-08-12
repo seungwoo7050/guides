@@ -56,6 +56,153 @@ EXPECTED_DOCS = {
     "docs/90-appendix/02-command-and-troubleshooting.md",
 }
 
+EXPECTED_LEARNING_ROWS: tuple[tuple[tuple[str, ...], str | None], ...] = (
+    (
+        (
+            "docs/00-roadmap.md",
+            "docs/90-appendix/01-version-and-environment.md",
+        ),
+        None,
+    ),
+    (
+        (
+            "docs/01-spring-core/01-application-context-and-lifecycle.md",
+            "docs/01-spring-core/02-configuration-profiles-and-readiness.md",
+            "docs/02-web-and-security/01-mvc-validation-and-problem-detail.md",
+        ),
+        "application-boundaries",
+    ),
+    (
+        (
+            "docs/02-web-and-security/02-spring-security-request-model.md",
+            "docs/02-web-and-security/03-authentication-authorization-and-csrf.md",
+        ),
+        "security-boundaries",
+    ),
+    (
+        (
+            "docs/03-persistence-and-cache/01-jpa-transactions-and-locking.md",
+            "docs/03-persistence-and-cache/02-flyway-and-schema-integration.md",
+        ),
+        "transaction-locking",
+    ),
+    (("docs/03-persistence-and-cache/03-spring-data-redis.md",), None),
+    (
+        ("docs/04-distributed-adapters/01-spring-kafka-and-avro.md",),
+        "kafka-avro-contract",
+    ),
+    (
+        ("docs/04-distributed-adapters/02-outbox-and-scheduling.md",),
+        "idempotency-outbox",
+    ),
+    (
+        ("docs/04-distributed-adapters/03-resilience4j-http-clients.md",),
+        "resilient-http-client",
+    ),
+    (
+        ("docs/05-quality-and-operations/01-test-boundaries-testcontainers-and-wiremock.md",),
+        None,
+    ),
+    (
+        (
+            "docs/05-quality-and-operations/02-actuator-metrics-logging-and-tracing.md",
+            "docs/06-capstone.md",
+        ),
+        "single-service-capstone",
+    ),
+)
+REQUIRED_LEARNING_HANDOFFS = (
+    (
+        "docs/01-spring-core/01-application-context-and-lifecycle.md",
+        "docs/01-spring-core/02-configuration-profiles-and-readiness.md",
+    ),
+    (
+        "docs/01-spring-core/02-configuration-profiles-and-readiness.md",
+        "docs/02-web-and-security/01-mvc-validation-and-problem-detail.md",
+    ),
+    (
+        "docs/02-web-and-security/01-mvc-validation-and-problem-detail.md",
+        "exercises/application-boundaries/README.md",
+    ),
+    (
+        "exercises/application-boundaries/README.md",
+        "docs/02-web-and-security/02-spring-security-request-model.md",
+    ),
+    (
+        "docs/02-web-and-security/02-spring-security-request-model.md",
+        "docs/02-web-and-security/03-authentication-authorization-and-csrf.md",
+    ),
+    (
+        "docs/02-web-and-security/03-authentication-authorization-and-csrf.md",
+        "exercises/security-boundaries/README.md",
+    ),
+    (
+        "exercises/security-boundaries/README.md",
+        "docs/03-persistence-and-cache/01-jpa-transactions-and-locking.md",
+    ),
+    (
+        "docs/03-persistence-and-cache/01-jpa-transactions-and-locking.md",
+        "docs/03-persistence-and-cache/02-flyway-and-schema-integration.md",
+    ),
+    (
+        "docs/03-persistence-and-cache/02-flyway-and-schema-integration.md",
+        "exercises/transaction-locking/README.md",
+    ),
+    (
+        "exercises/transaction-locking/README.md",
+        "docs/03-persistence-and-cache/03-spring-data-redis.md",
+    ),
+    (
+        "docs/03-persistence-and-cache/03-spring-data-redis.md",
+        "docs/04-distributed-adapters/01-spring-kafka-and-avro.md",
+    ),
+    (
+        "docs/04-distributed-adapters/01-spring-kafka-and-avro.md",
+        "exercises/kafka-avro-contract/README.md",
+    ),
+    (
+        "exercises/kafka-avro-contract/README.md",
+        "docs/04-distributed-adapters/02-outbox-and-scheduling.md",
+    ),
+    (
+        "docs/04-distributed-adapters/02-outbox-and-scheduling.md",
+        "exercises/idempotency-outbox/README.md",
+    ),
+    (
+        "exercises/idempotency-outbox/README.md",
+        "docs/04-distributed-adapters/03-resilience4j-http-clients.md",
+    ),
+    (
+        "docs/04-distributed-adapters/03-resilience4j-http-clients.md",
+        "exercises/resilient-http-client/README.md",
+    ),
+    (
+        "exercises/resilient-http-client/README.md",
+        "docs/05-quality-and-operations/01-test-boundaries-testcontainers-and-wiremock.md",
+    ),
+    (
+        "docs/05-quality-and-operations/01-test-boundaries-testcontainers-and-wiremock.md",
+        "docs/05-quality-and-operations/02-actuator-metrics-logging-and-tracing.md",
+    ),
+    (
+        "docs/05-quality-and-operations/02-actuator-metrics-logging-and-tracing.md",
+        "docs/06-capstone.md",
+    ),
+    ("docs/06-capstone.md", "exercises/single-service-capstone/README.md"),
+)
+LEARNING_MAP_START = "<!-- learning-map:start -->"
+LEARNING_MAP_END = "<!-- learning-map:end -->"
+IMPLEMENTATION_PREFIX = "[" + "Implementation "
+IMPLEMENTATION_CANDIDATE = re.compile(
+    re.escape("[" + "Implementation") + r"[^\]\r\n]*\]"
+)
+IMPLEMENTATION_LABEL = re.compile(
+    re.escape(IMPLEMENTATION_PREFIX)
+    + r"(?P<number>0|[1-9]\d*(?:-[1-9]\d*)?)\]"
+)
+DIRECT_IMPLEMENTATION_SUFFIXES = {".java", ".xml", ".yaml", ".yml"}
+SIDECAR_IMPLEMENTATION_SUFFIXES = {".avsc", ".csv", ".json", ".sql"}
+
 OBSOLETE_PATHS = {
     "docs/00-spring-application-model.md",
     "docs/01-boot-startup-configuration-and-profiles.md",
@@ -125,15 +272,91 @@ def check_text_hygiene(path: Path, text: str) -> None:
             add(f"줄 끝 공백이 있습니다: {relative(path)}:{number}")
 
 
+def markdown_fence(line: str) -> tuple[str, int] | None:
+    match = re.match(r"^ {0,3}(?P<marker>`{3,}|~{3,})", line)
+    if match is None:
+        return None
+    marker = match.group("marker")
+    return marker[0], len(marker)
+
+
+def markdown_headings(text: str) -> list[tuple[str, str]]:
+    result: list[tuple[str, str]] = []
+    heading_pattern = re.compile(r"^(#{1,6})\s+(.+?)\s*$")
+    fence_character = ""
+    fence_length = 0
+    for line in text.splitlines():
+        marker = markdown_fence(line)
+        if marker is not None:
+            character, length = marker
+            if not fence_character:
+                fence_character, fence_length = character, length
+            elif character == fence_character and length >= fence_length:
+                fence_character, fence_length = "", 0
+            continue
+        if fence_character or line.lstrip().startswith("|"):
+            continue
+        heading = heading_pattern.fullmatch(line)
+        if heading is not None:
+            result.append((heading.group(1), heading.group(2)))
+    return result
+
+
+def markdown_ignored_annotation_ranges(text: str) -> list[tuple[int, int]]:
+    """Return fenced and inline-code ranges that describe labels, not anchors."""
+
+    ignored: list[tuple[int, int]] = []
+    fence_character = ""
+    fence_length = 0
+    offset = 0
+    for line_with_ending in text.splitlines(keepends=True):
+        line = line_with_ending.rstrip("\r\n")
+        line_end = offset + len(line_with_ending)
+        marker = markdown_fence(line)
+        if marker is not None:
+            character, length = marker
+            ignored.append((offset, line_end))
+            if not fence_character:
+                fence_character, fence_length = character, length
+            elif character == fence_character and length >= fence_length:
+                fence_character, fence_length = "", 0
+            offset = line_end
+            continue
+        if fence_character:
+            ignored.append((offset, line_end))
+            offset = line_end
+            continue
+
+        cursor = 0
+        while cursor < len(line):
+            if line[cursor] != "`":
+                cursor += 1
+                continue
+            run_end = cursor
+            while run_end < len(line) and line[run_end] == "`":
+                run_end += 1
+            delimiter = line[cursor:run_end]
+            closing = line.find(delimiter, run_end)
+            while closing >= 0 and closing + len(delimiter) < len(line) \
+                    and line[closing + len(delimiter)] == "`":
+                closing = line.find(delimiter, closing + len(delimiter) + 1)
+            if closing < 0:
+                cursor = run_end
+                continue
+            ignored.append((offset + cursor, offset + closing + len(delimiter)))
+            cursor = closing + len(delimiter)
+        offset = line_end
+    return ignored
+
+
 def check_markdown() -> None:
     link_pattern = re.compile(r"!?\[[^\]]*\]\(([^)]+)\)")
-    heading_pattern = re.compile(r"^(#{1,6})\s+(.+?)\s*$", re.MULTILINE)
 
     def anchors(markdown: Path) -> set[str]:
         result: set[str] = set()
         counts: dict[str, int] = {}
         content = markdown.read_text(encoding="utf-8")
-        for _level, heading in heading_pattern.findall(content):
+        for _level, heading in markdown_headings(content):
             plain = re.sub(r"[`*_~]", "", heading).strip().lower()
             plain = re.sub(r"[^0-9a-z가-힣 _-]", "", plain)
             slug = re.sub(r"\s+", "-", plain)
@@ -151,9 +374,7 @@ def check_markdown() -> None:
         if text.count("```") % 2:
             add(f"코드 블록이 닫히지 않았습니다: {relative(path)}")
 
-        h1_count = sum(
-            1 for level, _ in heading_pattern.findall(text) if level == "#"
-        )
+        h1_count = sum(1 for level, _ in markdown_headings(text) if level == "#")
         if h1_count != 1:
             add(f"H1은 하나여야 합니다: {relative(path)} ({h1_count})")
 
@@ -177,6 +398,369 @@ def check_markdown() -> None:
                     add(f"Markdown가 아닌 대상의 anchor입니다: {relative(path)} -> {target}")
                 elif anchor not in anchors(resolved):
                     add(f"대상이 없는 Markdown anchor입니다: {relative(path)} -> {target}")
+
+
+def marked_block(path: Path, start: str, end: str, label: str) -> str | None:
+    text = path.read_text(encoding="utf-8")
+    if text.count(start) != 1 or text.count(end) != 1:
+        add(f"{label} marker는 정확히 한 쌍이어야 합니다: {relative(path)}")
+        return None
+    start_at = text.index(start) + len(start)
+    end_at = text.index(end)
+    if start_at >= end_at:
+        add(f"{label} marker 순서가 잘못되었습니다: {relative(path)}")
+        return None
+    return text[start_at:end_at]
+
+
+def markdown_table_rows(block: str) -> list[list[str]]:
+    rows: list[list[str]] = []
+    for line in block.splitlines():
+        stripped = line.strip()
+        if not stripped.startswith("|") or not stripped.endswith("|"):
+            continue
+        cells = [cell.strip() for cell in stripped[1:-1].split("|")]
+        if cells and all(re.fullmatch(r":?-+:?", cell) for cell in cells):
+            continue
+        rows.append(cells)
+    return rows
+
+
+def markdown_link_targets(text: str) -> list[str]:
+    targets: list[str] = []
+    for raw in re.findall(r"!?\[[^\]]*\]\(([^)]+)\)", text):
+        target = unquote(raw.strip().split()[0].strip("<>"))
+        targets.append(target.partition("#")[0])
+    return targets
+
+
+def inline_code_value(text: str) -> str:
+    stripped = text.strip()
+    if len(stripped) >= 2 and stripped.startswith("`") and stripped.endswith("`"):
+        return stripped[1:-1]
+    return stripped
+
+
+def repository_markdown_targets(path: Path) -> set[str]:
+    result: set[str] = set()
+    text = path.read_text(encoding="utf-8")
+    for target in markdown_link_targets(text):
+        if not target or target.startswith(("http://", "https://", "mailto:")):
+            continue
+        resolved = (path.parent / target).resolve()
+        try:
+            result.add(resolved.relative_to(ROOT).as_posix())
+        except ValueError:
+            continue
+    return result
+
+
+def check_learning_handoffs() -> None:
+    for source, target in REQUIRED_LEARNING_HANDOFFS:
+        path = ROOT / source
+        if path.is_file() and target not in repository_markdown_targets(path):
+            add(f"필수 학습 handoff link가 없습니다: {source} -> {target}")
+
+
+def check_learning_map() -> None:
+    readme = ROOT / "README.md"
+    if not readme.is_file():
+        return
+    block = marked_block(readme, LEARNING_MAP_START, LEARNING_MAP_END, "학습 순서")
+    if block is None:
+        return
+    rows = markdown_table_rows(block)
+    if not rows or len(rows[0]) != 7:
+        add("README 학습 순서 표는 7개 semantic column이 필요합니다.")
+        return
+    data_rows = rows[1:]
+    if len(data_rows) != len(EXPECTED_LEARNING_ROWS) or any(
+        len(row) != 7 for row in data_rows
+    ):
+        add("README 학습 순서 표는 모든 data row에 7개 semantic cell이 필요합니다.")
+    if any(len(row) == 7 and row[2] != "—" for row in data_rows):
+        add("example이 없는 branch의 관찰 예제 cell은 —여야 합니다.")
+    if any(len(row) == 7 and not row[6] for row in data_rows):
+        add("README 학습 순서 표의 완료 뒤 비교·다음 cell이 비어 있습니다.")
+
+    for position, (row, expected) in enumerate(
+        zip(data_rows, EXPECTED_LEARNING_ROWS, strict=False), start=1
+    ):
+        if len(row) != 7:
+            continue
+        expected_docs, exercise = expected
+        actual_docs = tuple(markdown_link_targets(row[1]))
+        if actual_docs != expected_docs:
+            add(
+                f"README 학습 순서 {position}행의 문서 grouping이 다릅니다: "
+                f"예상={list(expected_docs)}, 실제={list(actual_docs)}"
+            )
+
+        contract_cells = row[3:7]
+        if exercise is None:
+            joined = " | ".join(contract_cells)
+            linked = [
+                target
+                for cell in contract_cells
+                for target in markdown_link_targets(cell)
+            ]
+            if any(
+                target.startswith("exercises/")
+                for target in linked
+            ) or any(
+                value in joined
+                for value in (".workspace/", "check-workspace.sh")
+            ):
+                add(f"README 학습 순서 {position}행에 예상하지 않은 실습 계약이 있습니다.")
+            continue
+
+        readme_link = f"exercises/{exercise}/README.md"
+        workspace = f".workspace/{exercise}/src/main"
+        check = f"./scripts/check-workspace.sh {exercise}"
+        reference = f"exercises/{exercise}/reference/"
+        if markdown_link_targets(row[3]) != [readme_link]:
+            add(f"README 학습 순서의 docs와 실습 연결이 다릅니다: {exercise}")
+        if inline_code_value(row[4]) != workspace:
+            add(f"README 학습 순서의 수정 위치 cell이 다릅니다: {exercise}")
+        if inline_code_value(row[5]) != check:
+            add(f"README 학습 순서의 검증 cell이 다릅니다: {exercise}")
+        if reference not in markdown_link_targets(row[6]):
+            add(f"README 학습 순서의 완료 뒤 reference cell이 다릅니다: {exercise}")
+        if any(
+            reference in markdown_link_targets(cell)
+            for cell in row[3:6]
+        ):
+            add(f"README 학습 순서의 reference가 비교 전 cell에 있습니다: {exercise}")
+
+
+def managed_utf8_text_files() -> list[tuple[Path, str]]:
+    result: list[tuple[Path, str]] = []
+    for name in sorted(load_repository_manifest()):
+        path = ROOT / name
+        if not path.is_file() or path.is_symlink():
+            continue
+        try:
+            text = path.read_text(encoding="utf-8")
+        except (OSError, UnicodeDecodeError):
+            continue
+        result.append((path, text))
+    return result
+
+
+def implementation_scope(path: Path) -> str | None:
+    parts = path.relative_to(ROOT).parts
+    if len(parts) >= 3 and parts[0] == "exercises" and parts[1] in EXPECTED_EXERCISES:
+        return parts[1]
+    return None
+
+
+def versioned_migration(path: Path) -> bool:
+    parts = path.relative_to(ROOT).parts
+    return (
+        len(parts) >= 9
+        and parts[0] == "exercises"
+        and parts[1] in EXPECTED_EXERCISES
+        and parts[2:8] == ("reference", "src", "main", "resources", "db", "migration")
+        and path.suffix.lower() == ".sql"
+    )
+
+
+def direct_annotation_is_comment(path: Path, text: str, start: int, end: int) -> bool:
+    suffix = path.suffix.lower()
+    line_start = text.rfind("\n", 0, start) + 1
+    prefix = text[line_start:start].lstrip()
+    if suffix == ".java":
+        return prefix.startswith("//")
+    if suffix in {".yaml", ".yml"}:
+        return prefix.startswith("#")
+    if suffix == ".xml":
+        opening = text.rfind("<!--", 0, start)
+        previous_close = text.rfind("-->", 0, start)
+        closing = text.find("-->", end)
+        return opening > previous_close and closing >= end
+    return False
+
+
+def implementation_block_bounds(path: Path, scope: str) -> tuple[int, int] | None:
+    text = path.read_text(encoding="utf-8")
+    start = (
+        "<!-- implementation-order:start "
+        f"scope=exercises/{scope}/reference semantics=recommended -->"
+    )
+    end = "<!-- implementation-order:end -->"
+    if text.count(start) != 1 or text.count(end) != 1:
+        add(f"권장 구현 순서 marker는 정확히 한 쌍이어야 합니다: {relative(path)}")
+        return None
+    start_at = text.index(start) + len(start)
+    end_at = text.index(end)
+    if start_at >= end_at:
+        add(f"권장 구현 순서 marker 순서가 잘못되었습니다: {relative(path)}")
+        return None
+    return start_at, end_at
+
+
+def check_implementation_annotations() -> None:
+    occurrences: dict[str, dict[str, list[str]]] = {
+        exercise: {} for exercise in EXPECTED_EXERCISES
+    }
+    readme_bounds: dict[str, tuple[int, int] | None] = {}
+    for exercise in EXPECTED_EXERCISES:
+        readme_bounds[exercise] = implementation_block_bounds(
+            ROOT / f"exercises/{exercise}/README.md", exercise
+        )
+
+    for path, text in managed_utf8_text_files():
+        ignored_markdown = (
+            markdown_ignored_annotation_ranges(text)
+            if path.suffix.lower() == ".md"
+            else []
+        )
+        for candidate in IMPLEMENTATION_CANDIDATE.finditer(text):
+            if any(
+                start <= candidate.start() < end
+                for start, end in ignored_markdown
+            ):
+                continue
+            valid = IMPLEMENTATION_LABEL.fullmatch(candidate.group(0))
+            if valid is None:
+                add(
+                    "Implementation label 형식이 잘못되었습니다: "
+                    f"{relative(path)} -> {candidate.group(0)}"
+                )
+                continue
+            number = valid.group("number")
+            scope = implementation_scope(path)
+            parts = path.relative_to(ROOT).parts
+            allowed = False
+            if scope is not None and parts == ("exercises", scope, "README.md"):
+                bounds = readme_bounds[scope]
+                allowed = bounds is not None and bounds[0] < candidate.start() < bounds[1]
+            elif scope is not None and len(parts) >= 4 and parts[2] == "reference":
+                in_test = len(parts) >= 5 and parts[3:5] == ("src", "test")
+                if versioned_migration(path):
+                    add(
+                        "versioned migration Implementation은 README sidecar여야 합니다: "
+                        f"{relative(path)}"
+                    )
+                    continue
+                allowed = (
+                    not in_test
+                    and path.suffix.lower() in DIRECT_IMPLEMENTATION_SUFFIXES
+                )
+                if allowed and not direct_annotation_is_comment(
+                    path, text, candidate.start(), candidate.end()
+                ):
+                    add(
+                        "Implementation source anchor는 허용된 comment여야 합니다: "
+                        f"{relative(path)}"
+                    )
+                    continue
+            if not allowed:
+                add(f"Implementation annotation 금지 위치입니다: {relative(path)}")
+                continue
+            occurrences[scope].setdefault(number, []).append(relative(path))
+
+    plain_number = re.compile(r"0|[1-9]\d*(?:-[1-9]\d*)?")
+    link_pattern = re.compile(r"\[[^\]]+\]\(([^)]+)\)")
+    for exercise in sorted(EXPECTED_EXERCISES):
+        readme = ROOT / f"exercises/{exercise}/README.md"
+        bounds = readme_bounds[exercise]
+        if bounds is None:
+            continue
+        text = readme.read_text(encoding="utf-8")
+        rows = markdown_table_rows(text[bounds[0]:bounds[1]])
+        if not rows or len(rows[0]) != 3:
+            add(f"권장 구현 순서 표는 3개 semantic column이 필요합니다: {relative(readme)}")
+            continue
+
+        indexed: dict[str, tuple[str, bool]] = {}
+        for row in rows[1:]:
+            if len(row) != 3:
+                add(f"권장 구현 순서 표의 cell 수가 다릅니다: {relative(readme)}")
+                continue
+            sidecar_match = IMPLEMENTATION_LABEL.fullmatch(row[0])
+            sidecar = sidecar_match is not None
+            number = sidecar_match.group("number") if sidecar_match else row[0]
+            if plain_number.fullmatch(number) is None:
+                add(f"권장 구현 순서 index 형식이 잘못되었습니다: {relative(readme)} -> {row[0]}")
+                continue
+            if number in indexed:
+                add(f"권장 구현 순서 index가 중복됩니다: {exercise} {number}")
+                continue
+            link = link_pattern.search(row[1])
+            if link is None:
+                add(f"권장 구현 순서 index에 기준 파일 link가 없습니다: {exercise} {number}")
+                continue
+            raw_target = unquote(link.group(1).strip().split()[0].strip("<>"))
+            file_part = raw_target.partition("#")[0]
+            target = (readme.parent / file_part).resolve()
+            try:
+                target_relative = target.relative_to(ROOT).as_posix()
+            except ValueError:
+                add(f"권장 구현 순서 index가 저장소 밖을 가리킵니다: {exercise} {number}")
+                continue
+            if not target.is_file():
+                add(f"권장 구현 순서 index 대상 파일이 없습니다: {exercise} {number}")
+            reference_root = (ROOT / f"exercises/{exercise}/reference").resolve()
+            try:
+                target_in_reference = target.relative_to(reference_root)
+            except ValueError:
+                add(
+                    "Implementation sidecar/source가 scope reference 밖을 가리킵니다: "
+                    f"{exercise} {number} -> {target_relative}"
+                )
+            else:
+                if target_in_reference.parts[:2] == ("src", "test"):
+                    add(
+                        "Implementation sidecar/source가 repository test를 가리킵니다: "
+                        f"{exercise} {number}"
+                    )
+            indexed[number] = (target_relative, sidecar)
+
+        top_level = sorted(
+            int(number)
+            for number in indexed
+            if number != "0" and "-" not in number
+        )
+        if not top_level or top_level != list(range(1, max(top_level) + 1)):
+            add(f"Implementation top-level 번호가 1부터 연속하지 않습니다: {exercise}")
+        children: dict[int, list[int]] = {}
+        for number in indexed:
+            if "-" not in number:
+                continue
+            parent, child = (int(value) for value in number.split("-", 1))
+            children.setdefault(parent, []).append(child)
+        for parent, values in children.items():
+            if str(parent) not in indexed:
+                add(f"Implementation substep의 parent가 없습니다: {exercise} {parent}")
+            ordered = sorted(values)
+            if ordered != list(range(1, max(ordered) + 1)):
+                add(f"Implementation substep 번호가 1부터 연속하지 않습니다: {exercise} {parent}")
+
+        if set(indexed) != set(occurrences[exercise]):
+            add(
+                f"권장 구현 순서 index와 authoritative anchor가 다릅니다: {exercise} "
+                f"index={sorted(indexed)}, anchor={sorted(occurrences[exercise])}"
+            )
+        for number, (target, sidecar) in indexed.items():
+            actual = occurrences[exercise].get(number, [])
+            if sidecar:
+                if Path(target).suffix.lower() not in SIDECAR_IMPLEMENTATION_SUFFIXES:
+                    add(f"Implementation sidecar가 주석 불가 파일을 가리키지 않습니다: {exercise} {number}")
+                if Path(target).suffix.lower() == ".sql" and not versioned_migration(
+                    ROOT / target
+                ):
+                    add(f"Implementation SQL sidecar가 versioned migration이 아닙니다: {exercise} {number}")
+                expected = [relative(readme)]
+            else:
+                if Path(target).suffix.lower() not in DIRECT_IMPLEMENTATION_SUFFIXES:
+                    add(f"Implementation source anchor 대상 형식이 잘못되었습니다: {exercise} {number}")
+                expected = [target]
+            if actual != expected:
+                add(
+                    f"Implementation anchor가 index의 기준 파일과 일치하지 않습니다: "
+                    f"{exercise} {number} 예상={expected}, 실제={actual}"
+                )
 
 
 def load_repository_manifest() -> dict[str, str]:
@@ -963,6 +1547,9 @@ def check_project_independence() -> None:
 def main() -> int:
     check_exact_repository_tree()
     check_markdown()
+    check_learning_map()
+    check_learning_handoffs()
+    check_implementation_annotations()
     check_structured_files()
     check_java_sources()
     check_reference_completion()

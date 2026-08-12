@@ -79,6 +79,6 @@ readiness 해제
 
 종료 제한 시간을 무한히 늘리지 않는다. 처리 중이던 작업이 중단될 수 있다는 전제로 Outbox와 consumer가 다시 복구할 수 있어야 한다.
 
-## 실습
+## 다음 단계
 
-[애플리케이션 경계 실습](../../exercises/application-boundaries/README.md)에서 두 설정값의 관계가 잘못되면 Context가 시작되지 않는지 확인한다. [단일 서비스 통합 과제](../../exercises/single-service-capstone/README.md)에서는 외부 client 설정, 데이터베이스 migration과 health endpoint를 함께 검증한다.
+[MVC 검증과 ProblemDetail](../02-web-and-security/01-mvc-validation-and-problem-detail.md)에서 시작 설정을 HTTP 입력·업무 오류 계약과 연결한다. 애플리케이션 경계 실습은 그 문서까지 읽은 뒤 시작하고, capstone은 primary path 1~13을 마친 뒤 진행한다.

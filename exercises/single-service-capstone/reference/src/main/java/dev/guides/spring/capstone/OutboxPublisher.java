@@ -23,6 +23,7 @@ public final class OutboxPublisher {
     this.completion = completion;
   }
 
+  // [Implementation 10] gateway 성공 뒤 별도 transaction으로 published state를 기록한다.
   @Scheduled(fixedDelayString = "${publication.outbox.poll-interval:1s}")
   public void publishPending() {
     for (OutboxEventEntity event

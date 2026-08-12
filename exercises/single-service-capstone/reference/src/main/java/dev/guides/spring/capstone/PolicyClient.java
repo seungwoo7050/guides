@@ -15,6 +15,7 @@ public class PolicyClient {
     this.client = policyRestClient;
   }
 
+  // [Implementation 4] policy 거절과 transport·dependency 실패를 다른 상태로 분류한다.
   @CircuitBreaker(name = "policy")
   public void ensureAllowed(
       String actorId,

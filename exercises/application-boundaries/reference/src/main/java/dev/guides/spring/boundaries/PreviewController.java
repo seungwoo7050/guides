@@ -16,6 +16,7 @@ public final class PreviewController {
     this.policy = policy;
   }
 
+  // [Implementation 3] 검증된 요청에 category와 양쪽 quantity 경계를 적용한다.
   @PostMapping("/preview")
   public PreviewResponse preview(@Valid @RequestBody PreviewRequest request) {
     if (!policy.category().equals(request.category())) {

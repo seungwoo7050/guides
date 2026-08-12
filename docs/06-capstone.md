@@ -89,7 +89,13 @@ Redis miss + DB miss → 새 요청 처리
 
 ## 완료 조건
 
-[단일 서비스 통합 실습](../exercises/single-service-capstone/README.md)의 reference가 루트 `./verify.sh`에서 통과해야 한다. skeleton은 다음 결함 때문에 실패해야 한다.
+학습자는 [단일 서비스 통합 실습](../exercises/single-service-capstone/README.md)의 canonical skeleton으로 workspace를 만들고 `.workspace/single-service-capstone/src/main`을 수정한 뒤 다음 검증을 통과해야 한다.
+
+```sh
+./scripts/check-workspace.sh single-service-capstone
+```
+
+성공한 뒤에만 `reference`의 설계 선택을 비교하고 아래 질문에 답한다. Repository maintainer에게는 루트 `./verify.sh`에서 reference가 통과하고 skeleton이 다음 결함으로 지정 실패하는 것이 별도의 보존 증거다.
 
 - endpoint와 역할 경계가 열려 있다.
 - 동일 key를 직렬화하는 advisory lock이 없다.

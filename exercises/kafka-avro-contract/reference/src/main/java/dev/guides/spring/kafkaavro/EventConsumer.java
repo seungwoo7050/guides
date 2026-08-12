@@ -15,6 +15,7 @@ public class EventConsumer {
     this.probe = probe;
   }
 
+  // [Implementation 5] decode와 처리 증거가 성공한 뒤에만 offset을 확정한다.
   @KafkaListener(topics = "${guide.kafka.consume-topic}", groupId = "${guide.kafka.group-id}")
   public void consume(ConsumerRecord<String, byte[]> record, Acknowledgment acknowledgment) {
     TaskSubmitted event = codec.decode(record.value());

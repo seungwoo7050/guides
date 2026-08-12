@@ -8,6 +8,7 @@ import java.net.URI;
 import java.time.Instant;
 import java.util.UUID;
 
+// [Implementation 3] publication entity가 DB 정본과 외부 응답 변환을 함께 소유한다.
 @Entity
 @Table(name = "publication")
 public class PublicationEntity {

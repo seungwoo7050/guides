@@ -19,9 +19,34 @@ Avro binary event를 immutable digest의 공식 Kafka 4.3.1 컨테이너에 발�
 
 canonical skeleton의 잘못된 소비자 event version은 고정 실패 fixture다. tracked skeleton은 수정하지 않고 학습자 workspace를 고쳐 제한 시간 안에 같은 계약을 소비하게 만든다.
 
+저장소 루트에서 learner-owned workspace를 만들고 검사한다.
+
 ```sh
 ./scripts/new-workspace.sh kafka-avro-contract
-#학습 구현: .workspace/kafka-avro-contract/src/main을 수정한다.
-./scripts/check-workspace.sh kafka-avro-contract
+./scripts/check-workspace.sh kafka-avro-contract  # 먼저 지정 실패를 확인한다.
+# 학습 구현: .workspace/kafka-avro-contract/src/main을 수정한다.
+./scripts/check-workspace.sh kafka-avro-contract  # 수정 뒤 PASS를 확인한다.
+```
+
+## 완료 뒤 reference walkthrough
+
+workspace 검증이 성공한 뒤에만 `reference` source를 연다. `exercises/kafka-avro-contract/reference` 전체가 하나의 numbering scope이며, 다음 번호는 실제 과거 작성 순서가 아니라 완료 구현을 다시 만들 때의 권장 construction order다. 이 구현은 `GenericRecord`를 사용하므로 Avro code generation CLI는 없다.
+
+<!-- implementation-order:start scope=exercises/kafka-avro-contract/reference semantics=recommended -->
+| 번호 | 기준 파일·symbol | 먼저 고정하는 책임 |
+|---:|---|---|
+| 0 | [`pom.xml`](reference/pom.xml) | Spring Kafka와 Avro generic codec dependency를 고정한다. |
+| [Implementation 1] | [`task-submitted.avsc`](reference/src/main/resources/avro/task-submitted.avsc) | 주석을 허용하지 않는 JSON schema가 event field와 namespace의 authoritative anchor다. |
+| 2 | [`AvroEventCodec`](reference/src/main/java/dev/guides/spring/kafkaavro/AvroEventCodec.java) | 같은 schema로 encode·decode하고 malformed payload 실패를 분리한다. |
+| 3 | [`application.yml`](reference/src/main/resources/application.yml) | serializer, producer idempotence, manual ack와 topic identity를 고정한다. |
+| 4 | [`EventPublisher.publish`](reference/src/main/java/dev/guides/spring/kafkaavro/EventPublisher.java) | aggregate key를 보존하고 bounded send 완료를 기다린다. |
+| 5 | [`EventConsumer.consume`](reference/src/main/java/dev/guides/spring/kafkaavro/EventConsumer.java) | decode와 처리 증거가 성공한 뒤에만 offset을 확정한다. |
+<!-- implementation-order:end -->
+
+다음 명령은 canonical comparator 자체의 test이며 learner workspace 검증을 대신하지 않는다.
+
+```sh
 ./scripts/mvn-guide.sh -pl :kafka-avro-contract-reference -am test
 ```
+
+비교를 마치면 [Outbox와 스케줄링](../../docs/04-distributed-adapters/02-outbox-and-scheduling.md)으로 진행한다.
