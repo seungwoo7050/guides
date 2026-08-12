@@ -6,6 +6,7 @@ mkdir -p build
 version=$($cc --version 2>/dev/null | head -n 1 || true)
 printf '컴파일러: %s\n' "$version"
 
+# [Implementation 4] compiler 종류에 맞는 vectorization evidence option을 고르고 결과 binary도 실행합니다.
 macros=$($cc -dM -E - </dev/null 2>/dev/null || true)
 if printf '%s\n' "$macros" | grep -q '__clang__'; then
   "$cc" -O3 -std=c11 -Wall -Wextra -Werror -pedantic \

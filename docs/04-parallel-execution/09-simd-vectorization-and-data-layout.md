@@ -258,10 +258,16 @@ integer에서 overflow가 modulo로 정의된 환경인지, signed overflow가 u
 
 ## 연결 실습
 
-루트의 `make stage-09`로 vector checksum과 compiler vectorization 보고서를 함께 확인합니다.
+Stage 09는 Python workspace를 수정하지 않는 분석형 checkpoint입니다. 루트의 `make stage-09`로 vector checksum과 compiler vectorization 보고서를 함께 확인한 뒤 다음 증거를 기록합니다.
+
+- compiler, version과 사용한 option
+- 정확한 checksum과 recurrence 결과
+- 벡터화된 loop와 그 근거
+- 벡터화되지 않은 loop와 compiler가 보고한 이유
 
 ## 완료 기준
 
 - 벡터화 가능한 loop와 recurrence loop의 의존성 차이를 그릴 수 있습니다.
 - AoS와 SoA가 cache line과 vector load에 미치는 영향을 설명할 수 있습니다.
+- checksum과 compiler 보고서를 서로 다른 완료 증거로 기록할 수 있습니다.
 - `make stage-09`가 정확한 checksum으로 통과합니다.

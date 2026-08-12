@@ -2,7 +2,7 @@
 #include <stddef.h>
 #include <stdio.h>
 #include <stdlib.h>
-
+/* [Implementation 1] 원소 독립성과 restrict의 non-alias 계약을 벡터화 가능한 기준으로 둡니다. */
 static void saxpy(
     float *restrict output,
     const float *restrict left,
@@ -14,7 +14,7 @@ static void saxpy(
     for (index = 0; index < count; ++index)
         output[index] = left[index] * scale + right[index];
 }
-
+/* [Implementation 2] 이전 결과를 다음 반복이 소유하는 loop-carried dependency 비교군입니다. */
 static float recurrence(const float *input, size_t count)
 {
     size_t index;
@@ -23,7 +23,7 @@ static float recurrence(const float *input, size_t count)
         value = value * 0.999f + input[index];
     return value;
 }
-
+/* [Implementation 3] 결정적 입력과 관찰 가능한 checksum으로 최적화 뒤 정확성을 고정합니다. */
 int main(void)
 {
     enum { count = 4096 };

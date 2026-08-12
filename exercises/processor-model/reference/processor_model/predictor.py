@@ -12,6 +12,7 @@ class Branch:
     taken: bool
 
 
+# [Implementation 8] 정렬 PC index와 aliasing을 고정하고 update 전 prediction을 기준으로 포화 계수기를 갱신합니다.
 class TwoBitPredictor:
     """PC 하위 인덱스로 2비트 계수기 표를 조회합니다.
 

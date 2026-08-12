@@ -36,6 +36,7 @@ def _pipeline_text(result: dict[str, Any]) -> None:
         print("  ".join(str(row.get(key, ".")).ljust(widths[key]) for key in header))
 
 
+# [Implementation 11] domain state와 분리된 public command·option schema를 한 parser에서 고정합니다.
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         prog="processor-model",
@@ -113,6 +114,7 @@ def _load_vm_config(path: Path) -> tuple[int, int, dict[int, vm.Mapping]]:
     return page_size, tlb_entries, mappings
 
 
+# [Implementation 11-1] path·trace 입력을 domain module에 위임해 JSON·text 출력을 조립하고 main이 예상 오류를 exit 2로 정규화합니다.
 def run(args: argparse.Namespace) -> int:
     if args.command == "bits":
         if args.bits_command == "int":

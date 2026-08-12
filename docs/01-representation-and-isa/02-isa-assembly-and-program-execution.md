@@ -217,6 +217,8 @@ halt
 
 상세 계약은 [Tiny-RISC 명세](../../exercises/processor-model/spec/tiny-risc-isa.md)에 있습니다.
 
+reference source를 열지 않고 Tiny-RISC 출력 계약만 관찰하려면 다음 black-box 명령을 사용합니다.
+
 ```sh
 python3 exercises/processor-model/reference/processor-model.py \
   isa exercises/processor-model/fixtures/programs/sum.asm \
@@ -272,7 +274,12 @@ cc -O2 -S example.c -o example.s
 
 ## 연결 실습
 
-[`processor-model` stage-02](../../exercises/processor-model/README.md)에서 Tiny-RISC 명령과 정렬 예외를 구현합니다.
+[`processor-model` stage-02](../../exercises/processor-model/README.md)에서 Tiny-RISC 명령과 정렬 예외를 `workspace/processor_model/isa.py`에 구현합니다.
+
+```sh
+cd exercises/processor-model
+make stage-02 EXERCISE_IMPL=workspace
+```
 
 ## 완료 기준
 

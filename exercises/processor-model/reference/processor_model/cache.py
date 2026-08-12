@@ -35,6 +35,7 @@ def parse_trace(lines: Iterable[str]) -> list[Access]:
     return result
 
 
+# [Implementation 6] 실제 set-LRU, 분류용 fully-associative shadow와 seen 집합을 서로 다른 state owner로 둡니다.
 class CacheSimulator:
     def __init__(
         self,
@@ -81,6 +82,7 @@ class CacheSimulator:
                 self.shadow.popitem(last=False)
         return hit
 
+    # [Implementation 6-1] 주소 분해, 3C 판정, dirty eviction과 event 기록을 한 접근의 단일 상태 전이로 묶습니다.
     def access(self, access: Access) -> None:
         block = access.address // self.block_size
         set_index = block % self.set_count

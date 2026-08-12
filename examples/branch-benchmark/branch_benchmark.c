@@ -28,6 +28,7 @@ static uint32_t next_random(uint32_t *state)
     return value;
 }
 
+/* [Implementation 1] 입력 패턴과 무관하게 완전히 같은 selection workload를 사용합니다. */
 static uint64_t count_selected(const uint32_t *values, size_t count, uint32_t threshold)
 {
     size_t index;
@@ -55,6 +56,7 @@ static size_t parse_size(const char *text)
     return (size_t)value;
 }
 
+/* [Implementation 2] 결정적 입력 두 종류에 같은 threshold를 적용하고 timing과 count를 분리합니다. */
 int main(int argc, char **argv)
 {
     size_t count = 8u * 1024u * 1024u;

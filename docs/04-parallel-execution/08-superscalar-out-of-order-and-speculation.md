@@ -225,7 +225,7 @@ sum1 += values[i + 1];
 
 ## 직접 구현하기
 
-`exercises/processor-model/skeleton/processor_model/predictor.py`와 `rob.py`를 완성합니다.
+`exercises/processor-model/workspace/processor_model/predictor.py`와 `rob.py`를 완성합니다.
 
 ### 2비트 분기 예측기
 

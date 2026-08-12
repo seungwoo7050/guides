@@ -5,6 +5,7 @@ from __future__ import annotations
 from typing import Any
 
 
+# [Implementation 3] CPU time, Amdahl과 AMAT를 단위와 입력 범위가 드러나는 순수 계산 경계로 구성합니다.
 def cpu_time(instructions: float, cpi: float, frequency_ghz: float) -> dict[str, Any]:
     if instructions < 0:
         raise ValueError("instructions는 음수일 수 없습니다")

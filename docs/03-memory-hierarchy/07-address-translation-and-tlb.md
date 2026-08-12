@@ -196,7 +196,7 @@ L1 지연을 줄이기 위해 페이지 오프셋으로 set을 먼저 선택하�
 
 ## 직접 구현하기
 
-`exercises/processor-model/skeleton/processor_model/vm.py`에서 다음 상태 전이를 구현합니다.
+`exercises/processor-model/workspace/processor_model/vm.py`에서 다음 상태 전이를 구현합니다.
 
 - LRU TLB lookup과 fill
 - page-table walk count
@@ -211,7 +211,7 @@ make stage-07 EXERCISE_IMPL=workspace
 
 처음에는 TLB 없이 페이지 테이블 순회와 권한 검사만 구현합니다. 그다음 entry 수를 `0 → 1 → 2`로 늘리며 hit, eviction과 stale-entry 제거를 비교하면 상태 수명을 분리하기 쉽습니다.
 
-완성된 reference를 관찰하려면 저장소 루트에서 다음을 실행합니다.
+reference source를 열지 않고 완성 결과만 black-box oracle로 관찰하려면 저장소 루트에서 다음을 실행합니다.
 
 ```sh
 python3 exercises/processor-model/reference/processor-model.py vm \

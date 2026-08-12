@@ -6,6 +6,7 @@ TARGET := build/false_sharing
 
 .PHONY: check benchmark clean
 
+# [Implementation 5] pthread contract를 포함한 같은 build로 검사와 benchmark를 재현합니다.
 $(TARGET): false_sharing.c
 	@mkdir -p build
 	$(CC) $(CPPFLAGS) $(CFLAGS) $< -pthread -o $@

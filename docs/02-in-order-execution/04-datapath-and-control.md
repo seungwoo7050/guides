@@ -103,6 +103,8 @@ base register + sign-extended offset
 
 `lw`의 critical path에는 instruction fetch, register read, ALU, data memory와 register write가 모두 포함될 수 있습니다. 단일 사이클 clock period를 가장 느린 instruction에 맞추면 단순 `add`도 같은 긴 period를 기다립니다.
 
+reference source를 열지 않고 제어 신호 결과만 관찰하려면 다음 black-box 명령을 사용합니다.
+
 ```sh
 python3 exercises/processor-model/reference/processor-model.py control lw
 ```
@@ -232,13 +234,11 @@ pipeline과 out-of-order에서는 여러 instruction이 동시에 진행하므�
 
 ## 직접 구현할 순서
 
-[`processor-model`](../exercises/processor-model/README.md)의 `control.py`를 먼저 완성한 뒤 `isa.py`의 state transition을 구현하세요.
+[`processor-model`](../../exercises/processor-model/README.md) Stage 02에서 완성한 ISA 명령 의미를 기준으로 `workspace/processor_model/control.py`의 제어표를 구현합니다. Stage 04에서 `isa.py`를 다시 구현하거나 공개 단계 순서를 뒤집지 않습니다.
 
 ```sh
 cd exercises/processor-model
-EXERCISE_IMPL=skeleton python3 -m unittest \
-  tests.test_processor_model.ControlTests \
-  tests.test_processor_model.IsaTests -v
+make stage-04 EXERCISE_IMPL=workspace
 ```
 
 control table과 interpreter가 같은 instruction 의미를 가져야 합니다. 한쪽에서 `sw`가 register를 쓰거나 `lw`가 memory 대신 ALU 결과를 write-back하면 테스트와 표가 어긋납니다.

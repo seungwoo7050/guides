@@ -243,15 +243,14 @@ python3 exercises/processor-model/reference/processor-model.py pipeline \
 
 ## 직접 구현하기
 
-`skeleton/processor_model/pipeline.py`의 두 부분을 완성합니다.
+`exercises/processor-model/workspace/processor_model/pipeline.py`의 두 부분을 완성합니다.
 
 - ID 명령어와 EX/MEM 생산자를 비교하는 위험 요소 판정
 - 사이클마다 WB·MEM·EX·ID·IF를 이동하고 정지·비우기를 반영하는 상태 전이
 
 ```sh
 cd exercises/processor-model
-EXERCISE_IMPL=skeleton python3 -m unittest \
-  tests.test_processor_model.PipelineTests -v
+make stage-05 EXERCISE_IMPL=workspace
 ```
 
 먼저 전달 경로가 없는 경우를 구현한 뒤 ALU 전달 경로와 적재 직후 사용 예외를 추가하면 상태를 확인하기 쉽습니다.
@@ -266,7 +265,7 @@ EXERCISE_IMPL=skeleton python3 -m unittest \
 
 ## 연결 실습
 
-[`processor-model` stage-05](../../exercises/processor-model/README.md)에서 load-use stall과 taken branch flush를 구현합니다.
+[`processor-model` stage-05](../../exercises/processor-model/README.md)에서 load-use stall과 taken branch flush를 구현합니다. [분기 벤치마크](../../examples/branch-benchmark/README.md)에서는 같은 C 조건문이 compiler 선택에 따라 실제 branch 명령으로 남는지 별도로 관찰합니다.
 
 ## 완료 기준
 

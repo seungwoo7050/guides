@@ -5,6 +5,7 @@ TARGET := build/vector_sum
 
 .PHONY: check report assembly clean
 
+# [Implementation 5] check·report·assembly의 공개 workflow를 제공하고 report가 compiler별 진단 option을 고릅니다.
 $(TARGET): vector_sum.c
 	@mkdir -p build
 	$(CC) $(CFLAGS) $< -lm -o $@

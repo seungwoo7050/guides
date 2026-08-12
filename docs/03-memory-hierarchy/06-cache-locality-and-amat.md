@@ -286,7 +286,7 @@ z0 z1 z2 ...
 
 ## 직접 구현하기
 
-`skeleton/processor_model/cache.py`에는 추적 입력 파서와 캐시 구성 검사가 있습니다. 다음 상태를 구현하세요.
+`exercises/processor-model/workspace/processor_model/cache.py`에는 추적 입력 파서와 캐시 구성 검사가 있습니다. 다음 상태를 구현하세요.
 
 - 세트별 태그와 수정 비트
 - LRU 순서
@@ -296,8 +296,7 @@ z0 z1 z2 ...
 
 ```sh
 cd exercises/processor-model
-EXERCISE_IMPL=skeleton python3 -m unittest \
-  tests.test_processor_model.CacheTests -v
+make stage-06 EXERCISE_IMPL=workspace
 ```
 
 먼저 읽기 전용 직접 사상 캐시를 완성하고 연관도, 3C 분류와 수정 블록 교체를 순서대로 추가하세요.

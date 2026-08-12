@@ -5,6 +5,7 @@ from __future__ import annotations
 from typing import Any
 
 
+# [Implementation 4] opcode별 선언적 제어표를 ISA 실행기의 write·memory·next-PC 의미와 일치시킵니다.
 CONTROL: dict[str, dict[str, Any]] = {
     "li": {
         "reg_write": 1,

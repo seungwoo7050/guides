@@ -6,6 +6,7 @@ TARGET := build/layout_benchmark
 
 .PHONY: check benchmark clean
 
+# [Implementation 3] 같은 compiler contract로 빠른 검사와 관찰 benchmark를 재현합니다.
 $(TARGET): layout_benchmark.c
 	@mkdir -p build
 	$(CC) $(CPPFLAGS) $(CFLAGS) $< -o $@

@@ -7,6 +7,7 @@ import struct
 from typing import Any
 
 
+# [Implementation 1] 폭 검증과 mask를 먼저 고정해 모든 signed·unsigned 해석이 같은 하위 비트를 공유합니다.
 def _validate_width(width: int) -> None:
     if width < 1 or width > 64:
         raise ValueError("width는 1 이상 64 이하여야 합니다")
@@ -49,6 +50,7 @@ def represent_integer(value: int, width: int) -> dict[str, Any]:
     }
 
 
+# [Implementation 1-1] carry·unsigned overflow와 2의 보수 signed overflow를 서로 다른 invariant로 계산합니다.
 def add_fixed(left: int, right: int, width: int) -> dict[str, Any]:
     """고정 폭 덧셈 결과와 unsigned/signed overflow를 함께 반환합니다."""
 
@@ -79,6 +81,7 @@ def add_fixed(left: int, right: int, width: int) -> dict[str, Any]:
     }
 
 
+# [Implementation 1-2] struct가 f32·f64로 반올림한 raw bit pattern을 field로 분해해 특별한 지숫값을 분류합니다.
 def _float_fields(raw: int, exponent_bits: int, fraction_bits: int) -> dict[str, Any]:
     sign = raw >> (exponent_bits + fraction_bits)
     exponent_mask = (1 << exponent_bits) - 1

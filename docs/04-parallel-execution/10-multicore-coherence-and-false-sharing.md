@@ -281,7 +281,7 @@ struct source만 보고 allocator alignment와 array stride를 확인하지 않�
 
 ## 직접 구현하기
 
-`skeleton/processor_model/coherence.py`에서 stable MESI state를 구현하세요.
+`exercises/processor-model/workspace/processor_model/coherence.py`에서 stable MESI state를 구현하세요.
 
 - read miss의 `I→E` 또는 `I→S`
 - 다른 reader가 왔을 때 `E/M→S`
@@ -291,8 +291,7 @@ struct source만 보고 allocator alignment와 array stride를 확인하지 않�
 
 ```sh
 cd exercises/processor-model
-EXERCISE_IMPL=skeleton python3 -m unittest \
-  tests.test_processor_model.CoherenceTests -v
+make stage-10 EXERCISE_IMPL=workspace
 ```
 
 transient state와 network timing은 생략되어 있으므로 simulator를 실제 CPU protocol 검증기로 사용하면 안 됩니다.

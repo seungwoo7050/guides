@@ -30,6 +30,7 @@ def parse_trace(lines: Iterable[str]) -> list[Access]:
     return result
 
 
+# [Implementation 10] cache block별 안정 MESI state vector를 소유하고 transient network timing은 모델 밖에 둡니다.
 class MESISimulator:
     def __init__(self, cores: int, line_size: int) -> None:
         if cores < 2:
@@ -51,6 +52,7 @@ class MESISimulator:
     def _line_states(self, block: int) -> list[str]:
         return self.states.setdefault(block, ["I"] * self.cores)
 
+    # [Implementation 10-1] BusRd·BusRdX·BusUpgr, invalidation과 write-back을 전후 state 증거와 함께 기록합니다.
     def access(self, access: Access) -> None:
         if access.core >= self.cores:
             raise ValueError(f"존재하지 않는 core입니다: {access.core}")

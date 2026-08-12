@@ -39,7 +39,7 @@ CPU time
 - 깊은 파이프라인은 높은 주파수를 얻는 대신 분기 예측 실패 비용을 늘릴 수 있습니다.
 - 벡터화는 명령 수를 줄여도 메모리 대역폭이 병목이면 전체 개선이 작을 수 있습니다.
 
-완성된 계산은 다음처럼 확인합니다.
+완성된 계산의 출력 형태는 reference source를 열지 않는 black-box oracle로 다음처럼 확인합니다.
 
 ```sh
 python3 exercises/processor-model/reference/processor-model.py \
@@ -213,7 +213,7 @@ CPU와 커널 권한에 따라 사건이 없거나 계수기가 다중화될 수
 
 ## 직접 구현하기
 
-`skeleton/processor_model/perf.py`에서 다음 세 함수를 완성합니다.
+workspace를 만든 뒤 `exercises/processor-model/workspace/processor_model/perf.py`에서 다음 세 함수를 완성합니다.
 
 ```text
 cpu_time(instructions, cpi, frequency_ghz)

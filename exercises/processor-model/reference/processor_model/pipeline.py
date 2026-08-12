@@ -43,6 +43,7 @@ def _display(slot: Slot | None) -> str:
     return f"I{slot.index}:{slot.instruction.op}"
 
 
+# [Implementation 5] ISA metadata를 사용해 forwarding이 해결하는 RAW와 남는 load-use 정지를 구분합니다.
 def _has_data_hazard(
     id_slot: Slot | None,
     ex_slot: Slot | None,
@@ -74,6 +75,7 @@ def _has_data_hazard(
     raise ValueError("forwarding은 full 또는 none이어야 합니다")
 
 
+# [Implementation 5-1] cycle snapshot 뒤 retire·flush·stall·advance·fetch 순으로 state를 전이해 젊은 명령을 격리합니다.
 def simulate(
     instructions: list[Instruction],
     forwarding: str = "full",

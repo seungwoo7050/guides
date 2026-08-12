@@ -22,6 +22,7 @@ class PreciseException(RuntimeError):
         self.reason = reason
 
 
+# [Implementation 9] 증가하는 tag와 capacity를 소유해 issue와 비순차 complete를 architectural write와 분리합니다.
 class ReorderBuffer:
     """명령은 순서와 무관하게 완료하되 맨 앞에서만 상태를 반영합니다."""
 
@@ -66,6 +67,7 @@ class ReorderBuffer:
         entry.value = value
         entry.fault = fault
 
+    # [Implementation 9-1] ready head만 순서대로 반영하고 fault를 만나면 더 젊은 pending state를 폐기합니다.
     def retire(
         self, registers: MutableMapping[str, int], limit: int | None = None
     ) -> list[int]:

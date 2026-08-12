@@ -10,6 +10,7 @@
 
 #define CACHE_LINE_BYTES 64u
 
+/* [Implementation 1] compact와 padded 배치만 바꿔 cache-line ownership을 실험 변수로 둡니다. */
 struct compact_counter
 {
     volatile uint64_t value;
@@ -21,6 +22,7 @@ struct padded_counter
     unsigned char padding[CACHE_LINE_BYTES - sizeof(uint64_t)];
 };
 
+/* [Implementation 2] mutex와 condition이 모든 worker의 동시 시작 predicate를 소유합니다. */
 struct start_gate
 {
     pthread_mutex_t mutex;
@@ -65,6 +67,7 @@ static void gate_wait(struct start_gate *gate)
     pthread_mutex_unlock(&gate->mutex);
 }
 
+/* [Implementation 3] 각 thread는 서로 다른 scalar만 같은 횟수로 갱신합니다. */
 static void *run_worker(void *opaque)
 {
     struct worker *worker = opaque;
@@ -119,6 +122,7 @@ static void destroy_gate(struct start_gate *gate)
     pthread_mutex_destroy(&gate->mutex);
 }
 
+/* [Implementation 4] 정렬 할당부터 join 뒤 exact counter 검사까지 자원 수명을 한 case가 소유합니다. */
 static double run_case(size_t threads, uint64_t iterations, int padded)
 {
     pthread_t *ids = calloc(threads, sizeof(*ids));
@@ -200,6 +204,7 @@ allocation_failure:
     exit(2);
 }
 
+/* [Implementation 4-1] 같은 thread·iteration 조건으로 두 배치를 실행하고 시간은 관찰값으로만 둡니다. */
 int main(int argc, char **argv)
 {
     size_t threads = 2;

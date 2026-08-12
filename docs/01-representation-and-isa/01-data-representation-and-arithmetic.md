@@ -62,7 +62,7 @@ negative + negative → non-negative
 
 carry와 signed overflow는 같은 플래그가 아닙니다. `127 + 1`은 carry 없이 signed overflow가 나고, `255 + 1`은 carry가 나지만 같은 패턴을 signed로 읽으면 `-1 + 1 = 0`이므로 signed overflow가 아닙니다.
 
-완성된 계산기는 다음처럼 관찰할 수 있습니다.
+완성된 계산기의 출력 형태는 reference source를 열지 않는 black-box oracle로 다음처럼 관찰할 수 있습니다.
 
 ```sh
 python3 exercises/processor-model/reference/processor-model.py \
@@ -214,7 +214,7 @@ python3 exercises/processor-model/reference/processor-model.py \
 
 ## 직접 구현하기
 
-`skeleton/processor_model/bits.py`에서 다음 함수를 완성합니다.
+workspace를 만든 뒤 `exercises/processor-model/workspace/processor_model/bits.py`에서 다음 함수를 완성합니다.
 
 ```text
 to_signed

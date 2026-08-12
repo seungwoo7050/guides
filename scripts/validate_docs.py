@@ -125,6 +125,46 @@ ALLOWED_TOP_LEVEL = {
 }
 CONCEPT_HEADINGS = ("## 학습 목표", "## 선행 개념", "## 연결 실습", "## 완료 기준")
 EXERCISE_HEADINGS = ("## 목표", "## 완료 기준", "## 자기 설명", "## 검증")
+MAPPING_HEADER = (
+    "순서",
+    "문서",
+    "관찰 예제",
+    "직접 수행",
+    "수정 위치",
+    "검증",
+    "완료 뒤 비교·다음",
+)
+IMPLEMENTATION_INDEX_HEADER = ("번호", "파일·symbol", "먼저 고정하는 책임")
+IMPLEMENTATION_WORD = "Implementation"
+IMPLEMENTATION_ID = re.compile(r"(?:0|[1-9]\d*(?:-[1-9]\d*)?)")
+IMPLEMENTATION_CANDIDATE = re.compile(
+    r"\[" + IMPLEMENTATION_WORD + r"[^\]\r\n]*\]"
+)
+IMPLEMENTATION_MARKER = re.compile(
+    r"\[" + IMPLEMENTATION_WORD + r" (0|[1-9]\d*(?:-[1-9]\d*)?)\]"
+)
+ANNOTATION_SCOPES = {
+    "layout-benchmark": (
+        ROOT / "examples/layout-benchmark",
+        ROOT / "examples/layout-benchmark/README.md",
+    ),
+    "branch-benchmark": (
+        ROOT / "examples/branch-benchmark",
+        ROOT / "examples/branch-benchmark/README.md",
+    ),
+    "vectorization-report": (
+        ROOT / "examples/vectorization-report",
+        ROOT / "examples/vectorization-report/README.md",
+    ),
+    "false-sharing": (
+        ROOT / "examples/false-sharing",
+        ROOT / "examples/false-sharing/README.md",
+    ),
+    "processor-model": (
+        ROOT / "exercises/processor-model/reference",
+        ROOT / "exercises/processor-model/README.md",
+    ),
+}
 
 
 def report(message: str) -> None:
@@ -169,6 +209,61 @@ def headings(path: Path) -> set[str]:
             count = counts.get(base, 0)
             counts[base] = count + 1
             result.add(base if count == 0 else f"{base}-{count}")
+    return result
+
+
+def inline_code_ranges(text: str) -> list[tuple[int, int]]:
+    ranges: list[tuple[int, int]] = []
+    cursor = 0
+    while cursor < len(text):
+        start = text.find("`", cursor)
+        if start < 0:
+            break
+        width = 1
+        while start + width < len(text) and text[start + width] == "`":
+            width += 1
+        marker = "`" * width
+        end = text.find(marker, start + width)
+        if end < 0:
+            break
+        ranges.append((start, end + width))
+        cursor = end + width
+    return ranges
+
+
+def markdown_link_targets(text: str) -> list[str]:
+    pattern = re.compile(r"(?<!!)\[[^\]]+\]\(([^)]+)\)")
+    code_ranges = inline_code_ranges(text)
+    return [
+        match.group(1)
+        for match in pattern.finditer(text)
+        if not any(start <= match.start() < end for start, end in code_ranges)
+    ]
+
+
+def table_cells(line: str) -> list[str] | None:
+    stripped = line.strip()
+    if not stripped.startswith("|") or not stripped.endswith("|"):
+        return None
+    return [cell.strip() for cell in stripped[1:-1].split("|")]
+
+
+def fenced_code_lines(text: str) -> list[str]:
+    result: list[str] = []
+    in_fence = False
+    fence = ""
+    for line in text.splitlines():
+        stripped = line.lstrip()
+        if stripped.startswith(("```", "~~~")):
+            marker = stripped[:3]
+            if not in_fence:
+                in_fence = True
+                fence = marker
+            elif marker == fence:
+                in_fence = False
+            continue
+        if in_fence:
+            result.append(line)
     return result
 
 
@@ -257,7 +352,6 @@ def check_expected_tree() -> None:
 
 def check_markdown() -> None:
     global CHECKS
-    link_pattern = re.compile(r"(?<!!)\[[^\]]+\]\(([^)]+)\)")
     forbidden_fragments = (
         "../../../scripts/new-workspace.sh .",
         "python3 computer-architecture/exercises/",
@@ -281,6 +375,7 @@ def check_markdown() -> None:
         in_fence = False
         fence = ""
         visible: list[str] = []
+        raw_visible: list[str] = []
         for number, line in enumerate(lines, 1):
             stripped = line.lstrip()
             if stripped.startswith(("```", "~~~")):
@@ -293,13 +388,14 @@ def check_markdown() -> None:
                 continue
             if in_fence:
                 continue
+            raw_visible.append(line)
             visible.append(re.sub(r"`[^`]*`", "", line))
             if re.search(r"(?<!니)다[.”’\"]?\s*$", line):
                 report(f"경어체가 아닌 문장 종결입니다: {relative}:{number}")
         if in_fence:
             report(f"닫히지 않은 코드 블록이 있습니다: {relative}")
 
-        for raw_target in link_pattern.findall("\n".join(visible)):
+        for raw_target in markdown_link_targets("\n".join(raw_visible)):
             target = raw_target.strip().split()[0].strip("<>")
             if target.startswith(("http://", "https://", "mailto:", "data:")):
                 continue
@@ -479,6 +575,411 @@ def check_pedagogy() -> None:
             report(f"로드맵 학습 계약이 없습니다: {phrase}")
 
 
+def check_learning_mapping() -> None:
+    global CHECKS
+    def mapping_rows(path: Path, label: str) -> list[list[str]]:
+        text = path.read_text(encoding="utf-8") if path.is_file() else ""
+        lines = text.splitlines()
+        tables: list[list[list[str]]] = []
+        for index, line in enumerate(lines):
+            if table_cells(line) != list(MAPPING_HEADER):
+                continue
+            separator = table_cells(lines[index + 1]) if index + 1 < len(lines) else None
+            if separator is None or len(separator) != len(MAPPING_HEADER) or not all(
+                re.fullmatch(r":?-{3,}:?", cell) for cell in separator
+            ):
+                report(f"{label} canonical 학습 순서 표의 separator가 올바르지 않습니다")
+            rows: list[list[str]] = []
+            cursor = index + 2
+            while cursor < len(lines):
+                candidate = table_cells(lines[cursor])
+                if candidate is None or len(candidate) != len(MAPPING_HEADER):
+                    break
+                rows.append(candidate)
+                cursor += 1
+            tables.append(rows)
+        if len(tables) != 1:
+            report(f"{label} canonical 학습 순서 표가 정확히 한 번이 아닙니다: {len(tables)}개")
+        return tables[0] if tables else []
+
+    def normalized_targets(owner: Path, row: list[str]) -> set[str]:
+        result: set[str] = set()
+        for raw_target in markdown_link_targets(" | ".join(row)):
+            target = unquote(raw_target.strip().split()[0].strip("<>"))
+            if target.startswith(("http://", "https://", "mailto:", "data:")):
+                continue
+            target_path = target.split("#", 1)[0]
+            if not target_path:
+                continue
+            candidate = (owner.parent / target_path).resolve()
+            try:
+                result.add(candidate.relative_to(ROOT).as_posix())
+            except ValueError:
+                continue
+        return result
+
+    readme_path = ROOT / "README.md"
+    roadmap_path = ROOT / "docs/00-roadmap.md"
+    mappings = (
+        ("README", readme_path, mapping_rows(readme_path, "README"), True),
+        ("roadmap", roadmap_path, mapping_rows(roadmap_path, "roadmap"), False),
+    )
+    CHECKS += len(mappings)
+    valid = True
+    for label, _, rows, _ in mappings:
+        if len(rows) != 10:
+            report(f"{label} canonical 학습 순서 표는 10행이어야 합니다: {len(rows)}행")
+            valid = False
+    if not valid:
+        return
+
+    example_targets_by_stage = {
+        1: set(),
+        2: set(),
+        3: {"examples/layout-benchmark/README.md"},
+        4: set(),
+        5: {"examples/branch-benchmark/README.md"},
+        6: {"examples/layout-benchmark/README.md"},
+        7: set(),
+        8: set(),
+        9: {"examples/vectorization-report/README.md"},
+        10: {"examples/false-sharing/README.md"},
+    }
+    exercise_target = "exercises/processor-model/README.md"
+    example_targets = {
+        directory.relative_to(ROOT).as_posix() + "/README.md"
+        for directory in EXPECTED_EXAMPLES
+    }
+    modules = {
+        1: "bits.py",
+        2: "isa.py",
+        3: "perf.py",
+        4: "control.py",
+        5: "pipeline.py",
+        6: "cache.py",
+        7: "vm.py",
+        8: "{predictor,rob}.py",
+        10: "coherence.py",
+    }
+    for label, owner, rows, require_exercise in mappings:
+        for position, (row, document) in enumerate(zip(rows, EXPECTED_DOCUMENTS[1:]), 1):
+            CHECKS += 1
+            if any(not cell for cell in row):
+                report(f"{label} 학습 순서 {position:02d}행에 빈 field가 있습니다")
+            try:
+                order = int(row[0])
+            except ValueError:
+                order = -1
+            if order != position:
+                report(f"{label} 학습 순서 번호가 다릅니다: {row[0]} != {position:02d}")
+
+            targets_by_cell = [normalized_targets(owner, [cell]) for cell in row]
+            targets = set().union(*targets_by_cell)
+            expected_target = document.relative_to(ROOT).as_posix()
+            if targets_by_cell[1] != {expected_target}:
+                report(
+                    f"{label} 학습 순서의 문서 대응이 다릅니다: "
+                    f"{position:02d} -> {expected_target}"
+                )
+            actual_examples = targets_by_cell[2]
+            if actual_examples != example_targets_by_stage[position]:
+                report(
+                    f"{label} 학습 순서의 관찰 예제 대응이 다릅니다: "
+                    f"{position:02d} -> {sorted(actual_examples)}"
+                )
+            if not example_targets_by_stage[position] and row[2] != "—":
+                report(f"{label} Stage {position:02d}의 관찰 예제 없음 표기가 다릅니다")
+            misplaced_examples = (
+                set().union(*(targets_by_cell[index] for index in range(len(row)) if index != 2))
+                & example_targets
+            )
+            if misplaced_examples:
+                report(
+                    f"{label} Stage {position:02d}의 관찰 예제 링크가 다른 column에 있습니다: "
+                    f"{sorted(misplaced_examples)}"
+                )
+            if require_exercise:
+                if position == 9:
+                    if exercise_target in targets:
+                        report("README Stage 09가 source 구현 exercise로 연결됐습니다")
+                else:
+                    if targets_by_cell[3] != {exercise_target}:
+                        report(f"README Stage {position:02d} 직접 수행에 processor-model 연결이 없습니다")
+                    if any(
+                        exercise_target in targets_by_cell[index]
+                        for index in range(len(row))
+                        if index != 3
+                    ):
+                        report(f"README Stage {position:02d}의 processor-model 링크가 다른 column에 있습니다")
+
+            expected_command = (
+                f"make stage-{position:02d}"
+                if position == 9
+                else f"make stage-{position:02d} EXERCISE_IMPL=workspace"
+            )
+            if re.findall(r"`([^`]+)`", row[5]) != [expected_command]:
+                report(f"{label} 학습 순서의 Stage {position:02d} 검증 명령이 다릅니다")
+            if position == 9:
+                if row[4] != "—" or "증거" not in row[3] or "증거" not in row[6]:
+                    report(f"{label} Stage 09가 수정 없는 관찰 증거 checkpoint로 표시되지 않았습니다")
+            else:
+                expected_workspace = (
+                    "exercises/processor-model/workspace/processor_model/" + modules[position]
+                )
+                expected_reference = (
+                    "exercises/processor-model/reference/processor_model/" + modules[position]
+                )
+                if re.findall(r"`([^`]+)`", row[4]) != [expected_workspace]:
+                    report(f"{label} Stage {position:02d} 수정 위치가 canonical workspace가 아닙니다")
+                if re.findall(r"`([^`]+)`", row[6]) != [expected_reference]:
+                    report(f"{label} Stage {position:02d} 완료 뒤 reference 대응이 다릅니다")
+            if position < 10 and f"→ {position + 1:02d}" not in row[6]:
+                report(f"{label} Stage {position:02d}에서 다음 단계가 명확하지 않습니다")
+            if position == 10 and "전체 workspace" not in row[6]:
+                report(f"{label} Stage 10의 종료점이 명확하지 않습니다")
+
+    learner_entry_documents = [
+        readme_path,
+        roadmap_path,
+        *EXPECTED_DOCUMENTS[1:],
+        ROOT / "exercises/processor-model/README.md",
+    ]
+    for document in learner_entry_documents:
+        CHECKS += 1
+        document_text = document.read_text(encoding="utf-8") if document.is_file() else ""
+        executable_text = "\n".join(fenced_code_lines(document_text))
+        forbidden_patterns = {
+            "EXERCISE_IMPL=skeleton": re.compile(
+                r"\bEXERCISE_IMPL\s*=\s*(?:skeleton\b|['\"]skeleton['\"])"
+            ),
+            "skeleton processor source": re.compile(
+                r"\b(?:exercises/processor-model/)?skeleton/"
+                r"(?:processor_model/|processor-model\.py\b)"
+            ),
+        }
+        forbidden = [
+            name for name, pattern in forbidden_patterns.items() if pattern.search(executable_text)
+        ]
+        if forbidden:
+            report(
+                "학습 문서가 repository-owned skeleton을 직접 수정·검사합니다: "
+                f"{document.relative_to(ROOT)} -> {forbidden}"
+            )
+
+
+def annotation_scope(path: Path) -> str | None:
+    for name, (root, readme) in ANNOTATION_SCOPES.items():
+        if path == readme or path == root or root in path.parents:
+            return name
+    return None
+
+
+def annotation_key(identifier: str) -> tuple[int, int]:
+    parts = [int(part) for part in identifier.split("-")]
+    return (parts[0], 0 if len(parts) == 1 else parts[1])
+
+
+def implementation_index(path: Path, scope: str) -> list[tuple[str, str]]:
+    text = path.read_text(encoding="utf-8") if path.is_file() else ""
+    body = section(text, "## 권장 구현 순서")
+    lines = body.splitlines()
+    tables: list[list[list[str]]] = []
+    for index, line in enumerate(lines):
+        if table_cells(line) != list(IMPLEMENTATION_INDEX_HEADER):
+            continue
+        separator = table_cells(lines[index + 1]) if index + 1 < len(lines) else None
+        if separator is None or len(separator) != len(IMPLEMENTATION_INDEX_HEADER) or not all(
+            re.fullmatch(r":?-{3,}:?", cell) for cell in separator
+        ):
+            report(f"{scope} scope의 권장 구현 순서 표 separator가 올바르지 않습니다")
+        rows: list[list[str]] = []
+        cursor = index + 2
+        while cursor < len(lines):
+            cells = table_cells(lines[cursor])
+            if cells is None:
+                break
+            rows.append(cells)
+            cursor += 1
+        tables.append(rows)
+    if len(tables) != 1:
+        report(f"{scope} scope의 권장 구현 순서 표가 정확히 한 번이 아닙니다: {len(tables)}개")
+
+    result: list[tuple[str, str]] = []
+    for cells in tables[0] if tables else []:
+        if len(cells) != len(IMPLEMENTATION_INDEX_HEADER) or any(not cell for cell in cells):
+            report(f"{scope} scope의 권장 구현 순서 행은 비어 있지 않은 3개 field여야 합니다")
+            continue
+        candidate = cells[0].strip().strip("`")
+        if IMPLEMENTATION_ID.fullmatch(candidate):
+            result.append((candidate, cells[1]))
+        else:
+            report(f"{scope} scope의 권장 구현 순서 번호가 올바르지 않습니다: {cells[0]}")
+    return result
+
+
+def annotation_target_matches(path: Path, number: int, target: str) -> bool:
+    target_match = re.match(r"^`([^`]+)`(?:\s|$)", target)
+    if target_match is None:
+        return False
+    indexed_path, separator, symbol = target_match.group(1).partition("::")
+    if indexed_path != path.name:
+        return False
+    if not separator or not symbol:
+        return False
+    lines = path.read_text(encoding="utf-8").splitlines()
+    if path.suffix == ".py":
+        try:
+            tree = ast.parse("\n".join(lines), filename=str(path))
+        except SyntaxError:
+            return False
+        declarations: dict[str, int] = {}
+
+        def visit(body: list[ast.stmt], prefix: str = "") -> None:
+            for node in body:
+                name = getattr(node, "name", None)
+                if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef)):
+                    qualified = f"{prefix}.{name}" if prefix else name
+                    decorators = [decorator.lineno for decorator in node.decorator_list]
+                    declarations[qualified] = min([node.lineno, *decorators])
+                    if isinstance(node, ast.ClassDef):
+                        visit(node.body, qualified)
+                elif isinstance(node, (ast.Assign, ast.AnnAssign)):
+                    targets = node.targets if isinstance(node, ast.Assign) else [node.target]
+                    for assignment_target in targets:
+                        if isinstance(assignment_target, ast.Name):
+                            qualified = (
+                                f"{prefix}.{assignment_target.id}"
+                                if prefix
+                                else assignment_target.id
+                            )
+                            declarations[qualified] = node.lineno
+
+        visit(tree.body)
+        return declarations.get(symbol) == number + 1
+
+    following = [line.strip() for line in lines[number:] if line.strip()]
+    if not following:
+        return False
+    declaration = following[0]
+    if path.name == "Makefile":
+        return re.match(rf"^{re.escape(symbol)}\s*:", declaration) is not None
+    if path.suffix in {".c", ".h"}:
+        return any(
+            (
+                re.search(rf"\b{re.escape(symbol)}\s*\(", declaration),
+                re.match(rf"^(?:struct|union|enum)\s+{re.escape(symbol)}\b", declaration),
+            )
+        )
+    return re.search(rf"\b{re.escape(symbol)}\b", declaration) is not None
+
+
+def check_implementation_annotations() -> None:
+    global CHECKS
+    found: dict[str, list[tuple[str, Path, int]]] = {
+        name: [] for name in ANNOTATION_SCOPES
+    }
+    for path in sorted(source_paths("*")):
+        if not path.is_file():
+            continue
+        try:
+            lines = path.read_text(encoding="utf-8").splitlines()
+        except UnicodeDecodeError:
+            continue
+        for number, line in enumerate(lines, 1):
+            for candidate in IMPLEMENTATION_CANDIDATE.findall(line):
+                CHECKS += 1
+                match = IMPLEMENTATION_MARKER.fullmatch(candidate)
+                if match is None:
+                    report(
+                        f"잘못된 {IMPLEMENTATION_WORD} annotation 형식입니다: "
+                        f"{path.relative_to(ROOT)}:{number} -> {candidate}"
+                    )
+                    continue
+                scope = annotation_scope(path)
+                if scope is None:
+                    report(
+                        f"허용되지 않은 {IMPLEMENTATION_WORD} annotation 위치입니다: "
+                        f"{path.relative_to(ROOT)}:{number}"
+                    )
+                    continue
+
+                _, owner_readme = ANNOTATION_SCOPES[scope]
+                stripped = line.lstrip()
+                comment_ok = (
+                    (path == owner_readme and path.suffix == ".md")
+                    or (path.name == "Makefile" and stripped.startswith("#"))
+                    or (path.suffix in {".py", ".sh"} and stripped.startswith("#"))
+                    or (
+                        path.suffix in {".c", ".h"}
+                        and stripped.startswith(("//", "/*", "*"))
+                    )
+                )
+                if not comment_ok:
+                    report(
+                        f"{IMPLEMENTATION_WORD} anchor가 comment 또는 owning README에 없습니다: "
+                        f"{path.relative_to(ROOT)}:{number}"
+                    )
+                found[scope].append((match.group(1), path, number))
+
+    for name, annotations in found.items():
+        _, readme = ANNOTATION_SCOPES[name]
+        CHECKS += 1
+        readme_text = readme.read_text(encoding="utf-8") if readme.is_file() else ""
+        if readme_text.count("## 권장 구현 순서") != 1:
+            report(f"{name} scope의 권장 구현 순서가 정확히 한 번이 아닙니다")
+
+        counts: dict[str, int] = {}
+        for identifier, _, _ in annotations:
+            counts[identifier] = counts.get(identifier, 0) + 1
+        duplicates = sorted(identifier for identifier, count in counts.items() if count != 1)
+        if duplicates:
+            report(f"{name} scope에 중복된 {IMPLEMENTATION_WORD} annotation이 있습니다: {duplicates}")
+
+        top = sorted(
+            int(identifier)
+            for identifier in counts
+            if "-" not in identifier and identifier != "0"
+        )
+        CHECKS += 1
+        if not top or top != list(range(1, max(top, default=0) + 1)):
+            report(f"{name} scope의 {IMPLEMENTATION_WORD} top-level 번호가 연속하지 않습니다: {top}")
+
+        children: dict[int, list[int]] = {}
+        for identifier in counts:
+            if "-" not in identifier:
+                continue
+            parent, child = (int(part) for part in identifier.split("-"))
+            children.setdefault(parent, []).append(child)
+        for parent, child_ids in children.items():
+            ordered_children = sorted(child_ids)
+            if str(parent) not in counts:
+                report(f"{name} scope의 substep parent가 없습니다: {parent}")
+            if ordered_children != list(range(1, max(ordered_children) + 1)):
+                report(
+                    f"{name} scope의 {parent} substep 번호가 연속하지 않습니다: "
+                    f"{ordered_children}"
+                )
+
+        source_ids = sorted(counts, key=annotation_key)
+        index_rows = implementation_index(readme, name)
+        index_ids = [identifier for identifier, _ in index_rows]
+        CHECKS += 1
+        if index_ids != source_ids:
+            report(
+                f"{name} scope의 README index와 source anchor가 다릅니다: "
+                f"index={index_ids}, source={source_ids}"
+            )
+        index_targets = dict(index_rows)
+        for identifier, path, number in annotations:
+            CHECKS += 1
+            target = index_targets.get(identifier, "")
+            if not annotation_target_matches(path, number, target):
+                report(
+                    f"{name} scope의 README index 위치와 source anchor가 다릅니다: "
+                    f"{identifier} -> {target!r}, {path.relative_to(ROOT)}:{number}"
+                )
+
+
 def check_layout_manifest() -> None:
     global CHECKS
     manifest = ROOT / "scripts/layout-manifest.txt"
@@ -633,6 +1134,8 @@ def main() -> int:
     check_excluded_artifacts_and_comments()
     check_navigation_and_boundaries()
     check_pedagogy()
+    check_learning_mapping()
+    check_implementation_annotations()
     check_runtime_contract()
     if ERRORS:
         print(f"컴퓨터 구조 저장소 검사 실패: {len(ERRORS)}건", file=sys.stderr)

@@ -34,6 +34,7 @@ def parse_operations(lines: Iterable[str]) -> list[Operation]:
     return operations
 
 
+# [Implementation 7] page table을 원본 mapping으로, TLB를 무효화가 필요한 파생 cache로 소유합니다.
 class VirtualMemorySimulator:
     def __init__(
         self,
@@ -70,6 +71,7 @@ class VirtualMemorySimulator:
         if len(self.tlb) > self.tlb_entries:
             self.tlb.popitem(last=False)
 
+    # [Implementation 7-1] TLB lookup, walk, permission과 physical address·fault 결정을 순서대로 수행합니다.
     def _translate(self, kind: str, address: int) -> None:
         if address < 0:
             raise ValueError("가상 주소는 음수일 수 없습니다")
@@ -111,6 +113,7 @@ class VirtualMemorySimulator:
             }
         )
 
+    # [Implementation 7-2] MAP·UNMAP이 원본 mapping을 바꾼 직후 stale TLB entry의 수명을 끝냅니다.
     def run(self, operations: list[Operation]) -> dict[str, Any]:
         for operation in operations:
             if operation.kind in {"R", "W", "X"}:

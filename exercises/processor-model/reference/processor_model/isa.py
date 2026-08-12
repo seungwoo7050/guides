@@ -11,6 +11,7 @@ REGISTER_RE = re.compile(r"r([0-7])$")
 MEMORY_RE = re.compile(r"(-?(?:0x[0-9a-fA-F]+|\d+))\((r[0-7])\)$")
 
 
+# [Implementation 2] 불변 명령 표현을 중심으로 label 해석과 피연산자 검증 결과를 공유합니다.
 @dataclass(frozen=True)
 class Instruction:
     op: str
@@ -168,6 +169,7 @@ def wrap32(value: int) -> int:
     return value - 0x100000000 if value & 0x80000000 else value
 
 
+# [Implementation 2-1] ISA 피연산자 의미를 pipeline hazard가 소비할 source·destination metadata로 한 번만 변환합니다.
 def sources_and_destination(instruction: Instruction) -> tuple[set[int], int | None, bool]:
     op, args = instruction.op, instruction.args
     if op == "li":
@@ -189,6 +191,7 @@ def sources_and_destination(instruction: Instruction) -> tuple[set[int], int | N
     return set(), None, False
 
 
+# [Implementation 2-2] register·memory·PC를 한 소유자에 두고 r0, 32-bit wrap과 정렬 불변식을 상태 전이마다 지킵니다.
 class Machine:
     def __init__(self, memory_size: int = 4096) -> None:
         if memory_size <= 0 or memory_size % 4:

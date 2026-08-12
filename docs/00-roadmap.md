@@ -66,7 +66,7 @@
 
 처음 학습할 때는 다음 순서를 사용합니다.
 
-**필수 경로**는 01부터 10까지 순서대로 읽고 같은 번호의 누적 실습을 통과하는 과정입니다.
+**필수 경로**는 01부터 10까지 순서대로 읽고 같은 번호의 checkpoint를 통과하는 과정입니다. 01~08은 Python 상태 모델을 누적 구현하고, 09는 벡터화 결과를 관찰해 증거를 남기며, 10은 08까지의 Python 회귀에 coherence를 더합니다.
 
 ```text
 01 → 02 → 03 → 04 → 05 → 06 → 07 → 08 → 09 → 10
@@ -86,20 +86,20 @@
 
 ## 문서와 실습의 대응
 
-[`processor-model`](../exercises/processor-model/README.md)은 장 번호와 동일한 누적 단계를 제공합니다.
+[`processor-model`](../exercises/processor-model/README.md)은 01~08과 10의 누적 상태 모델을 소유하고, Stage 09는 [`vectorization-report`](../examples/vectorization-report/README.md)가 관찰 증거를 소유합니다. 아래 수정·비교 경로는 모두 repository root 기준입니다.
 
-| 장 | 상태 모델 또는 관찰 예제 | 검증 명령 |
-|---:|---|---|
-| 01 | 고정 폭 산술과 IEEE 754 필드 | `make stage-01 EXERCISE_IMPL=workspace` |
-| 02 | Tiny-RISC 순차 실행 | `make stage-02 EXERCISE_IMPL=workspace` |
-| 03 | CPU 시간, Amdahl과 AMAT | `make stage-03 EXERCISE_IMPL=workspace` |
-| 04 | 명령별 제어 신호 | `make stage-04 EXERCISE_IMPL=workspace` |
-| 05 | 전달, 정지와 비우기 | `make stage-05 EXERCISE_IMPL=workspace` |
-| 06 | LRU, write-back과 3C 실패 | `make stage-06 EXERCISE_IMPL=workspace` |
-| 07 | TLB, 페이지 테이블과 권한 | `make stage-07 EXERCISE_IMPL=workspace` |
-| 08 | 분기 예측기와 재정렬 버퍼 | `make stage-08 EXERCISE_IMPL=workspace` |
-| 09 | 컴파일러 벡터화 보고서 | `make stage-09` |
-| 10 | MESI와 거짓 공유 | `make stage-10 EXERCISE_IMPL=workspace` |
+| 순서 | 문서 | 관찰 예제 | 직접 수행 | 수정 위치 | 검증 | 완료 뒤 비교·다음 |
+|---:|---|---|---|---|---|---|
+| 01 | [데이터 표현](01-representation-and-isa/01-data-representation-and-arithmetic.md) | — | 고정 폭 산술 | `exercises/processor-model/workspace/processor_model/bits.py` | `make stage-01 EXERCISE_IMPL=workspace` | `exercises/processor-model/reference/processor_model/bits.py` 비교 → 02 |
+| 02 | [ISA 실행](01-representation-and-isa/02-isa-assembly-and-program-execution.md) | — | Tiny-RISC 순차 실행 | `exercises/processor-model/workspace/processor_model/isa.py` | `make stage-02 EXERCISE_IMPL=workspace` | `exercises/processor-model/reference/processor_model/isa.py` 비교 → 03 |
+| 03 | [성능식](01-representation-and-isa/03-performance-cpi-and-amdahl.md) | [데이터 배치](../examples/layout-benchmark/README.md) | CPU 시간, Amdahl과 AMAT | `exercises/processor-model/workspace/processor_model/perf.py` | `make stage-03 EXERCISE_IMPL=workspace` | `exercises/processor-model/reference/processor_model/perf.py` 비교 → 04 |
+| 04 | [데이터패스와 제어](02-in-order-execution/04-datapath-and-control.md) | — | 명령별 제어 신호 | `exercises/processor-model/workspace/processor_model/control.py` | `make stage-04 EXERCISE_IMPL=workspace` | `exercises/processor-model/reference/processor_model/control.py` 비교 → 05 |
+| 05 | [파이프라인](02-in-order-execution/05-pipeline-hazards-and-branching.md) | [분기 벤치마크](../examples/branch-benchmark/README.md) | 전달, 정지와 비우기 | `exercises/processor-model/workspace/processor_model/pipeline.py` | `make stage-05 EXERCISE_IMPL=workspace` | `exercises/processor-model/reference/processor_model/pipeline.py` 비교 → 06 |
+| 06 | [캐시](03-memory-hierarchy/06-cache-locality-and-amat.md) | [데이터 배치](../examples/layout-benchmark/README.md) | LRU, write-back과 3C 실패 | `exercises/processor-model/workspace/processor_model/cache.py` | `make stage-06 EXERCISE_IMPL=workspace` | `exercises/processor-model/reference/processor_model/cache.py` 비교 → 07 |
+| 07 | [주소 변환](03-memory-hierarchy/07-address-translation-and-tlb.md) | — | TLB, 페이지 테이블과 권한 | `exercises/processor-model/workspace/processor_model/vm.py` | `make stage-07 EXERCISE_IMPL=workspace` | `exercises/processor-model/reference/processor_model/vm.py` 비교 → 08 |
+| 08 | [비순차 실행과 추측](04-parallel-execution/08-superscalar-out-of-order-and-speculation.md) | — | 분기 예측기와 재정렬 버퍼 | `exercises/processor-model/workspace/processor_model/{predictor,rob}.py` | `make stage-08 EXERCISE_IMPL=workspace` | `exercises/processor-model/reference/processor_model/{predictor,rob}.py` 비교 → 09 |
+| 09 | [SIMD와 데이터 배치](04-parallel-execution/09-simd-vectorization-and-data-layout.md) | [벡터화 보고서](../examples/vectorization-report/README.md) | checksum·compiler 증거 기록 | — | `make stage-09` | 관찰 증거 설명 → 10 |
+| 10 | [일관성과 거짓 공유](04-parallel-execution/10-multicore-coherence-and-false-sharing.md) | [거짓 공유](../examples/false-sharing/README.md) | MESI와 false-sharing trace | `exercises/processor-model/workspace/processor_model/coherence.py` | `make stage-10 EXERCISE_IMPL=workspace` | `exercises/processor-model/reference/processor_model/coherence.py` 비교 → 전체 workspace·공식 검증 |
 
 작업 공간은 다음처럼 만듭니다.
 
@@ -109,6 +109,8 @@ cd exercises/processor-model
 ```
 
 완성된 reference를 먼저 복사하지 않습니다. 각 장의 결과를 예상하고 workspace를 구현한 뒤, 실패한 상태 전이만 reference와 비교합니다.
+
+reference CLI의 출력만 먼저 실행하는 것은 선택적 black-box oracle 관찰입니다. reference source를 읽는 것은 자신의 예상, workspace 구현과 해당 단계 검사를 마친 뒤로 미룹니다. Stage 09에서는 source 답안 대신 checksum, compiler와 version·option, 벡터화된 loop, 벡터화되지 않은 loop와 이유를 완료 증거로 남깁니다.
 
 ## 구조와 정책의 경계
 

@@ -8,6 +8,18 @@ make benchmark
 make assembly
 ```
 
+이 예제는 [성능식과 측정](../../docs/01-representation-and-isa/03-performance-cpi-and-amdahl.md)에서 compiler 최적화를 확인하고 [파이프라인과 위험 요소](../../docs/02-in-order-execution/05-pipeline-hazards-and-branching.md)에서 실제 branch 명령과 predictor 가정을 구분하는 데 사용합니다. 관찰을 마치면 해당 `processor-model` checkpoint로 돌아갑니다.
+
+## 권장 구현 순서
+
+다음 번호는 Git history가 아니라 이 독립 예제를 다시 만들 때의 권장 구성 순서입니다. C compiler는 선행 환경이고 별도 project bootstrap이 없으므로 0 단계는 없습니다.
+
+| 번호 | 파일·symbol | 먼저 고정하는 책임 |
+|---|---|---|
+| 1 | `branch_benchmark.c::count_selected` | 두 입력에 동일하게 적용할 selection workload |
+| 2 | `branch_benchmark.c::main` | 결정적 입력 두 종류, 같은 threshold, timing과 count gate |
+| 3 | `Makefile::$(TARGET)` | check·benchmark·assembly가 공유하는 build interface |
+
 이 예제는 난수 입력이 몇 배 느린지를 정답으로 고정하지 않습니다. 컴파일러가 `if`를 조건 이동이나 벡터 비교로 바꾸면 실제 조건 분기가 사라질 수 있습니다. `make assembly`로 `count_selected`의 기계어를 먼저 확인하고, Linux에서 사용할 수 있다면 다음 계수기를 함께 관찰하세요.
 
 ```sh

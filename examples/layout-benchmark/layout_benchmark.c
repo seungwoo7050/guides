@@ -34,6 +34,7 @@ static size_t parse_size(const char *text, const char *name)
     return (size_t)value;
 }
 
+/* [Implementation 1] 연속 주소를 소비하는 순회와 누적형을 비교의 기준으로 먼저 고정합니다. */
 static uint64_t sum_row_major(
     const uint32_t *matrix,
     size_t rows,
@@ -56,6 +57,7 @@ static uint64_t sum_row_major(
     return total;
 }
 
+/* [Implementation 1-1] 주소식과 작업량은 유지하고 loop nesting만 실험 변수로 바꿉니다. */
 static uint64_t sum_column_major(
     const uint32_t *matrix,
     size_t rows,
@@ -78,6 +80,7 @@ static uint64_t sum_column_major(
     return total;
 }
 
+/* [Implementation 2] 크기를 안전하게 검증하고 같은 입력의 timing과 checksum을 각각 관찰합니다. */
 int main(int argc, char **argv)
 {
     size_t rows = 1024;

@@ -6,6 +6,7 @@ TARGET := build/branch_benchmark
 
 .PHONY: check benchmark assembly clean
 
+# [Implementation 3] 같은 flag로 검사·benchmark·assembly evidence를 재현합니다.
 $(TARGET): branch_benchmark.c
 	@mkdir -p build
 	$(CC) $(CPPFLAGS) $(CFLAGS) $< -o $@

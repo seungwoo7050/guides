@@ -45,7 +45,26 @@
 | 09 | [SIMD와 데이터 배치](docs/04-parallel-execution/09-simd-vectorization-and-data-layout.md) | 한 명령으로 여러 원소를 처리하려면 반복문과 메모리 배치가 어떤 조건을 만족해야 합니까? |
 | 10 | [멀티코어, 캐시 일관성과 거짓 공유](docs/04-parallel-execution/10-multicore-coherence-and-false-sharing.md) | 코어별 캐시가 값을 공유하며 언제 불필요한 일관성 트래픽이 발생합니까? |
 
-장 번호는 누적 실습의 단계 번호와 일치하며 디렉터리의 Part 순서도 기본 읽기 순서와 같습니다. `01 → 10` 순서로 진행하면 명령 수준 병렬성, 데이터 수준 병렬성, 코어 수준 병렬성이 마지막 Part에서 차례로 연결됩니다.
+장 번호는 학습 checkpoint 번호와 일치합니다. `01~08`은 Python 상태 모델을 누적 구현하고, `09`는 source를 수정하지 않는 벡터화 관찰 checkpoint이며, `10`에서 Python 모델 구현을 다시 이어 MESI까지 완성합니다. `01 → 10` 순서로 진행하면 명령 수준 병렬성, 데이터 수준 병렬성, 코어 수준 병렬성이 마지막 Part에서 차례로 연결됩니다.
+
+## 학습 워크플로와 단계 대응
+
+Stage 01을 시작하기 전에 `scripts/new-workspace.sh`로 `processor-model`의 `workspace/`를 한 번 만듭니다. 학습자가 직접 수정하는 곳은 이 workspace뿐이며 repository-owned `skeleton/`과 `reference/`는 수정하지 않습니다. reference CLI의 출력은 source를 열지 않는 선택적 black-box oracle로 관찰할 수 있지만, reference source는 자신의 예상과 workspace 구현을 먼저 검사한 뒤 비교합니다. 루트의 `reference/`는 답안이 아니라 공식 자료와 계산식을 모은 빠른 참조입니다.
+
+| 순서 | 문서 | 관찰 예제 | 직접 수행 | 수정 위치 | 검증 | 완료 뒤 비교·다음 |
+|---:|---|---|---|---|---|---|
+| 01 | [데이터 표현과 산술](docs/01-representation-and-isa/01-data-representation-and-arithmetic.md) | — | [`processor-model` Stage 01](exercises/processor-model/README.md) 고정 폭 산술 | `exercises/processor-model/workspace/processor_model/bits.py` | `make stage-01 EXERCISE_IMPL=workspace` | `exercises/processor-model/reference/processor_model/bits.py` 비교 → 02 |
+| 02 | [ISA, 어셈블리와 프로그램 실행](docs/01-representation-and-isa/02-isa-assembly-and-program-execution.md) | — | [`processor-model` Stage 02](exercises/processor-model/README.md) Tiny-RISC 실행 | `exercises/processor-model/workspace/processor_model/isa.py` | `make stage-02 EXERCISE_IMPL=workspace` | `exercises/processor-model/reference/processor_model/isa.py` 비교 → 03 |
+| 03 | [성능식과 측정](docs/01-representation-and-isa/03-performance-cpi-and-amdahl.md) | [데이터 배치](examples/layout-benchmark/README.md) | [`processor-model` Stage 03](exercises/processor-model/README.md) 성능식 | `exercises/processor-model/workspace/processor_model/perf.py` | `make stage-03 EXERCISE_IMPL=workspace` | `exercises/processor-model/reference/processor_model/perf.py` 비교 → 04 |
+| 04 | [데이터패스와 제어](docs/02-in-order-execution/04-datapath-and-control.md) | — | [`processor-model` Stage 04](exercises/processor-model/README.md) 제어표 | `exercises/processor-model/workspace/processor_model/control.py` | `make stage-04 EXERCISE_IMPL=workspace` | `exercises/processor-model/reference/processor_model/control.py` 비교 → 05 |
+| 05 | [파이프라인과 위험 요소](docs/02-in-order-execution/05-pipeline-hazards-and-branching.md) | [분기 벤치마크](examples/branch-benchmark/README.md) | [`processor-model` Stage 05](exercises/processor-model/README.md) 파이프라인 | `exercises/processor-model/workspace/processor_model/pipeline.py` | `make stage-05 EXERCISE_IMPL=workspace` | `exercises/processor-model/reference/processor_model/pipeline.py` 비교 → 06 |
+| 06 | [캐시, 지역성과 AMAT](docs/03-memory-hierarchy/06-cache-locality-and-amat.md) | [데이터 배치](examples/layout-benchmark/README.md) | [`processor-model` Stage 06](exercises/processor-model/README.md) 캐시 | `exercises/processor-model/workspace/processor_model/cache.py` | `make stage-06 EXERCISE_IMPL=workspace` | `exercises/processor-model/reference/processor_model/cache.py` 비교 → 07 |
+| 07 | [주소 변환과 TLB](docs/03-memory-hierarchy/07-address-translation-and-tlb.md) | — | [`processor-model` Stage 07](exercises/processor-model/README.md) 주소 변환 | `exercises/processor-model/workspace/processor_model/vm.py` | `make stage-07 EXERCISE_IMPL=workspace` | `exercises/processor-model/reference/processor_model/vm.py` 비교 → 08 |
+| 08 | [슈퍼스칼라, 비순차 실행과 추측](docs/04-parallel-execution/08-superscalar-out-of-order-and-speculation.md) | — | [`processor-model` Stage 08](exercises/processor-model/README.md) predictor와 ROB | `exercises/processor-model/workspace/processor_model/{predictor,rob}.py` | `make stage-08 EXERCISE_IMPL=workspace` | `exercises/processor-model/reference/processor_model/{predictor,rob}.py` 비교 → 09 |
+| 09 | [SIMD와 데이터 배치](docs/04-parallel-execution/09-simd-vectorization-and-data-layout.md) | [벡터화 보고서](examples/vectorization-report/README.md) | checksum과 compiler 보고서 증거 기록 | — | `make stage-09` | 관찰 증거를 설명하고 기록 → 10 |
+| 10 | [멀티코어, 캐시 일관성과 거짓 공유](docs/04-parallel-execution/10-multicore-coherence-and-false-sharing.md) | [거짓 공유](examples/false-sharing/README.md) | [`processor-model` Stage 10](exercises/processor-model/README.md) MESI | `exercises/processor-model/workspace/processor_model/coherence.py` | `make stage-10 EXERCISE_IMPL=workspace` | `exercises/processor-model/reference/processor_model/coherence.py` 비교 → 전체 workspace·공식 검증 |
+
+Stage 10 뒤에는 `make -C exercises/processor-model exercise-test EXERCISE_IMPL=workspace`로 learner 구현을 검사하고, 이어서 `./prepare.sh`와 `./verify.sh`로 repository 정본을 검증합니다. 별도 capstone은 없으며 완성한 `processor-model`이 이 branch의 종료 프로젝트입니다.
 
 ## 누적 상태 모델 실습
 
@@ -63,7 +82,7 @@ make stage-01 EXERCISE_IMPL=workspace
 make exercise-test EXERCISE_IMPL=workspace
 ```
 
-완성된 reference와 skeleton의 의도된 미완성 상태는 루트의 `./verify.sh`가 별도로 확인합니다.
+`make exercise-test EXERCISE_IMPL=workspace`는 학습자 구현을 검사합니다. 완성된 reference와 skeleton의 의도된 미완성 상태는 루트의 `./verify.sh`가 별도로 확인하며, 이 공식 검증은 learner workspace 검사를 대신하지 않습니다.
 
 ## 실행 환경
 
