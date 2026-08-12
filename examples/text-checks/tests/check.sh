@@ -1,7 +1,8 @@
 #!/bin/sh
 set -eu
 
-tmp=$(mktemp -d)
+# [Implementation 1] 임시 경로 안에 stdout, stderr와 상태별 evidence를 분리해 원본 fixture를 바꾸지 않습니다.
+tmp=$(mktemp -d "${TMPDIR:-/tmp}/guide-c-text-checks.XXXXXX")
 trap 'rm -rf "$tmp"' EXIT
 trap 'exit 129' HUP
 trap 'exit 130' INT
@@ -16,6 +17,7 @@ set -e
 printf '사용법: ./src/loggen.sh ok|bad-format|duplicate|error\n' >"$tmp/usage.expected"
 cmp -s "$tmp/usage.expected" "$tmp/usage.err"
 
+# [Implementation 2] exact cmp와 readable diff는 같은 예상 결과를 서로 다른 실패 표현으로 확인합니다.
 ./src/loggen.sh ok >"$tmp/ok"
 cat >"$tmp/expected" <<'EOT'
 100 1 start
@@ -27,6 +29,7 @@ cat >"$tmp/expected" <<'EOT'
 EOT
 diff -u "$tmp/expected" "$tmp/ok"
 
+# [Implementation 3] grep은 한 줄 계약을, sed 뒤 grep은 비본질적 timestamp를 제거한 계약을 확인합니다.
 grep -q '^100 1 start$' "$tmp/ok"
 if grep -q 'error' "$tmp/ok"; then
     echo '정상 출력에 오류 문구가 포함되었습니다' >&2
@@ -36,6 +39,7 @@ fi
 sed 's/^[0-9][0-9]* //' "$tmp/ok" >"$tmp/normalized"
 grep -q '^1 done$' "$tmp/normalized"
 
+# [Implementation 4] awk 상태는 id별 done 이후 사건 금지와 최종 완료 불변식을 전체 stream에 걸쳐 소유합니다.
 validate()
 {
     awk '
@@ -64,6 +68,7 @@ validate()
 
 validate "$tmp/ok"
 
+# [Implementation 5] known-bad 입력과 명시적 error 경로로 검사가 실패 방향까지 판별함을 고정합니다.
 ./src/loggen.sh bad-format >"$tmp/bad-format"
 if validate "$tmp/bad-format" 2>"$tmp/bad-format.err"; then
     echo '잘못된 형식이 검사에 통과했습니다' >&2

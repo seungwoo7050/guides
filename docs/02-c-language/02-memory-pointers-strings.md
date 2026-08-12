@@ -514,3 +514,9 @@ void owned_string_destroy(struct owned_string *string)
 * 이미 정리된 객체를 다시 정리할 가능성이 있을 때
 
 중요한 것은 단순히 모든 포인터를 `NULL`로 만드는 것이 아니라, 구조체 전체가 다시 정의된 유효 상태를 만족하도록 만드는 것입니다.
+
+## 실습 연결
+
+[`owned-string`](../../exercises/02-c-language/02-owned-string/README.md)에서 빈 상태, 성장 정책, 내부 별칭과 실패 뒤 상태 보존을 하나의 소유 객체 계약으로 구현합니다.
+
+구현과 검증을 마친 뒤에는 같은 실패 보장을 공개 자료구조 API로 확장하는 [자료구조와 API 계약](03-data-structures-api-design.md)으로 진행합니다.

@@ -6,7 +6,14 @@
 
 ## 구현 위치
 
-`skeleton/src/command_pipeline.c`를 구현합니다. 공개 헤더는 변경하지 않습니다.
+저장소 루트에서 다음 명령을 실행한 뒤 `workspace/src/command_pipeline.c`를 구현합니다. 공개 헤더는 변경하지 않습니다.
+
+```sh
+scripts/new-workspace.sh exercises/03-unix-programming/02-command-pipeline
+cd exercises/03-unix-programming/02-command-pipeline
+```
+
+기준 구현과 권장 구현 순서는 자신의 검사가 통과한 뒤 [`reference/`](reference/README.md)에서 비교합니다.
 
 ## 계약
 

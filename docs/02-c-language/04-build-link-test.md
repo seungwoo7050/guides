@@ -608,10 +608,21 @@ sanitizer가 테스트를 통과했다는 사실 역시 실행하지 않은 경�
 
 ## 실습
 
-[textkit](../../exercises/02-c-language/01-textkit/README.md)의 Makefile을 직접 완성하거나 수정해 다음을 확인합니다.
+[textkit](../../exercises/02-c-language/01-textkit/README.md)의 제공된 Makefile과 학습자 workspace 산출물을 관찰해 다음을 확인합니다. 이 단계에서 직접 구현하는 파일은 여전히 `workspace/src/textkit.c`이며, build graph 자체를 수정하는 별도 실습은 아닙니다.
 
 1. 소스 하나를 정적 라이브러리로 만듭니다.
 2. CLI와 테스트가 같은 라이브러리를 링크합니다.
 3. `make` 두 번째 실행은 불필요하게 컴파일하지 않습니다.
 4. 헤더를 수정하면 필요한 오브젝트를 다시 만듭니다.
-5. `make clean`, `make reference-test`, `make sanitize`가 독립적으로 동작합니다.
+5. `make clean`, `make exercise-test`, `make sanitize`가 독립적으로 동작합니다.
+
+저장소 루트에서 아직 workspace를 만들지 않았다면 먼저 생성합니다.
+
+```sh
+scripts/new-workspace.sh exercises/02-c-language/01-textkit
+make -C exercises/02-c-language/01-textkit exercise-build
+make -C exercises/02-c-language/01-textkit -n exercise-build
+ar t exercises/02-c-language/01-textkit/build/exercise/libtextkit.a
+```
+
+`make -n` 출력에서 compile, archive, link의 입력 관계를 읽고, `ar t`에서는 자신이 구현한 workspace로 만든 archive member를 확인합니다. 기준 구현은 학습자 구현과 검증을 마친 뒤에만 비교합니다.

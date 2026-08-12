@@ -9,6 +9,7 @@
 #include <sys/wait.h>
 #include <unistd.h>
 
+/* [Implementation 1] 성장 가능한 word builder가 임시 문자 buffer를 소유한다. */
 struct builder
 {
     char *data;
@@ -16,6 +17,7 @@ struct builder
     size_t capacity;
 };
 
+/* [Implementation 2] command와 pipeline이 word와 argv의 전체 수명을 소유한다. */
 struct command
 {
     char **argv;
@@ -166,6 +168,7 @@ static int is_control_character(char value)
            value == ';' || value == '&';
 }
 
+/* [Implementation 3] quote, escape와 빈 인자를 보존하는 word parser를 만든다. */
 static int parse_quoted(
     const char **cursor,
     char quote,
@@ -270,6 +273,7 @@ static int parse_word(
     return 0;
 }
 
+/* [Implementation 4] 전체 문법이 성공한 경우에만 완성된 pipeline을 commit한다. */
 static int parse_line(
     const char *line,
     struct pipeline *pipeline,
@@ -347,6 +351,7 @@ static void close_ignored(int fd)
     (void)close(fd);
 }
 
+/* [Implementation 5] wait/status 변환과 FD duplicate·close 정책을 분리한다. */
 static int wait_retry(pid_t pid, int *out_status)
 {
     pid_t result;
@@ -407,6 +412,7 @@ static void close_pipe_end_after_dup(
     close_ignored(fd);
 }
 
+/* [Implementation 6] 자식이 FD를 정리하고 exec 실패를 126·127로 직접 끝낸다. */
 static void child_exec(
     char *const argv[],
     int input_fd,
@@ -438,6 +444,7 @@ static void child_exec(
     }
 }
 
+/* [Implementation 7] 단일 명령과 pipeline의 성공·부분 실패 cleanup을 완성한다. */
 static int execute_single(const struct command *command, int *out_status)
 {
     pid_t pid = fork();
@@ -518,6 +525,7 @@ static int execute_pipeline(const struct pipeline *pipeline, int *out_status)
     return execute_pair(pipeline, out_status);
 }
 
+/* [Implementation 8] parsing 성공 뒤에만 실행하고 두 수명 계층을 정리한다. */
 int main(int argc, char *argv[])
 {
     struct pipeline pipeline;

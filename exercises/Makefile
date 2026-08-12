@@ -13,7 +13,7 @@ EXERCISES := \
 	04-concurrency/01-account-simulator
 
 .PHONY: all check reference-test exercise-build exercise-test quality-check \
-	sanitize thread-sanitize clean
+	sanitize reference-sanitize thread-sanitize reference-thread-sanitize clean
 
 all: check
 
@@ -47,9 +47,9 @@ quality-check: reference-test
 	for dir in $(EXERCISES); do \
 		printf '\n==> exercises/%s (skeleton 빌드)\n' "$$dir"; \
 		$(MAKE) --no-print-directory -C "$$dir" clean >/dev/null; \
-		$(MAKE) --no-print-directory -C "$$dir" exercise-build; \
+		$(MAKE) --no-print-directory -C "$$dir" exercise-build EXERCISE_IMPL=skeleton; \
 		printf '==> exercises/%s (초기 동작 실패 확인)\n' "$$dir"; \
-		if $(MAKE) --no-print-directory -C "$$dir" exercise-test >"$$output" 2>&1; then \
+		if $(MAKE) --no-print-directory -C "$$dir" exercise-test EXERCISE_IMPL=skeleton >"$$output" 2>&1; then \
 			cat "$$output"; \
 			printf '오류: 초기 skeleton이 동작 테스트를 통과했습니다: %s\n' "$$dir" >&2; \
 			exit 1; \
@@ -58,15 +58,19 @@ quality-check: reference-test
 	done; \
 	printf '\nskeleton 계약 통과: 기준 구현 통과, skeleton 빌드 성공·동작 실패: %s개\n' "$(words $(EXERCISES))"
 
-sanitize:
+reference-sanitize:
 	@set -eu; \
 	for dir in $(EXERCISES); do \
-		printf '\n==> exercises/%s (sanitize)\n' "$$dir"; \
-		$(MAKE) -C "$$dir" sanitize; \
+		printf '\n==> exercises/%s (reference-sanitize)\n' "$$dir"; \
+		$(MAKE) -C "$$dir" reference-sanitize; \
 	done
 
-thread-sanitize:
-	$(MAKE) -C 04-concurrency/01-account-simulator thread-sanitize
+sanitize: reference-sanitize
+
+reference-thread-sanitize:
+	$(MAKE) -C 04-concurrency/01-account-simulator reference-thread-sanitize
+
+thread-sanitize: reference-thread-sanitize
 
 clean:
 	@failed=0; \

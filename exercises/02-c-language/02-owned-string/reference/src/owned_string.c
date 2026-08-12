@@ -16,6 +16,7 @@ static void default_release(void *context, void *pointer)
     free(pointer);
 }
 
+/* [Implementation 1] allocator와 반복 정리 가능한 빈 상태를 객체에 주입한다. */
 void owned_string_init(
     struct owned_string *string,
     const struct owned_string_allocator *allocator
@@ -40,6 +41,7 @@ void owned_string_init(
     }
 }
 
+/* [Implementation 2] 현재 shape와 오버플로 없는 성장 정책을 변경 전에 검증한다. */
 static int owned_string_has_valid_shape(const struct owned_string *string)
 {
     if (string->data == NULL)
@@ -71,6 +73,7 @@ static int choose_capacity(size_t current, size_t required, size_t *out_capacity
     return 0;
 }
 
+/* [Implementation 3] 내부 별칭을 offset으로 보존하고 필요한 크기를 먼저 확정한다. */
 int owned_string_append(struct owned_string *string, const char *source)
 {
     size_t source_length;
@@ -103,6 +106,7 @@ int owned_string_append(struct owned_string *string, const char *source)
         return -1;
     }
     required = string->length + source_length + 1;
+    /* [Implementation 4] resize 성공 뒤에만 새 소유권과 내용을 commit한다. */
     if (required > string->capacity)
     {
         size_t new_capacity;
@@ -133,6 +137,7 @@ int owned_string_append(struct owned_string *string, const char *source)
     return 0;
 }
 
+/* [Implementation 5] owned buffer를 해제하고 객체를 다시 빈 상태로 만든다. */
 void owned_string_destroy(struct owned_string *string)
 {
     if (string == NULL)

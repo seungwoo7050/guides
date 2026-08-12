@@ -14,6 +14,7 @@ static void close_ignored(int fd)
     }
 }
 
+/* [Implementation 1] wait 재시도와 public 종료 상태 변환을 먼저 분리한다. */
 static int wait_retry(pid_t pid, int *status)
 {
     pid_t result;
@@ -38,6 +39,7 @@ static int public_status(int raw_status)
     return 125;
 }
 
+/* [Implementation 2] 표준 FD alias까지 포함한 duplicate와 close 규칙을 정한다. */
 static int duplicate_to(int source, int destination)
 {
     int result;
@@ -74,6 +76,7 @@ static void close_pipe_end_after_dup(
     close_ignored(fd);
 }
 
+/* [Implementation 3] 자식이 FD를 정리한 뒤 exec하고 실패 상태를 직접 끝낸다. */
 static void exec_child(
     char *const argv[],
     int input_fd,
@@ -102,6 +105,7 @@ static void exec_child(
     _exit(saved_errno == ENOENT ? 127 : 126);
 }
 
+/* [Implementation 4] pipe를 만들고 두 자식을 모두 생성한 뒤 부모 끝을 닫는다. */
 int run_pipeline(
     char *const left_argv[],
     char *const right_argv[],
@@ -137,6 +141,7 @@ int run_pipeline(
         exec_child(left_argv, -1, ends[1], ends[0], ends[1]);
     }
 
+    /* [Implementation 5] 부분 fork 실패를 회수하고 마지막 자식 상태만 commit한다. */
     right_pid = fork();
     if (right_pid == -1)
     {

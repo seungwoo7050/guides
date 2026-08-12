@@ -30,9 +30,9 @@
 
 | 문서 | 핵심 질문 | 연습 |
 |---|---|---|
-| [편집·컴파일·실행](01-foundations/01-edit-compile-run.md) | 소스가 어떻게 실행 결과가 되는가 | number-report 1단계 |
-| [값·분기·반복](01-foundations/02-values-branches-loops.md) | 여러 입력에서 결과를 누적하는가 | number-report 2단계 |
-| [함수·배열·텍스트](01-foundations/03-functions-arrays-text.md) | 문제를 계약이 작은 함수로 나누는가 | number-report 3단계 |
+| [편집·컴파일·실행](01-foundations/01-edit-compile-run.md) | 소스가 어떻게 실행 결과가 되는가 | number-report 시작 |
+| [값·분기·반복](01-foundations/02-values-branches-loops.md) | 여러 입력에서 결과를 누적하는가 | number-report 누적 상태 확장 |
+| [함수·배열·텍스트](01-foundations/03-functions-arrays-text.md) | 문제를 계약이 작은 함수로 나누는가 | number-report 함수 계약 분리 |
 | [입력 오류와 디버깅](01-foundations/04-input-errors-debugging.md) | 잘못된 입력과 코드 결함을 구분하는가 | [number-report](../exercises/01-foundations/01-number-report/README.md) |
 
 Part 1의 종료 조건은 숫자 목록을 안전하게 읽고 통계를 출력하는 CLI를 직접 구현하는 것입니다.
@@ -44,7 +44,7 @@ Part 1의 종료 조건은 숫자 목록을 안전하게 읽고 통계를 출력
 | [C 프로그램 모델](02-c-language/01-c-program-model.md) | 번역 단위와 링크는 어떻게 연결되는가 | [textkit](../exercises/02-c-language/01-textkit/README.md) |
 | [메모리·포인터·문자열](02-c-language/02-memory-pointers-strings.md) | 주소가 언제 유효하며 누가 해제하는가 | [owned-string](../exercises/02-c-language/02-owned-string/README.md) |
 | [자료구조와 API 계약](02-c-language/03-data-structures-api-design.md) | 실패 뒤 상태와 소유권을 어떻게 공개하는가 | [int-vector](../exercises/02-c-language/03-int-vector/README.md) |
-| [빌드·링크·테스트](02-c-language/04-build-link-test.md) | 반복 가능한 빌드와 검증을 어떻게 만드는가 | textkit 빌드 확장 |
+| [빌드·링크·테스트](02-c-language/04-build-link-test.md) | 반복 가능한 빌드와 검증을 어떻게 만드는가 | textkit의 제공된 build graph 관찰 |
 | [가변 인자와 포맷 API](02-c-language/05-variadic-format-api.md) | 타입 정보가 없는 인자를 안전하게 소비하는가 | [diagnostic-formatter](../exercises/02-c-language/04-diagnostic-formatter/README.md) |
 
 Part 2를 마치면 `printf` 계열의 작은 라이브러리나 자료구조 프로젝트를 시작할 수 있습니다.
@@ -68,25 +68,39 @@ Part 3을 마치면 파이프라인, 작은 셸과 메시지 전달 프로그램
 
 ## 예제와 연습문제 사용법
 
-먼저 문서의 문제와 계약을 읽고 `examples/`에서 작은 완성 동작을 관찰합니다. 그 다음 `exercises/`의 `skeleton/`을 직접 구현합니다.
+먼저 문서의 문제와 계약을 읽습니다. [root README의 ordered mapping](../README.md#학습-순서)에 예제가 지정된 행에서만 작은 완성 동작을 선택적으로 관찰합니다. 현재 관찰 예제는 FD 리다이렉션, process-group forwarding, Readline adapter와 Unix 텍스트 검사로 좁혀져 있으며 exercise 답안을 대신하지 않습니다.
 
-초기 skeleton은 다음 두 계약을 모두 만족해야 합니다.
+연습을 시작할 때는 저장소 루트에서 canonical skeleton을 learner-owned workspace로 복사합니다.
+
+```sh
+scripts/new-workspace.sh exercises/02-c-language/03-int-vector
+```
+
+기존 workspace는 덮어쓰지 않습니다. 학습자는 `workspace/`만 수정하며 `skeleton/`은 공식 초기 실패 검사를 위해 그대로 둡니다.
+
+canonical skeleton은 다음 두 계약을 모두 만족해야 합니다.
 
 1. `exercise-build`가 경고 없이 성공합니다.
 2. 아직 구현되지 않았으므로 `exercise-test`는 실패합니다.
 
 ```sh
-make -C exercises/02-c-language/03-int-vector exercise-build
-make -C exercises/02-c-language/03-int-vector exercise-test
+make -C exercises/02-c-language/03-int-vector exercise-build EXERCISE_IMPL=skeleton
+make -C exercises/02-c-language/03-int-vector exercise-test EXERCISE_IMPL=skeleton
 ```
 
 컴파일 오류는 올바른 초기 실패가 아닙니다. 학습자는 빌드 가능한 프로그램에서 동작 계약을 하나씩 완성해야 합니다.
 
-구현이 통과하면 스스로 failure case를 추가하고, 마지막에만 `reference/`와 설계 차이를 비교합니다.
+workspace 구현이 통과하면 스스로 failure case를 추가하고, 마지막에만 `reference/README.md`의 권장 구현 순서와 source를 비교합니다. `make sanitize`도 reference가 아니라 현재 workspace를 검사합니다.
+
+```sh
+make -C exercises/02-c-language/03-int-vector exercise-test
+make -C exercises/02-c-language/03-int-vector sanitize
+```
+
+완료 뒤 비교가 필요할 때만 다음을 실행합니다.
 
 ```sh
 make -C exercises/02-c-language/03-int-vector reference-test
-make -C exercises/02-c-language/03-int-vector sanitize
 ```
 
 ## 저장소 전체 검증

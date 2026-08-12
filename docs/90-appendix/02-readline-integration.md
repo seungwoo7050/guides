@@ -409,7 +409,7 @@ Ctrl-C를 단순히 `kill(pid, SIGINT)`로 전달하는 것과 터미널의 fore
 
 ## 기존 예제와 연결하기
 
-`examples/readline-repl`은 다음 내용을 보여 줍니다.
+[`examples/readline-repl`](../../examples/readline-repl/README.md)은 다음 내용을 보여 줍니다.
 
 * tty에서는 Readline 사용
 * 파이프 입력에서는 일반 입력기 사용

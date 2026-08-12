@@ -181,7 +181,7 @@ else
 
 ## 실습
 
-`number-report`를 다음까지 확장합니다.
+[`number-report`](../../exercises/01-foundations/01-number-report/README.md)를 다음까지 확장합니다.
 
 - 숫자 인자들을 반복합니다.
 - count, min, max와 sum을 갱신합니다.

@@ -15,6 +15,7 @@ static void default_release(void *context, void *pointer)
     free(pointer);
 }
 
+/* [Implementation 1] allocator와 빈 vector의 소유 상태를 초기화한다. */
 void int_vector_init(
     struct int_vector *vector,
     const struct int_vector_allocator *allocator
@@ -39,6 +40,7 @@ void int_vector_init(
     }
 }
 
+/* [Implementation 2] buffer와 length/capacity의 shape 불변식을 확인한다. */
 static int int_vector_has_valid_shape(const struct int_vector *vector)
 {
     if (vector->capacity == 0)
@@ -48,6 +50,7 @@ static int int_vector_has_valid_shape(const struct int_vector *vector)
     return vector->data != NULL && vector->size <= vector->capacity;
 }
 
+/* [Implementation 3] 크기를 선검증하고 resize 성공 뒤 원소를 commit한다. */
 int int_vector_push(struct int_vector *vector, int value)
 {
     if (vector == NULL || vector->allocator.resize == NULL ||
@@ -94,6 +97,7 @@ int int_vector_push(struct int_vector *vector, int value)
     return 0;
 }
 
+/* [Implementation 4] 범위 검증이 끝난 뒤에만 조회 결과를 commit한다. */
 int int_vector_get(const struct int_vector *vector, size_t index, int *out_value)
 {
     if (vector == NULL || out_value == NULL ||
@@ -105,6 +109,7 @@ int int_vector_get(const struct int_vector *vector, size_t index, int *out_value
     return 0;
 }
 
+/* [Implementation 5] owned buffer를 해제하고 반복 정리 가능한 빈 상태로 만든다. */
 void int_vector_destroy(struct int_vector *vector)
 {
     if (vector == NULL)

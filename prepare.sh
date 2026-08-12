@@ -74,6 +74,9 @@ for required in \
     exercises \
     scripts/validate_docs.py \
     scripts/validate_repository.py \
+    scripts/new-workspace.sh \
+    scripts/test-validator.py \
+    scripts/test_workspace.py \
     verify.sh
 do
     require_path "$required"
@@ -130,6 +133,7 @@ rm -f verify.log "$PREPARE_STATE"
 
 say '==> 실행 권한 정규화'
 chmod +x prepare.sh verify.sh
+chmod +x scripts/new-workspace.sh
 find examples exercises -type f -name '*.sh' -exec chmod +x {} +
 
 say '==> 이전 빌드 산출물 정리'

@@ -8,6 +8,9 @@
 /verify.log
 /make-out.txt
 /tree.txt
+exercises/**/workspace/
+exercises/**/.workspace.lock/
+exercises/**/.workspace.tmp.*/
 
 # 로그와 임시 상태
 *.log
@@ -39,10 +42,8 @@ build/
 # 예제/검증 산출 바이너리
 textstat
 textstat.exe
-command_pipeline
-signal_loop
-command_runner
-account_simulator
+fd_redirection
+process_group_forwarding
 repl
 sanitizer-probe
 

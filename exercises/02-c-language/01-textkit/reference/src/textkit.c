@@ -2,6 +2,7 @@
 
 #include <ctype.h>
 
+/* [Implementation 1] NULL을 빈 입력으로 취급하는 길이 탐색 경계를 먼저 고정한다. */
 size_t textkit_length(const char *text)
 {
     size_t length = 0;
@@ -17,6 +18,7 @@ size_t textkit_length(const char *text)
     return length;
 }
 
+/* [Implementation 2] 같은 순회 정책으로 요청한 byte의 출현 수를 센다. */
 size_t textkit_count_char(const char *text, char needle)
 {
     size_t count = 0;
@@ -36,6 +38,7 @@ size_t textkit_count_char(const char *text, char needle)
     return count;
 }
 
+/* [Implementation 3] 공백 경계에서만 단어 상태를 전환해 논리 단위를 센다. */
 size_t textkit_word_count(const char *text)
 {
     size_t count = 0;

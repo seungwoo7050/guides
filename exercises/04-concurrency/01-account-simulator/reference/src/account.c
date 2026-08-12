@@ -3,6 +3,7 @@
 #include <limits.h>
 #include <stddef.h>
 
+/* [Implementation 1] 계좌 값과 mutex의 공동 lifecycle을 초기화한다. */
 int account_init(struct account *account, unsigned long id, long balance)
 {
     if (account == NULL || balance < 0)
@@ -20,6 +21,7 @@ int account_init(struct account *account, unsigned long id, long balance)
     return 0;
 }
 
+/* [Implementation 2] ID 기반 canonical order로 두 mutex를 한 번씩 소유한다. */
 static int lock_pair(
     struct account *left,
     struct account *right,
@@ -81,6 +83,7 @@ static void unlock_pair(struct account *first, struct account *second)
     (void)pthread_mutex_unlock(&first->mutex);
 }
 
+/* [Implementation 3] 잠금 안에서 잔액 조건을 검증하고 두 값을 함께 commit한다. */
 int account_transfer(struct account *source, struct account *destination, long amount)
 {
     struct account *first;
@@ -108,6 +111,7 @@ int account_transfer(struct account *source, struct account *destination, long a
     return result;
 }
 
+/* [Implementation 4] 같은 잠금 정책으로 snapshot을 읽고 성공 뒤 결과를 commit한다. */
 int account_get_balance(struct account *account, long *out_balance)
 {
     long value;
@@ -152,6 +156,7 @@ int account_total(struct account *left, struct account *right, long *out_total)
     return 0;
 }
 
+/* [Implementation 5] 모든 thread가 끝난 뒤 mutex lifecycle을 종료한다. */
 void account_destroy(struct account *account)
 {
     if (account == NULL || !account->initialized)

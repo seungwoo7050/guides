@@ -31,16 +31,10 @@ EXPECTED_DOCS = {
 }
 
 EXPECTED_EXAMPLES = {
-    "account-simulator",
-    "command-pipeline",
-    "command-runner",
-    "diagnostic-formatter",
-    "owned-string",
+    "fd-redirection",
+    "process-group-forwarding",
     "readline-repl",
-    "record-stream",
-    "signal-loop",
     "text-checks",
-    "textkit",
 }
 
 EXPECTED_EXERCISES = {
@@ -66,6 +60,9 @@ ROOT_REQUIRED = {
     "verify.sh",
     "scripts/validate_docs.py",
     "scripts/validate_repository.py",
+    "scripts/new-workspace.sh",
+    "scripts/test-validator.py",
+    "scripts/test_workspace.py",
     "exercises/Makefile",
 }
 
@@ -88,7 +85,9 @@ FORBIDDEN_PATHS = {
 EXERCISE_TARGETS = {
     "exercise-build",
     "exercise-test",
+    "exercise-sanitize",
     "reference-test",
+    "reference-sanitize",
     "sanitize",
     "clean",
 }
@@ -106,14 +105,57 @@ ARTIFACT_SUFFIXES = {
     ".profraw", ".profdata", ".out",
 }
 KNOWN_BINARIES = {
-    "account_simulator",
-    "command_pipeline",
-    "command_runner",
+    "fd_redirection",
     "libtextkit.a",
+    "process_group_forwarding",
     "repl",
-    "signal_loop",
     "textstat",
 }
+
+FORBIDDEN_ANSWER_NAMES = {"answer", "answers", "ref", "solution", "solutions"}
+
+ORDERED_MAPPING_HEADER = (
+    "| 순서 | 문서 | 관찰 예제 | 직접 수행 | 수정 위치 | 검증 | 완료 뒤 비교·다음 |"
+)
+
+IMPLEMENTATION_SCOPES = {
+    **{
+        f"exercise:{name}": {
+            "root": Path("exercises") / name / "reference",
+            "readme": Path("exercises") / name / "reference" / "README.md",
+            "allowed": None,
+        }
+        for name in EXPECTED_EXERCISES
+    },
+    "example:fd-redirection": {
+        "root": Path("examples/fd-redirection"),
+        "readme": Path("examples/fd-redirection/README.md"),
+        "allowed": {Path("examples/fd-redirection/src/fd_redirection.c")},
+    },
+    "example:process-group-forwarding": {
+        "root": Path("examples/process-group-forwarding"),
+        "readme": Path("examples/process-group-forwarding/README.md"),
+        "allowed": {
+            Path("examples/process-group-forwarding/src/process_group_forwarding.c")
+        },
+    },
+    "example:readline-repl": {
+        "root": Path("examples/readline-repl"),
+        "readme": Path("examples/readline-repl/README.md"),
+        "allowed": {Path("examples/readline-repl/src/repl.c")},
+    },
+    "example:text-checks": {
+        "root": Path("examples/text-checks"),
+        "readme": Path("examples/text-checks/README.md"),
+        "allowed": {Path("examples/text-checks/tests/check.sh")},
+    },
+}
+
+MARKER_PREFIX = "[" + "Implementation"
+IMPLEMENTATION_MARKER = re.compile(
+    re.escape(MARKER_PREFIX) +
+    r" (?P<parent>0|[1-9]\d*)(?:-(?P<child>[1-9]\d*))?\]"
+)
 
 
 def relative(path: Path) -> str:
@@ -134,6 +176,23 @@ def require_path(path_text: str) -> None:
         fail(f"필수 경로가 없습니다: {path_text}")
 
 
+def ignored_learner_path(path: Path) -> bool:
+    try:
+        parts = path.relative_to(ROOT).parts
+    except ValueError:
+        return False
+    for name in EXPECTED_EXERCISES:
+        exercise_parts = (Path("exercises") / name).parts
+        if parts[:len(exercise_parts)] != exercise_parts or len(parts) <= len(exercise_parts):
+            continue
+        learner_root = parts[len(exercise_parts)]
+        return (
+            learner_root == "workspace" or learner_root == ".workspace.lock" or
+            learner_root.startswith(".workspace.tmp.")
+        )
+    return False
+
+
 def check_root_contract() -> None:
     for path_text in sorted(ROOT_REQUIRED):
         require_path(path_text)
@@ -148,6 +207,28 @@ def check_root_contract() -> None:
             fail(f"README.md에 정본 명령이 없습니다: {command}")
         if command not in contributing:
             fail(f"CONTRIBUTING.md에 정본 명령이 없습니다: {command}")
+
+    if ORDERED_MAPPING_HEADER not in readme:
+        fail("README.md에 canonical ordered mapping 열이 없습니다")
+    for path_text in sorted(EXPECTED_DOCS):
+        if path_text not in readme:
+            fail(f"README.md 학습 순서에서 문서를 찾을 수 없습니다: {path_text}")
+    for name in sorted(EXPECTED_EXERCISES):
+        path_text = f"exercises/{name}/README.md"
+        if path_text not in readme:
+            fail(f"README.md 학습 순서에서 연습문제를 찾을 수 없습니다: {path_text}")
+    for name in sorted(EXPECTED_EXAMPLES):
+        path_text = f"examples/{name}/README.md"
+        if path_text not in readme:
+            fail(f"README.md 학습 순서에서 예제를 찾을 수 없습니다: {path_text}")
+    for required_text in (
+        "scripts/new-workspace.sh",
+        "workspace/",
+        "reference/README.md",
+        "완료한 뒤",
+    ):
+        if required_text not in readme:
+            fail(f"README.md에 학습 흐름 계약이 없습니다: {required_text}")
 
 
 def check_docs() -> None:
@@ -178,6 +259,7 @@ def check_examples() -> None:
         fail("examples/ 구성이 계획과 다릅니다: " + "; ".join(details))
     root_makefile = (ROOT / "Makefile").read_text(encoding="utf-8")
     for name in sorted(EXPECTED_EXAMPLES):
+        require_path(f"examples/{name}/README.md")
         require_path(f"examples/{name}/Makefile")
         if f"examples/{name}" not in root_makefile:
             fail(f"루트 Makefile이 예제를 열거하지 않습니다: {name}")
@@ -201,7 +283,7 @@ def check_exercises() -> None:
     exercises = ROOT / "exercises"
     actual: set[str] = set()
     for makefile in exercises.rglob("Makefile"):
-        if makefile.parent == exercises:
+        if makefile.parent == exercises or ignored_learner_path(makefile):
             continue
         actual.add(makefile.parent.relative_to(exercises).as_posix())
     if actual != EXPECTED_EXERCISES:
@@ -219,7 +301,9 @@ def check_exercises() -> None:
     explanation_owners: dict[str, str] = {}
     for name in sorted(EXPECTED_EXERCISES):
         root = exercises / name
-        for required in ("README.md", "Makefile", "skeleton", "reference", "tests"):
+        for required in (
+            "README.md", "Makefile", "skeleton", "reference", "reference/README.md", "tests"
+        ):
             if not (root / required).exists():
                 fail(f"연습문제 구성요소가 없습니다: exercises/{name}/{required}")
         if not any(path.is_file() for path in (root / "skeleton").rglob("*")):
@@ -228,6 +312,15 @@ def check_exercises() -> None:
             fail(f"reference가 비어 있습니다: exercises/{name}")
         if not any(path.is_file() for path in (root / "tests").rglob("*")):
             fail(f"tests가 비어 있습니다: exercises/{name}")
+
+        for directory in root.rglob("*"):
+            if ignored_learner_path(directory):
+                continue
+            if directory.is_dir() and directory.name in FORBIDDEN_ANSWER_NAMES:
+                fail(
+                    "reference/ 외의 기준 답안 별칭을 허용하지 않습니다: "
+                    f"{relative(directory)}"
+                )
 
         makefile_text = (root / "Makefile").read_text(encoding="utf-8")
         missing_targets = sorted(
@@ -304,13 +397,119 @@ def check_exercises() -> None:
                 fail(f"기준 구현에 미완성 표식이 있습니다: {relative(source)}")
 
 
+def implementation_scope_for_path(path: Path) -> str | None:
+    relative_path = path.relative_to(ROOT)
+    for name, contract in IMPLEMENTATION_SCOPES.items():
+        allowed = contract["allowed"]
+        if allowed is not None:
+            if relative_path in allowed:
+                return name
+            continue
+        scope_root = contract["root"]
+        if relative_path.is_relative_to(scope_root) and (
+            path.suffix in SOURCE_SUFFIXES or path.name == "Makefile"
+        ):
+            return name
+    return None
+
+
+def marker_sort_key(label: str) -> tuple[int, int]:
+    parent, separator, child = label.partition("-")
+    return int(parent), int(child) if separator else 0
+
+
+def check_implementation_annotations() -> None:
+    markers_by_scope: dict[str, list[tuple[str, Path]]] = {
+        name: [] for name in IMPLEMENTATION_SCOPES
+    }
+
+    for path in ROOT.rglob("*"):
+        if not path.is_file() or ".git" in path.parts or ignored_learner_path(path):
+            continue
+        if "build" in path.parts or "__pycache__" in path.parts:
+            continue
+        data = path.read_bytes()
+        if MARKER_PREFIX.encode() not in data:
+            continue
+        try:
+            text = data.decode("utf-8")
+        except UnicodeDecodeError:
+            fail(f"binary·generated 파일에 Implementation 표식이 있습니다: {relative(path)}")
+        scope = implementation_scope_for_path(path)
+        if scope is None:
+            fail(f"Implementation 표식이 허용되지 않는 위치입니다: {relative(path)}")
+
+        starts = [
+            match.start() for match in re.finditer(re.escape(MARKER_PREFIX), text)
+        ]
+        for start in starts:
+            match = IMPLEMENTATION_MARKER.match(text, start)
+            if match is None:
+                fail(f"형식이 잘못된 Implementation 표식입니다: {relative(path)}")
+            parent = match.group("parent")
+            child = match.group("child")
+            if parent == "0" and child is not None:
+                fail(f"Implementation 0에는 하위 번호를 붙일 수 없습니다: {relative(path)}")
+            label = parent if child is None else f"{parent}-{child}"
+            markers_by_scope[scope].append((label, path))
+
+    for scope, markers in markers_by_scope.items():
+        if not markers:
+            fail(f"완성 구현 scope에 Implementation 표식이 없습니다: {scope}")
+        labels = [label for label, _ in markers]
+        if len(labels) != len(set(labels)):
+            duplicate = next(label for label in labels if labels.count(label) > 1)
+            fail(f"한 scope에서 Implementation 표식이 중복됩니다: {scope}: {duplicate}")
+
+        top_numbers = sorted(
+            int(label) for label in labels if "-" not in label and label != "0"
+        )
+        if not top_numbers or top_numbers != list(range(1, max(top_numbers) + 1)):
+            fail(f"Implementation 상위 번호는 1부터 연속이어야 합니다: {scope}")
+
+        top_set = {str(number) for number in top_numbers}
+        children: dict[str, list[int]] = {}
+        for label in labels:
+            if "-" not in label:
+                continue
+            parent, child = label.split("-", 1)
+            if parent not in top_set:
+                fail(f"부모 없는 Implementation 하위 번호입니다: {scope}: {label}")
+            children.setdefault(parent, []).append(int(child))
+        for parent, values in children.items():
+            ordered = sorted(values)
+            if ordered != list(range(1, max(ordered) + 1)):
+                fail(f"Implementation 하위 번호는 1부터 연속이어야 합니다: {scope}: {parent}")
+
+        readme_path = ROOT / IMPLEMENTATION_SCOPES[scope]["readme"]
+        text = readme_path.read_text(encoding="utf-8")
+        headings, sections = markdown_h2_sections(text)
+        if headings.count("구현 순서") != 1:
+            fail(f"scope README에 '## 구현 순서'가 정확히 하나여야 합니다: {relative(readme_path)}")
+        indexed_labels = re.findall(
+            r"(?m)^\|\s*`((?:0|[1-9]\d*)(?:-[1-9]\d*)?)`\s*\|",
+            sections["구현 순서"],
+        )
+        expected_labels = sorted(labels, key=marker_sort_key)
+        if indexed_labels != expected_labels:
+            fail(
+                "scope README index와 source 표식이 일치하지 않습니다: "
+                f"{relative(readme_path)}: index={indexed_labels}, source={expected_labels}"
+            )
+
+
 def check_executable_contract() -> None:
     if os.name != "posix":
         return
-    required_executable = [ROOT / "prepare.sh", ROOT / "verify.sh"]
+    required_executable = [
+        ROOT / "prepare.sh",
+        ROOT / "verify.sh",
+        ROOT / "scripts/new-workspace.sh",
+    ]
     required_executable.extend(
         path for base in (ROOT / "examples", ROOT / "exercises")
         for path in base.rglob("*.sh")
+        if not ignored_learner_path(path)
     )
     for path in required_executable:
         if path.exists() and not os.access(path, os.X_OK):
@@ -319,6 +518,8 @@ def check_executable_contract() -> None:
 
 def check_symlinks() -> None:
     for path in ROOT.rglob("*"):
+        if ignored_learner_path(path):
+            continue
         if not path.is_symlink():
             continue
         try:
@@ -329,7 +530,7 @@ def check_symlinks() -> None:
 
 def check_text_hygiene() -> None:
     for path in ROOT.rglob("*"):
-        if not path.is_file() or ".git" in path.parts:
+        if not path.is_file() or ".git" in path.parts or ignored_learner_path(path):
             continue
         if path.name != "Makefile" and path.suffix not in TEXT_SUFFIXES:
             continue
@@ -349,7 +550,7 @@ def check_text_hygiene() -> None:
 
 def check_clean_tree() -> None:
     for path in ROOT.rglob("*"):
-        if ".git" in path.parts:
+        if ".git" in path.parts or ignored_learner_path(path):
             continue
         if path.is_dir() and (path.name == "build" or path.name.endswith(".dSYM") or path.name == "__pycache__"):
             fail(f"빌드·캐시 디렉터리가 남았습니다: {relative(path)}")
@@ -383,6 +584,7 @@ def main() -> None:
     check_docs()
     check_examples()
     check_exercises()
+    check_implementation_annotations()
     check_executable_contract()
     check_symlinks()
     check_text_hygiene()

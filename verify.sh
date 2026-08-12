@@ -175,6 +175,8 @@ soft_skip_check()
 run_check 'initial-clean' make clean
 run_check 'clean-source-tree' python3 scripts/validate_repository.py --clean
 run_check 'repository-structure' python3 scripts/validate_repository.py
+run_check 'validator-known-bad' python3 scripts/test-validator.py
+run_check 'workspace-safety' python3 scripts/test_workspace.py
 run_check 'documentation' make docs-check
 run_check 'examples' make examples-check
 run_check 'reference-implementations' make exercises-check

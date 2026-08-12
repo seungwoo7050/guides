@@ -9,6 +9,7 @@ static volatile sig_atomic_t event_write_fd = -1;
 static volatile sig_atomic_t usr1_pending;
 static volatile sig_atomic_t term_pending;
 
+/* [Implementation 1] handler는 pending bit와 wake byte만 남긴다. */
 static void handle_signal(int signal_number)
 {
     static const unsigned char wake = (unsigned char)'W';
@@ -53,6 +54,7 @@ static int set_nonblocking(int fd)
     return fcntl(fd, F_SETFL, flags | O_NONBLOCK) == -1 ? -1 : 0;
 }
 
+/* [Implementation 2] self-pipe의 상속과 blocking 정책을 초기화한다. */
 static int configure_pipe(int read_fd, int write_fd)
 {
     if (set_close_on_exec(read_fd) != 0 ||
@@ -64,6 +66,7 @@ static int configure_pipe(int read_fd, int write_fd)
     return 0;
 }
 
+/* [Implementation 3] handler 설치 실패 rollback과 이전 disposition 복원을 묶는다. */
 static int install_handlers(
     int write_fd,
     struct sigaction *old_usr1,
@@ -105,6 +108,7 @@ static void restore_handlers(
     (void)sigaction(SIGTERM, old_term, NULL);
 }
 
+/* [Implementation 4] 일반 흐름에서 wake와 blocked pending snapshot을 소비한다. */
 static int wait_for_wake(int fd)
 {
     unsigned char wake;
@@ -148,6 +152,7 @@ static int take_pending_events(
     return 0;
 }
 
+/* [Implementation 5] signal을 block한 채 pipe, handler와 공개 event FD를 준비한다. */
 int main(void)
 {
     int ends[2] = {-1, -1};
@@ -187,6 +192,7 @@ int main(void)
     }
     unblocked = 1;
 
+    /* [Implementation 6] event 정책을 실행하고 모든 자원을 역순으로 정리한다. */
     for (;;)
     {
         int saw_usr1;

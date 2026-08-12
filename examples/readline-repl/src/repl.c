@@ -10,6 +10,7 @@
 #include <readline/readline.h>
 #endif
 
+/* [Implementation 1] plain 입력은 한 줄 할당과 EOF 판정을 소유하고 호출자에게 해제 책임을 넘깁니다. */
 static char *plain_read_line(const char *prompt, int interactive)
 {
     char *line = NULL;
@@ -35,6 +36,7 @@ static char *plain_read_line(const char *prompt, int interactive)
 }
 
 #ifdef USE_READLINE
+/* [Implementation 2] completion 후보와 history 탐색은 선택적인 Readline backend 내부에만 둡니다. */
 static const char *const commands[] = {"echo", "help", "history", "quit", NULL};
 
 static char *command_generator(const char *text, int state)
@@ -93,6 +95,7 @@ static void print_history(void)
 }
 #endif
 
+/* [Implementation 3] 입력 어댑터가 TTY 여부로 backend를 고르되 항상 같은 owned-line 계약을 반환합니다. */
 static char *read_command_line(const char *prompt, int interactive)
 {
 #ifdef USE_READLINE
@@ -110,6 +113,7 @@ static char *read_command_line(const char *prompt, int interactive)
     return plain_read_line(prompt, interactive);
 }
 
+/* [Implementation 4] 명령 정책은 입력 backend와 분리해 비대화형 검사에서도 같은 상태 전이를 사용합니다. */
 static int handle_line(const char *line)
 {
     if (strcmp(line, "quit") == 0)
@@ -146,6 +150,7 @@ static int handle_line(const char *line)
     return 0;
 }
 
+/* [Implementation 5] REPL 루프는 입력 한 줄의 처리와 해제를 한 iteration의 수명으로 묶습니다. */
 int main(void)
 {
     int interactive = isatty(STDIN_FILENO) && isatty(STDERR_FILENO);

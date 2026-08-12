@@ -18,6 +18,7 @@ static void default_release(void *context, void *pointer)
     free(pointer);
 }
 
+/* [Implementation 1] borrowed FD와 allocator, 빈 pending 상태를 초기화한다. */
 void record_reader_init(
     struct record_reader *reader,
     int fd,
@@ -46,6 +47,7 @@ void record_reader_init(
     }
 }
 
+/* [Implementation 2] 실패 시 기존 bytes를 보존하며 pending buffer를 확장한다. */
 static int append_pending(
     struct record_reader *reader,
     const char *data,
@@ -98,6 +100,7 @@ static int append_pending(
     return 0;
 }
 
+/* [Implementation 3] 입력을 소비하지 않고 다음 record 경계만 찾는다. */
 static int find_newline(const struct record_reader *reader, size_t *out_index)
 {
     for (size_t index = 0; index < reader->length; index++)
@@ -111,6 +114,7 @@ static int find_newline(const struct record_reader *reader, size_t *out_index)
     return 0;
 }
 
+/* [Implementation 4] 결과 할당 성공 뒤에만 pending record를 소비하고 commit한다. */
 static int emit_record(
     struct record_reader *reader,
     size_t record_length,
@@ -149,6 +153,7 @@ static int emit_record(
     return 1;
 }
 
+/* [Implementation 5] delimiter, EINTR, partial read, EOF와 terminal state를 조합한다. */
 int record_reader_next(
     struct record_reader *reader,
     char **out_record,
@@ -233,6 +238,7 @@ int record_reader_next(
     }
 }
 
+/* [Implementation 6] pending buffer만 해제하고 borrowed FD는 닫지 않는다. */
 void record_reader_destroy(struct record_reader *reader)
 {
     if (reader == NULL)

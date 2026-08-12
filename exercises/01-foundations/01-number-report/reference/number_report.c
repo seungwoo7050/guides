@@ -5,6 +5,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+/* [Implementation 1] 모든 누적 결과를 하나의 통계 상태와 불변식으로 묶는다. */
 struct statistics
 {
     size_t count;
@@ -15,6 +16,7 @@ struct statistics
     size_t odd_count;
 };
 
+/* [Implementation 2] 변환이 완전히 성공한 경우에만 호출자의 출력값을 갱신한다. */
 static int parse_long(const char *text, long *out_value)
 {
     char *end;
@@ -36,6 +38,7 @@ static int parse_long(const char *text, long *out_value)
     return 0;
 }
 
+/* [Implementation 3] 초기 상태와 오버플로 전 검사를 포함한 누적 전이를 만든다. */
 static void statistics_init(struct statistics *stats)
 {
     stats->count = 0;
@@ -87,6 +90,7 @@ static int statistics_add(struct statistics *stats, long value)
     return 0;
 }
 
+/* [Implementation 4] 확정된 상태만 정해진 stdout 형식으로 렌더링한다. */
 static void print_report(const struct statistics *stats)
 {
     double average = (double)stats->sum / (double)stats->count;
@@ -105,6 +109,7 @@ static void print_usage(const char *program)
     fprintf(stderr, "사용법: %s <정수> [정수 ...]\n", program);
 }
 
+/* [Implementation 5] CLI가 parsing, 누적, 오류와 종료 상태의 경계를 조합한다. */
 int main(int argc, char *argv[])
 {
     struct statistics stats;

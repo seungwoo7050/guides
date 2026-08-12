@@ -536,6 +536,10 @@ timeout은 구현이 올바르다는 사실을 증명하는 장치가 아닙니�
 
 따라서 느린 실행 환경에서도 정상적인 처리가 충분히 끝날 수 있도록 여유 있는 제한 시간을 사용해야 합니다.
 
+## 선택 관찰: 한 명령의 stdout redirection
+
+파이프라인 답안을 보기 전에 [`fd-redirection`](../../examples/fd-redirection/README.md)에서 `open`으로 얻은 FD를 자식의 stdout에 연결하는 좁은 수명 경계를 관찰할 수 있습니다. 이 예제는 parser나 pipeline을 구현하지 않으며 truncate와 append의 open flag 차이, `dup2` 뒤 원본 FD 닫기, `exec` 실패 상태만 다룹니다.
+
 ## 실습
 
 [command-pipeline](../../exercises/03-unix-programming/02-command-pipeline/README.md)에서 다음 항목을 구현하고 검증합니다.

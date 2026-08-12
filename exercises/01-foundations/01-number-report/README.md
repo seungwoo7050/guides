@@ -6,7 +6,14 @@
 
 ## 구현 위치
 
-`skeleton/number_report.c`를 수정합니다. 기준 구현은 자신의 구현과 테스트가 통과한 뒤에만 비교합니다.
+저장소 루트에서 다음 명령으로 기존 파일을 덮어쓰지 않는 작업 공간을 만듭니다.
+
+```sh
+scripts/new-workspace.sh exercises/01-foundations/01-number-report
+cd exercises/01-foundations/01-number-report
+```
+
+`workspace/number_report.c`를 수정합니다. 기준 구현과 권장 구현 순서는 자신의 구현과 테스트가 통과한 뒤 [`reference/`](reference/README.md)에서 비교합니다.
 
 ## 외부 계약
 

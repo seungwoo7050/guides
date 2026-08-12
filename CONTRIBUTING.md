@@ -6,11 +6,12 @@
 
 - 필수 학습 내용은 `docs/`와 `exercises/` 안에서 완결합니다.
 - `docs/00-roadmap.md`의 학습 순서와 실제 디렉터리 구조를 일치시킵니다.
-- 완성 동작을 관찰하는 작은 프로그램은 `examples/`에 둡니다.
+- 완성 동작을 관찰하는 작은 프로그램은 `examples/`에 두되, exercise 답안을 반복하지 않는 좁은 실험으로 제한합니다.
 - 학습자가 구현해야 하는 문제는 `exercises/`에 둡니다.
-- 연습문제는 `README.md`, `skeleton/`, `reference/`, `tests/`, `Makefile`을 기본 구성으로 제공합니다.
-- `skeleton/`은 경고 없이 컴파일되어야 하지만 초기 동작 검사에는 실패해야 합니다.
-- `reference/`는 유일한 정답이 아니라 공개 계약을 만족하는 비교 구현입니다.
+- 연습문제는 `README.md`, `skeleton/`, `reference/README.md`, `reference/`, `tests/`, `Makefile`을 기본 구성으로 제공합니다.
+- `skeleton/`은 변경하지 않는 canonical 초기 상태로, 경고 없이 컴파일되어야 하지만 초기 동작 검사에는 실패해야 합니다.
+- 학습자는 `scripts/new-workspace.sh exercises/<part>/<exercise>`로 만든 Git 비추적 `workspace/`만 수정합니다. 생성기는 기존 경로나 symlink를 덮어쓰지 않아야 합니다.
+- `reference/`는 유일한 정답이 아니라 공개 계약을 만족하는 비교 구현이며, 학습자가 workspace 검증을 끝낸 뒤에만 봅니다.
 - 필수 파일을 다른 디렉터리의 숨은 자료나 작업용 스크립트에 의존시키지 않습니다.
 
 ## 글을 고칠 때
@@ -34,6 +35,15 @@
 - 프로세스·시그널·스레드 검사는 작은 입력만으로 숨는 교착과 경쟁을 재현할 수 있어야 합니다.
 - 검사기는 기준 구현의 문구나 소스 구조가 아니라 관찰 가능한 계약을 확인해야 합니다.
 
+## 구현 순서 annotation을 고칠 때
+
+- `Implementation N` 표식은 Git 이력이나 runtime 순서가 아니라 독립 example/reference 전체의 학습용 권장 구현 순서입니다.
+- 번호는 파일마다 다시 시작하지 않고 하나의 project scope에서 `1`부터 연속시킵니다. 하위 단계 `N-M`을 쓰면 부모와 하위 번호도 연속이어야 합니다.
+- C 브랜치에는 project generator나 dependency bootstrap이 없으므로 현재 `Implementation 0` scope는 없습니다. `cc`, `ar`, `make`, sanitizer와 Readline probe는 build·검증 절차입니다.
+- 표식은 완성 example source와 exercise `reference/` source에만 둡니다. skeleton, 공개 test/helper, fixture, validator와 generated artifact에는 두지 않습니다. `examples/text-checks/tests/check.sh`는 검사 구현 자체가 학습 대상인 명시적 예외입니다.
+- 각 scope의 `README.md` 또는 `reference/README.md`에 `## 구현 순서` index를 두고 source 표식과 정확히 일치시킵니다.
+- 책임, 상태·자원 소유자, 불변식, 실패 상태와 다음 단계만 설명하고 문법을 줄마다 번역하지 않습니다.
+
 ## 연습문제를 추가할 때
 
 최소한 다음 target을 제공합니다.
@@ -42,6 +52,8 @@
 make exercise-build
 make exercise-test
 make reference-test
+make exercise-sanitize
+make reference-sanitize
 make sanitize
 make clean
 ```
@@ -54,10 +66,12 @@ make thread-sanitize
 
 초기 skeleton의 계약은 두 단계로 확인합니다.
 
-1. `make exercise-build`가 성공해야 합니다.
-2. 완성되지 않은 상태이므로 `make exercise-test`는 실패해야 합니다.
+1. `make exercise-build EXERCISE_IMPL=skeleton`이 성공해야 합니다.
+2. 완성되지 않은 상태이므로 `make exercise-test EXERCISE_IMPL=skeleton`은 실패해야 합니다.
 
 컴파일 오류를 “초기 skeleton 실패”로 인정하지 않습니다. skeleton은 학습자가 구현을 시작할 수 있는 유효한 프로그램이어야 합니다.
+
+학습자 명령의 기본 구현은 `workspace`입니다. `make exercise-test`와 `make sanitize`가 reference를 검사해 미완성 workspace에 false green을 만들지 않도록 하고, 저장소 전체 검증은 `reference-test`와 `reference-sanitize`를 명시합니다.
 
 검사는 다음 범주를 가능한 범위에서 포함합니다.
 

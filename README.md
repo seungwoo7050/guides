@@ -63,6 +63,35 @@ VERIFY_REQUIRE_OPTIONAL=1 ./verify.sh
 - 공유 상태와 스레드를 다루려면 `docs/04-concurrency/`로 진행합니다.
 - 디버거, Readline, Unix 텍스트 검사법은 `docs/90-appendix/`에서 필요할 때 찾아봅니다.
 
+문서 전체를 먼저 읽은 뒤 실습을 몰아서 하지 않습니다. 아래 표의 한 행마다 관련 문서를 읽고, 이름이 있는 관찰 예제만 선택적으로 실행한 뒤, 해당 workspace를 구현·검증합니다. `number-report`는 첫 세 문서에서 수동 실행으로 조금씩 확장하고 네 번째 문서에서 전체 자동 검사를 통과시킵니다.
+
+## 학습 순서
+
+| 순서 | 문서 | 관찰 예제 | 직접 수행 | 수정 위치 | 검증 | 완료 뒤 비교·다음 |
+|---:|---|---|---|---|---|---|
+| 1 | [편집·컴파일·실행](docs/01-foundations/01-edit-compile-run.md) | — | [number-report](exercises/01-foundations/01-number-report/README.md) 시작 | `workspace/number_report.c` | 직접 컴파일하고 usage·종료 상태 확인 | 값·분기·반복으로 확장 |
+| 2 | [값·분기·반복](docs/01-foundations/02-values-branches-loops.md) | — | number-report 누적·경계 상태 추가 | 같은 workspace | 정상·잘못된 입력을 직접 실행 | 함수로 책임 분리 |
+| 3 | [함수·배열·텍스트](docs/01-foundations/03-functions-arrays-text.md) | — | number-report 함수 계약 분리 | 같은 workspace | 함수별 성공·실패 상태 직접 확인 | 입력 오류와 전체 검사 |
+| 4 | [입력 오류와 디버깅](docs/01-foundations/04-input-errors-debugging.md) | — | number-report 완성 | 같은 workspace | `make exercise-test && make sanitize` | `reference/` 비교 후 Part 2 |
+| 5 | [C 프로그램 모델](docs/02-c-language/01-c-program-model.md) | — | [textkit](exercises/02-c-language/01-textkit/README.md) | `workspace/src/textkit.c` | `make exercise-test && make sanitize` | `reference/` 비교 후 메모리 모델 |
+| 6 | [메모리·포인터·문자열](docs/02-c-language/02-memory-pointers-strings.md) | — | [owned-string](exercises/02-c-language/02-owned-string/README.md) | `workspace/src/owned_string.c` | `make exercise-test && make sanitize` | `reference/` 비교 후 API 설계 |
+| 7 | [자료구조와 API 계약](docs/02-c-language/03-data-structures-api-design.md) | — | [int-vector](exercises/02-c-language/03-int-vector/README.md) | `workspace/src/int_vector.c` | `make exercise-test && make sanitize` | `reference/` 비교 후 빌드 관찰 |
+| 8 | [빌드·링크·테스트](docs/02-c-language/04-build-link-test.md) | — | textkit의 제공된 build graph 재관찰 | textkit workspace와 shared `Makefile` | `make exercise-build`, `ar t build/exercise/libtextkit.a` | 가변 인자 API로 진행 |
+| 9 | [가변 인자와 포맷 API](docs/02-c-language/05-variadic-format-api.md) | — | [diagnostic-formatter](exercises/02-c-language/04-diagnostic-formatter/README.md) | `workspace/src/diagnostic_formatter.c` | `make exercise-test && make sanitize` | `reference/` 비교 후 Part 3 |
+| 10 | [POSIX I/O와 스트림 상태](docs/03-unix-programming/01-posix-io-streams.md) | — | [record-stream](exercises/03-unix-programming/01-record-stream/README.md) | `workspace/src/record_stream.c` | `make exercise-test && make sanitize` | `reference/` 비교 후 프로세스 |
+| 11 | [프로세스·FD·파이프](docs/03-unix-programming/02-process-fd-pipe.md) | [fd-redirection](examples/fd-redirection/README.md) | [command-pipeline](exercises/03-unix-programming/02-command-pipeline/README.md) | `workspace/src/command_pipeline.c` | `make exercise-test && make sanitize` | `reference/` 비교 후 시그널 |
+| 12 | [시그널과 사건 전달](docs/03-unix-programming/03-signals-events.md) | — | [signal-loop](exercises/03-unix-programming/03-signal-loop/README.md) | `workspace/signal_loop.c` | `make exercise-test && make sanitize` | `reference/` 비교 후 셸 경계 |
+| 13 | [셸 파서와 실행기](docs/03-unix-programming/04-shell-parser-executor.md) | 완료 뒤 [process-group-forwarding](examples/process-group-forwarding/README.md) | [command-runner](exercises/03-unix-programming/04-command-runner/README.md) | `workspace/command_runner.c` | `make exercise-test && make sanitize` | `reference/` 비교, 예제 관찰 후 Part 4 |
+| 14 | [스레드·동기화·시간](docs/04-concurrency/01-threads-time.md) | — | [account-simulator](exercises/04-concurrency/01-account-simulator/README.md) | `workspace/src/account.c` | `make exercise-test && make sanitize`; 지원 시 `make thread-sanitize` | `reference/` 비교 후 필수 경로 종료 |
+
+부록은 막힌 문제나 선택 기능이 있을 때 사용합니다.
+
+| 순서 | 문서 | 관찰 예제 | 직접 수행 | 수정 위치 | 검증 | 완료 뒤 비교·다음 |
+|---:|---|---|---|---|---|---|
+| 선택 A | [디버거 참고](docs/90-appendix/01-debugger-reference.md) | — | 현재 실패를 debugger로 재현 | 현재 workspace | 문서의 관찰 기록 | 필수 경로로 복귀 |
+| 선택 B | [Readline 통합](docs/90-appendix/02-readline-integration.md) | [readline-repl](examples/readline-repl/README.md) | plain/Readline 입력 경계 비교 | 예제는 읽기 전용 | `make -C examples/readline-repl readline-check` | 필수 경로로 복귀 |
+| 선택 C | [Unix 텍스트 검사](docs/90-appendix/03-unix-text-testing.md) | [text-checks](examples/text-checks/README.md) | 검사 도구별 evidence 비교 | 예제는 읽기 전용 | `make -C examples/text-checks check` | 필수 경로로 복귀 |
+
 ## 예제와 연습문제
 
 `examples/`와 `exercises/`는 역할이 다릅니다.
@@ -70,12 +99,20 @@ VERIFY_REQUIRE_OPTIONAL=1 ./verify.sh
 - `examples/`는 한 개념의 완성된 동작을 작게 관찰하는 프로그램입니다.
 - `exercises/`는 제공된 공개 계약과 테스트를 바탕으로 학습자가 직접 구현하는 과정입니다.
 
+최종적으로 남긴 예제는 exercise 답안이 아니라 다음 네 개의 좁은 관찰 단위입니다.
+
+- `fd-redirection`: 한 명령의 stdout FD 소유권과 truncate/append
+- `process-group-forwarding`: 고정 argv 실행과 process-group signal 전달
+- `readline-repl`: plain 입력과 선택적 Readline adapter
+- `text-checks`: Unix 텍스트 도구로 evidence와 known-bad를 판별하는 검사
+
 각 연습문제는 다음 구성을 기본으로 합니다.
 
 ```text
 README.md       문제와 완료 조건
 include/        바꾸지 않는 공개 계약
-skeleton/       학습자가 구현할 코드
+skeleton/       변경하지 않는 초기 실패 기준
+workspace/      학습자가 구현할 코드(생성 뒤 Git 비추적)
 reference/      검사와 비교를 위한 기준 구현
 tests/          정상·경계·실패 계약 검사
 Makefile        일관된 실행 명령
@@ -87,13 +124,21 @@ Makefile        일관된 실행 명령
 make exercises-check
 ```
 
-개별 skeleton을 구현한 뒤 검사합니다.
+저장소 루트에서 연습문제별 workspace를 한 번만 만듭니다. 기존 workspace나 symlink가 있으면 덮어쓰지 않고 실패합니다.
+
+```sh
+scripts/new-workspace.sh exercises/02-c-language/02-owned-string
+```
+
+생성된 workspace를 구현한 뒤 해당 연습문제 디렉터리에서 검사합니다. 위 ordered mapping의 `make exercise-*`와 `make sanitize`도 같은 위치에서 실행합니다.
 
 ```sh
 make -C exercises/02-c-language/02-owned-string exercise-test
 ```
 
-초기 skeleton은 경고 없이 컴파일되어야 하지만 동작 검사는 실패해야 합니다. 구현을 완료한 뒤에만 `reference/`와 설계 차이를 비교하는 것이 좋습니다.
+`make exercise-test`와 `make sanitize`는 기본적으로 workspace를 검사합니다. 초기 skeleton은 공식 품질 검사에서 경고 없이 컴파일되어야 하지만 동작 검사는 실패해야 합니다. 구현을 완료한 뒤에만 `reference/README.md`의 권장 구현 순서와 source를 비교합니다.
+
+workspace는 공식 `prepare.sh`, `make clean`, `verify.sh`가 삭제하거나 기준 source로 검사하지 않습니다. 따라서 학습 완료 상태와 canonical skeleton의 초기 실패 계약이 충돌하지 않습니다.
 
 ## 부분 검사
 

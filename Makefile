@@ -12,40 +12,35 @@ export ASAN_OPTIONS ASAN_PROCESS_OPTIONS UBSAN_OPTIONS TSAN_OPTIONS
 export READLINE_CPPFLAGS READLINE_LDFLAGS READLINE_LDLIBS
 
 EXAMPLES := \
-	examples/textkit \
-	examples/owned-string \
-	examples/diagnostic-formatter \
-	examples/record-stream \
-	examples/command-pipeline \
-	examples/signal-loop \
-	examples/command-runner \
-	examples/account-simulator \
+	examples/fd-redirection \
+	examples/process-group-forwarding \
 	examples/readline-repl \
 	examples/text-checks
 
 SANITIZE_EXAMPLES := \
-	examples/textkit \
-	examples/owned-string \
-	examples/diagnostic-formatter \
-	examples/record-stream \
-	examples/command-pipeline \
-	examples/signal-loop \
-	examples/command-runner \
-	examples/account-simulator \
+	examples/fd-redirection \
+	examples/process-group-forwarding \
 	examples/readline-repl
 
-.PHONY: all check structure-check docs-check examples-check exercises-check \
-	exercise-test quality-check sanitize thread-sanitize readline-check clean
+.PHONY: all check structure-check validator-check docs-check workspace-check \
+	examples-check exercises-check exercise-test quality-check sanitize \
+	thread-sanitize readline-check clean
 
 all: check
 
-check: structure-check docs-check examples-check exercises-check
+check: validator-check docs-check workspace-check examples-check exercises-check
 
 structure-check:
 	python3 scripts/validate_repository.py
 
+validator-check: structure-check
+	python3 scripts/test-validator.py
+
 docs-check:
 	python3 scripts/validate_docs.py
+
+workspace-check:
+	python3 scripts/test_workspace.py
 
 examples-check:
 	@set -eu; \
@@ -60,7 +55,7 @@ exercises-check:
 exercise-test:
 	$(MAKE) -C exercises exercise-test
 
-quality-check: structure-check docs-check
+quality-check: validator-check docs-check workspace-check
 	$(MAKE) -C exercises quality-check
 
 sanitize:
@@ -68,16 +63,16 @@ sanitize:
 	for dir in $(SANITIZE_EXAMPLES); do \
 		printf '\n==> %s (sanitize)\n' "$$dir"; \
 		case "$$dir" in \
-			examples/command-pipeline|examples/command-runner) \
+			examples/process-group-forwarding) \
 				ASAN_OPTIONS='$(ASAN_PROCESS_OPTIONS)' $(MAKE) -C "$$dir" sanitize ;; \
 			*) \
 				$(MAKE) -C "$$dir" sanitize ;; \
 		esac; \
 	done
-	$(MAKE) -C exercises sanitize
+	$(MAKE) -C exercises reference-sanitize
 
 thread-sanitize:
-	$(MAKE) -C exercises thread-sanitize
+	$(MAKE) -C exercises reference-thread-sanitize
 
 readline-check:
 	$(MAKE) -C examples/readline-repl readline-check

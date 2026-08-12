@@ -534,7 +534,7 @@ CLI 테스트는 프로그램의 공개 동작을 확인하는 데 효과적이�
 
 ## 기존 예제와 연결하기
 
-`examples/text-checks`에서는 다음과 같은 검증 방식을 확인할 수 있습니다.
+[`examples/text-checks`](../../examples/text-checks/README.md)에서는 다음과 같은 검증 방식을 확인할 수 있습니다.
 
 * `cmp`: 정확한 도움말 출력과 바이트 결과 비교
 * `diff`: 사람이 읽기 좋은 정상 출력 비교

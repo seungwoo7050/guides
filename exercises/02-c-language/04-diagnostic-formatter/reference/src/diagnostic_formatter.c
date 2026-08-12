@@ -3,6 +3,7 @@
 #include <limits.h>
 #include <stdint.h>
 
+/* [Implementation 1] 논리 길이와 실제 기록 위치를 하나의 출력 상태가 소유한다. */
 struct output
 {
     char *buffer;
@@ -29,6 +30,7 @@ static void output_char(struct output *output, char value)
     output->length++;
 }
 
+/* [Implementation 2] 문자열과 정수를 동일한 단일 문자 출력 경계로 보낸다. */
 static void output_text(struct output *output, const char *text)
 {
     if (text == NULL)
@@ -74,6 +76,7 @@ static void output_int(struct output *output, int value)
     output_unsigned(output, magnitude);
 }
 
+/* [Implementation 3] capacity 안에서 가능한 마지막 위치에 NUL을 확정한다. */
 static void finish_output(struct output *output)
 {
     size_t index;
@@ -90,6 +93,7 @@ static void finish_output(struct output *output)
     output->buffer[index] = '\0';
 }
 
+/* [Implementation 4] 복사한 va_list로 형식을 해석하고 실패도 한곳에서 끝낸다. */
 int diagnostic_vformat(
     char *buffer,
     size_t capacity,
@@ -141,6 +145,7 @@ int diagnostic_vformat(
     return (int)output.length;
 }
 
+/* [Implementation 5] variadic wrapper가 va_list의 시작과 종료를 소유한다. */
 int diagnostic_format(
     char *buffer,
     size_t capacity,

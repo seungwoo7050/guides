@@ -5,16 +5,28 @@ SANFLAGS := -fsanitize=address,undefined -fno-omit-frame-pointer
 ASAN_OPTIONS ?= halt_on_error=1:detect_leaks=0
 UBSAN_OPTIONS ?= halt_on_error=1:print_stacktrace=1
 BUILD := build
+EXERCISE_IMPL ?= workspace
+EXERCISE_SOURCE := $(EXERCISE_IMPL)/src/owned_string.c
 
-.PHONY: all exercise-build exercise-test reference-test sanitize clean
+.PHONY: all check-exercise-impl exercise-build exercise-test reference-test \
+	exercise-sanitize reference-sanitize sanitize clean
 
 all: reference-test
 
 $(BUILD):
 	mkdir -p $@
 
-$(BUILD)/exercise: skeleton/src/owned_string.c tests/test_owned_string.c include/owned_string.h | $(BUILD)
-	$(CC) $(CPPFLAGS) $(CFLAGS) skeleton/src/owned_string.c tests/test_owned_string.c -o $@
+check-exercise-impl:
+	@case '$(EXERCISE_IMPL)' in workspace|skeleton) ;; \
+		*) printf '%s\n' 'EXERCISE_IMPL은 workspace 또는 skeleton이어야 합니다.' >&2; exit 2 ;; \
+	esac
+	@test -f '$(EXERCISE_SOURCE)' || { \
+		printf '%s\n' '먼저 저장소 루트에서 scripts/new-workspace.sh exercises/02-c-language/02-owned-string를 실행하세요.' >&2; \
+		exit 2; \
+	}
+
+$(BUILD)/exercise: check-exercise-impl tests/test_owned_string.c include/owned_string.h | $(BUILD)
+	$(CC) $(CPPFLAGS) $(CFLAGS) '$(EXERCISE_SOURCE)' tests/test_owned_string.c -o $@
 
 $(BUILD)/reference: reference/src/owned_string.c tests/test_owned_string.c include/owned_string.h | $(BUILD)
 	$(CC) $(CPPFLAGS) $(CFLAGS) reference/src/owned_string.c tests/test_owned_string.c -o $@
@@ -27,10 +39,17 @@ exercise-test: exercise-build
 reference-test: $(BUILD)/reference
 	./$(BUILD)/reference
 
-sanitize: clean | $(BUILD)
+exercise-sanitize: clean check-exercise-impl | $(BUILD)
+	$(CC) $(CPPFLAGS) $(CFLAGS) $(SANFLAGS) '$(EXERCISE_SOURCE)' tests/test_owned_string.c $(SANFLAGS) -o $(BUILD)/exercise
+	ASAN_OPTIONS='$(ASAN_OPTIONS)' UBSAN_OPTIONS='$(UBSAN_OPTIONS)' \
+		./$(BUILD)/exercise
+
+reference-sanitize: clean | $(BUILD)
 	$(CC) $(CPPFLAGS) $(CFLAGS) $(SANFLAGS) reference/src/owned_string.c tests/test_owned_string.c $(SANFLAGS) -o $(BUILD)/reference
 	ASAN_OPTIONS='$(ASAN_OPTIONS)' UBSAN_OPTIONS='$(UBSAN_OPTIONS)' \
 		./$(BUILD)/reference
+
+sanitize: exercise-sanitize
 
 clean:
 	rm -rf $(BUILD)

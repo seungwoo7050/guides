@@ -6,7 +6,14 @@
 
 ## 구현 위치
 
-`skeleton/src/textkit.c`의 세 함수를 구현합니다. `include/textkit.h`의 공개 계약은 변경하지 않습니다.
+저장소 루트에서 다음 명령을 실행한 뒤 `workspace/src/textkit.c`의 세 함수를 구현합니다. `include/textkit.h`의 공개 계약은 변경하지 않습니다.
+
+```sh
+scripts/new-workspace.sh exercises/02-c-language/01-textkit
+cd exercises/02-c-language/01-textkit
+```
+
+기준 구현과 권장 구현 순서는 자신의 검사가 통과한 뒤 [`reference/`](reference/README.md)에서 비교합니다.
 
 ## 계약
 
@@ -18,8 +25,8 @@
 ## 빌드 관찰
 
 ```sh
-make reference-test
-ar t build/reference/libtextkit.a
+make exercise-test
+ar t build/exercise/libtextkit.a
 ```
 
 정적 라이브러리를 링크 명령에서 빼고 undefined symbol을 관찰해 봅니다.
@@ -28,7 +35,7 @@ ar t build/reference/libtextkit.a
 
 - `make exercise-test`와 `make sanitize`가 통과하며 세 함수가 `NULL`, 빈 문자열, 연속 ASCII 공백을 계약대로 처리합니다.
 - 고비트가 설정된 바이트를 포함한 입력에서도 `ctype.h` 호출이 정의된 범위 안에서 이루어지고 sanitizer 오류가 없습니다.
-- `ar t build/reference/libtextkit.a`로 구현 object가 archive에 들어 있음을 확인하고, CLI와 테스트가 같은 정적 라이브러리를 링크함을 빌드 명령에서 확인합니다.
+- `ar t build/exercise/libtextkit.a`로 구현 object가 archive에 들어 있음을 확인하고, CLI와 테스트가 같은 정적 라이브러리를 링크함을 빌드 명령에서 확인합니다.
 
 ## 자기 설명
 

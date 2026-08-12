@@ -6,7 +6,14 @@
 
 ## 구현 위치
 
-`skeleton/signal_loop.c`를 구현합니다.
+저장소 루트에서 다음 명령을 실행한 뒤 `workspace/signal_loop.c`를 구현합니다.
+
+```sh
+scripts/new-workspace.sh exercises/03-unix-programming/03-signal-loop
+cd exercises/03-unix-programming/03-signal-loop
+```
+
+기준 구현과 권장 구현 순서는 자신의 검사가 통과한 뒤 [`reference/`](reference/README.md)에서 비교합니다.
 
 ## 외부 계약
 

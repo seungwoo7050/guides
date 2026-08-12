@@ -9,6 +9,10 @@
 #include <sys/wait.h>
 #include <unistd.h>
 
+#ifndef TEST_TIMEOUT_SECONDS
+#define TEST_TIMEOUT_SECONDS 30
+#endif
+
 #define CHECK(expression)                                                   \
     do                                                                      \
     {                                                                       \
@@ -150,7 +154,7 @@ int main(int argc, char *argv[])
         fprintf(stderr, "helper paths required\n");
         return 2;
     }
-    alarm(30);
+    alarm(TEST_TIMEOUT_SECONDS);
     CHECK(snprintf(signal_text, sizeof signal_text, "%d", SIGTERM) > 0);
     left_large[0] = argv[1];
     right_large[0] = argv[2];
