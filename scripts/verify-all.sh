@@ -111,8 +111,13 @@ run_foundations()
             "$ROOT/exercises/$exercise/verify.sh" skeleton
     done
 
+    run_pass "07-troubleshooting evidence template" \
+        "$PYTHON" -B "$ROOT/exercises/07-troubleshooting/check-evidence.py" --template \
+        "$ROOT/exercises/07-troubleshooting/template/evidence.md"
+    run_pass "07-troubleshooting evidence checker self-test" \
+        "$PYTHON" -B "$ROOT/exercises/07-troubleshooting/check-evidence.py" --self-test
     run_pass "07-troubleshooting scenarios" \
-        "$ROOT/exercises/07-troubleshooting/verify.sh"
+        "$ROOT/exercises/07-troubleshooting/verify.sh" scenarios
 }
 
 run_production()

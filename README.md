@@ -77,45 +77,49 @@
 
 ## 실습 구조
 
-01–06은 시작 코드와 기준 구현을 제공합니다.
+07을 제외한 실습은 추적되는 시작 상태와 완료 뒤 비교할 기준 구현을 제공합니다. `skeleton/`은 저장소 검증기가 의도된 실패를 확인하는 canonical start이므로 직접 수정하지 않습니다. 다음 명령으로 각 실습의 ignored `workspace/`를 한 번만 만든 뒤 그 안에서 작업합니다.
+
+```sh
+python3 scripts/new-workspace.py exercises/01-request-and-process
+```
 
 ```text
 exercises/NN-name/
 ├── README.md
 ├── skeleton/
+├── workspace/   # 생성 후 학습자가 수정; Git에서 제외
 ├── reference/
 └── verify.sh
 ```
 
-07은 정상 스택에 한 가지 오류를 주입해 진단합니다. 08–18은 운영 문서, 정책, 상태 기계 또는 작은 도구를 직접 완성합니다. 각 `skeleton`은 구현 전에는 반드시 실패하고, `reference`는 같은 검사에 통과해야 합니다. 루트 전체 검증은 두 상태를 모두 실행해 검사기가 미완성 구현을 실제로 거부하는지도 확인합니다.
+각 exercise 디렉터리의 `./verify.sh workspace`는 학습자의 결과만 검사합니다. 인자를 생략해도 `workspace`를 선택하므로 답안이 대신 통과하는 일이 없습니다. 먼저 자신의 결과와 설명을 완성한 뒤에만 같은 exercise의 `reference/` source와 `./verify.sh reference`를 비교합니다. Root `reference/`는 답안이 아니라 학습 중 찾아보는 빠른 참고 문서입니다.
 
-### Part I 실습
+07은 구현 답안이 없는 분석형 예외입니다. 정상 스택에 오류를 한 가지씩 주입하고 `workspace/evidence.md`에 관찰과 복구 판단을 기록합니다. 08·17·18의 `reference/`도 유일한 정답 code가 아니라 자동 검사를 통과하는 expected evidence 예시입니다.
 
-| 실습 | 확인할 경계 |
-|---|---|
-| [01 요청과 프로세스](exercises/01-request-and-process/README.md) | 전경 서버 프로세스와 HTTP |
-| [02 컨테이너](exercises/02-container/README.md) | image, container와 PID 1 |
-| [03 Compose](exercises/03-compose/README.md) | network, service discovery와 volume |
-| [04 gateway와 runtime](exercises/04-gateway-runtime/README.md) | Nginx와 PHP-FPM 연결 |
-| [05 데이터베이스](exercises/05-database/README.md) | 초기화, 영속화, backup과 restore |
-| [06 애플리케이션 초기화](exercises/06-app-bootstrap/README.md) | 재시도와 멱등한 seed |
-| [07 장애 진단](exercises/07-troubleshooting/README.md) | 실패 계층을 좁히는 순서 |
+### 문서에서 다음 단계까지
 
-### Part II 실습
+각 행을 위에서 아래로 수행합니다. 별도 `examples/`는 없으며 02의 `breakages/`와 07의 scenario가 좁은 실패 관찰 자료입니다.
 
-| 실습 | 검증하는 운영 계약 |
-|---|---|
-| [08 운영 계약](exercises/08-production-contract/README.md) | endpoint, 데이터 분류, SLO, 위험과 준비 조건 |
-| [09 호스트 강화](exercises/09-host-hardening/README.md) | SSH·Docker·방화벽·backup 위험 감사 |
-| [10 공개 TLS](exercises/10-public-tls/README.md) | SAN, chain, key mode, expiry와 renewal |
-| [11 release 산출물](exercises/11-release-artifact/README.md) | Dockerfile, digest, SBOM, provenance와 rollback |
-| [12 배포와 rollback](exercises/12-deployment-rollback/README.md) | lock, preflight, staged release와 commit |
-| [13 secret 회전](exercises/13-secret-rotation/README.md) | 후보 검증, 원자 전환, 폐기와 redacted audit |
-| [14 관측성](exercises/14-observability/README.md) | readiness, request ID, 구조화 log와 metric |
-| [15 재해 복구](exercises/15-disaster-recovery/README.md) | atomic backup, checksum과 안전한 restore |
-| [16 용량과 업데이트](exercises/16-capacity-and-updates/README.md) | headroom, 고갈 horizon, connection·지원 budget |
-| [17 사고 대응](exercises/17-incident-response/README.md) | 사실·가설, 가역 조치, 복구 검증과 follow-up |
-| [18 재구축](exercises/18-production-rebuild/README.md) | exact release, 외부 backup, RPO·RTO와 failure drill |
+| 순서 | 문서 | 관찰 예제 | 직접 수행 | 수정 위치 | 검증 | 완료 뒤 비교·다음 |
+|---:|---|---|---|---|---|---|
+| 01 | [웹 요청과 서버](docs/01-web-request-and-server.md) | — | [요청·프로세스](exercises/01-request-and-process/README.md) | `exercises/01-request-and-process/workspace/server.py` | `exercises/01-request-and-process/verify.sh workspace` | `exercises/01-request-and-process/reference/` → 02 |
+| 02 | [Docker image와 container](docs/02-docker-image-and-container.md) | [`breakages/`](exercises/02-container/breakages/) PID 1 실패 | [컨테이너](exercises/02-container/README.md) | `exercises/02-container/workspace/Dockerfile` | `exercises/02-container/verify.sh workspace` | `exercises/02-container/reference/` → 03 |
+| 03 | [Compose network와 storage](docs/03-compose-network-and-storage.md) | — | [Compose](exercises/03-compose/README.md) | `exercises/03-compose/workspace/compose.yaml` | `exercises/03-compose/verify.sh workspace` | `exercises/03-compose/reference/` → 04 |
+| 04 | [Nginx·TLS·PHP-FPM](docs/04-nginx-tls-and-php-fpm.md) | — | [gateway/runtime](exercises/04-gateway-runtime/README.md) | `exercises/04-gateway-runtime/workspace/`의 FPM·Nginx 설정 | `exercises/04-gateway-runtime/verify.sh workspace` | `exercises/04-gateway-runtime/reference/` → 05 |
+| 05 | [DB lifecycle](docs/05-database-lifecycle.md) | — | [데이터베이스](exercises/05-database/README.md) | `exercises/05-database/workspace/`의 DB 설정·entrypoint | `exercises/05-database/verify.sh workspace` | `exercises/05-database/reference/` → PHP/PDO 참고 자료 |
+| 06 | [PHP/PDO 기초](reference/php-pdo-bootstrap.md) → [멱등 초기화](docs/06-idempotent-app-bootstrap.md) | — | [앱 초기화](exercises/06-app-bootstrap/README.md) | `exercises/06-app-bootstrap/workspace/app/` | `exercises/06-app-bootstrap/verify.sh workspace` | `exercises/06-app-bootstrap/reference/` → 07 |
+| 07 | [장애 진단과 복구](docs/07-operations-debugging-and-recovery.md) | [6개 fault scenario](exercises/07-troubleshooting/scenarios/) | [장애 조사](exercises/07-troubleshooting/README.md) | `exercises/07-troubleshooting/workspace/evidence.md` | `exercises/07-troubleshooting/verify.sh scenarios` + `exercises/07-troubleshooting/verify.sh workspace` | 수동 인과 검토 → 08 |
+| 08 | [운영 계약](docs/08-production-contract-and-threat-model.md) | — | [운영 계약](exercises/08-production-contract/README.md) | `exercises/08-production-contract/workspace/contract.yaml` | `exercises/08-production-contract/verify.sh workspace` | expected evidence `exercises/08-production-contract/reference/` → 09 |
+| 09 | [Linux host 강화](docs/09-linux-host-provisioning-and-hardening.md) | — | [host 감사](exercises/09-host-hardening/README.md) | `exercises/09-host-hardening/workspace/audit.py` | `exercises/09-host-hardening/verify.sh workspace` | `exercises/09-host-hardening/reference/` → 10 |
+| 10 | [DNS·ACME·TLS](docs/10-dns-acme-and-public-tls.md) | — | [TLS lifecycle](exercises/10-public-tls/README.md) | `exercises/10-public-tls/workspace/tls-lifecycle.sh` | `exercises/10-public-tls/verify.sh workspace` | `exercises/10-public-tls/reference/` → 11 |
+| 11 | [release 산출물](docs/11-image-registry-and-release-artifacts.md) | — | [release artifact](exercises/11-release-artifact/README.md) | `exercises/11-release-artifact/workspace/{Dockerfile,release.yaml}` | `exercises/11-release-artifact/verify.sh workspace` | `exercises/11-release-artifact/reference/` → 12 |
+| 12 | [배포와 rollback](docs/12-ci-cd-deployment-and-rollback.md) | — | [배포 상태 기계](exercises/12-deployment-rollback/README.md) | `exercises/12-deployment-rollback/workspace/deploy.py` | `exercises/12-deployment-rollback/verify.sh workspace` | `exercises/12-deployment-rollback/reference/` → 13 |
+| 13 | [운영 secret](docs/13-production-secrets-and-configuration.md) | — | [secret rotation](exercises/13-secret-rotation/README.md) | `exercises/13-secret-rotation/workspace/rotate.py` | `exercises/13-secret-rotation/verify.sh workspace` | `exercises/13-secret-rotation/reference/` → 14 |
+| 14 | [관측성과 경보](docs/14-observability-and-alerting.md) | — | [관측 service](exercises/14-observability/README.md) | `exercises/14-observability/workspace/app.py` | `exercises/14-observability/verify.sh workspace` | `exercises/14-observability/reference/` → 15 |
+| 15 | [backup과 DR](docs/15-backup-restore-and-disaster-recovery.md) | — | [backup/restore](exercises/15-disaster-recovery/README.md) | `exercises/15-disaster-recovery/workspace/backup.py` | `exercises/15-disaster-recovery/verify.sh workspace` | `exercises/15-disaster-recovery/reference/` → 16 |
+| 16 | [용량과 update](docs/16-capacity-resource-limits-and-updates.md) | — | [용량 계획](exercises/16-capacity-and-updates/README.md) | `exercises/16-capacity-and-updates/workspace/plan.py` | `exercises/16-capacity-and-updates/verify.sh workspace` | `exercises/16-capacity-and-updates/reference/` → 17 |
+| 17 | [사고 대응](docs/17-incident-response-and-runbooks.md) | [사고 대응 runbook 색인](docs/runbooks/00-index.md) | [사고 기록](exercises/17-incident-response/README.md) | `exercises/17-incident-response/workspace/response.yaml` | `exercises/17-incident-response/verify.sh workspace` | expected evidence `exercises/17-incident-response/reference/` → 18 |
+| 18 | [재구축 Capstone](docs/18-production-rebuild-capstone.md) | [host rebuild runbook](docs/runbooks/09-host-rebuild.md) | [재구축 계획](exercises/18-production-rebuild/README.md) | `exercises/18-production-rebuild/workspace/rebuild-plan.yaml` | `exercises/18-production-rebuild/verify.sh workspace` | synthetic `exercises/18-production-rebuild/reference/` → 폐기 VPS 실행·외부 증거 → 종료 |
 
 ## 필요한 환경
 
@@ -142,7 +146,7 @@ Linux, macOS와 WSL2에서 실행할 수 있습니다. Docker daemon이 Linux co
 
 ## 준비와 전체 검증
 
-저장소 루트에서 먼저 최종 구조를 정리하고 검증 의존성을 준비합니다.
+저장소 루트에서 repository 검증 의존성을 준비합니다.
 
 ```sh
 ./prepare.sh
@@ -168,12 +172,13 @@ Linux, macOS와 WSL2에서 실행할 수 있습니다. Docker daemon이 Linux co
 
 1. 최종 디렉터리 구조, 문서 링크, 설정 형식과 스크립트 문법
 2. 정적 검증기가 알려진 잘못된 구조를 실제로 거부하는지
-3. 01–06 reference 통과와 skeleton 실패, 07 장애 시나리오
-4. 08–18 reference 통과와 skeleton 실패
-5. 상태형 실습의 반복 실행 가능성
-6. container, network, volume, run image와 전용 build cache의 정리
+3. workspace 생성기·07 evidence checker의 방향성
+4. 01–06 reference 통과와 skeleton 실패, 07 장애 시나리오
+5. 08–18 reference 통과와 skeleton 실패
+6. 상태형 실습의 반복 실행 가능성
+7. container, network, volume, run image와 전용 build cache의 정리
 
-전체 로그는 성공·실패와 관계없이 저장소 밖의 임시 디렉터리에 남고 마지막에 `VERIFY LOG` 경로가 출력됩니다. `VERIFY_LOG=/저장소/밖/원하는/절대/경로 ./verify.sh`로 위치를 바꿀 수 있으며 저장소 내부 경로는 소스 보호를 위해 거부합니다. `.verify/venv`는 준비된 의존성이므로 남기지만, 빌드 결과와 검증 실행 부산물은 성공·실패·중단 여부와 관계없이 정리합니다.
+전체 로그는 성공·실패와 관계없이 저장소 밖의 임시 디렉터리에 남고 마지막에 `VERIFY LOG` 경로가 출력됩니다. `VERIFY_LOG=/저장소/밖/원하는/절대/경로 ./verify.sh`로 위치를 바꿀 수 있으며 parent 디렉터리는 미리 만들어 두어야 합니다. 저장소 내부 경로와 기존 파일·symlink는 소스 보호를 위해 거부합니다. `.verify/venv`는 준비된 의존성이므로 남기지만, 빌드 결과와 검증 실행 부산물은 성공·실패·중단 여부와 관계없이 정리합니다.
 
 문제를 좁힐 때는 내부 범위를 별도로 실행할 수 있습니다.
 
@@ -185,7 +190,7 @@ make verify-foundations
 make verify-repeatability
 ```
 
-정식 완료 판정은 항상 `./verify.sh`의 결과를 사용합니다.
+Repository 자료와 자동 검사기의 정식 판정은 항상 `./verify.sh`의 결과를 사용합니다. 학습 과정 완료에는 각 workspace 결과와 자기 설명이 필요하며, 18단계는 아래 실제 환경 훈련까지 완료해야 합니다.
 
 ## 실제 공개 환경에서의 사용
 
@@ -206,6 +211,8 @@ docker system prune -a --volumes
 사고 대응 중에는 증거와 rollback 산출물을 보존한 뒤, 무엇이 공간을 사용하고 있는지 확인하고 대상을 명시해 정리합니다.
 
 ## Runbook과 참고 자료
+
+아래 root `reference/`는 exercise 답안이 아니라 필요할 때 조회하는 quick reference입니다. Exercise의 `reference/`는 자신의 workspace가 통과한 뒤에만 비교합니다.
 
 - [운영 runbook 색인](docs/runbooks/00-index.md)
 - [용어집](reference/glossary.md)

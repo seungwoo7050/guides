@@ -12,19 +12,24 @@
 
 ## 실행
 
-```sh
-./verify.sh reference
-```
-
-시작 코드의 TODO를 채운 뒤:
+저장소 루트에서 작업공간을 만든 뒤 학습자 사본만 수정합니다.
 
 ```sh
-./verify.sh skeleton
+python3 scripts/new-workspace.py exercises/02-container
+cd exercises/02-container
 ```
+
+`workspace/Dockerfile`의 미완성 경계를 채웁니다. 시작 상태에서는 실패하고 구현 뒤에는 통과해야 합니다.
+
+```sh
+./verify.sh workspace
+```
+
+관찰과 자기 설명을 끝낸 뒤에만 `reference/`와 `./verify.sh reference`를 비교합니다.
 
 ## Dockerfile 작성
 
-`skeleton/Dockerfile`을 완성합니다.
+`workspace/Dockerfile`을 완성합니다.
 
 1. `python:3.12-slim-bookworm`에서 시작합니다.
 2. 작업 디렉터리를 `/app`으로 둡니다.
@@ -46,9 +51,20 @@ docker rm web-infra-exercise02-background
 
 서버를 백그라운드로 보낸 셸이 종료되면 컨테이너도 종료됩니다.
 
+## 권장 구현 순서
+
+아래 번호는 실제 Git 이력이 아니라 `reference/` 전체의 학습용 construction order입니다. 파일마다 번호를 다시 시작하지 않습니다.
+
+| 번호 | 구현 경계 |
+|---:|---|
+| 1 | container에서 실행할 HTTP server 계약 |
+| 2 | 고정 Python runtime과 listen 환경 |
+| 3 | artifact copy와 ownership |
+| 4 | non-root process·port·exec entrypoint |
+
 ## 완료 기준
 
-- [ ] `./verify.sh skeleton`이 통과하고 새 이미지의 서버가 비특권 UID/GID로 `0.0.0.0:8080`에서 응답한다.
+- [ ] `./verify.sh workspace`가 통과하고 새 이미지의 서버가 비특권 UID/GID로 `0.0.0.0:8080`에서 응답한다.
 - [ ] 컨테이너의 PID 1이 Python 서버이며 종료 신호를 받은 뒤 컨테이너가 제한 시간 안에 멈추는지 확인한다.
 - [ ] 쓰기 가능 계층에 만든 파일은 컨테이너 재생성 뒤 사라지고 이미지의 파일은 다시 나타나는 증거를 남긴다.
 

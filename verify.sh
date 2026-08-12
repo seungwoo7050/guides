@@ -1,6 +1,12 @@
 #!/bin/sh
 set -u
 
+if [ "$#" -ne 0 ]; then
+    echo "사용법: ./verify.sh" >&2
+    echo "learner 구현은 각 exercise 디렉터리의 ./verify.sh workspace로 검사하세요." >&2
+    exit 2
+fi
+
 ROOT=$(CDPATH='' cd -- "$(dirname -- "$0")" && pwd -P)
 TIMESTAMP=$(date +%Y%m%d-%H%M%S)
 LOG=${VERIFY_LOG:-${TMPDIR:-/tmp}/guide-web-infra-verify-${TIMESTAMP}-$$.log}
@@ -13,8 +19,8 @@ case "$LOG" in
 esac
 LOG_PARENT=${LOG%/*}
 [ "$LOG_PARENT" != "$LOG" ] || LOG_PARENT="$ROOT"
-mkdir -p "$LOG_PARENT" 2>/dev/null || {
-    printf '[FAIL] 로그 디렉터리를 만들 수 없습니다: %s\n' "$LOG_PARENT" >&2
+[ -d "$LOG_PARENT" ] && [ ! -L "$LOG_PARENT" ] || {
+    printf '[FAIL] VERIFY_LOG의 기존 실제 디렉터리를 지정하세요: %s\n' "$LOG_PARENT" >&2
     exit 2
 }
 LOG_DIRECTORY=$(CDPATH='' cd -- "$LOG_PARENT" && pwd -P) || {
@@ -28,9 +34,13 @@ case "$LOG" in
         exit 2
         ;;
 esac
-if ! : > "$LOG"
+if [ -e "$LOG" ] || [ -L "$LOG" ]; then
+    printf '[FAIL] 기존 VERIFY_LOG를 덮어쓰지 않습니다: %s\n' "$LOG" >&2
+    exit 2
+fi
+if ! (set -C; : > "$LOG") 2>/dev/null
 then
-    printf '[FAIL] 검증 로그를 쓸 수 없습니다: %s\n' "$LOG" >&2
+    printf '[FAIL] 새 검증 로그를 배타적으로 만들 수 없습니다: %s\n' "$LOG" >&2
     exit 2
 fi
 
@@ -153,17 +163,23 @@ PY
 from __future__ import annotations
 
 import hashlib
+import os
 import stat
 import sys
 from pathlib import Path
 
 root = Path(sys.argv[1]).resolve()
-paths = {
-    root / "prepare.sh",
-    root / "scripts" / "requirements.txt",
-    *root.rglob("Dockerfile*"),
-    *root.glob("exercises/*/*/compose.yaml"),
-}
+paths = {root / "prepare.sh", root / "scripts" / "requirements.txt"}
+for current, directories, files in os.walk(root, topdown=True, followlinks=False):
+    directories[:] = [
+        name
+        for name in directories
+        if name not in {".git", ".verify", "__pycache__", "workspace", ".workspace.lock"}
+        and not name.startswith(".workspace.tmp.")
+    ]
+    for name in files:
+        if name.startswith("Dockerfile") or name == "compose.yaml":
+            paths.add(Path(current) / name)
 digest = hashlib.sha256()
 for path in sorted((item for item in paths if item.is_file()), key=lambda item: item.relative_to(root).as_posix()):
     relative = path.relative_to(root).as_posix().encode("utf-8")
@@ -219,17 +235,30 @@ from pathlib import Path
 root = Path(sys.argv[1]).resolve()
 log = Path(sys.argv[2]).resolve()
 destination = Path(sys.argv[3])
-ignored_parts = {".git", ".verify", "__pycache__"}
+ignored_parts = {".git", ".verify", "__pycache__", "workspace", ".workspace.lock"}
 ignored_names = {"make-out.txt", "tree.txt"}
 records: list[str] = []
 
-for path in sorted(root.rglob("*")):
-    try:
-        relative = path.relative_to(root)
-    except ValueError:
-        continue
-    if any(part in ignored_parts for part in relative.parts):
-        continue
+paths: list[Path] = []
+for current, directories, files in os.walk(root, topdown=True, followlinks=False):
+    current_path = Path(current)
+    kept: list[str] = []
+    for name in directories:
+        path = current_path / name
+        if name in ignored_parts or name.startswith(".workspace.tmp."):
+            continue
+        paths.append(path)
+        if not path.is_symlink():
+            kept.append(name)
+    directories[:] = kept
+    for name in files:
+        path = current_path / name
+        if name in ignored_parts or name.startswith(".workspace.tmp."):
+            continue
+        paths.append(path)
+
+for path in sorted(paths):
+    relative = path.relative_to(root)
     if len(relative.parts) == 1 and relative.name in ignored_names:
         continue
     if path.resolve() == log:
@@ -336,6 +365,9 @@ prepare_worktree()
         set -- \
             --exclude='./.git' \
             --exclude='./.verify' \
+            --exclude='./exercises/*/workspace' \
+            --exclude='./exercises/*/.workspace.lock' \
+            --exclude='./exercises/*/.workspace.tmp.*' \
             --exclude='./make-out.txt' \
             --exclude='./tree.txt'
         [ -z "$log_relative" ] || set -- "$@" "--exclude=./$log_relative"
@@ -519,6 +551,10 @@ run "static repository contract" \
     make PYTHON="$VENV_PYTHON" static
 run "verifier meta-tests" \
     make PYTHON="$VENV_PYTHON" meta
+run "learner workspace generator" \
+    make PYTHON="$VENV_PYTHON" workspace-check
+run "analysis evidence checker" \
+    make PYTHON="$VENV_PYTHON" evidence-check
 run "foundations 01-07: reference pass and skeleton rejection" \
     make PYTHON="$VENV_PYTHON" verify-foundations
 run "production 08-18: reference pass and skeleton rejection" \

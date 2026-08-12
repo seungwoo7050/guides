@@ -95,7 +95,8 @@ Docker, Compose, Nginx, TLS, 데이터베이스 운영 경험은 요구하지 �
 
 ```text
 README.md   문제 계약과 완료 조건
-skeleton/   학습자가 수정할 시작 상태
+skeleton/   검증기가 보존하는 canonical 시작 상태
+workspace/  skeleton/template에서 만든 학습자 수정 위치
 reference/  비교 가능한 완성 상태
 verify.sh   자동 검증 진입점
 ```
@@ -104,10 +105,15 @@ verify.sh   자동 검증 진입점
 
 1. README에서 성공 조건과 실패 조건을 먼저 읽습니다.
 2. 예상 결과를 적습니다.
-3. `skeleton`을 수정합니다.
-4. 해당 실습의 검증 명령을 실행합니다.
-5. 통과한 뒤에만 `reference`와 비교합니다.
-6. 구현이 다른 경우 결과 계약이 같은지 설명합니다.
+3. 저장소 루트에서 `python3 scripts/new-workspace.py exercises/NN-name`을 실행합니다.
+4. `workspace`만 수정합니다. 기존 workspace는 자동으로 덮어쓰지 않습니다.
+5. 해당 실습에서 `./verify.sh workspace`를 실행합니다.
+6. 결과와 자기 설명을 완성한 뒤에만 `reference`와 비교합니다.
+7. 구현이 다른 경우 결과 계약이 같은지 설명하고 다음 장으로 이동합니다.
+
+인자를 생략한 exercise verifier도 learner `workspace`를 선택합니다. `skeleton`과 `reference` mode는 repository 검증기가 방향성을 확인할 때 명시적으로 사용합니다. Root `reference/`는 exercise 답안이 아니라 빠른 참고 문서입니다.
+
+07 장애 진단은 code reference가 없는 분석형 예외입니다. `template/evidence.md`에서 workspace를 만들고 scenario 실행 결과를 기록한 뒤 구조 검사와 수동 인과 검토를 수행합니다. 08·17·18의 reference는 유일한 문장 정답이 아니라 자동 계약을 만족하는 expected evidence 예시입니다.
 
 저장소를 처음 받은 뒤에는 루트에서 다음 두 명령을 순서대로 실행합니다.
 
@@ -130,7 +136,7 @@ make verify-foundations  # Docker를 사용하는 01–07 검사
 make verify-repeatability # 대표 상태형 실습 재실행
 ```
 
-정식 완료 판정은 `./verify.sh`의 최종 `RESULT`를 사용합니다. 실제 공개 DNS, 공인 인증서와 VPS의 상태는 로컬 검증기가 대신 증명할 수 없으므로, 해당 장의 외부 검증 절차와 증거를 별도로 남깁니다.
+Repository 자료의 정식 판정은 `./verify.sh`의 최종 `RESULT`를 사용합니다. 학습 완료에는 workspace와 자기 설명이 필요합니다. 실제 공개 DNS, 공인 인증서와 VPS의 상태는 로컬 검증기가 대신 증명할 수 없으므로, 18단계의 폐기 가능한 실제 환경 절차와 repository 밖 redacted evidence까지 별도로 남깁니다.
 
 완성 예제를 그대로 복사해 통과시키는 것은 학습 완료가 아닙니다. 특히 운영 과정에서는 “파일이 존재한다”보다 다음 증거가 중요합니다.
 

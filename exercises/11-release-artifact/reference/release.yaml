@@ -1,3 +1,4 @@
+# [Implementation 4] release identity와 exact image digest를 배포 정본으로 선언합니다.
 schema_version: 1
 release_id: 2026-08-07.1
 source_revision: a1b2c3d4e5f60718293a4b5c6d7e8f9012345678
@@ -8,6 +9,7 @@ component:
   display_tags:
     - 1.4.2
     - git-a1b2c3d
+# [Implementation 5] schema/config/secret와 rollback digest의 호환 범위를 함께 고정합니다.
 compatibility:
   database_schema:
     min: 17
@@ -22,6 +24,7 @@ rollback:
   database_schema:
     min: 17
     max: 18
+# [Implementation 6] SBOM·provenance subject와 registry retention, smoke evidence를 digest에 연결합니다.
 supply_chain:
   sbom:
     format: spdx-json

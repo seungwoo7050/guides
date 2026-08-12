@@ -6,7 +6,7 @@
 
 ## 구현 계약
 
-`skeleton/rotate.py`의 `SecretStore`를 완성합니다.
+`workspace/rotate.py`의 `SecretStore`를 완성합니다.
 
 - secret 디렉터리 mode 700
 - secret 파일 mode 600
@@ -21,18 +21,31 @@
 ## 검증
 
 ```sh
+python3 scripts/new-workspace.py exercises/13-secret-rotation
 cd exercises/13-secret-rotation
-./verify.sh skeleton
-./verify.sh reference
+./verify.sh workspace
 ```
 
-검증기는 실패한 v2 전환, 성공한 v2 전환, v1 폐기, 파일 권한, validator 예외 뒤 상태, HMAC fingerprint와 로그 유출을 확인합니다.
+작업공간 생성 명령은 저장소 루트에서 실행합니다. 검증기는 실패한 v2 전환, 성공한 v2 전환, v1 폐기, 파일 권한, validator 예외 뒤 상태, HMAC fingerprint와 로그 유출을 확인합니다. 자기 설명까지 마친 뒤에만 `reference/`와 `./verify.sh reference`를 비교합니다.
 
 실습은 audit key를 별도 파일로 분리합니다. 실제 운영에서는 감사용 key를 회전 대상 secret과 같은 권한 경계에 두지 않고 별도 secret manager 또는 감사 시스템이 소유해야 합니다.
 
+## 권장 구현 순서
+
+아래 번호는 실제 Git 이력이 아니라 `reference/` 전체의 학습용 construction order입니다. 파일마다 번호를 다시 시작하지 않습니다.
+
+| 번호 | 구현 경계 |
+|---:|---|
+| 1 | secret root와 별도 audit-key ownership |
+| 2 | name·path·mode invariant와 rotation lock |
+| 3 | HMAC fingerprint와 append-only event |
+| 4 | versioned candidate atomic write |
+| 5 | consumer validation 뒤 current switch |
+| 6 | current 조회·보호된 retire lifecycle |
+
 ## 완료 기준
 
-- [ ] `./verify.sh skeleton`이 통과하고 실패한 후보는 current가 되지 않으며 성공한 version만 원자적으로 전환된다.
+- [ ] `./verify.sh workspace`가 통과하고 실패한 후보는 current가 되지 않으며 성공한 version만 원자적으로 전환된다.
 - [ ] secret 디렉터리와 파일 권한, 경로 탈출 입력 거부, current version 폐기 거부를 직접 확인한다.
 - [ ] event log에 secret 값이나 직접 hash가 없고 별도 audit key의 HMAC fingerprint와 필요한 metadata만 남는다.
 

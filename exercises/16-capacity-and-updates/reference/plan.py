@@ -7,6 +7,7 @@ from pathlib import Path
 from typing import Any
 
 
+# [Implementation 1] finding을 evidence·owner·deadline·verify·rollback이 있는 stable action schema로 만듭니다.
 def action(finding_id: str, severity: str, evidence: str, action_text: str, owner: str, as_of: date, days: int, verification: str, rollback: str) -> dict[str, Any]:
     return {
         "id": finding_id,
@@ -20,6 +21,7 @@ def action(finding_id: str, severity: str, evidence: str, action_text: str, owne
     }
 
 
+# [Implementation 2] input와 time range를 검증한 뒤 derived resource budget을 계산합니다.
 def analyze(metrics_path: Path, components_path: Path, policy_path: Path) -> dict:
     with metrics_path.open(newline="", encoding="utf-8") as handle:
         rows = list(csv.DictReader(handle))
@@ -50,6 +52,7 @@ def analyze(metrics_path: Path, components_path: Path, policy_path: Path) -> dic
     p95_ms = float(latest["p95_ms"])
     error_rate = float(latest["error_rate"])
 
+    # [Implementation 3] capacity·OOM·latency·error 증거를 실행 가능한 finding으로 바꿉니다.
     owners = policy["owners"]
     findings: list[dict[str, Any]] = []
     if memory_headroom < float(policy["memory_headroom_percent_min"]):
@@ -116,6 +119,7 @@ def analyze(metrics_path: Path, components_path: Path, policy_path: Path) -> dic
             "완화 변경이 오류를 늘리면 이전 exact release와 설정으로 복귀",
         ))
 
+    # [Implementation 4] component support end와 base rebuild lifecycle을 별도로 판정합니다.
     max_age = int(policy["base_rebuild_max_age_days"])
     warning_days = int(policy["support_end_warning_days"])
     for component in components_data.get("components", []):
@@ -150,6 +154,7 @@ def analyze(metrics_path: Path, components_path: Path, policy_path: Path) -> dic
                 "현재 application digest 유지 또는 재배포",
             ))
 
+    # [Implementation 5] 계산값과 ID 정렬 finding을 재현 가능한 report로 투영합니다.
     return {
         "as_of": as_of.isoformat(),
         "capacity": {

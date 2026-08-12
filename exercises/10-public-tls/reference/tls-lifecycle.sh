@@ -1,6 +1,7 @@
 #!/bin/sh
 set -eu
 
+# [Implementation 1] command·hostname·수명 입력을 filesystem 변경 전에 검증합니다.
 command=${1:-}
 workdir=${2:-}
 hostname=${3:-}
@@ -21,6 +22,7 @@ esac
 mkdir -p "$workdir"
 umask 077
 
+# [Implementation 2] GNU와 BSD stat 차이를 감싸 key mode invariant를 동일하게 판정합니다.
 file_mode() {
     if stat -c '%a' "$1" >/dev/null 2>&1; then
         stat -c '%a' "$1"
@@ -29,6 +31,7 @@ file_mode() {
     fi
 }
 
+# [Implementation 3] local CA key와 certificate를 제한 권한의 후보 파일에서 만든 뒤 순차 공개합니다.
 init_ca() {
     if [ -f "$workdir/ca.key" ] && [ -f "$workdir/ca.crt" ]; then
         return
@@ -48,6 +51,7 @@ init_ca() {
     mv "$workdir/ca.crt.tmp" "$workdir/ca.crt"
 }
 
+# [Implementation 4] key·CSR·SAN certificate를 격리된 후보 directory에서 생성합니다.
 issue_certificate() {
     days=$1
     case "$days" in
@@ -103,6 +107,7 @@ EOF
     trap - EXIT HUP INT TERM
 }
 
+# [Implementation 5] chain·hostname·expiry·key mode를 모두 통과해야 current를 신뢰합니다.
 verify_certificate() {
     min_days=$1
     case "$min_days" in
@@ -125,6 +130,7 @@ verify_certificate() {
     fi
 }
 
+# [Implementation 6] issue·renew·verify public CLI를 검증된 lifecycle 함수에 연결합니다.
 case "$command" in
   issue|renew)
     issue_certificate "$value"

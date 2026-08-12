@@ -6,6 +6,7 @@ RUN apt-get update \
         libfcgi-bin \
     && rm -rf /var/lib/apt/lists/*
 
+# [Implementation 3] 완성된 pool contract를 foreground FPM image에 조립합니다.
 COPY www.conf /usr/local/etc/php-fpm.d/www.conf
 WORKDIR /var/www/html
 EXPOSE 9000

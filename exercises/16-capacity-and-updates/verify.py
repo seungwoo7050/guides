@@ -32,8 +32,8 @@ def load_module(path: Path) -> ModuleType:
 
 
 def main() -> int:
-    if len(sys.argv) != 2 or sys.argv[1] not in {"skeleton", "reference"}:
-        print("사용법: verify.py [skeleton|reference]", file=sys.stderr)
+    if len(sys.argv) != 2 or sys.argv[1] not in {"skeleton", "workspace", "reference"}:
+        print("사용법: verify.py [skeleton|workspace|reference]", file=sys.stderr)
         return 2
     module = load_module(ROOT / sys.argv[1] / "plan.py")
     result = module.analyze(ROOT / "fixtures" / "metrics.csv", ROOT / "fixtures" / "components.json", ROOT / "fixtures" / "policy.json")

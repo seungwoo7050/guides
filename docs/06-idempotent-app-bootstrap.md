@@ -641,13 +641,14 @@ exec "$@"
 실습 위치:
 
 ```sh
+python3 scripts/new-workspace.py exercises/06-app-bootstrap
 cd exercises/06-app-bootstrap
 ```
 
-### 실습 1: 전체 완성 코드 실행
+### 실습 1: 자신의 초기화 구현 실행
 
 ```sh
-./verify.sh reference
+./verify.sh workspace
 ```
 
 검증 항목:
@@ -661,7 +662,7 @@ cd exercises/06-app-bootstrap
 
 ### 실습 2: 시작 코드의 초기화 완성
 
-`skeleton/app/docker-entrypoint.sh`와 `skeleton/app/bin/bootstrap.php`의 TODO를 채웁니다.
+`workspace/app/docker-entrypoint.sh`와 `workspace/app/bin/bootstrap.php`의 미완성 경계를 채웁니다.
 
 - 필수 환경변수와 `DB_PASSWORD_FILE` 경로 검증
 - 횟수를 제한한 데이터베이스 연결 재시도
@@ -687,6 +688,8 @@ docker compose exec -T db mariadb ... -e 'SELECT COUNT(*) FROM notes;'
 ```
 
 초기 데이터의 행 수가 증가하지 않아야 합니다.
+
+실패·반복 실행 관찰과 자기 설명을 마친 뒤에만 `reference/`와 `./verify.sh reference`를 비교합니다.
 
 ### 실습 5: 부분 실패
 

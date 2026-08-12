@@ -6,7 +6,7 @@
 
 > 서버는 특정 주소와 포트에서 연결을 기다리는 프로세스이며, HTTP는 그 연결 위에서 요청과 응답의 형식을 정합니다.
 
-## 1. 요청 흐름을 확인할 예제
+## 1. 요청 흐름을 확인할 실습 시스템
 
 `exercises/01-request-and-process`의 작은 HTTP 서버를 사용합니다.
 
@@ -423,16 +423,17 @@ TCP 연결 뒤 TLS 단계에서 인증서의 신뢰, 도메인, 유효기간 등
 실습 위치:
 
 ```sh
+python3 scripts/new-workspace.py exercises/01-request-and-process
 cd exercises/01-request-and-process
 ```
 
-### 실습 1: 완성 서버 관찰
+### 실습 1: 시작 상태와 자신의 서버
 
 ```sh
-./verify.sh reference
+./verify.sh workspace
 ```
 
-검증 스크립트를 읽고 다음을 찾습니다.
+시작 상태에서는 실패해야 합니다. `workspace/server.py`를 구현한 뒤 검증 스크립트를 읽고 다음을 찾습니다.
 
 - 서버를 백그라운드로 시작하는 줄
 - PID를 저장하는 줄
@@ -442,10 +443,10 @@ cd exercises/01-request-and-process
 
 ### 실습 2: 포트 변경
 
-`reference/server.py`는 `APP_PORT` 환경변수를 읽습니다.
+자신이 완성한 `workspace/server.py`는 `APP_PORT` 환경변수를 읽습니다.
 
 ```sh
-APP_PORT=18082 python3 reference/server.py
+APP_PORT=18082 python3 workspace/server.py
 ```
 
 다른 터미널에서 다음 결과를 비교합니다.
@@ -465,6 +466,8 @@ curl -i http://127.0.0.1:18082/healthz
 - `0.0.0.0`: 모든 IPv4 인터페이스에서 수신
 
 Docker 컨테이너에서 호스트의 포트 게시를 통해 접근하려면 애플리케이션이 일반적으로 컨테이너 내부의 `0.0.0.0`에서 연결을 기다려야 합니다.
+
+관찰과 자기 설명을 마친 뒤에만 `reference/server.py`와 `./verify.sh reference`를 비교합니다.
 
 ## 14. 오류를 잘못 분류하기 쉬운 경우
 

@@ -20,7 +20,7 @@ declare(strict_types=1);
 호스트에 PHP CLI가 있다면 저장소 루트에서 문법만 빠르게 확인할 수 있습니다.
 
 ```sh
-php -l web-infrastructure/exercises/06-app-bootstrap/reference/app/bin/bootstrap.php
+php -l exercises/06-app-bootstrap/workspace/app/bin/bootstrap.php
 ```
 
 ## 환경 변수는 `string|false`입니다
@@ -180,7 +180,7 @@ rollback 실패가 최초 오류를 가리지 않게 하고, 호출자에게는 
 
 ## 초기화 정책은 6장으로 이어집니다
 
-연결 재시도, schema 준비, 고유 seed marker, 부분 실패와 entrypoint의 `exec`는 [멱등한 애플리케이션 초기화](../docs/06-idempotent-app-bootstrap.md)에서 함께 다룹니다. 구현은 [애플리케이션 초기화 실습](../exercises/06-app-bootstrap/README.md)의 `skeleton`과 `reference`로 비교하세요.
+연결 재시도, schema 준비, 고유 seed marker, 부분 실패와 entrypoint의 `exec`는 [멱등한 애플리케이션 초기화](../docs/06-idempotent-app-bootstrap.md)에서 함께 다룹니다. [애플리케이션 초기화 실습](../exercises/06-app-bootstrap/README.md)의 `workspace/`에서 먼저 구현·검증하고 자기 설명을 마친 뒤 `reference/`와 비교하세요.
 
 ## PHP·PDO 원문
 

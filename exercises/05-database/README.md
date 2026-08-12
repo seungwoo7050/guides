@@ -13,15 +13,20 @@
 
 ## 실행
 
-```sh
-./verify.sh reference
-```
-
-시작 코드의 TODO를 채운 뒤:
+저장소 루트에서 작업공간을 만든 뒤 그 사본의 DB 설정과 entrypoint를 수정합니다.
 
 ```sh
-./verify.sh skeleton
+python3 scripts/new-workspace.py exercises/05-database
+cd exercises/05-database
 ```
+
+시작 상태에서는 실패하고 구현 뒤에는 통과해야 합니다.
+
+```sh
+./verify.sh workspace
+```
+
+수명 관찰과 자기 설명을 끝낸 뒤에만 `reference/`와 `./verify.sh reference`를 비교합니다.
 
 검증은 실제 비밀값 파일을 `.example`에서 생성합니다. 생성된 `secrets/*.txt`와 `backups/*.sql`은 Git 대상이 아닙니다.
 
@@ -38,7 +43,7 @@
 ## 수동 명령
 
 ```sh
-cd reference
+cd workspace
 ./prepare-secrets.sh
 docker compose up -d --build
 docker compose logs -f db
@@ -48,9 +53,29 @@ docker compose up -d
 docker compose down -v
 ```
 
+## 권장 구현 순서
+
+아래 번호는 실제 Git 이력이 아니라 `reference/` 전체의 학습용 construction order입니다. 파일마다 번호를 다시 시작하지 않습니다.
+
+| 번호 | 구현 경계 |
+|---:|---|
+| [Implementation 0] | MariaDB client/server dependency 설치 |
+| 1 | listener·datadir·charset·resource 설정 |
+| 2 | secret·volume·network·health ownership |
+| 3 | secret 입력과 identifier validation |
+| 4 | datadir 기반 최초 상태 판정과 `mariadb-install-db` |
+| 5 | 격리된 임시 `mariadbd`와 bounded readiness |
+| 6 | socket SQL 적용·임시 server 종료·최종 `exec` |
+| 7 | 완성된 server 설정·entrypoint의 image assembly |
+| 8 | `mariadb-dump` logical backup |
+| 9 | 명시적 restore target |
+| 10 | deterministic index observation dataset |
+
+`mariadb-install-db`, 임시 `mariadbd`, `mariadb`, `mariadb-admin`, `mariadb-dump`는 4–9번의 실제 중간 CLI이며 0번이 아닙니다. Dockerfile의 같은 `RUN`에 있는 `install -d`는 일반 filesystem 준비이므로 0번이 아니라 7번 image assembly 책임으로 읽습니다.
+
 ## 완료 기준
 
-- [ ] `./verify.sh skeleton`이 통과하고 같은 volume으로 재시작할 때 시스템 테이블과 초기 사용자가 중복 생성되지 않는다.
+- [ ] `./verify.sh workspace`가 통과하고 같은 volume으로 재시작할 때 시스템 테이블과 초기 사용자가 중복 생성되지 않는다.
 - [ ] 컨테이너 재생성 뒤 데이터를 읽고, 논리 backup으로 삭제한 테이블을 복원하며, `EXPLAIN`의 선택 인덱스 변화를 확인한다.
 - [ ] 실제 secret과 backup 산출물이 Git 대상이 아니고 초기화 중 TCP가 열리지 않았다는 증거를 남긴다.
 

@@ -1,3 +1,4 @@
+# [Implementation 2] secret·persistent volume·private network·health의 소유자를 선언합니다.
 services:
   db:
     build:

@@ -28,18 +28,24 @@
 
 ## 실행
 
+저장소 루트에서 분석 기록용 작업공간을 먼저 만듭니다.
+
 ```sh
+python3 scripts/new-workspace.py exercises/07-troubleshooting
 cd exercises/07-troubleshooting
 ./run-scenario.sh wrong-fcgi-port
 ```
 
-전체 자동 검증:
+여섯 fault fixture의 재현과 정리를 확인한 뒤 `workspace/evidence.md`의 각 시나리오에 관찰 명령, 핵심 출력, 최초 실패 경계, 2차 증상과 복구 검증을 기록합니다.
 
 ```sh
-./verify.sh
+./verify.sh scenarios
+./verify.sh workspace
 ```
 
 각 시나리오가 끝나면 자원을 정리합니다. `data-loss`는 의도적으로 볼륨을 삭제하므로 다른 실습 데이터와 프로젝트 이름을 공유하지 않습니다.
+
+`./verify.sh workspace`는 필수 필드와 안전한 관찰 명령 형식을 자동 검사하지만 인과 판단의 정답을 대신하지 않습니다. 실제 출력과 결론은 완료 뒤 수동으로 검토합니다. `data-loss`에서 외부 backup이 없다면 삭제된 사용자의 note는 복구할 수 없습니다. 빈 volume의 재초기화를 유실 데이터의 복구라고 기록하지 않습니다.
 
 ## 답해야 할 질문
 
@@ -51,7 +57,8 @@ cd exercises/07-troubleshooting
 
 ## 완료 기준
 
-- [ ] `./verify.sh`가 모든 시나리오를 통과하고 각 실행 뒤 컨테이너·network·volume이 의도한 범위로 정리된다.
+- [ ] `./verify.sh scenarios`가 모든 시나리오를 통과하고 각 실행 뒤 컨테이너·network·volume이 의도한 범위로 정리된다.
+- [ ] `./verify.sh workspace`가 여섯 시나리오의 완성된 evidence 구조와 안전한 관찰 명령을 확인한다.
 - [ ] 각 장애에 대해 최초 실패 구성요소, 이를 입증한 명령과 출력, 뒤따른 2차 증상을 한 묶음으로 기록한다.
 - [ ] 수정 뒤 구성요소 상태 검사뿐 아니라 외부 사용자 경로와 필요한 데이터 상태까지 다시 확인한다.
 
@@ -60,3 +67,5 @@ cd exercises/07-troubleshooting
 1. `wrong-fcgi-port`에서 gateway 상태 검사 성공과 사용자 요청 502가 동시에 나타날 수 있는 이유는 무엇인가?
 2. `wrong-db-password`와 `wrong-db-host`를 로그 한 줄이 아니라 계층별 명령으로 구분하려면 무엇을 확인해야 하는가?
 3. 장애 조사 중 volume 삭제 같은 비가역 조치를 뒤로 미뤄야 하는 이유는 무엇인가?
+
+이 분석형 실습에는 구현 답안 `reference/`와 Implementation 번호를 만들지 않습니다. 진단 순서는 위 walkthrough를 따르고, 관찰 결과와 인과는 환경에 따라 달라질 수 있습니다.

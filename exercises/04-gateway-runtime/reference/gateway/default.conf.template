@@ -1,3 +1,4 @@
+# [Implementation 5] TLS·static·health·FastCGI route의 실패 경계를 gateway에 모읍니다.
 server {
     listen 443 ssl default_server;
     listen [::]:443 ssl default_server;

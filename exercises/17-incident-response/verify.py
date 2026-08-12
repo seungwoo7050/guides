@@ -23,8 +23,8 @@ def mapping(value: Any, label: str, errors: list[str]) -> dict:
 
 
 def main() -> int:
-    if len(sys.argv) != 2 or sys.argv[1] not in {"skeleton", "reference"}:
-        print("사용법: verify.py [skeleton|reference]", file=sys.stderr)
+    if len(sys.argv) != 2 or sys.argv[1] not in {"skeleton", "workspace", "reference"}:
+        print("사용법: verify.py [skeleton|workspace|reference]", file=sys.stderr)
         return 2
     response = yaml.safe_load((ROOT / sys.argv[1] / "response.yaml").read_text(encoding="utf-8"))
     fixture = yaml.safe_load((ROOT / "fixtures" / "incident.json").read_text(encoding="utf-8"))

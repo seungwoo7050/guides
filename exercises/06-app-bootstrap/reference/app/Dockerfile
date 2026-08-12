@@ -7,6 +7,7 @@ RUN apt-get update \
     && docker-php-ext-install pdo_mysql \
     && rm -rf /var/lib/apt/lists/*
 
+# [Implementation 10] 완성된 initialization과 request code를 foreground FPM image에 조립합니다.
 COPY www.conf /usr/local/etc/php-fpm.d/www.conf
 COPY docker-entrypoint.sh /usr/local/bin/app-entrypoint.sh
 COPY bin/bootstrap.php /opt/app/bootstrap.php

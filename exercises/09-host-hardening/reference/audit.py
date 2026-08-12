@@ -6,6 +6,7 @@ from typing import Any
 Finding = dict[str, str]
 
 
+# [Implementation 1] 모든 진단을 evidence·remediation·safe order가 있는 stable schema로 만듭니다.
 def finding(
     finding_id: str,
     severity: str,
@@ -22,6 +23,7 @@ def finding(
     }
 
 
+# [Implementation 2] user role과 shared key를 먼저 정규화해 뒤 권한 판정의 기준으로 씁니다.
 def audit(snapshot: dict[str, Any]) -> list[Finding]:
     findings: list[Finding] = []
     users = snapshot.get("users", [])
@@ -49,6 +51,7 @@ def audit(snapshot: dict[str, Any]) -> list[Finding]:
             )
         )
 
+    # [Implementation 3] 대체 관리 경로를 먼저 요구하는 SSH 경계를 판정합니다.
     ssh = snapshot.get("ssh", {})
     if ssh.get("password_authentication") is True:
         findings.append(
@@ -81,6 +84,7 @@ def audit(snapshot: dict[str, Any]) -> list[Finding]:
             )
         )
 
+    # [Implementation 4] Docker control plane 접근을 host root 권한과 같은 수준으로 다룹니다.
     docker = snapshot.get("docker", {})
     remote = [str(item) for item in docker.get("remote_listeners", [])]
     unsafe_remote = [item for item in remote if item.startswith("tcp://")]
@@ -121,6 +125,7 @@ def audit(snapshot: dict[str, Any]) -> list[Finding]:
             )
         )
 
+    # [Implementation 5] public network, time, storage와 외부 backup의 운영 경계를 검사합니다.
     network = snapshot.get("network", {})
     ports = {int(port) for port in network.get("public_tcp_ports", [])}
     unexpected = sorted(ports - {22, 80, 443})
@@ -180,4 +185,5 @@ def audit(snapshot: dict[str, Any]) -> list[Finding]:
             )
         )
 
+    # [Implementation 6] 입력 순서와 무관한 ID 정렬로 audit evidence를 재현 가능하게 합니다.
     return sorted(findings, key=lambda item: item["id"])

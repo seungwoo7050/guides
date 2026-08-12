@@ -1,3 +1,4 @@
+# [Implementation 5] app이 port·volume·network·health의 resource owner가 됩니다.
 services:
   app:
     build:
@@ -17,6 +18,7 @@ services:
       retries: 20
       start_period: 2s
 
+  # [Implementation 6] client는 service DNS와 healthy dependency만 소비합니다.
   client:
     image: curlimages/curl:8.10.1
     command: ["-fsS", "http://app:8080/healthz"]
@@ -26,6 +28,7 @@ services:
     networks:
       - app-net
 
+# [Implementation 7] named network와 volume의 수명을 service 정의와 분리합니다.
 networks:
   app-net:
     driver: bridge

@@ -2,8 +2,11 @@
 """웹 인프라 가이드의 구조, 문서, 설정과 검증 계약을 정적으로 검사합니다."""
 from __future__ import annotations
 
+import ast
 import csv
+import fnmatch
 import json
+import os
 import re
 import stat
 import subprocess
@@ -26,7 +29,7 @@ REPOSITORY_ROOT = ROOT.resolve()
 ERRORS: list[str] = []
 CHECKS = 0
 ALLOW_GENERATED_EXERCISE_STATE = False
-IGNORED_PARTS = {".git", ".verify", "__pycache__"}
+IGNORED_PARTS = {".git", ".verify", "__pycache__", "workspace", ".workspace.lock"}
 IGNORED_TOP_LEVEL = {"make-out.txt"}
 
 DOCS = [
@@ -72,6 +75,30 @@ EXERCISES = [
     (18, "production-rebuild"),
 ]
 
+EXERCISE_DIRECT_EXTRAS = {
+    2: {"breakages"},
+    7: {"check-evidence.py", "run-scenario.sh", "scenarios", "template"},
+    8: {"verify.py"},
+    9: {"fixtures", "verify.py"},
+    11: {"verify.py"},
+    12: {"fixtures", "verify.py"},
+    13: {"verify.py"},
+    14: {"verify.py"},
+    15: {"fixtures", "verify.py"},
+    16: {"fixtures", "verify.py"},
+    17: {"fixtures", "verify.py"},
+    18: {"verify.py"},
+}
+
+TROUBLESHOOTING_SCENARIOS = (
+    "wrong-db-host",
+    "wrong-db-password",
+    "missing-secret",
+    "wrong-fcgi-port",
+    "broken-healthcheck",
+    "data-loss",
+)
+
 RUNBOOKS = [
     "00-index",
     "01-502-504-upstream-failure",
@@ -96,12 +123,16 @@ REFERENCE_FILES = {
 SCRIPT_FILES = {
     "cleanup-runtime.sh",
     "meta-verify.py",
+    "new-workspace.py",
     "requirements.txt",
     "static-verify.py",
+    "test-workspace.py",
     "verify-all.sh",
 }
 
 PRODUCTION_FILES = [
+    "exercises/07-troubleshooting/check-evidence.py",
+    "exercises/07-troubleshooting/template/evidence.md",
     "exercises/08-production-contract/skeleton/contract.yaml",
     "exercises/08-production-contract/reference/contract.yaml",
     "exercises/08-production-contract/verify.py",
@@ -114,6 +145,7 @@ PRODUCTION_FILES = [
     "exercises/10-public-tls/reference/tls-lifecycle.sh",
     "exercises/11-release-artifact/skeleton/Dockerfile",
     "exercises/11-release-artifact/reference/Dockerfile",
+    "exercises/11-release-artifact/reference/app.py",
     "exercises/11-release-artifact/skeleton/release.yaml",
     "exercises/11-release-artifact/reference/release.yaml",
     "exercises/11-release-artifact/verify.py",
@@ -174,13 +206,30 @@ def is_ignored(path: Path) -> bool:
         relative = path.relative_to(ROOT)
     except ValueError:
         return True
-    return any(part in IGNORED_PARTS for part in relative.parts) or (
+    return any(
+        part in IGNORED_PARTS or part.startswith(".workspace.tmp.")
+        for part in relative.parts
+    ) or (
         len(relative.parts) == 1 and relative.name in IGNORED_TOP_LEVEL
     )
 
 
 def repository_paths(pattern: str) -> Iterable[Path]:
-    return (path for path in ROOT.rglob(pattern) if not is_ignored(path))
+    for current, directories, files in os.walk(ROOT, topdown=True, followlinks=False):
+        current_path = Path(current)
+        kept: list[str] = []
+        for name in directories:
+            child = current_path / name
+            if is_ignored(child):
+                continue
+            if fnmatch.fnmatch(name, pattern):
+                yield child
+            kept.append(name)
+        directories[:] = kept
+        for name in files:
+            child = current_path / name
+            if not is_ignored(child) and fnmatch.fnmatch(name, pattern):
+                yield child
 
 
 def run_check(label: str, command: list[str]) -> None:
@@ -234,6 +283,13 @@ def directory_names(path: Path, label: str) -> set[str]:
         return set()
 
 
+def is_exercise_runtime_child(name: str) -> bool:
+    return (
+        name in {"workspace", ".workspace.lock"}
+        or name.startswith(".workspace.tmp.")
+    )
+
+
 def check_top_level_layout() -> None:
     allowed = {
         ".git",
@@ -273,6 +329,29 @@ def check_top_level_layout() -> None:
         error(f"exercise 경로가 없습니다: exercises/{missing}")
     for extra in sorted(actual_exercises - expected_exercises):
         error(f"구형 또는 계획 밖 exercise 경로입니다: exercises/{extra}")
+
+    for number, name in EXERCISES:
+        exercise_name = f"{number:02d}-{name}"
+        exercise = ROOT / "exercises" / exercise_name
+        expected_children = {"README.md", "verify.sh"}
+        if number != 7:
+            expected_children.update({"skeleton", "reference"})
+        expected_children.update(EXERCISE_DIRECT_EXTRAS.get(number, set()))
+        actual_children = {
+            child
+            for child in directory_names(exercise, f"exercises/{exercise_name}")
+            if not is_exercise_runtime_child(child)
+        }
+        for missing in sorted(expected_children - actual_children):
+            error(
+                "exercise direct path가 없습니다: "
+                f"exercises/{exercise_name}/{missing}"
+            )
+        for extra in sorted(actual_children - expected_children):
+            error(
+                "예상하지 않은 exercise direct path입니다: "
+                f"exercises/{exercise_name}/{extra}"
+            )
 
     actual_reference = directory_names(ROOT / "reference", "reference")
     for missing in sorted(REFERENCE_FILES - actual_reference):
@@ -494,6 +573,74 @@ def check_dockerfiles() -> None:
                     )
 
 
+def check_troubleshooting_scenario_inventory(directory: Path) -> None:
+    expected = TROUBLESHOOTING_SCENARIOS
+    checker = directory / "check-evidence.py"
+    if checker.is_file():
+        count()
+        try:
+            module = ast.parse(checker.read_text(encoding="utf-8"))
+            checker_scenarios: object | None = None
+            for node in module.body:
+                if not isinstance(node, (ast.Assign, ast.AnnAssign)):
+                    continue
+                targets = node.targets if isinstance(node, ast.Assign) else [node.target]
+                if any(
+                    isinstance(target, ast.Name) and target.id == "SCENARIOS"
+                    for target in targets
+                ):
+                    checker_scenarios = ast.literal_eval(node.value)
+                    break
+        except (OSError, UnicodeError, SyntaxError, ValueError) as exc:
+            error(f"07 evidence scenario inventory를 읽을 수 없습니다: {exc}")
+        else:
+            if checker_scenarios != expected:
+                error("07 evidence checker의 scenario inventory가 canonical 6개와 다릅니다.")
+
+    def shell_loop_inventory(path: Path, label: str) -> None:
+        count()
+        if not path.is_file():
+            error(f"07 scenario inventory 소유 파일이 없습니다: {path.relative_to(ROOT)}")
+            return
+        text = path.read_text(encoding="utf-8")
+        match = re.search(
+            r"(?ms)^[ \t]*for scenario in[ \t]*\\[ \t]*\n"
+            r"(.*?)^[ \t]*do[ \t]*$",
+            text,
+        )
+        values = (
+            tuple(
+                re.findall(
+                    r"(?m)^[ \t]*([a-z0-9][a-z0-9-]*)"
+                    r"[ \t]*(?:\\)?[ \t]*$",
+                    match.group(1),
+                )
+            )
+            if match
+            else ()
+        )
+        if values != expected:
+            error(f"{label}의 scenario inventory가 canonical 6개와 다릅니다.")
+
+    shell_loop_inventory(directory / "verify.sh", "07 wrapper")
+    shell_loop_inventory(ROOT / "scripts" / "cleanup-runtime.sh", "runtime cleanup")
+
+    runner = directory / "run-scenario.sh"
+    count()
+    if not runner.is_file():
+        error("07 scenario runner가 없습니다: exercises/07-troubleshooting/run-scenario.sh")
+    else:
+        runner_text = runner.read_text(encoding="utf-8")
+        match = re.search(
+            r'(?ms)^[ \t]*case "\$scenario" in[ \t]*\n'
+            r"[ \t]*([^\n)]+)\)[ \t]*;;",
+            runner_text,
+        )
+        values = tuple(match.group(1).split("|")) if match else ()
+        if values != expected:
+            error("07 scenario runner의 allowlist가 canonical 6개와 다릅니다.")
+
+
 def check_exercise_contracts() -> None:
     for number, name in EXERCISES:
         directory = ROOT / "exercises" / f"{number:02d}-{name}"
@@ -540,8 +687,82 @@ def check_exercise_contracts() -> None:
         wrapper = directory / "verify.sh"
         if wrapper.is_file() and number != 7:
             text = wrapper.read_text(encoding="utf-8")
-            if "skeleton" not in text or "reference" not in text:
-                error(f"exercise wrapper가 skeleton/reference mode를 제공하지 않습니다: {wrapper.relative_to(ROOT)}")
+            for mode in ("skeleton", "workspace", "reference"):
+                count()
+                if mode not in text:
+                    error(
+                        f"exercise wrapper가 {mode} mode를 제공하지 않습니다: "
+                        f"{wrapper.relative_to(ROOT)}"
+                    )
+            count()
+            if not re.search(r"\$\{1:-workspace\}", text):
+                error(
+                    f"exercise wrapper 기본 mode는 workspace여야 합니다: "
+                    f"{wrapper.relative_to(ROOT)}"
+                )
+            count()
+            if "skeleton|workspace|reference" not in text:
+                error(
+                    f"exercise wrapper의 mode allowlist가 canonical 순서와 다릅니다: "
+                    f"{wrapper.relative_to(ROOT)}"
+                )
+            count()
+            if "내부 symlink를 허용하지 않습니다" not in text:
+                error(
+                    f"exercise wrapper가 workspace 내부 symlink를 거부하지 않습니다: "
+                    f"{wrapper.relative_to(ROOT)}"
+                )
+
+        if number == 7:
+            count()
+            if not (directory / "template" / "evidence.md").is_file():
+                error("07 분석 실습의 evidence template이 없습니다.")
+            count()
+            if not (directory / "check-evidence.py").is_file():
+                error("07 분석 실습의 evidence checker가 없습니다.")
+            text = wrapper.read_text(encoding="utf-8") if wrapper.is_file() else ""
+            count()
+            if not re.search(r"\$\{1:-workspace\}", text):
+                error("07 분석 실습 wrapper 기본 mode는 workspace여야 합니다.")
+            mode_case = re.search(
+                r'(?ms)^[ \t]*case "\$mode" in[ \t]*\n(.*?)^[ \t]*esac[ \t]*$',
+                text,
+            )
+            branch_labels = (
+                re.findall(
+                    r"(?m)^[ \t]+([^\s)\n][^)\n]*)\)[ \t]*$",
+                    mode_case.group(1),
+                )
+                if mode_case
+                else []
+            )
+            modes = [
+                mode
+                for label in branch_labels
+                for mode in label.split("|")
+                if mode != "*"
+            ]
+            count()
+            if len(modes) != 3 or set(modes) != {"workspace", "template", "scenarios"}:
+                error("07 분석 실습 wrapper mode allowlist가 canonical 3개와 다릅니다.")
+            count()
+            if "workspace symlink를 허용하지 않습니다" not in text:
+                error("07 분석 실습 wrapper가 workspace symlink를 거부하지 않습니다.")
+            count()
+            if "workspace 내부 symlink를 허용하지 않습니다" not in text:
+                error("07 분석 실습 wrapper가 workspace 내부 symlink를 거부하지 않습니다.")
+            checker = directory / "check-evidence.py"
+            template = directory / "template" / "evidence.md"
+            if checker.is_file() and template.is_file():
+                run_check(
+                    "07 evidence template",
+                    [sys.executable, "-B", str(checker), "--template", str(template)],
+                )
+                run_check(
+                    "07 evidence checker self-test",
+                    [sys.executable, "-B", str(checker), "--self-test"],
+                )
+            check_troubleshooting_scenario_inventory(directory)
 
     for path in repository_paths("*"):
         if not path.is_file() or "reference" not in path.parts:
@@ -554,6 +775,279 @@ def check_exercise_contracts() -> None:
             continue
         if re.search(r"\bTODO\b|NotImplementedError", text):
             error(f"reference 구현에 미완성 표식이 남아 있습니다: {path.relative_to(ROOT)}")
+
+
+def check_workspace_contract() -> None:
+    generator = ROOT / "scripts" / "new-workspace.py"
+    count()
+    if not generator.is_file():
+        return
+    try:
+        module = ast.parse(generator.read_text(encoding="utf-8"))
+        mapping: object | None = None
+        for node in module.body:
+            if not isinstance(node, (ast.Assign, ast.AnnAssign)):
+                continue
+            targets = node.targets if isinstance(node, ast.Assign) else [node.target]
+            if any(isinstance(target, ast.Name) and target.id == "EXERCISE_SOURCES" for target in targets):
+                mapping = ast.literal_eval(node.value)
+                break
+    except (OSError, UnicodeError, SyntaxError, ValueError) as exc:
+        error(f"workspace generator mapping을 읽을 수 없습니다: {exc}")
+        return
+
+    expected = {
+        f"exercises/{number:02d}-{name}": "template" if number == 7 else "skeleton"
+        for number, name in EXERCISES
+    }
+    count()
+    if mapping != expected:
+        error("workspace generator의 exercise/source mapping이 canonical 18개 실습과 다릅니다.")
+
+    gitignore = (ROOT / ".gitignore").read_text(encoding="utf-8")
+    for item in (
+        "exercises/*/workspace/",
+        "exercises/*/.workspace.lock",
+        "exercises/*/.workspace.tmp.*/",
+    ):
+        count()
+        if item not in gitignore:
+            error(f"learner runtime state가 .gitignore에 없습니다: {item}")
+
+
+def check_learning_mapping() -> None:
+    readme_path = ROOT / "README.md"
+    if not readme_path.is_file():
+        return
+    text = readme_path.read_text(encoding="utf-8")
+    match = re.search(
+        r"(?ms)^### 문서에서 다음 단계까지\s*\n(.*?)(?=^## |\Z)", text
+    )
+    count()
+    if match is None:
+        error("README에 canonical ordered learning mapping이 없습니다.")
+        return
+
+    rows: dict[int, tuple[str, list[str]]] = {}
+    for line in match.group(1).splitlines():
+        row = re.match(r"^\|\s*(\d{2})\s*\|", line)
+        if row is None:
+            continue
+        cells = [cell.strip() for cell in line.strip().strip("|").split("|")]
+        number = int(row.group(1))
+        if number in rows:
+            error(f"README learning mapping에 순서가 중복됩니다: {number:02d}")
+        rows[number] = (line, cells)
+
+    count()
+    if sorted(rows) != list(range(1, 19)):
+        error("README learning mapping은 01–18 행을 정확히 한 번씩 가져야 합니다.")
+
+    docs_by_number = {
+        number: f"docs/{number:02d}-{name}.md"
+        for number, name in DOCS
+        if number
+    }
+    exercises_by_number = {
+        number: f"exercises/{number:02d}-{name}"
+        for number, name in EXERCISES
+    }
+    for number in range(1, 19):
+        if number not in rows:
+            continue
+        line, cells = rows[number]
+        count()
+        if len(cells) != 7:
+            error(f"README learning mapping {number:02d}행은 7개 의미 열이어야 합니다.")
+        workspace_fragment = (
+            f"{exercises_by_number[number]}/workspace/evidence.md"
+            if number == 7
+            else f"{exercises_by_number[number]}/workspace/"
+        )
+        required = (
+            docs_by_number[number],
+            f"{exercises_by_number[number]}/README.md",
+            workspace_fragment,
+            f"{exercises_by_number[number]}/verify.sh workspace",
+        )
+        for fragment in required:
+            count()
+            if fragment not in line:
+                error(f"README learning mapping {number:02d}행에 경로가 없습니다: {fragment}")
+        count()
+        if number != 7 and f"{exercises_by_number[number]}/reference/" not in line:
+            error(f"README learning mapping {number:02d}행에 완료 뒤 reference가 없습니다.")
+        count()
+        if "→" not in line or (number == 18 and "종료" not in line):
+            error(f"README learning mapping {number:02d}행에 다음 단계 또는 종료가 없습니다.")
+
+
+def check_implementation_annotations() -> None:
+    prefix = "[" + "Implementation "
+    marker = re.compile(re.escape(prefix) + r"(\d+)(?:-(\d+))?\]")
+    any_marker = re.compile(re.escape(prefix) + r"([^\]]+)\]")
+    marker_by_scope: dict[int, list[tuple[tuple[int, int | None], Path]]] = {
+        number: [] for number, _name in EXERCISES if number != 7
+    }
+    sidecar_scopes = {8, 17, 18}
+    bootstrap_scopes = {4, 5, 6}
+    exercise_names = {number: name for number, name in EXERCISES}
+
+    def coordinate(found: re.Match[str]) -> tuple[int, int | None]:
+        child = found.group(2)
+        return int(found.group(1)), int(child) if child is not None else None
+
+    def coordinate_key(value: tuple[int, int | None]) -> tuple[int, int]:
+        major, child = value
+        return major, -1 if child is None else child
+
+    def coordinates(text: str) -> list[tuple[int, int | None]]:
+        return [coordinate(found) for found in marker.finditer(text)]
+
+    for path in repository_paths("*"):
+        if not path.is_file():
+            continue
+        try:
+            text = path.read_text(encoding="utf-8")
+        except (OSError, UnicodeError):
+            continue
+        matches = list(marker.finditer(text))
+        all_matches = list(any_marker.finditer(text))
+        if not all_matches:
+            continue
+        relative = path.relative_to(ROOT)
+        count()
+        if len(matches) != len(all_matches):
+            error(f"지원하지 않는 Implementation 번호 형식입니다: {relative}")
+        exercise_number = None
+        if len(relative.parts) >= 2 and relative.parts[0] == "exercises":
+            match_number = re.match(r"^(\d{2})-", relative.parts[1])
+            if match_number:
+                exercise_number = int(match_number.group(1))
+        if exercise_number is None or exercise_number == 7:
+            error(f"Implementation annotation이 허용되지 않는 경로에 있습니다: {relative}")
+            continue
+
+        exercise = ROOT / "exercises" / f"{exercise_number:02d}-{exercise_names[exercise_number]}"
+        readme = exercise / "README.md"
+        reference = exercise / "reference"
+        if path == readme:
+            if exercise_number not in bootstrap_scopes | sidecar_scopes:
+                error(f"source-owned scope의 README가 exact annotation을 소유합니다: {relative}")
+        else:
+            try:
+                path.relative_to(reference)
+            except ValueError:
+                error(f"Implementation annotation은 reference 또는 owning README에만 허용됩니다: {relative}")
+            if exercise_number in sidecar_scopes:
+                error(f"expected-evidence YAML scope는 README walkthrough만 annotation을 소유합니다: {relative}")
+
+        for found in matches:
+            marker_by_scope[exercise_number].append((coordinate(found), path))
+            line = text[: found.start()].count("\n") + 1
+            marker_line = text.splitlines()[line - 1].lstrip()
+            count()
+            if not marker_line.startswith(("#", "//", ";", "--", "|")):
+                error(f"Implementation annotation이 comment/walkthrough가 아닙니다: {relative}:{line}")
+
+    for number, markers in marker_by_scope.items():
+        exercise = ROOT / "exercises" / f"{number:02d}-{exercise_names[number]}"
+        readme = exercise / "README.md"
+        readme_text = readme.read_text(encoding="utf-8") if readme.is_file() else ""
+        heading = "권장 작성 순서" if number in sidecar_scopes else "권장 구현 순서"
+        section = re.search(
+            rf"(?ms)^## {re.escape(heading)}\s*\n(.*?)(?=^## |\Z)",
+            readme_text,
+        )
+        count()
+        if section is None:
+            error(f"exercise {number:02d}에 {heading} walkthrough가 없습니다.")
+
+        readme_markers = list(marker.finditer(readme_text))
+        count()
+        if section is not None and any(
+            not (section.start() <= found.start() < section.end())
+            for found in readme_markers
+        ):
+            error(
+                f"exercise {number:02d} README exact annotation은 "
+                f"{heading} section 안에만 있어야 합니다."
+            )
+
+        values = [value for value, _path in markers]
+        start = 0 if number in bootstrap_scopes else 1
+        count()
+        if not values:
+            error(f"exercise {number:02d} reference scope에 Implementation annotation이 없습니다.")
+            continue
+        count()
+        if len(values) != len(set(values)):
+            error(f"exercise {number:02d} Implementation 번호가 중복됩니다.")
+
+        top_level = sorted(major for major, child in set(values) if child is None)
+        count()
+        if not top_level or top_level != list(range(start, max(top_level) + 1)):
+            error(
+                f"exercise {number:02d} Implementation top-level 번호가 "
+                f"{start}부터 연속되지 않습니다."
+            )
+
+        value_set = set(values)
+        for major, child in sorted(value_set, key=coordinate_key):
+            if child is None:
+                continue
+            count()
+            if (major, None) not in value_set:
+                error(
+                    f"exercise {number:02d} Implementation {major}-{child}의 "
+                    "parent top-level 번호가 없습니다."
+                )
+
+        child_parents = sorted({major for major, child in value_set if child is not None})
+        for major in child_parents:
+            children = sorted(
+                child
+                for candidate_major, child in value_set
+                if candidate_major == major and child is not None
+            )
+            count()
+            if children != list(range(1, max(children) + 1)):
+                error(
+                    f"exercise {number:02d} Implementation {major}의 child 번호가 "
+                    "1부터 연속되지 않습니다."
+                )
+
+        if number in bootstrap_scopes:
+            readme_coordinates = coordinates(readme_text)
+            count()
+            if readme_coordinates.count((0, None)) != 1:
+                error(f"exercise {number:02d}의 Implementation 0은 README에 정확히 한 번 있어야 합니다.")
+            count()
+            if readme_coordinates != [(0, None)]:
+                error(f"exercise {number:02d} README는 Implementation 0만 소유해야 합니다.")
+        if number in sidecar_scopes:
+            count()
+            if any(path != readme for _value, path in markers):
+                error(f"exercise {number:02d} expected evidence annotation은 README만 소유해야 합니다.")
+        if number not in sidecar_scopes:
+            bracketless = (
+                [
+                    (int(major), int(child) if child else None)
+                    for major, child in re.findall(
+                        r"(?m)^\| (\d+)(?:-(\d+))? \|",
+                        section.group(1),
+                    )
+                ]
+                if section
+                else []
+            )
+            source_coordinates = sorted(
+                (value for value, owner in markers if owner != readme),
+                key=coordinate_key,
+            )
+            count()
+            if bracketless != source_coordinates:
+                error(f"exercise {number:02d} README 구현 순서가 source annotation과 다릅니다.")
 
 
 def check_repository_contract() -> None:
@@ -578,6 +1072,11 @@ def check_repository_contract() -> None:
     if "python3 -m pip install -r scripts/requirements.txt" in readme:
         error("README가 prepare.sh 대신 전역 Python 의존성 설치를 안내합니다.")
 
+    root_verify = ROOT / "verify.sh"
+    count()
+    if root_verify.is_file() and 'if [ "$#" -ne 0 ]' not in root_verify.read_text(encoding="utf-8"):
+        error("root verify.sh가 예상하지 못한 learner mode 인자를 거부하지 않습니다.")
+
     makefile_path = ROOT / "Makefile"
     makefile = makefile_path.read_text(encoding="utf-8") if makefile_path.is_file() else ""
     count()
@@ -592,6 +1091,8 @@ def check_repository_contract() -> None:
         "verify-foundations",
         "verify-production",
         "verify-repeatability",
+        "workspace-check",
+        "evidence-check",
         "clean",
     ):
         count()
@@ -605,7 +1106,13 @@ def check_repository_contract() -> None:
 
     gitignore_path = ROOT / ".gitignore"
     gitignore = gitignore_path.read_text(encoding="utf-8") if gitignore_path.is_file() else ""
-    for item in (".verify/", "make-out.txt"):
+    for item in (
+        ".verify/",
+        "make-out.txt",
+        "exercises/*/workspace/",
+        "exercises/*/.workspace.lock",
+        "exercises/*/.workspace.tmp.*/",
+    ):
         count()
         if item not in gitignore:
             error(f"검증 상태가 .gitignore에 없습니다: {item}")
@@ -675,6 +1182,9 @@ def main() -> int:
     check_compose_conventions()
     check_dockerfiles()
     check_exercise_contracts()
+    check_workspace_contract()
+    check_learning_mapping()
+    check_implementation_annotations()
     check_repository_contract()
 
     if ERRORS:

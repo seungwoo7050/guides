@@ -16,6 +16,7 @@ HOST = os.environ.get("APP_HOST", "127.0.0.1")
 PORT = int(os.environ.get("APP_PORT", "18081"))
 
 
+# [Implementation 1] 모든 응답이 같은 framing 규칙을 거치게 handler 경계를 먼저 둡니다.
 class Handler(BaseHTTPRequestHandler):
     server_version = "web-infra-exercise/1.0"
 
@@ -26,6 +27,7 @@ class Handler(BaseHTTPRequestHandler):
         self.end_headers()
         self.wfile.write(body)
 
+    # [Implementation 2] route별 상태·본문과 관찰 로그를 하나의 요청 계약으로 연결합니다.
     def do_GET(self) -> None:  # noqa: N802 - 표준 라이브러리가 정한 메서드 이름입니다.
         print(
             f"method=GET path={self.path} client={self.client_address[0]}",
@@ -60,6 +62,7 @@ class Handler(BaseHTTPRequestHandler):
         return
 
 
+# [Implementation 3] socket과 signal의 소유자를 마지막에 조립해 종료 뒤 포트도 닫습니다.
 def main() -> NoReturn:
     httpd = ThreadingHTTPServer((HOST, PORT), Handler)
     actual_port = httpd.server_address[1]

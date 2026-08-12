@@ -48,8 +48,8 @@ def parse_time(value: Any, label: str, errors: list[str]) -> datetime | None:
 
 
 def main() -> int:
-    if len(sys.argv) != 2 or sys.argv[1] not in {"skeleton", "reference"}:
-        print("사용법: verify.py [skeleton|reference]", file=sys.stderr)
+    if len(sys.argv) != 2 or sys.argv[1] not in {"skeleton", "workspace", "reference"}:
+        print("사용법: verify.py [skeleton|workspace|reference]", file=sys.stderr)
         return 2
     path = ROOT / sys.argv[1] / "rebuild-plan.yaml"
     data = yaml.safe_load(path.read_text(encoding="utf-8"))

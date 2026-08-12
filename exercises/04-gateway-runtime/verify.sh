@@ -1,10 +1,17 @@
 #!/bin/sh
 set -eu
 
-mode="${1:-reference}"
-case "$mode" in skeleton|reference) ;; *) echo "사용법: $0 [skeleton|reference]" >&2; exit 2 ;; esac
+mode="${1:-workspace}"
+case "$mode" in skeleton|workspace|reference) ;; *) echo "사용법: $0 [skeleton|workspace|reference]" >&2; exit 2 ;; esac
 base_dir=$(CDPATH='' cd -- "$(dirname -- "$0")" && pwd)
 work="$base_dir/$mode"
+[ -d "$work" ] || { echo "구현 디렉터리가 없습니다: $work" >&2; exit 2; }
+[ ! -L "$work" ] || { echo "구현 디렉터리 symlink를 허용하지 않습니다." >&2; exit 2; }
+if find "$work" -type l -print -quit | grep -q .
+then
+    echo "구현 디렉터리 내부 symlink를 허용하지 않습니다." >&2
+    exit 2
+fi
 verify_run="${GUIDE_VERIFY_RUN_ID:-manual-$$}"
 project="web-infra-${verify_run}-exercise04-${mode}"
 port=

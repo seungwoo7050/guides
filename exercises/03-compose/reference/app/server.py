@@ -10,6 +10,7 @@ from pathlib import Path
 
 HOST = os.environ.get("APP_HOST", "0.0.0.0")
 PORT = int(os.environ.get("APP_PORT", "8080"))
+# [Implementation 1] persistent counter의 소유 파일과 원자 교체 규칙을 먼저 정합니다.
 DATA_FILE = Path(os.environ.get("COUNTER_FILE", "/data/counter.txt"))
 LOCK = threading.Lock()
 
@@ -28,6 +29,7 @@ def write_count(value: int) -> None:
     temp.replace(DATA_FILE)
 
 
+# [Implementation 2] lock 아래 read-modify-write와 public route를 연결합니다.
 class Handler(BaseHTTPRequestHandler):
     def reply(self, status: HTTPStatus, payload: dict[str, object] | str) -> None:
         if isinstance(payload, dict):

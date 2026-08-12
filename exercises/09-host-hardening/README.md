@@ -6,7 +6,7 @@
 
 ## 구현 계약
 
-`skeleton/audit.py`의 `audit(snapshot)` 함수를 완성합니다.
+`workspace/audit.py`의 `audit(snapshot)` 함수를 완성합니다.
 
 반환값은 다음 필드를 가진 finding 목록입니다.
 
@@ -39,16 +39,29 @@
 ## 검증
 
 ```sh
+python3 scripts/new-workspace.py exercises/09-host-hardening
 cd exercises/09-host-hardening
-./verify.sh skeleton
-./verify.sh reference
+./verify.sh workspace
 ```
 
-`skeleton`은 구현 전 실패합니다. 완성 뒤 secure snapshot에는 false positive가 없어야 하고, insecure snapshot의 의도된 결함을 모두 찾아야 합니다.
+작업공간 생성 명령은 저장소 루트에서 실행합니다. 시작 상태에서는 실패해야 합니다. 완성 뒤 secure snapshot에는 false positive가 없어야 하고, insecure snapshot의 의도된 결함을 모두 찾아야 합니다. 자기 설명까지 마친 뒤에만 `reference/`와 `./verify.sh reference`를 비교합니다.
+
+## 권장 구현 순서
+
+아래 번호는 실제 Git 이력이 아니라 `reference/` 전체의 학습용 construction order입니다. 파일마다 번호를 다시 시작하지 않습니다.
+
+| 번호 | 구현 경계 |
+|---:|---|
+| 1 | finding schema |
+| 2 | user role·shared key 정규화 |
+| 3 | SSH 접근 경계 |
+| 4 | Docker control plane 경계 |
+| 5 | public network·time·storage·external backup 경계 |
+| 6 | deterministic finding projection |
 
 ## 완료 기준
 
-- [ ] `./verify.sh skeleton`이 통과하고 secure snapshot에는 false positive가 없으며 insecure snapshot의 의도된 경계를 모두 찾는다.
+- [ ] `./verify.sh workspace`가 통과하고 secure snapshot에는 false positive가 없으며 insecure snapshot의 의도된 경계를 모두 찾는다.
 - [ ] 모든 finding에 snapshot에서 인용한 evidence, 실행 가능한 remediation, 접근을 잃지 않는 safe order가 포함된다.
 - [ ] snapshot에 증거가 없는 위험은 finding으로 만들지 않고 추가 확인 항목으로 구분한다.
 

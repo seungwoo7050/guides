@@ -1,6 +1,7 @@
 <?php
 declare(strict_types=1);
 
+// [Implementation 2] 환경과 file secret을 business initialization 전에 검증합니다.
 function requiredEnv(string $name): string
 {
     $value = getenv($name);
@@ -44,6 +45,7 @@ function runBootstrap(): void
         throw new RuntimeException('데이터베이스 재시도 설정이 올바르지 않습니다.');
     }
 
+    // [Implementation 3] 연결 소유권을 bounded retry 안에 두어 영구 대기를 실패로 바꿉니다.
     $pdo = null;
     $lastError = null;
     for ($attempt = 1; $attempt <= $maxAttempts; $attempt++) {
@@ -67,6 +69,7 @@ function runBootstrap(): void
         );
     }
 
+    // [Implementation 4] schema를 재실행 가능한 선언으로 준비합니다.
     $pdo->exec(<<<'SQL'
 CREATE TABLE IF NOT EXISTS app_meta (
     meta_key VARCHAR(100) PRIMARY KEY,
@@ -81,6 +84,7 @@ CREATE TABLE IF NOT EXISTS notes (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
 SQL);
 
+    // [Implementation 5] marker 획득과 seed insert를 같은 transaction으로 묶습니다.
     $pdo->beginTransaction();
     try {
         $marker = $pdo->prepare(

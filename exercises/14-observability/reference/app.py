@@ -14,6 +14,7 @@ from urllib.parse import urlsplit
 REQUEST_ID = re.compile(r"^[A-Za-z0-9._-]{1,64}$")
 
 
+# [Implementation 1] telemetry state와 lock, release label의 단일 owner를 먼저 둡니다.
 class State:
     def __init__(self, log_stream: TextIO, release: str, ready: bool) -> None:
         self.log_stream = log_stream
@@ -23,6 +24,7 @@ class State:
         self.counts: dict[tuple[str, str, str], int] = defaultdict(int)
         self.duration_seconds: dict[tuple[str, str, str], float] = defaultdict(float)
 
+    # [Implementation 2] log와 bounded-label metric 집계를 같은 동기화 경계에 둡니다.
     def record(self, method: str, route: str, status: int, duration_ms: float) -> None:
         key = (method, route, f"{status // 100}xx")
         with self.lock:
@@ -64,12 +66,14 @@ class State:
         return "\n".join(lines) + "\n"
 
 
+# [Implementation 3] server factory가 state와 handler closure의 lifecycle을 소유합니다.
 def create_server(log_stream: TextIO, release: str, ready: bool) -> ThreadingHTTPServer:
     state = State(log_stream, release, ready)
 
     class Handler(BaseHTTPRequestHandler):
         server_version = "GuideObservability/1"
 
+        # [Implementation 4] 외부 correlation ID를 제한된 형식으로만 신뢰합니다.
         def _request_id(self) -> str:
             candidate = self.headers.get("X-Request-ID", "")
             return candidate if REQUEST_ID.fullmatch(candidate) else uuid.uuid4().hex
@@ -82,6 +86,7 @@ def create_server(log_stream: TextIO, release: str, ready: bool) -> ThreadingHTT
             self.end_headers()
             self.wfile.write(body)
 
+        # [Implementation 5] liveness·readiness·API route와 response 이후 telemetry를 연결합니다.
         def do_GET(self) -> None:
             started = time.monotonic()
             request_id = self._request_id()

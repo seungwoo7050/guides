@@ -83,6 +83,8 @@ done
 [ -f "$ROOT/docs/00-roadmap.md" ] || fail "docs/00-roadmap.md가 없습니다."
 [ -f "$ROOT/scripts/static-verify.py" ] || fail "scripts/static-verify.py가 없습니다."
 [ -f "$REQUIREMENTS" ] || fail "scripts/requirements.txt가 없습니다."
+[ ! -L "$VERIFY_DIR" ] || fail ".verify symlink를 허용하지 않습니다."
+[ ! -L "$VENV_DIR" ] || fail ".verify/venv symlink를 허용하지 않습니다."
 
 if ! python3 - <<'PY'
 import sys
@@ -123,6 +125,9 @@ rm -f \
     "$ROOT/tree.txt" \
     "$ROOT/prepare-verify.sh" \
     "$ROOT/before-verify.sh"
+if [ -L "$VERIFY_DIR/tmp" ]; then
+    fail ".verify/tmp symlink를 허용하지 않습니다."
+fi
 rm -rf "$VERIFY_DIR/tmp"
 
 if ! make -C "$ROOT" clean
@@ -132,6 +137,7 @@ fi
 
 chmod u+x "$ROOT/prepare.sh" "$ROOT/verify.sh"
 find "$ROOT/scripts" "$ROOT/exercises" \
+    -type d \( -name workspace -o -name '.workspace.lock' -o -name '.workspace.tmp.*' \) -prune -o \
     -type f -name '*.sh' -exec chmod u+x {} +
 
 printf '[PASS] 안전한 사전 정리와 실행 권한\n'
@@ -216,6 +222,18 @@ images: set[str] = set()
 variable = re.compile(r"\$\{([A-Za-z_][A-Za-z0-9_]*)(?:(:-|-)([^}]*))?\}")
 
 
+def source_files(directory: Path):
+    for current, directories, files in os.walk(directory, topdown=True, followlinks=False):
+        directories[:] = [
+            name
+            for name in directories
+            if name not in {".git", ".verify", "__pycache__", "workspace", ".workspace.lock"}
+            and not name.startswith(".workspace.tmp.")
+        ]
+        for name in files:
+            yield Path(current) / name
+
+
 def expand(value: str, defaults: dict[str, str]) -> str:
     def replace(match: re.Match[str]) -> str:
         name, operator, fallback = match.groups()
@@ -229,7 +247,8 @@ def expand(value: str, defaults: dict[str, str]) -> str:
     return variable.sub(replace, value)
 
 
-for dockerfile in sorted(root.rglob("Dockerfile*")):
+files = list(source_files(root))
+for dockerfile in sorted(path for path in files if path.name.startswith("Dockerfile")):
     if not dockerfile.is_file():
         continue
     defaults: dict[str, str] = {}
@@ -254,7 +273,7 @@ for dockerfile in sorted(root.rglob("Dockerfile*")):
         if match.group(2):
             aliases.add(match.group(2).lower())
 
-for compose_file in sorted(root.glob("exercises/*/*/compose.yaml")):
+for compose_file in sorted(path for path in files if path.name == "compose.yaml"):
     try:
         document: Any = yaml.safe_load(compose_file.read_text(encoding="utf-8"))
     except yaml.YAMLError:
@@ -278,17 +297,23 @@ preparation_hash=$("$VENV_PYTHON" - "$ROOT" <<'PY'
 from __future__ import annotations
 
 import hashlib
+import os
 import stat
 import sys
 from pathlib import Path
 
 root = Path(sys.argv[1]).resolve()
-paths = {
-    root / "prepare.sh",
-    root / "scripts" / "requirements.txt",
-    *root.rglob("Dockerfile*"),
-    *root.glob("exercises/*/*/compose.yaml"),
-}
+paths = {root / "prepare.sh", root / "scripts" / "requirements.txt"}
+for current, directories, files in os.walk(root, topdown=True, followlinks=False):
+    directories[:] = [
+        name
+        for name in directories
+        if name not in {".git", ".verify", "__pycache__", "workspace", ".workspace.lock"}
+        and not name.startswith(".workspace.tmp.")
+    ]
+    for name in files:
+        if name.startswith("Dockerfile") or name == "compose.yaml":
+            paths.add(Path(current) / name)
 digest = hashlib.sha256()
 for path in sorted((item for item in paths if item.is_file()), key=lambda item: item.relative_to(root).as_posix()):
     relative = path.relative_to(root).as_posix().encode("utf-8")

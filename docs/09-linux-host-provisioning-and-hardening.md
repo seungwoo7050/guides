@@ -374,7 +374,7 @@ filesystem·inode 사용률
 - `secure.json`: 기준선을 만족하는 예
 - `insecure.json`: Docker socket 원격 공개, 과도한 공개 포트, 공유 SSH 키, 비활성 시간 동기화 등 의도적 결함 포함
 
-학습자는 `skeleton/audit.py`를 완성해 다음을 수행합니다.
+저장소 루트에서 `python3 scripts/new-workspace.py exercises/09-host-hardening`을 실행한 뒤 학습자는 `workspace/audit.py`를 완성해 다음을 수행합니다.
 
 1. 구조화된 finding을 출력합니다.
 2. 심각도와 영향을 구분합니다.

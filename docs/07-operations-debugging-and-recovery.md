@@ -668,13 +668,15 @@ URL이 `latest` 파일을 가리키면 같은 빌드가 다른 결과를 낼 수
 
 ## 25. 장애 실습
 
-실습 위치:
+저장소 루트에서 분석 기록용 workspace를 먼저 만듭니다. scenario 자체는 6장의 완성 stack 복사본에 한 가지 fault만 주입하며, 학습자는 canonical source나 scenario를 수정하지 않고 관찰 결과를 `workspace/evidence.md`에 기록합니다.
 
 ```sh
+python3 scripts/new-workspace.py exercises/07-troubleshooting
 cd exercises/07-troubleshooting
+./verify.sh template
 ```
 
-기본 구성은 6장의 완성 코드와 같은 구조입니다. 각 시나리오의 덮어쓰기 파일은 변수 하나만 바꿉니다.
+각 시나리오의 덮어쓰기 파일은 변수 하나만 바꿉니다. 아래 여섯 scenario를 관찰한 뒤 최초 실패 구성요소, 읽기 전용 명령과 redacted 핵심 출력, 2차 증상, 수정·복구 결정, 구성요소·외부 사용자 경로·데이터의 재검증을 해당 절에 작성합니다.
 
 ### 시나리오 1: 잘못된 데이터베이스 호스트
 
@@ -753,6 +755,15 @@ cd exercises/07-troubleshooting
 - 새 데이터베이스가 초기화되면서 초기 데이터만 다시 생성됩니다.
 
 이 시나리오는 백업 복원을 대신하지 않습니다. 5장의 백업 파일을 별도 위치에 보존하고 빈 DB에 복원하는 절차는 별도로 반복해야 합니다.
+
+여섯 scenario와 분석 기록을 각각 검사합니다.
+
+```sh
+./verify.sh scenarios
+./verify.sh workspace
+```
+
+자동 검사는 여섯 절의 필수 구조와 관찰 명령의 안전한 형태만 판정합니다. 출력이 실제 관찰과 일치하는지, 최초 실패 경계와 복구 판단이 타당한지는 [실습 README](../exercises/07-troubleshooting/README.md)의 수동 검토 기준으로 확인합니다. 외부 backup이 없으면 `data-loss`에서 삭제된 사용자의 note는 복구 불가이며, 빈 volume의 재초기화는 복구 증거가 아닙니다. 이 분석을 끝낸 뒤 [운영 계약](08-production-contract-and-threat-model.md)으로 이동합니다.
 
 ## 26. 복구 연습 점검
 

@@ -1,6 +1,7 @@
 #!/bin/sh
 set -eu
 
+# [Implementation 6] 환경·secret을 preflight하고 worker 전용 복사본의 권한을 좁힙니다.
 : "${DB_HOST:?DB_HOST가 필요합니다.}"
 : "${DB_NAME:?DB_NAME이 필요합니다.}"
 : "${DB_USER:?DB_USER가 필요합니다.}"
@@ -18,5 +19,6 @@ install -d -m 0750 -o root -g www-data "$runtime_secret_dir"
 install -m 0440 -o root -g www-data "$DB_PASSWORD_FILE" "$runtime_password_file"
 export DB_PASSWORD_FILE="$runtime_password_file"
 
+# [Implementation 7] 완성된 bootstrap CLI가 성공한 경우에만 최종 FPM process를 exec합니다.
 php /opt/app/bootstrap.php
 exec "$@"

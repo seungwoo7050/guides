@@ -4,9 +4,9 @@
 
 이 장에서는 먼저 `docker run`으로 두 컨테이너를 직접 연결합니다. 그다음 동일한 구성을 Compose 파일로 옮깁니다. Compose 문법부터 외우지 않고, 어떤 수동 작업을 선언으로 대체하는지 확인합니다.
 
-## 1. 여러 서비스를 연결할 예제
+## 1. 여러 서비스를 연결할 실습 시스템
 
-`exercises/03-compose`의 예제는 다음 구조입니다.
+`exercises/03-compose`의 관찰 대상은 다음 구조입니다.
 
 ```text
 호스트 curl
@@ -546,13 +546,14 @@ docker compose down -v
 실습 위치:
 
 ```sh
+python3 scripts/new-workspace.py exercises/03-compose
 cd exercises/03-compose
 ```
 
-### 실습 1: 완성 코드 실행
+### 실습 1: 자신의 Compose 구성 실행
 
 ```sh
-./verify.sh reference
+./verify.sh workspace
 ```
 
 검증은 다음을 수행합니다.
@@ -567,7 +568,7 @@ cd exercises/03-compose
 
 ### 실습 2: 시작 코드의 네트워크 완성
 
-`skeleton/compose.yaml`에서 애플리케이션과 클라이언트를 같은 네트워크에 연결합니다. 서비스 이름을 IP로 바꾸지 않습니다.
+`workspace/compose.yaml`에서 애플리케이션과 클라이언트를 같은 네트워크에 연결합니다. 서비스 이름을 IP로 바꾸지 않습니다.
 
 ### 실습 3: 볼륨 제거
 
@@ -581,6 +582,8 @@ cd exercises/03-compose
 - 같은 네트워크의 클라이언트 요청은 성공해야 합니다.
 
 내부 접근과 외부 게시가 독립된 설정임을 확인합니다.
+
+수명 관찰과 자기 설명을 마친 뒤에만 `reference/`와 `./verify.sh reference`를 비교합니다.
 
 ## 21. Compose 설정에서 자주 생기는 착각
 

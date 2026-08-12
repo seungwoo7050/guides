@@ -1,3 +1,4 @@
+# [Implementation 7] app과 gateway의 bind mount·health dependency·public TLS port를 조립합니다.
 services:
   app:
     build:

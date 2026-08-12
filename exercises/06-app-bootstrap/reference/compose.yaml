@@ -21,6 +21,7 @@ services:
       retries: 30
       start_period: 10s
 
+  # [Implementation 1] app이 injected secret·private tmpfs·DB readiness dependency를 소유합니다.
   app:
     build:
       context: ./app

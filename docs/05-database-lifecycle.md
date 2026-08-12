@@ -566,13 +566,14 @@ CPU나 메모리를 늘리기 전에 다음을 확인합니다.
 실습 위치:
 
 ```sh
+python3 scripts/new-workspace.py exercises/05-database
 cd exercises/05-database
 ```
 
 ### 실습 1: 최초 초기화
 
 ```sh
-./verify.sh reference
+./verify.sh workspace
 ```
 
 검증 스크립트는 secret 파일을 준비하고 custom MariaDB 이미지를 빌드합니다. 첫 시작 로그에서 시스템 테이블 초기화와 초기 SQL 실행을 확인합니다.
@@ -583,7 +584,7 @@ cd exercises/05-database
 
 ### 실습 3: 백업과 복원
 
-`reference/backup.sh`와 `reference/restore.sh`를 읽고 다음을 확인합니다.
+자신이 완성한 `workspace/backup.sh`와 `workspace/restore.sh`를 실행하고 다음을 확인합니다.
 
 - dump가 호스트의 어느 경로에 생기는가?
 - 복원 전에 어떤 DB 상태를 준비하는가?
@@ -591,7 +592,7 @@ cd exercises/05-database
 
 ### 실습 4: 인덱스 전후 `EXPLAIN`
 
-`reference/sql/index-demo.sql`은 일정한 수의 행을 만들고 email 조회의 실행 계획을 비교합니다.
+`workspace/sql/index-demo.sql`은 일정한 수의 행을 만들고 email 조회의 실행 계획을 비교합니다.
 
 다음만 비교하지 않습니다.
 
@@ -600,6 +601,8 @@ cd exercises/05-database
 ```
 
 개발 노트북의 작은 데이터에서는 캐시와 측정 오차가 큽니다. 실제 선택 key와 예상 rows 변화를 함께 봅니다.
+
+수명 관찰과 자기 설명을 마친 뒤에만 `reference/`와 `./verify.sh reference`를 비교합니다.
 
 ## 20. 데이터 수명과 관련된 오해
 

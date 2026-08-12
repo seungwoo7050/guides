@@ -1,6 +1,7 @@
 #!/bin/sh
 set -eu
 
+# [Implementation 4] 후보 key/certificate를 만들고 권한을 고정한 뒤에만 Nginx로 넘깁니다.
 cert_dir=/etc/nginx/tls
 cert_file="$cert_dir/development.crt"
 key_file="$cert_dir/development.key"

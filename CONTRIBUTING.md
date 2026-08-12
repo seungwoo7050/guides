@@ -14,10 +14,11 @@
 ## 코드를 고칠 때
 
 - 짧고 독립적인 프로그램은 `examples`에 둡니다.
-- 구현 문제가 필요하면 `exercises` 아래에 `skeleton`과 `reference`를 함께 둡니다.
+- 구현 문제가 필요하면 `exercises` 아래에 immutable `skeleton`, learner-owned ignored `workspace`, 완료 뒤 비교할 `reference` 계약을 함께 둡니다.
 - `skeleton`은 무엇을 완성해야 하는지 드러나야 하며, `reference`에는 `TODO`나 임시 반환값을 남기지 않습니다.
 - 검사기는 정답 파일의 문구나 소스 구조보다 실제 입력과 출력을 확인해야 합니다.
 - `reference`가 통과하는 것만으로 검사기를 신뢰하지 않습니다. 같은 검사에서 `skeleton`이나 알려진 잘못된 입력이 실패하는지도 확인합니다.
+- learner 문서는 `skeleton` 직접 수정을 안내하지 않습니다. 공통 생성기는 destination non-overwrite와 symlink/path escape 거부를 보장하고 verifier 기본 mode는 `workspace`여야 합니다.
 - 임시 파일과 Docker 자원에는 검증 실행 고유 식별자를 사용하고, 성공·실패·중단 경로마다 정리합니다.
 - 비밀번호, 인증서, 빌드 결과와 실행 중 생성된 보고서는 추적하지 않습니다.
 

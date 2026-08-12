@@ -11,17 +11,20 @@ Docker 없이 작은 HTTP 서버를 관찰합니다.
 
 ## 시작
 
-완성 예제를 먼저 검증합니다.
+저장소 루트에서 학습자 전용 작업공간을 만들고 이동합니다.
 
 ```sh
-./verify.sh reference
+python3 scripts/new-workspace.py exercises/01-request-and-process
+cd exercises/01-request-and-process
 ```
 
-그다음 `skeleton/server.py`를 수정해 같은 검증을 통과시킵니다.
+`workspace/server.py`를 수정합니다. 시작 상태에서는 다음 검증이 실패해야 하며, 구현 뒤 같은 명령이 통과해야 합니다.
 
 ```sh
-./verify.sh skeleton
+./verify.sh workspace
 ```
+
+자기 설명까지 작성한 뒤에만 `reference/server.py`를 읽고 `./verify.sh reference`의 결과와 비교합니다.
 
 ## 라우팅 구현
 
@@ -46,9 +49,19 @@ Docker 없이 작은 HTTP 서버를 관찰합니다.
 3. `APP_HOST=127.0.0.1`과 `0.0.0.0`은 서버 관점에서 무엇이 다른가?
 4. 검증 스크립트는 왜 서버가 준비될 때까지 반복하는가?
 
+## 권장 구현 순서
+
+아래 번호는 실제 Git 이력이 아니라 `reference/` 전체의 학습용 construction order입니다. 파일마다 번호를 다시 시작하지 않습니다.
+
+| 번호 | 구현 경계 |
+|---:|---|
+| 1 | 공통 HTTP 응답 framing |
+| 2 | route·상태·요청 로그 |
+| 3 | socket·signal·shutdown lifecycle |
+
 ## 완료 기준
 
-- [ ] `./verify.sh skeleton`이 통과하고 `/`, `/healthz`, 존재하지 않는 경로가 계약한 상태와 본문을 반환한다.
+- [ ] `./verify.sh workspace`가 통과하고 `/`, `/healthz`, 존재하지 않는 경로가 계약한 상태와 본문을 반환한다.
 - [ ] 서버 실행 중의 HTTP 404와 서버 종료 뒤의 연결 실패를 서로 다른 증거로 기록한다.
 - [ ] 요청 로그가 표준 오류에 남고 SIGTERM 뒤 서버 프로세스와 수신 포트가 함께 사라지는지 확인한다.
 

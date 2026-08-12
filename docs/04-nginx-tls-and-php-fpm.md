@@ -540,13 +540,14 @@ PHP가 실행됐지만 애플리케이션 내부 오류가 발생했습니다. P
 실습 위치:
 
 ```sh
+python3 scripts/new-workspace.py exercises/04-gateway-runtime
 cd exercises/04-gateway-runtime
 ```
 
-### 실습 1: 완성 코드 실행
+### 실습 1: 자신의 gateway/runtime 실행
 
 ```sh
-./verify.sh reference
+./verify.sh workspace
 ```
 
 다음을 검증합니다.
@@ -559,7 +560,7 @@ cd exercises/04-gateway-runtime
 
 ### 실습 2: 시작 코드 완성
 
-`skeleton/gateway/default.conf.template`과 `skeleton/app/www.conf`의 TODO를 채웁니다.
+`workspace/gateway/default.conf.template`과 `workspace/app/www.conf`의 미완성 경계를 채웁니다.
 
 실행 전 다음을 답합니다.
 
@@ -589,6 +590,8 @@ Nginx 템플릿에서 `/var/www/html`을 `/wrong/path`로 바꿉니다.
 - app 포트와 FastCGI 연결은 성공합니다.
 - PHP 파일 실행만 실패합니다.
 - 오류 계층은 네트워크가 아니라 파일 경로입니다.
+
+두 장애의 증거와 자기 설명을 마친 뒤에만 `reference/`와 `./verify.sh reference`를 비교합니다.
 
 ## 19. 계층을 혼동하기 쉬운 오류
 

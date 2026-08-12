@@ -1,13 +1,23 @@
 #!/bin/sh
 set -eu
 
-mode="${1:-reference}"
+mode="${1:-workspace}"
 case "$mode" in
-    skeleton|reference) ;;
-    *) echo "사용법: $0 [skeleton|reference]" >&2; exit 2 ;;
+    skeleton|workspace|reference) ;;
+    *) echo "사용법: $0 [skeleton|workspace|reference]" >&2; exit 2 ;;
 esac
 
 base_dir=$(CDPATH='' cd -- "$(dirname -- "$0")" && pwd)
+[ -d "$base_dir/$mode" ] || {
+    echo "구현 디렉터리가 없습니다: $base_dir/$mode" >&2
+    exit 2
+}
+[ ! -L "$base_dir/$mode" ] || { echo "구현 디렉터리 symlink를 허용하지 않습니다." >&2; exit 2; }
+if find "$base_dir/$mode" -type l -print -quit | grep -q .
+then
+    echo "구현 디렉터리 내부 symlink를 허용하지 않습니다." >&2
+    exit 2
+fi
 PYTHON=${PYTHON:-python3}
 requested_port="${EXERCISE_PORT:-0}"
 port=

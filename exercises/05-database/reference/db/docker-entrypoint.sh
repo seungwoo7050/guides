@@ -1,6 +1,7 @@
 #!/bin/sh
 set -eu
 
+# [Implementation 3] 환경값과 file secret의 배타성 및 identifier 경계를 먼저 검증합니다.
 file_env() {
     var="$1"
     file_var="${var}_FILE"
@@ -54,6 +55,7 @@ file_env MARIADB_PASSWORD
 require_identifier MARIADB_DATABASE "$MARIADB_DATABASE"
 require_identifier MARIADB_USER "$MARIADB_USER"
 
+# [Implementation 4] system datadir 존재 여부만 최초 초기화의 authoritative state로 사용합니다.
 datadir=/var/lib/mysql
 socket=/run/mysqld/mysqld.sock
 install -d -m 0755 -o mysql -g mysql /run/mysqld "$datadir"
@@ -66,6 +68,7 @@ if [ ! -d "$datadir/mysql" ]; then
         --skip-test-db \
         --auth-root-authentication-method=socket >/dev/null
 
+    # [Implementation 5] 외부 TCP를 닫은 임시 server만 띄우고 readiness를 제한 시간 안에 판정합니다.
     mariadbd \
         --user=mysql \
         --datadir="$datadir" \
@@ -100,6 +103,7 @@ if [ ! -d "$datadir/mysql" ]; then
     root_password=$(sql_escape "$MARIADB_ROOT_PASSWORD")
     app_password=$(sql_escape "$MARIADB_PASSWORD")
 
+    # [Implementation 6] socket으로 계정·DB를 적용하고 임시 server를 정상 종료한 뒤 최종 PID 1을 공개합니다.
     mariadb --protocol=socket --socket="$socket" -uroot <<SQL
 ALTER USER 'root'@'localhost' IDENTIFIED BY '${root_password}';
 DROP DATABASE IF EXISTS test;

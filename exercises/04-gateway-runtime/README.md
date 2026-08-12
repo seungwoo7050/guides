@@ -11,15 +11,20 @@ Nginx가 개발용 TLS 인증서를 생성하고, 정적 파일은 직접 응답
 
 ## 실행
 
-```sh
-./verify.sh reference
-```
-
-시작 코드의 TODO를 채운 뒤:
+저장소 루트에서 작업공간을 만든 뒤 그 사본의 PHP-FPM·Nginx 설정을 수정합니다.
 
 ```sh
-./verify.sh skeleton
+python3 scripts/new-workspace.py exercises/04-gateway-runtime
+cd exercises/04-gateway-runtime
 ```
+
+시작 상태에서는 실패하고 구현 뒤에는 통과해야 합니다.
+
+```sh
+./verify.sh workspace
+```
+
+장애 실험과 자기 설명을 끝낸 뒤에만 `reference/`와 `./verify.sh reference`를 비교합니다.
 
 ## FastCGI 구성
 
@@ -43,19 +48,37 @@ Nginx가 개발용 TLS 인증서를 생성하고, 정적 파일은 직접 응답
 ### 잘못된 업스트림 포트
 
 ```sh
-APP_UPSTREAM=app:9999 docker compose -f reference/compose.yaml up -d --build --force-recreate gateway
+APP_UPSTREAM=app:9999 docker compose -f workspace/compose.yaml up -d --build --force-recreate gateway
 curl -k -i https://127.0.0.1:18443/
+docker compose -f workspace/compose.yaml down --remove-orphans
 ```
 
-`/healthz`와 정적 파일은 성공할 수 있지만 PHP 요청은 502를 반환합니다.
+`/healthz`와 정적 파일은 성공할 수 있지만 PHP 요청은 502를 반환합니다. 이 수동 흐름은 고정 포트 18443을 사용하므로 한 번에 하나만 실행하고 중단했으면 같은 `down --remove-orphans` 명령으로 정리합니다. 정식 verifier는 충돌하지 않는 실행 ID와 임의 host port를 사용합니다.
 
 ### 잘못된 스크립트 경로
 
 `SCRIPT_FILENAME`의 문서 루트를 `/wrong/path`로 바꿉니다. FastCGI 연결은 되지만 PHP 파일 실행이 실패합니다.
 
+## 권장 구현 순서
+
+아래 번호는 실제 Git 이력이 아니라 `reference/` 전체의 학습용 construction order입니다. 파일마다 번호를 다시 시작하지 않습니다.
+
+| 번호 | 구현 경계 |
+|---:|---|
+| [Implementation 0] | app의 FastCGI 도구와 gateway의 `curl`·OpenSSL dependency 설치 |
+| 1 | PHP request contract |
+| 2 | FPM worker·listener·ping |
+| 3 | FPM image assembly |
+| 4 | OpenSSL 후보 인증서 생성과 권한·entrypoint lifecycle |
+| 5 | TLS·static·health·FastCGI route |
+| 6 | gateway image assembly |
+| 7 | bind mount·dependency·network·public port 조립 |
+
+4번의 `openssl req -x509`는 dependency bootstrap이 아니라 개발 인증서를 만드는 중간 CLI입니다.
+
 ## 완료 기준
 
-- [ ] `./verify.sh skeleton`이 통과하고 `/healthz`, 정적 파일, PHP 동적 요청의 담당 구성요소를 각각 확인한다.
+- [ ] `./verify.sh workspace`가 통과하고 `/healthz`, 정적 파일, PHP 동적 요청의 담당 구성요소를 각각 확인한다.
 - [ ] 호스트에는 gateway만 게시되고 PHP-FPM 9000은 Compose 내부 네트워크에서만 접근된다.
 - [ ] 잘못된 upstream 포트와 잘못된 `SCRIPT_FILENAME`을 주입해 연결 실패와 파일 경로 실패의 증거 차이를 기록한다.
 

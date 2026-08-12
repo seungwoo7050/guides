@@ -12,6 +12,7 @@ from typing import Any, BinaryIO
 BACKUP_ID = re.compile(r"^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{6}Z$")
 
 
+# [Implementation 1] checksum·fsync·atomic pointer primitive를 backup 공개 전에 준비합니다.
 def sha256(path: Path) -> str:
     digest = hashlib.sha256()
     with path.open("rb") as handle:
@@ -47,6 +48,7 @@ def atomic_text(path: Path, text: str) -> None:
     fsync_directory(path.parent)
 
 
+# [Implementation 2] source schema와 upload path containment를 입력 경계에서 검증합니다.
 def safe_relative_path(value: object, label: str) -> Path:
     if not isinstance(value, str) or not value:
         raise ValueError(f"{label} is empty")
@@ -82,6 +84,7 @@ def validate_source_snapshot(source: Path, database: Path, uploads: Path) -> dic
     return db_data
 
 
+# [Implementation 3] regular file만 deterministic metadata로 archive에 넣습니다.
 def add_regular_file(archive: tarfile.TarFile, path: Path, arcname: Path) -> None:
     info = archive.gettarinfo(str(path), arcname=str(arcname))
     if not info.isfile():
@@ -96,6 +99,7 @@ def add_regular_file(archive: tarfile.TarFile, path: Path, arcname: Path) -> Non
         archive.addfile(info, handle)
 
 
+# [Implementation 4] 격리된 stage에서 artifact와 manifest를 완성합니다.
 def create_backup(source: Path, destination: Path, backup_id: str, created_at: str) -> Path:
     if not BACKUP_ID.fullmatch(backup_id):
         raise ValueError("invalid backup id")
@@ -166,6 +170,7 @@ def create_backup(source: Path, destination: Path, backup_id: str, created_at: s
         manifest_path.chmod(0o600)
         fsync_directory(stage)
 
+        # [Implementation 5] 완성 directory를 먼저 공개한 뒤 CURRENT pointer를 원자 교체합니다.
         os.replace(stage, final)
         fsync_directory(destination)
         atomic_text(destination / "CURRENT", backup_id + "\n")
@@ -188,6 +193,7 @@ def copy_archive_member(source: BinaryIO, destination: Path) -> None:
         raise
 
 
+# [Implementation 6] restore는 regular-file·path-containment·snapshot checksum을 다시 검증합니다.
 def safe_extract(archive: tarfile.TarFile, target: Path) -> None:
     target_resolved = target.resolve()
     members = archive.getmembers()
@@ -229,6 +235,7 @@ def validate_restored_snapshot(stage: Path) -> dict[str, Any]:
     return db_data
 
 
+# [Implementation 7] empty target 옆 stage를 검증한 뒤에만 restored tree를 원자 공개합니다.
 def restore_backup(backup_directory: Path, target: Path) -> dict[str, Any]:
     manifest_path = backup_directory / "manifest.json"
     if not manifest_path.is_file() or manifest_path.is_symlink():

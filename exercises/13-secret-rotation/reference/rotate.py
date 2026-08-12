@@ -25,6 +25,7 @@ def fsync_directory(path: Path) -> None:
         os.close(descriptor)
 
 
+# [Implementation 1] root directory와 별도 audit key의 ownership을 store가 먼저 확보합니다.
 class SecretStore:
     def __init__(self, root: Path) -> None:
         self.root = root
@@ -54,6 +55,7 @@ class SecretStore:
                 fsync_directory(self.root)
         self.audit_key_path.chmod(0o600)
 
+    # [Implementation 2] name/path/mode invariant와 process 간 rotation lock을 한 경계로 둡니다.
     def _directory(self, name: str) -> Path:
         if not NAME.fullmatch(name):
             raise ValueError("invalid secret name")
@@ -77,6 +79,7 @@ class SecretStore:
             fcntl.flock(descriptor, fcntl.LOCK_UN)
             os.close(descriptor)
 
+    # [Implementation 3] secret 값을 노출하지 않는 HMAC fingerprint와 append-only event를 만듭니다.
     def _event(self, event: str, name: str, version: str, fingerprint: str, detail: str = "") -> None:
         record = {
             "timestamp": datetime.now(timezone.utc).isoformat(),
@@ -100,6 +103,7 @@ class SecretStore:
         digest = hmac.new(self.audit_key, value.encode(), hashlib.sha256).hexdigest()
         return "hmac-sha256:" + digest[:16]
 
+    # [Implementation 4] versioned candidate를 제한 mode로 원자 공개합니다.
     def install(self, name: str, version: str, value: str, validator: Callable[[Path], bool]) -> bool:
         if not VERSION.fullmatch(version):
             raise ValueError("invalid secret version")
@@ -128,6 +132,7 @@ class SecretStore:
                 tmp.unlink(missing_ok=True)
                 raise
 
+            # [Implementation 5] consumer validation 성공 뒤에만 current pointer를 전환합니다.
             self._event("candidate-created", name, version, fingerprint)
             try:
                 accepted = validator(target)
@@ -165,6 +170,7 @@ class SecretStore:
             self._event("current-switched", name, version, fingerprint, f"previous={previous}")
             return True
 
+    # [Implementation 6] current 조회와 current 보호가 있는 retire lifecycle을 마지막에 엽니다.
     def current(self, name: str) -> dict:
         directory = self._directory(name)
         return json.loads((directory / "current.json").read_text(encoding="utf-8"))

@@ -1,3 +1,4 @@
+-- [Implementation 10] 재현 가능한 dataset과 index 전후 query-plan 관찰을 마지막에 둡니다.
 DROP TABLE IF EXISTS index_demo;
 CREATE TABLE index_demo (
     id INT PRIMARY KEY,

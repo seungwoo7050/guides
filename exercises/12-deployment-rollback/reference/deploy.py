@@ -10,6 +10,7 @@ from typing import Any
 DIGEST = re.compile(r"^[a-z0-9./_-]+@sha256:[0-9a-f]{64}$")
 
 
+# [Implementation 1] current pointer가 crash 뒤에도 보존되도록 durable atomic-write primitive를 먼저 둡니다.
 def fsync_directory(path: Path) -> None:
     flags = os.O_RDONLY | getattr(os, "O_DIRECTORY", 0)
     descriptor = os.open(path, flags)
@@ -30,6 +31,7 @@ def atomic_json(path: Path, value: dict[str, Any]) -> None:
     fsync_directory(path.parent)
 
 
+# [Implementation 2] 모든 성공·실패 전이를 append-only evidence로 남깁니다.
 def append_event(state_dir: Path, event: str, release: str, detail: str = "") -> None:
     record = {
         "timestamp": datetime.now(timezone.utc).isoformat(),
@@ -53,6 +55,7 @@ def fail(state_dir: Path, release: str, phase: str, detail: str) -> dict[str, An
     return {"status": "failed", "phase": phase, "detail": detail}
 
 
+# [Implementation 3] 환경 lock을 획득한 process만 preflight와 상태 전이를 소유합니다.
 def deploy(state_dir: Path, manifest: dict[str, Any]) -> dict[str, Any]:
     state_dir.mkdir(parents=True, exist_ok=True)
     release = str(manifest.get("release_id", "unknown"))
@@ -94,6 +97,7 @@ def deploy(state_dir: Path, manifest: dict[str, Any]) -> dict[str, Any]:
         if not isinstance(prev_min, int) or not isinstance(prev_max, int) or not prev_min <= migration_target <= prev_max:
             return fail(state_dir, release, "preflight", "migration would make automatic rollback incompatible")
 
+        # [Implementation 4] 호환성 preflight 뒤에만 candidate를 stage하고 migration state를 분리합니다.
         append_event(state_dir, "preflight-passed", release)
         atomic_json(staged_path, {"release": release, "image": image, "phase": "starting"})
         append_event(state_dir, "candidate-staged", release)
@@ -106,6 +110,7 @@ def deploy(state_dir: Path, manifest: dict[str, Any]) -> dict[str, Any]:
         current = migrated_state
         append_event(state_dir, "migration-applied", release, f"schema={migration_target}")
 
+        # [Implementation 5] readiness와 external smoke는 current 공개 전의 독립 실패 gate입니다.
         if manifest.get("readiness") is not True:
             staged_path.unlink(missing_ok=True)
             append_event(state_dir, "rollback-completed", release, "readiness failed; previous release retained")
@@ -118,6 +123,7 @@ def deploy(state_dir: Path, manifest: dict[str, Any]) -> dict[str, Any]:
             return fail(state_dir, release, "smoke", "external smoke failed")
         append_event(state_dir, "smoke-passed", release)
 
+        # [Implementation 6] 모든 gate 뒤 current·previous·compatibility를 한 번에 원자 교체합니다.
         new_state = {
             "current": release,
             "previous": current.get("current"),

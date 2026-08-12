@@ -470,13 +470,14 @@ docker kill container-name
 실습 위치:
 
 ```sh
+python3 scripts/new-workspace.py exercises/02-container
 cd exercises/02-container
 ```
 
-### 실습 1: 완성 이미지 빌드와 실행
+### 실습 1: 자신의 이미지 빌드와 실행
 
 ```sh
-./verify.sh reference
+./verify.sh workspace
 ```
 
 검증은 다음을 확인합니다.
@@ -488,13 +489,7 @@ cd exercises/02-container
 
 ### 실습 2: 시작 코드 완성
 
-`skeleton/Dockerfile`의 TODO를 채웁니다.
-
-```sh
-./verify.sh skeleton
-```
-
-reference를 먼저 복사하지 말고 다음 질문에 답한 뒤 작성합니다.
+`workspace/Dockerfile`의 미완성 경계를 채웁니다. `reference/`를 먼저 읽지 말고 다음 질문에 답한 뒤 작성합니다.
 
 - 서버 파일은 이미지의 어느 경로에 있어야 하는가?
 - 서버는 컨테이너 안에서 어느 주소에 bind해야 하는가?
@@ -518,12 +513,16 @@ docker rm background-test
 ### 실습 4: 쓰기 레이어 소실
 
 ```sh
-docker run -d --name layer-test web-infra-exercise02:reference
+docker build -t web-infra-exercise02:layer-observation workspace
+docker run -d --name layer-test web-infra-exercise02:layer-observation
 docker exec layer-test sh -c 'echo runtime >/tmp/runtime-value'
 docker exec layer-test cat /tmp/runtime-value
 docker rm -f layer-test
-docker run --rm web-infra-exercise02:reference sh -c 'test ! -e /tmp/runtime-value'
+docker run --rm web-infra-exercise02:layer-observation sh -c 'test ! -e /tmp/runtime-value'
+docker image rm web-infra-exercise02:layer-observation
 ```
+
+장애·수명 관찰과 자기 설명을 마친 뒤에만 `reference/`와 `./verify.sh reference`를 비교합니다.
 
 ## 16. 이미지와 컨테이너를 혼동하기 쉬운 경우
 

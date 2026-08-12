@@ -6,7 +6,7 @@
 
 ## 구현 계약
 
-`skeleton/app.py`의 `create_server(log_stream, release, ready)`를 완성합니다.
+`workspace/app.py`의 `create_server(log_stream, release, ready)`를 완성합니다.
 
 - `/healthz`: process 생존, dependency와 무관하게 200
 - `/readyz`: dependency 준비 여부에 따라 200 또는 503
@@ -21,16 +21,28 @@
 ## 검증
 
 ```sh
+python3 scripts/new-workspace.py exercises/14-observability
 cd exercises/14-observability
-./verify.sh skeleton
-./verify.sh reference
+./verify.sh workspace
 ```
 
-검증기는 실제 loopback HTTP 요청을 보내 로그와 metric을 함께 확인합니다.
+작업공간 생성 명령은 저장소 루트에서 실행합니다. 검증기는 실제 loopback HTTP 요청을 보내 로그와 metric을 함께 확인합니다. 자기 설명까지 마친 뒤에만 `reference/`와 `./verify.sh reference`를 비교합니다.
+
+## 권장 구현 순서
+
+아래 번호는 실제 Git 이력이 아니라 `reference/` 전체의 학습용 construction order입니다. 파일마다 번호를 다시 시작하지 않습니다.
+
+| 번호 | 구현 경계 |
+|---:|---|
+| 1 | telemetry state·lock·release owner |
+| 2 | synchronized log와 bounded-label metric |
+| 3 | server·handler lifecycle |
+| 4 | validated request ID |
+| 5 | health·readiness·API route와 correlated evidence |
 
 ## 완료 기준
 
-- [ ] `./verify.sh skeleton`이 통과하고 `/healthz`와 `/readyz`가 dependency 실패에서 서로 다른 상태를 반환한다.
+- [ ] `./verify.sh workspace`가 통과하고 `/healthz`와 `/readyz`가 dependency 실패에서 서로 다른 상태를 반환한다.
 - [ ] 한 요청을 request ID로 응답·JSON log·metric 결과까지 추적할 수 있고 Authorization·Cookie 값은 어디에도 남지 않는다.
 - [ ] item별 ID가 아닌 안정된 route label로 요청 수와 duration이 집계되어 label 집합이 입력 수에 따라 늘지 않는다.
 

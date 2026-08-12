@@ -16,6 +16,7 @@ HOST = os.environ.get("APP_HOST", "127.0.0.1")
 PORT = int(os.environ.get("APP_PORT", "18081"))
 
 
+# [Implementation 1] container가 실행할 HTTP route와 응답 계약을 먼저 고정합니다.
 class Handler(BaseHTTPRequestHandler):
     server_version = "web-infra-exercise/1.0"
 

@@ -30,6 +30,7 @@ function readSecret(string $path): string
     return $value;
 }
 
+// [Implementation 8] request process가 공유하는 PDO와 secret 읽기 경계를 한 함수가 소유합니다.
 function db(): PDO
 {
     static $pdo = null;
@@ -58,6 +59,7 @@ function jsonResponse(array $payload, int $status = 200): never
     exit;
 }
 
+// [Implementation 9] public route·validation·prepared write를 마지막 사용자 계약으로 연결합니다.
 try {
     $path = parse_url($_SERVER['REQUEST_URI'] ?? '/', PHP_URL_PATH) ?: '/';
     $method = $_SERVER['REQUEST_METHOD'] ?? 'GET';

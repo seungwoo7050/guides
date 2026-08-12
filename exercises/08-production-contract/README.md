@@ -6,11 +6,9 @@
 
 ## 시작 상태
 
-```text
-skeleton/contract.yaml
-```
+저장소 루트에서 `python3 scripts/new-workspace.py exercises/08-production-contract`를 실행하면 `workspace/contract.yaml`이 시작 상태에서 복사됩니다.
 
-에는 일부 항목만 있습니다. 다음을 완성합니다.
+이 파일에는 일부 항목만 있습니다. 다음을 완성합니다.
 
 - 사용자 능력으로 표현한 서비스 설명
 - 공개 endpoint와 제한된 관리 endpoint
@@ -26,20 +24,28 @@ skeleton/contract.yaml
 
 ```sh
 cd exercises/08-production-contract
-./verify.sh skeleton
+./verify.sh workspace
 ```
 
 완성 전에는 실패해야 합니다. 작업 뒤 같은 명령이 통과해야 합니다.
 
-비교용 구현:
+아래 완료 기준과 자기 설명을 끝낸 뒤에만 `reference/contract.yaml`을 expected evidence 예시로 읽고 `./verify.sh reference`와 비교합니다.
 
-```sh
-./verify.sh reference
-```
+## 권장 작성 순서
+
+`reference/contract.yaml`은 code 구현이 아니라 expected evidence입니다. 아래 번호는 실제 Git 이력이 아닌 학습용 작성 순서이며 YAML에 comment 표식을 강제하지 않습니다.
+
+| 번호 | 작성 경계 |
+|---:|---|
+| [Implementation 1] | 사용자 능력과 public·management endpoint |
+| [Implementation 2] | data source of truth·recovery source·RPO·owner |
+| [Implementation 3] | availability·RTO·RPO objective |
+| [Implementation 4] | trust boundary와 prevention·detection·recovery control |
+| [Implementation 5] | residual-risk acceptance와 readiness evidence |
 
 ## 완료 기준
 
-- [ ] `./verify.sh skeleton`이 통과하고 사용자 기능, 정본 데이터, RTO·RPO, trust boundary가 서로 모순 없이 연결된다.
+- [ ] `./verify.sh workspace`가 통과하고 사용자 기능, 정본 데이터, RTO·RPO, trust boundary가 서로 모순 없이 연결된다.
 - [ ] 각 위험에 예방·탐지·복구 수단과 owner가 있으며 단일 호스트에 남는 위험을 명시적으로 수용하거나 후속 조치로 남긴다.
 - [ ] release·backup·rollback·인증서·복원 훈련의 준비 조건이 측정 가능한 증거를 가리킨다.
 
