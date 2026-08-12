@@ -42,7 +42,7 @@ POSIX 호환 셸
 Python 3.12 이상
 ```
 
-`git switch`를 사용하므로 Git 2.23 이상을 기준으로 합니다. macOS와 Linux의 일반적인 개발 환경을 대상으로 하며, Windows에서는 Git Bash 또는 동등한 POSIX 셸 환경이 필요합니다.
+`git switch`를 사용하므로 Git 2.23 이상을 기준으로 합니다. 문서의 일반 Git 명령은 동등한 환경에서 실행할 수 있지만, `exercises/setup.sh`의 원자적 workspace publish와 공식 저장소 검증은 macOS와 Linux를 지원합니다. Windows에서 전체 실습을 진행할 때는 Git Bash만이 아니라 WSL2의 Linux 환경을 사용합니다.
 
 저장소의 최종 준비와 전체 검사는 루트에서 실행합니다.
 
@@ -68,19 +68,19 @@ Python 3.12 이상
 
 ## 필수 학습 지도
 
-| 단계 | 문서 | 중심 상태 | 연결 실습 |
-|---:|---|---|---|
-| 1 | [작업 공간과 브랜치 준비](01-workspace-basics.md) | 저장소, 원격, 브랜치, `HEAD` | `sample` |
-| 2 | [변경 검토와 커밋 구성](02-commit-workflow.md) | 작업 트리, 인덱스, 커밋 | `sample` |
-| 3 | [원격 협업과 풀 리퀘스트](03-remote-pr-workflow.md) | 원격 추적 브랜치, upstream, PR | `team` |
-| 4 | [merge·rebase와 충돌 해결](04-merge-rebase-conflicts.md) | 공통 조상, 통합 상태, 이력 재작성 | `team` |
-| 5 | [Git 복구 절차](05-recovery-runbook.md) | 공유 범위, reflog, 복구 참조 | `sample`, `team` |
+| 단계 | 문서 | 중심 상태 | 실습·수정 위치 | 검증·기대 증거 |
+|---:|---|---|---|---|
+| 1 | [작업 공간과 브랜치 준비](01-workspace-basics.md) | 저장소, 원격, 브랜치, `HEAD` | [`sample-app` Git 상태](../exercises/README.md#1단계-작업-공간과-브랜치) | app 검사, `status`, `branch -vv`, `remote -v` |
+| 2 | [변경 검토와 커밋 구성](02-commit-workflow.md) | 작업 트리, index, 커밋 | [`sample-app` 소스·테스트·README](../exercises/README.md#2단계-변경-검토와-커밋) | app 검사, staged diff, 목적별 커밋 graph |
+| 3 | [원격 협업과 풀 리퀘스트](03-remote-pr-workflow.md) | 원격 추적 브랜치, upstream, PR | [`team-app-*` 세 복제](../exercises/README.md#3단계-원격-협업) | app 검사, upstream, remote refs, graph |
+| 4 | [merge·rebase와 충돌 해결](04-merge-rebase-conflicts.md) | 공통 조상, 통합 상태, 이력 재작성 | [`team-app-*` 충돌 파일·index·refs](../exercises/README.md#4단계-충돌-해결) | app 검사, 충돌 해결 상태, graph, push 결과 |
+| 5 | [Git 복구 절차](05-recovery-runbook.md) | 공유 범위, reflog, 복구 ref | [버려도 되는 `recovery-lab.*` sandbox](../exercises/README.md#5단계-복구-증거) | 보존 branch, reflog, tree, 최종 `status` |
 
 1·2편은 개인 작업의 최소 경로입니다. 팀 원격 저장소에서 일한다면 3·4편까지 이어서 읽습니다. 5편은 문제가 생긴 뒤 처음 읽기보다 앞선 상태 모델을 익힌 직후 한 번 끝까지 읽어 두는 편이 안전합니다.
 
 ## 선택 학습 지도
 
-[오픈소스에 작은 변경 기여하기](90-open-source-contribution.md)는 외부 저장소에 변경을 제안할 때만 필요합니다.
+[오픈소스에 작은 변경 기여하기](90-open-source-contribution.md)는 외부 저장소에 변경을 제안할 때만 필요합니다. `team-app` 하나의 공유 원격에서는 작은 브랜치와 리뷰 반영까지 연습하고, `origin` fork와 `upstream` 원본의 두 원격은 [선택 단계의 기대 증거](../exercises/README.md#선택-90-오픈소스-기여)에 따라 실제 fork 환경에서 확인합니다.
 
 ```text
 필수 Git 과정 01–05

@@ -259,9 +259,9 @@ SCRIPT
         "$seed/scripts/test.sh"
 
     cat > "$seed/README.md" <<'README'
-# 예제 작업 애플리케이션
+# 실습 작업 애플리케이션
 
-Git 작업 흐름을 연습하기 위한 작은 작업 관리 애플리케이션입니다.
+Git 작업 흐름을 연습하기 위한 작은 작업 관리 fixture입니다.
 
 ## 사용법
 
@@ -269,7 +269,7 @@ Git 작업 흐름을 연습하기 위한 작은 작업 관리 애플리케이션
 
 ## 제목 규칙
 
-현재 예제는 비어 있지 않은 모든 제목을 허용합니다.
+현재 실습 fixture는 비어 있지 않은 모든 제목을 허용합니다.
 
 ## 검증
 
@@ -298,7 +298,7 @@ build/
 IGNORE
 
     git -C "$seed" add .
-    git -C "$seed" commit -m "chore: 예제 애플리케이션 구성" >/dev/null
+    git -C "$seed" commit -m "chore: 실습 fixture 구성" >/dev/null
     git -C "$seed" remote add origin "$remote"
     git -C "$seed" push -u origin main >/dev/null
 
@@ -513,7 +513,7 @@ if [[ "$TARGET" == sample || "$TARGET" == all ]]; then
 
   $WORKSPACE_DIR/sample-app
 
-예제 검사를 실행합니다.
+실습 fixture 검사를 실행합니다.
 
   cd "$WORKSPACE_DIR/sample-app" && ./scripts/test.sh
 EOF_SAMPLE

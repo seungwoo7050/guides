@@ -3,7 +3,6 @@
 
 from __future__ import annotations
 
-import json
 import os
 import re
 import shutil
@@ -119,16 +118,127 @@ def copied_rubric(root: Path) -> None:
     target.write_text(target_text, encoding="utf-8")
 
 
-def unfinished_reference(root: Path) -> None:
-    candidates = [path for path in root.rglob("*") if path.is_file() and "reference" in path.parts
-                  and path.suffix.lower() in {".py", ".md", ".json", ".sh"}]
-    if not candidates: raise RuntimeError("reference file missing")
-    path = sorted(candidates)[0]
-    if path.suffix.lower() == ".json":
-        data = json.loads(path.read_text(encoding="utf-8")); data["_unfinished"] = "TODO"
-        path.write_text(json.dumps(data, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
-    else:
-        path.write_text(path.read_text(encoding="utf-8") + "\nTODO\n", encoding="utf-8")
+def missing_learning_map_row(root: Path) -> None:
+    path = root / "README.md"
+    lines = path.read_text(encoding="utf-8").splitlines()
+    selected = []
+    for line in lines:
+        cells = [cell.strip() for cell in line.strip().strip("|").split("|")]
+        if len(cells) == 7 and "](docs/03-remote-pr-workflow.md)" in cells[1]:
+            selected.append(line)
+    if len(selected) != 1:
+        raise RuntimeError("root learning-map row mismatch")
+    path.write_text("\n".join(line for line in lines if line != selected[0]) + "\n", encoding="utf-8")
+
+
+def missing_learning_map_field(root: Path) -> None:
+    path = root / "README.md"
+    text = path.read_text(encoding="utf-8")
+    changed, count = re.subn(r"(\| 순서 \| 문서 \| 관찰 예제 \| 직접 수행 \| )수정 위치( \| 검증 \|)",
+                             r"\1변경 대상\2", text, count=1)
+    if count != 1:
+        raise RuntimeError("root learning-map header mismatch")
+    path.write_text(changed, encoding="utf-8")
+
+
+def reordered_learning_map(root: Path) -> None:
+    path = root / "README.md"
+    lines = path.read_text(encoding="utf-8").splitlines()
+    indexes: list[int] = []
+    for index, line in enumerate(lines):
+        cells = [cell.strip() for cell in line.strip().strip("|").split("|")]
+        if len(cells) == 7 and cells[0] in {"1", "2"}:
+            indexes.append(index)
+    if len(indexes) != 2:
+        raise RuntimeError("root learning-map order mismatch")
+    lines[indexes[0]], lines[indexes[1]] = lines[indexes[1]], lines[indexes[0]]
+    path.write_text("\n".join(lines) + "\n", encoding="utf-8")
+
+
+def empty_learning_map_verification(root: Path) -> None:
+    path = root / "README.md"
+    lines = path.read_text(encoding="utf-8").splitlines()
+    changed = 0
+    for index, line in enumerate(lines):
+        cells = [cell.strip() for cell in line.strip().strip("|").split("|")]
+        if len(cells) == 7 and cells[0] == "2":
+            cells[5] = ""
+            lines[index] = "| " + " | ".join(cells) + " |"
+            changed += 1
+    if changed != 1:
+        raise RuntimeError("root learning-map verification mismatch")
+    path.write_text("\n".join(lines) + "\n", encoding="utf-8")
+
+
+def wrong_connected_exercise(root: Path) -> None:
+    path = root / "docs/01-workspace-basics.md"
+    text = path.read_text(encoding="utf-8")
+    old = "../exercises/README.md#1단계-작업-공간과-브랜치"
+    new = "../README.md#학습-순서와-실습-지도"
+    if text.count(old) != 1:
+        raise RuntimeError("connected exercise link mismatch")
+    path.write_text(text.replace(old, new, 1), encoding="utf-8")
+
+
+def wrong_connected_fragment(root: Path) -> None:
+    path = root / "docs/01-workspace-basics.md"
+    text = path.read_text(encoding="utf-8")
+    old = "../exercises/README.md#1단계-작업-공간과-브랜치"
+    new = "../exercises/README.md#2단계-변경-검토와-커밋"
+    if text.count(old) != 1:
+        raise RuntimeError("connected exercise fragment mismatch")
+    path.write_text(text.replace(old, new, 1), encoding="utf-8")
+
+
+def missing_expected_evidence(root: Path) -> None:
+    path = root / "exercises/README.md"
+    text = path.read_text(encoding="utf-8")
+    if text.count("**기대 증거:**") < 1:
+        raise RuntimeError("expected-evidence field missing")
+    path.write_text(text.replace("**기대 증거:**", "**관찰 결과:**", 1), encoding="utf-8")
+
+
+def meaningless_expected_evidence(root: Path) -> None:
+    path = root / "exercises/README.md"
+    text = path.read_text(encoding="utf-8")
+    match = re.search(r"(^### 1단계 작업 공간과 브랜치\n)(.*?)(?=^### |^## |\Z)", text, re.M | re.S)
+    if not match:
+        raise RuntimeError("stage-one evidence section mismatch")
+    body_text, count = re.subn(r"^- \*\*기대 증거:\*\*.*$",
+                               "- **기대 증거:** 완료 상태입니다.", match.group(2), count=1, flags=re.M)
+    if count != 1:
+        raise RuntimeError("stage-one evidence field mismatch")
+    path.write_text(text[:match.start(2)] + body_text + text[match.end(2):], encoding="utf-8")
+
+
+def missing_recovery_contract(root: Path) -> None:
+    path = root / "exercises/README.md"
+    text = path.read_text(encoding="utf-8")
+    if "`recovery/*`" not in text:
+        raise RuntimeError("recovery evidence mismatch")
+    path.write_text(text.replace("recovery/*", "recovery/name"), encoding="utf-8")
+
+
+def missing_recovery_walkthrough(root: Path) -> None:
+    path = root / "exercises/README.md"
+    text = path.read_text(encoding="utf-8")
+    old = 'git -C "$RECOVERY_LAB" switch --detach main'
+    new = 'git -C "$RECOVERY_LAB" switch main'
+    if text.count(old) != 1:
+        raise RuntimeError("recovery walkthrough mismatch")
+    path.write_text(text.replace(old, new, 1), encoding="utf-8")
+
+
+def forbidden_implementation_marker(root: Path) -> None:
+    path = root / "exercises/setup.sh"
+    marker = "# [" + "Implementation 1]\n"
+    path.write_text(path.read_text(encoding="utf-8") + marker, encoding="utf-8")
+
+
+def malformed_implementation_marker(root: Path) -> None:
+    path = root / "exercises/setup.sh"
+    marker = "# [" + "Implementation 01]\n"
+    path.write_text(path.read_text(encoding="utf-8") + marker, encoding="utf-8")
 
 
 def missing_roadmap_limit(root: Path) -> None:
@@ -151,7 +261,18 @@ MUTANTS = (
     Mutant("source directory symlink", add_directory_symlink),
     Mutant("broken Markdown anchor", broken_anchor),
     Mutant("copied pedagogy rubric", copied_rubric),
-    Mutant("unfinished reference", unfinished_reference),
+    Mutant("missing root learning-map row", missing_learning_map_row),
+    Mutant("missing root learning-map field", missing_learning_map_field),
+    Mutant("reordered root learning-map rows", reordered_learning_map),
+    Mutant("empty root learning-map verification", empty_learning_map_verification),
+    Mutant("valid but wrong connected exercise", wrong_connected_exercise),
+    Mutant("valid but wrong connected exercise fragment", wrong_connected_fragment),
+    Mutant("missing expected-evidence field", missing_expected_evidence),
+    Mutant("meaningless expected-evidence field", meaningless_expected_evidence),
+    Mutant("missing recovery evidence contract", missing_recovery_contract),
+    Mutant("missing recovery sandbox walkthrough", missing_recovery_walkthrough),
+    Mutant("forbidden implementation marker", forbidden_implementation_marker),
+    Mutant("malformed implementation marker", malformed_implementation_marker),
     Mutant("missing roadmap automation limit", missing_roadmap_limit),
 )
 

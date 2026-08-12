@@ -237,11 +237,11 @@ git branch -vv
 예:
 
 ```text
-* main 8a4bc12 [origin/main] chore: create sample application
+* main <COMMIT> [origin/main] chore: 실습 fixture 구성
 ```
 
 - `*`: 현재 브랜치
-- `8a4bc12`: 브랜치가 가리키는 커밋
+- `<COMMIT>`: 브랜치가 가리키는 축약 커밋 해시이며 fixture를 만들 때마다 달라질 수 있음
 - `[origin/main]`: upstream
 
 ---
@@ -335,7 +335,7 @@ git log -1 --oneline --decorate
 ```
 
 ```text
-8a4bc12 (HEAD -> feature/title-validation, origin/main, origin/HEAD) chore: create sample application
+<COMMIT> (HEAD -> feature/title-validation, origin/main, origin/HEAD) chore: 실습 fixture 구성
 ```
 
 이 상태에서 코드를 수정합니다.
@@ -508,7 +508,7 @@ upstream  → 원본 저장소
 
 ## 연결 실습
 
-- [로컬 Git 연습 환경](../exercises/README.md)에서 `sample`을 만들고 `status`, `branch -vv`, `remote -v` 결과를 예측합니다.
+- [로컬 Git 연습 환경의 1단계](../exercises/README.md#1단계-작업-공간과-브랜치)에서 `sample`을 만들고 `status`, `branch -vv`, `remote -v` 결과를 예측한 뒤 기대 증거와 비교합니다.
 
 ## 완료 기준
 

@@ -201,7 +201,7 @@ export GIT_CONFIG_NOSYSTEM=1 GIT_TERMINAL_PROMPT=0 GIT_PAGER=cat PAGER=cat GIT_E
 : > "$GIT_CONFIG_GLOBAL"
 
 run 'exact layout, links, pedagogy and shell fences' python3 -B "$COPY/scripts/validate.py"
-run 'fifteen layout-validator mutants' python3 -B "$COPY/scripts/test-validator.py"
+run 'layout-validator mutants' python3 -B "$COPY/scripts/test-validator.py"
 run 'shell entrypoint syntax' bash -n "$COPY/prepare.sh" "$COPY/verify.sh" \
     "$COPY/exercises/setup.sh" "$COPY/scripts/test-prepare-safety.sh" \
     "$COPY/scripts/validate.sh"

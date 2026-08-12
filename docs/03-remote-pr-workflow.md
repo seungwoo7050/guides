@@ -521,7 +521,7 @@ git merge --ff-only origin/main
 
 ## 연결 실습
 
-- [team-app 실습](../exercises/README.md)에서 최초 push, fetch 전후, review 수정과 merge 후 정리를 재현합니다.
+- [team-app 3단계](../exercises/README.md#3단계-원격-협업)에서 최초 push, fetch 전후, review 수정과 merge 후 정리를 재현하고 upstream·remote ref·graph 증거를 확인합니다.
 
 ## 완료 기준
 

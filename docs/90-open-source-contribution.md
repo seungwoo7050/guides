@@ -460,7 +460,7 @@ squash merge 때문에 `git branch -d`가 거부될 수 있습니다. PR 병합 
 
 ## 연결 실습
 
-- [team-app 로컬 원격](../exercises/README.md)을 fork/upstream 대역으로 사용해 작은 기여와 review update를 연습합니다.
+- [선택 90 연습](../exercises/README.md#선택-90-오픈소스-기여)에서 `team-app` 하나의 공유 원격으로 작은 branch와 review update를 연습합니다. `origin` fork와 `upstream` 원본의 두 원격은 실제 hosting fork 또는 따로 준비한 two-remote sandbox에서 확인합니다.
 
 ## 완료 기준
 

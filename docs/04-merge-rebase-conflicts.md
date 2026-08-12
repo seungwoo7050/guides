@@ -525,7 +525,7 @@ Git은 text를 합칠 뿐 도메인 규칙을 검증하지 않습니다.
 
 ## 연결 실습
 
-- [team-app 실습](../exercises/README.md)에서 priority와 assignee를 충돌시키고 rebase/merge 결과를 비교합니다.
+- [team-app 4단계](../exercises/README.md#4단계-충돌-해결)에서 priority와 assignee를 충돌시키고 rebase/merge 결과, 애플리케이션 검사와 push 상태를 비교합니다.
 
 ## 완료 기준
 

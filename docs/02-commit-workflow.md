@@ -181,7 +181,7 @@ ls -l src/validate_title.sh tests/test_validate_title.sh
 관련 변경:
 
 ```diff
-- 현재 예제는 비어 있지 않은 모든 제목을 허용합니다.
+- 현재 실습 fixture는 비어 있지 않은 모든 제목을 허용합니다.
 + 제목은 3자 이상 60자 이하여야 합니다.
 ```
 
@@ -594,7 +594,7 @@ git diff --staged -- path/to/file
 
 ## 연결 실습
 
-- [sample-app 실습](../exercises/README.md)에서 코드·문서·개인 메모를 두 목적별 커밋과 미추적 파일로 분리합니다.
+- [sample-app 2단계](../exercises/README.md#2단계-변경-검토와-커밋)에서 코드·문서·개인 메모를 두 목적별 커밋과 미추적 파일로 분리하고 실행 검사·diff·graph 증거를 확인합니다.
 
 ## 완료 기준
 

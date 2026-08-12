@@ -42,6 +42,14 @@ CONFIG = {
             "docs/05-recovery-runbook.md", "docs/90-open-source-contribution.md",
         },
         "exercise": "exercises/README.md",
+        "connections": {
+            "docs/01-workspace-basics.md": "1단계-작업-공간과-브랜치",
+            "docs/02-commit-workflow.md": "2단계-변경-검토와-커밋",
+            "docs/03-remote-pr-workflow.md": "3단계-원격-협업",
+            "docs/04-merge-rebase-conflicts.md": "4단계-충돌-해결",
+            "docs/05-recovery-runbook.md": "5단계-복구-증거",
+            "docs/90-open-source-contribution.md": "선택-90-오픈소스-기여",
+        },
         "required": {
             "README.md", "CONTRIBUTING.md", "Makefile", "prepare.sh", "verify.sh",
             "scripts/repository_state.py", "scripts/validate.py",
@@ -148,7 +156,23 @@ def github_slug(value: str) -> str:
 def anchors(path: Path) -> set[str]:
     counts: dict[str, int] = {}
     result: set[str] = set()
-    for heading in re.findall(r"^#{1,6}\s+(.+?)\s*#*\s*$", path.read_text(encoding="utf-8"), re.M):
+    opened: tuple[str, int] | None = None
+    headings: list[str] = []
+    for line in path.read_text(encoding="utf-8").splitlines():
+        fence = re.match(r"^\s*(`{3,}|~{3,})", line)
+        if fence:
+            marker = fence.group(1)
+            if opened is None:
+                opened = (marker[0], len(marker))
+            elif marker[0] == opened[0] and len(marker) >= opened[1]:
+                opened = None
+            continue
+        if opened is not None:
+            continue
+        heading = re.match(r"^#{1,6}\s+(.+?)\s*#*\s*$", line)
+        if heading:
+            headings.append(heading.group(1))
+    for heading in headings:
         base = github_slug(heading)
         count = counts.get(base, 0)
         counts[base] = count + 1
@@ -249,8 +273,23 @@ for path in markdown:
         if len(re.findall(r"^(?:- |\d+\. )", completion, re.M)) < 3:
             error(f"완료 기준이 3개 미만: {relative}")
         connection = section(text, "연결 실습")
-        if "](" not in connection or "README.md" not in connection:
+        expected_exercise = (ROOT / CONFIG["exercise"]).resolve()
+        expected_fragment = CONFIG.get("connections", {}).get(relative)
+        resolved_connections: list[tuple[Path, str]] = []
+        for link in link_re.finditer(connection):
+            raw = link.group(1).strip().strip("<>").split(maxsplit=1)[0]
+            if not raw or raw.startswith(("http://", "https://", "mailto:", "tel:")):
+                continue
+            target_part, _, fragment = raw.partition("#")
+            target = unquote(target_part)
+            candidate = path if not target else (path.parent / target).resolve()
+            if candidate.is_dir():
+                candidate = candidate / "README.md"
+            resolved_connections.append((candidate, unquote(fragment)))
+        if not any(candidate == expected_exercise for candidate, _ in resolved_connections):
             error(f"연결 실습이 실제 exercise README를 가리키지 않음: {relative}")
+        if expected_fragment and (expected_exercise, expected_fragment) not in resolved_connections:
+            error(f"연결 실습이 해당 단계 증거를 가리키지 않음: {relative}#{expected_fragment}")
         rubric = "\n".join(re.sub(r"\s+", " ", section(text, name)).strip() for name in contract)
         if rubric in rubrics:
             error(f"복사된 교육 rubric: {relative} == {rubrics[rubric]}")
@@ -301,6 +340,158 @@ for path in markdown:
             available = anchor_cache.setdefault(candidate, anchors(candidate))
             if expected_anchor not in available:
                 error(f"깨진 Markdown anchor: {relative}: {raw}")
+
+if GUIDE == "git":
+    root_readme = (ROOT / "README.md").read_text(encoding="utf-8")
+    learning_map = section(root_readme, "학습 순서와 실습 지도")
+    table_lines = [line for line in learning_map.splitlines() if line.strip().startswith("|")]
+    table = [[cell.strip() for cell in line.strip().strip("|").split("|")] for line in table_lines]
+    expected_header = ["순서", "문서", "관찰 예제", "직접 수행", "수정 위치", "검증", "완료 뒤 비교·다음"]
+    if len(table) < 2 or table[0] != expected_header:
+        error("root README 학습 지도 header 불일치")
+        learning_rows: list[list[str]] = []
+    elif len(table[1]) != 7 or not all(re.fullmatch(r":?-{3,}:?", cell) for cell in table[1]):
+        error("root README 학습 지도 separator 불일치")
+        learning_rows = table[2:]
+    else:
+        learning_rows = table[2:]
+    if any(len(row) != 7 for row in learning_rows):
+        error("root README 학습 지도는 행마다 정확히 일곱 열이어야 함")
+
+    git_learning_rows = [
+        ("0", "docs/00-roadmap.md", None, "—", "docs/01-workspace-basics.md"),
+        ("1", "docs/01-workspace-basics.md", "1단계-작업-공간과-브랜치",
+         "exercises/workspace/sample-app", "docs/02-commit-workflow.md"),
+        ("2", "docs/02-commit-workflow.md", "2단계-변경-검토와-커밋",
+         "exercises/workspace/sample-app", "docs/03-remote-pr-workflow.md"),
+        ("3", "docs/03-remote-pr-workflow.md", "3단계-원격-협업",
+         "exercises/workspace/team-app-dev-a", "docs/04-merge-rebase-conflicts.md"),
+        ("4", "docs/04-merge-rebase-conflicts.md", "4단계-충돌-해결",
+         "exercises/workspace/team-app-*", "docs/05-recovery-runbook.md"),
+        ("5", "docs/05-recovery-runbook.md", "5단계-복구-증거",
+         "exercises/workspace/recovery-lab.*", "필수 과정 종료"),
+        ("선택 90", "docs/90-open-source-contribution.md", "선택-90-오픈소스-기여",
+         "exercises/workspace/team-app-*", "가이드 종료"),
+    ]
+    expected_order = [document for _, document, _, _, _ in git_learning_rows]
+    actual_order: list[str] = []
+    for row in learning_rows:
+        if len(row) != 7:
+            continue
+        targets = re.findall(r"\]\(([^)#]+)(?:#[^)]+)?\)", row[1])
+        actual_order.append(targets[0] if len(targets) == 1 else "")
+    if actual_order != expected_order:
+        error("root README 학습 지도 문서 행 누락·중복·순서 오류")
+
+    rows_by_order = {row[0]: row for row in learning_rows if len(row) == 7}
+    for order, document, fragment, workspace, next_step in git_learning_rows:
+        row = rows_by_order.get(order)
+        if row is None:
+            error(f"root README 학습 지도 단계 누락: {order}")
+            continue
+        document_targets = re.findall(r"\]\(([^)#]+)(?:#[^)]+)?\)", row[1])
+        if document_targets != [document]:
+            error(f"root README 학습 지도 문서 열 불일치: {order}")
+        if row[2] != "—":
+            error(f"root README 학습 지도 관찰 예제 없음 표시 누락: {order}")
+        if not row[3] or row[3] == "—":
+            error(f"root README 학습 지도 직접 수행 열 누락: {order}")
+        if fragment and f"exercises/README.md#{fragment}" not in row[3]:
+            error(f"root README 학습 지도 단계별 실습 링크 누락: {order}")
+        if workspace not in row[4]:
+            error(f"root README 학습 지도 수정 위치 누락: {order}")
+        if not row[5] or row[5] == "—":
+            error(f"root README 학습 지도 검증 열 누락: {order}")
+        if not row[6] or next_step not in row[6] or (fragment and "기대 증거" not in row[6]):
+            error(f"root README 학습 지도 완료 증거·다음 단계 누락: {order}")
+
+    quick_reference_links = {
+        "reference/quick-reference.md", "reference/repository-policy.md",
+    }
+    mapped_reference_links = set(re.findall(r"\]\((reference/[^)#]+)(?:#[^)]+)?\)", learning_map))
+    if not quick_reference_links <= mapped_reference_links or not re.search(
+        r"root-level `reference/`[^\n]*(?:답안|완성 구현)[^\n]*(?:아닙|아니)", learning_map
+    ):
+        error("root README가 root reference 문서와 exercise 답안을 구분하지 않음")
+
+    roadmap_required = section((ROOT / "docs/00-roadmap.md").read_text(encoding="utf-8"), "필수 학습 지도")
+    roadmap_order: list[str] = []
+    for line in roadmap_required.splitlines():
+        cells = [cell.strip() for cell in line.strip().strip("|").split("|")]
+        if len(cells) == 5 and re.fullmatch(r"[1-5]", cells[0]):
+            targets = re.findall(r"\]\(([^)#]+)(?:#[^)]+)?\)", cells[1])
+            roadmap_order.extend(f"docs/{target}" for target in targets)
+    if roadmap_order != expected_order[1:6]:
+        error("README와 roadmap의 필수 문서 순서가 일치하지 않음")
+    roadmap_optional = section((ROOT / "docs/00-roadmap.md").read_text(encoding="utf-8"), "선택 학습 지도")
+    if "](90-open-source-contribution.md)" not in roadmap_optional:
+        error("roadmap 선택 학습 지도에 90편이 없음")
+
+    exercise_contract = (ROOT / CONFIG["exercise"]).read_text(encoding="utf-8")
+    evidence_headings = {
+        "1단계 작업 공간과 브랜치": ("작업 트리", "HEAD", "origin/main"),
+        "2단계 변경 검토와 커밋": ("커밋", "개인 메모", "diff"),
+        "3단계 원격 협업": ("upstream", "remote-tracking ref", "graph"),
+        "4단계 충돌 해결": ("priority", "assignee", "push", "--force-with-lease"),
+        "5단계 복구 증거": ("recovery/*", "detached", "revert", "stash"),
+        "선택 90 오픈소스 기여": ("origin", "upstream", "PR", "diff"),
+    }
+    expected_fields = ["직접 수행", "수정 위치", "검증", "기대 증거", "다음"]
+    stage_bodies: dict[str, str] = {}
+    for heading, required_terms in evidence_headings.items():
+        match = re.search(
+            rf"^### {re.escape(heading)}\n(.*?)(?=^### |^## |\Z)",
+            exercise_contract,
+            re.M | re.S,
+        )
+        if not match:
+            error(f"exercise 단계별 기대 증거 누락: {heading}")
+            continue
+        body = match.group(1)
+        stage_bodies[heading] = body
+        matches = re.findall(r"^- \*\*(직접 수행|수정 위치|검증|기대 증거|다음):\*\*\s*(\S.*)$", body, re.M)
+        labels = [label for label, _ in matches]
+        if labels != expected_fields:
+            error(f"exercise 단계 필드 누락·중복·순서 오류: {heading}")
+        fields = dict(matches)
+        evidence = fields.get("기대 증거", "")
+        for term in required_terms:
+            if term not in evidence:
+                error(f"exercise 단계 증거 계약 누락: {heading}: {term}")
+    recovery_walkthrough = stage_bodies.get("5단계 복구 증거", "")
+    for command in (
+        "mktemp -d exercises/workspace/recovery-lab.XXXXXX",
+        "git -C \"$RECOVERY_LAB\" reset --hard HEAD^",
+        "git -C \"$RECOVERY_LAB\" switch --detach main",
+        "git -C \"$RECOVERY_LAB\" branch recovery/reset",
+        "git -C \"$RECOVERY_LAB\" branch recovery/detached",
+        "git -C \"$RECOVERY_LAB\" revert --no-edit HEAD",
+        "git -C \"$RECOVERY_LAB\" stash push -u",
+    ):
+        if command not in recovery_walkthrough:
+            error(f"exercise 복구 sandbox walkthrough 누락: {command}")
+    verification = section(exercise_contract, "검증")
+    if "### 학습자 단계 검증" not in verification or "### 저장소 자체 검증" not in verification:
+        error("exercise가 학습자 증거와 저장소 자체 검증을 구분하지 않음")
+    if "`exercises/workspace/`" not in verification or "검사하지 않" not in verification:
+        error("저장소 자체 검증의 learner workspace 비판정 한계 누락")
+    if "Python 3.12" not in exercise_contract:
+        error("exercise 지원 환경에 Python 3.12가 없습니다.")
+
+    implementation_token = re.compile(r"\[" + r"Implementation\b[^\]\n]*\]", re.I)
+    annotation_excluded = excluded | {"node_modules", "vendor", "dist", "build", ".next", "target", "generated"}
+    lockfiles = {"package-lock.json", "pnpm-lock.yaml", "yarn.lock", "poetry.lock"}
+    for candidate in ROOT.rglob("*"):
+        if (not candidate.is_file()
+                or candidate.name in lockfiles
+                or any(part in annotation_excluded for part in candidate.relative_to(ROOT).parts)):
+            continue
+        try:
+            content = candidate.read_text(encoding="utf-8")
+        except (UnicodeDecodeError, OSError):
+            continue
+        if implementation_token.search(content):
+            error(f"Git 상태·증거 실습의 annotation 면제 위반: {candidate.relative_to(ROOT)}")
 
 roadmap_path = ROOT / "docs/00-roadmap.md"
 if roadmap_path.is_file():
@@ -366,15 +557,18 @@ if GUIDE == "unix-systems":
         error("Unix 기준 답안은 정확히 아홉 사례여야 합니다.")
 
 reference_roots: list[Path] = []
-for base in (ROOT / "reference", ROOT / "exercises"):
+for base in (ROOT / "exercises", ROOT / "projects"):
     if not base.is_dir():
         continue
-    if base.name == "reference":
-        reference_roots.append(base)
-    reference_roots.extend(path for path in base.rglob("reference") if path.is_dir())
+    reference_roots.extend(
+        path for path in base.rglob("reference")
+        if path.is_dir() and not any(part in excluded for part in path.relative_to(ROOT).parts)
+    )
 for reference_root in sorted(set(reference_roots)):
     for path in reference_root.rglob("*"):
-        if path.is_file() and path.suffix.lower() in {".py", ".md", ".json", ".sh"}:
+        if (path.is_file()
+                and not any(part in excluded for part in path.relative_to(ROOT).parts)
+                and path.suffix.lower() in {".py", ".md", ".json", ".sh"}):
             text = path.read_text(encoding="utf-8")
             if "TODO" in text or "NotImplementedError" in text:
                 error(f"reference 미완성 표식: {path.relative_to(ROOT)}")

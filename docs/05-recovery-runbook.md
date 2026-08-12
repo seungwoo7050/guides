@@ -768,7 +768,7 @@ git log --oneline --decorate --graph --all -15
 
 ## 연결 실습
 
-- [복구 실습](../exercises/README.md)에서 detached HEAD, reset 뒤 commit, revert, stash와 bisect를 복원합니다.
+- [복구 5단계](../exercises/README.md#5단계-복구-증거)의 버려도 되는 sandbox에서 reset으로 보이지 않게 된 commit과 detached `HEAD` commit을 명시적 branch로 보존하고, revert·stash의 상태 증거를 재현합니다. 공유 이력 복구는 별도의 `team-app-*`에서 영향 범위를 먼저 확인한 뒤 수행합니다.
 
 ## 완료 기준
 

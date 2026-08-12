@@ -23,22 +23,23 @@ Git은 파일의 현재 모습만 저장하는 도구가 아니라, 프로젝트
 - 변경이 공유되었는지에 따라 `restore`, `reset`, `revert`, `reflog`를 구분합니다.
 - 위험한 명령 전에 영향 범위와 복구 지점을 확인합니다.
 
-## 필수 학습 경로
+## 학습 순서와 실습 지도
 
-| 순서 | 문서 | 종료 능력 |
-|---:|---|---|
-| 0 | [Git 가이드 학습 지도](docs/00-roadmap.md) | 대상, 범위, 실습과 완료 조건을 확인합니다. |
-| 1 | [작업 공간과 브랜치 준비](docs/01-workspace-basics.md) | 저장소와 최신 원격 기준점을 확인하고 작업 브랜치를 만듭니다. |
-| 2 | [변경 검토와 커밋 구성](docs/02-commit-workflow.md) | 변경을 목적별로 나누고 다음 커밋의 내용을 검토합니다. |
-| 3 | [원격 협업과 풀 리퀘스트](docs/03-remote-pr-workflow.md) | 로컬 브랜치를 게시하고 리뷰·CI가 있는 협업 흐름을 설명합니다. |
-| 4 | [merge·rebase와 충돌 해결](docs/04-merge-rebase-conflicts.md) | 통합 방식을 선택하고 충돌을 해결하거나 안전하게 중단합니다. |
-| 5 | [Git 복구 절차](docs/05-recovery-runbook.md) | 작업 트리, 로컬 커밋과 공유 이력을 상태에 맞게 복구합니다. |
+문서를 모두 읽은 뒤 실습을 한번에 시작하지 않습니다. 각 행의 문서를 읽고 연결된 상태 전이를 직접 수행한 뒤, 기대 증거를 확인하고 다음 행으로 이동합니다.
 
-## 선택 학습 경로
+| 순서 | 문서 | 관찰 예제 | 직접 수행 | 수정 위치 | 검증 | 완료 뒤 비교·다음 |
+|---:|---|---|---|---|---|---|
+| 0 | [Git 가이드 학습 지도](docs/00-roadmap.md) | — | 지원 환경과 완료 조건 확인 | — | `git --version`, `python3 --version` | 준비 조건 확인 → [1편](docs/01-workspace-basics.md) |
+| 1 | [작업 공간과 브랜치 준비](docs/01-workspace-basics.md) | — | [`sample` 1단계](exercises/README.md#1단계-작업-공간과-브랜치) | `exercises/workspace/sample-app` 내 Git 상태 | 저장소 root에서 `cd exercises/workspace/sample-app && ./scripts/test.sh`, 이후 상태 명령 | 1단계 기대 증거 확인 → [2편](docs/02-commit-workflow.md) |
+| 2 | [변경 검토와 커밋 구성](docs/02-commit-workflow.md) | — | [`sample` 2단계](exercises/README.md#2단계-변경-검토와-커밋) | `exercises/workspace/sample-app` 소스·테스트·README·index | `sample-app`에서 `./scripts/test.sh`, `git diff --staged --check`, `git log origin/main..HEAD` | 2단계 기대 증거 확인 → [3편](docs/03-remote-pr-workflow.md) |
+| 3 | [원격 협업과 풀 리퀘스트](docs/03-remote-pr-workflow.md) | — | [`team` 3단계](exercises/README.md#3단계-원격-협업) | `exercises/workspace/team-app-dev-a`, `team-app-dev-b`, `team-app-maintainer` | 각 `team-app-*`에서 `./scripts/check.sh`, `git branch -vv`, `git log --all --graph` | 3단계 기대 증거 확인 → [4편](docs/04-merge-rebase-conflicts.md) |
+| 4 | [merge·rebase와 충돌 해결](docs/04-merge-rebase-conflicts.md) | — | [`team` 4단계](exercises/README.md#4단계-충돌-해결) | `exercises/workspace/team-app-*` 내 충돌 파일·index·refs | 작업 중인 `team-app-*`에서 `./scripts/check.sh`, `git status`, `git log --all --graph` | 4단계 기대 증거 확인 → [5편](docs/05-recovery-runbook.md) |
+| 5 | [Git 복구 절차](docs/05-recovery-runbook.md) | — | [버려도 되는 5단계 복구 sandbox](exercises/README.md#5단계-복구-증거) | `exercises/workspace/recovery-lab.*`의 working tree·index·refs·stash·reflog | 생성된 `recovery-lab.*`에서 `git status`, `git log --all --graph`, `git reflog`, `git show` | 5단계 기대 증거 확인 → 필수 과정 종료 |
+| 선택 90 | [오픈소스에 작은 변경 기여하기](docs/90-open-source-contribution.md) | — | [공유 원격 연습과 실제 fork 확인](exercises/README.md#선택-90-오픈소스-기여) | `exercises/workspace/team-app-*` 또는 실제 fork 작업 브랜치 | 프로젝트 검사, `git remote -v`, PR 변경·검증 기록 | 선택 기대 증거 및 저장소 정책 확인 → 가이드 종료 |
 
-외부 저장소에 기여할 때만 [오픈소스에 작은 변경 기여하기](docs/90-open-source-contribution.md)를 이어서 읽습니다. 이 문서는 fork, `upstream`, 저장소별 기여 정책, CLA·DCO와 리뷰 반영을 다루며 핵심 Git 과정의 필수 선행 문서는 아닙니다.
+이 브랜치에는 독립 `examples/`가 없습니다. `setup.sh`가 만드는 작은 애플리케이션은 Git 상태 전이를 위한 **실습 fixture**이지 완성 구현 예제가 아닙니다. 따라서 소스 답안 대신 `status`, `diff`, graph, ref와 명령 종료 상태를 [단계별 기대 증거](exercises/README.md#단계별-실습과-기대-증거)와 비교합니다.
 
-명령을 빠르게 찾을 때는 [상황별 빠른 참조](reference/quick-reference.md)를 사용합니다. 브랜치·검증·병합 정책을 정할 때는 [저장소 정책 점검 항목](reference/repository-policy.md)을 참고합니다.
+root-level `reference/`는 exercise 답안이 아닙니다. 자신의 상태 증거를 먼저 확인한 뒤, 명령을 빠르게 찾을 때는 [상황별 빠른 참조](reference/quick-reference.md)를, 브랜치·검증·병합 정책을 점검할 때는 [저장소 정책 점검 항목](reference/repository-policy.md)을 사용합니다.
 
 ## 로컬 실습 환경
 

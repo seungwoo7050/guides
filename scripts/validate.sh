@@ -4,13 +4,27 @@ set -euo pipefail
 SCRIPT_DIR=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)
 ROOT=$(cd -- "$SCRIPT_DIR/.." && pwd)
 TMP=''
+HOLD_PID=''
+RACE_PID=''
 
 cleanup() {
+    local status=$?
+    trap - EXIT HUP INT TERM
+    for child in "$HOLD_PID" "$RACE_PID"; do
+        if [[ -n "$child" ]]; then
+            kill -TERM "$child" 2>/dev/null || true
+            wait "$child" 2>/dev/null || true
+        fi
+    done
     if [[ -n "$TMP" && -d "$TMP" ]]; then
         rm -rf -- "$TMP"
     fi
+    exit "$status"
 }
 trap cleanup EXIT
+trap 'exit 129' HUP
+trap 'exit 130' INT
+trap 'exit 143' TERM
 
 for command_name in git python3 bash; do
     if ! command -v "$command_name" >/dev/null 2>&1; then
@@ -33,7 +47,7 @@ from urllib.parse import unquote
 root = Path(sys.argv[1]).resolve()
 files = sorted(
     path for path in root.rglob('*.md')
-    if 'git/exercises/workspace' not in path.as_posix()
+    if path.relative_to(root).parts[:2] != ('exercises', 'workspace')
 )
 errors: list[str] = []
 link_re = re.compile(r'(?<!!)\[[^\]]*\]\(([^)]+)\)')
@@ -176,33 +190,37 @@ mkdir "$TMP/hold-tmp"
 TMPDIR="$TMP/hold-tmp" GUIDE_WORKSPACE_TEST_HOLD=1 \
     GUIDE_WORKSPACE_TEST_READY_FILE="$TMP/hold-ready" \
     "$TMP/exercises/setup.sh" sample >"$TMP/hold.log" 2>&1 &
-hold_pid=$!
+HOLD_PID=$!
 lock_ready=0
 for _ in $(seq 1 500); do
     if [[ -d "$TMP/exercises/.workspace.lock" && -s "$TMP/hold-ready" ]]; then
         lock_ready=1
         break
     fi
-    kill -0 "$hold_pid" 2>/dev/null || break
+    kill -0 "$HOLD_PID" 2>/dev/null || break
     sleep 0.02
 done
 if [[ $lock_ready -ne 1 ]]; then
-    kill -TERM "$hold_pid" 2>/dev/null || true
-    wait "$hold_pid" 2>/dev/null || true
+    kill -TERM "$HOLD_PID" 2>/dev/null || true
+    wait "$HOLD_PID" 2>/dev/null || true
+    HOLD_PID=''
     echo '완성된 staging과 setup concurrency lock을 관찰하지 못했습니다' >&2
     exit 1
 fi
 if "$TMP/exercises/setup.sh" sample >/dev/null 2>&1; then
-    kill -TERM "$hold_pid" 2>/dev/null || true
-    wait "$hold_pid" 2>/dev/null || true
+    kill -TERM "$HOLD_PID" 2>/dev/null || true
+    wait "$HOLD_PID" 2>/dev/null || true
+    HOLD_PID=''
     echo '동시 setup이 lock을 우회했습니다' >&2
     exit 1
 fi
-kill -TERM "$hold_pid"
-if wait "$hold_pid" 2>/dev/null; then
+kill -TERM "$HOLD_PID"
+if wait "$HOLD_PID" 2>/dev/null; then
+    HOLD_PID=''
     echo '중단된 setup이 성공 상태를 반환했습니다' >&2
     exit 1
 fi
+HOLD_PID=''
 [[ ! -e "$TMP/exercises/.workspace.lock" ]]
 [[ ! -e "$TMP/exercises/workspace" ]]
 [[ -z $(find "$TMP/exercises" -maxdepth 1 -name '.workspace.tmp.*' -print -quit) ]]
@@ -213,25 +231,28 @@ race_release="$TMP/race-release"
 GUIDE_WORKSPACE_TEST_HOLD=1 GUIDE_WORKSPACE_TEST_READY_FILE="$race_ready" \
     GUIDE_WORKSPACE_TEST_RELEASE_FILE="$race_release" \
     "$TMP/exercises/setup.sh" sample >"$TMP/race.log" 2>&1 &
-race_pid=$!
+RACE_PID=$!
 for _ in $(seq 1 500); do
     [[ -s "$race_ready" ]] && break
-    kill -0 "$race_pid" 2>/dev/null || break
+    kill -0 "$RACE_PID" 2>/dev/null || break
     sleep 0.02
 done
 if [[ ! -s "$race_ready" ]]; then
-    kill -TERM "$race_pid" 2>/dev/null || true
-    wait "$race_pid" 2>/dev/null || true
+    kill -TERM "$RACE_PID" 2>/dev/null || true
+    wait "$RACE_PID" 2>/dev/null || true
+    RACE_PID=''
     echo 'destination race용 publish-ready 상태를 관찰하지 못했습니다' >&2
     exit 1
 fi
 mkdir "$TMP/exercises/workspace"
 printf '%s\n' '경쟁 생성자가 보존할 파일' > "$TMP/exercises/workspace/sentinel"
 touch "$race_release"
-if wait "$race_pid" 2>/dev/null; then
+if wait "$RACE_PID" 2>/dev/null; then
+    RACE_PID=''
     echo 'exclusive publish가 경쟁 destination을 덮어썼습니다' >&2
     exit 1
 fi
+RACE_PID=''
 [[ "$(cat "$TMP/exercises/workspace/sentinel")" == '경쟁 생성자가 보존할 파일' ]]
 [[ ! -e "$TMP/exercises/.workspace.lock" ]]
 [[ -z $(find "$TMP/exercises" -maxdepth 1 -name '.workspace.tmp.*' -print -quit) ]]
@@ -269,12 +290,12 @@ if [[ $create_again_status -eq 0 ]]; then
 fi
 
 printf '%s\n' '협업 환경 보존' > "$TMP/exercises/workspace/team-app-dev-a/.team-marker"
-printf '%s\n' '예제 환경 제거' > "$TMP/exercises/workspace/sample-app/.sample-marker"
+printf '%s\n' '실습 환경 제거' > "$TMP/exercises/workspace/sample-app/.sample-marker"
 "$TMP/exercises/setup.sh" --reset sample >/dev/null 2>&1
 [[ ! -e "$TMP/exercises/workspace/sample-app/.sample-marker" ]]
 [[ -e "$TMP/exercises/workspace/team-app-dev-a/.team-marker" ]]
 
-printf '%s\n' '예제 환경 보존' > "$TMP/exercises/workspace/sample-app/.sample-marker"
+printf '%s\n' '실습 환경 보존' > "$TMP/exercises/workspace/sample-app/.sample-marker"
 "$TMP/exercises/setup.sh" --reset team >/dev/null 2>&1
 [[ -e "$TMP/exercises/workspace/sample-app/.sample-marker" ]]
 [[ ! -e "$TMP/exercises/workspace/team-app-dev-a/.team-marker" ]]
@@ -349,7 +370,7 @@ import sys
 path = Path(sys.argv[1])
 text = path.read_text()
 text = text.replace(
-    '현재 예제는 비어 있지 않은 모든 제목을 허용합니다.',
+    '현재 실습 fixture는 비어 있지 않은 모든 제목을 허용합니다.',
     '제목은 3자 이상 60자 이하여야 합니다.',
 )
 text = text.replace('의존썽', '의존성')
