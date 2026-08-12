@@ -3,7 +3,15 @@ import { execFileSync } from "node:child_process";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
-const repositoryRoot = path.resolve(fileURLToPath(new URL("..", import.meta.url)));
+const defaultRepositoryRoot = path.resolve(fileURLToPath(new URL("..", import.meta.url)));
+const learningRootOption = process.argv.indexOf("--learning-contract-root");
+if (learningRootOption >= 0 && !process.argv[learningRootOption + 1]) {
+  throw new Error("--learning-contract-root에는 검사할 repository 경로가 필요합니다.");
+}
+const learningContractOnly = learningRootOption >= 0;
+const repositoryRoot = learningContractOnly
+  ? path.resolve(process.argv[learningRootOption + 1])
+  : defaultRepositoryRoot;
 const failures = [];
 const generatedNextEnvironmentDeclaration =
   "exercises/project-catalog/reference/next-env.d.ts";
@@ -70,15 +78,22 @@ const generatedDirectoryNames = new Set([
   "test-results"
 ]);
 
-await verifyPaths();
-await verifyExecutableScripts();
-await verifyPackageContracts();
-await verifyVersions();
-await verifyStageMarkers();
-await verifyMarkdownLinks();
-await verifyTextHygiene();
-await verifyNextEnvironmentDeclarationContract();
-await verifyTrackedGeneratedOutputIsAbsent();
+if (learningContractOnly) {
+  await verifyLearningMap();
+  await verifyImplementationAnnotations();
+} else {
+  await verifyPaths();
+  await verifyExecutableScripts();
+  await verifyPackageContracts();
+  await verifyVersions();
+  await verifyStageMarkers();
+  await verifyLearningMap();
+  await verifyImplementationAnnotations();
+  await verifyMarkdownLinks();
+  await verifyTextHygiene();
+  await verifyNextEnvironmentDeclarationContract();
+  await verifyTrackedGeneratedOutputIsAbsent();
+}
 
 if (failures.length > 0) {
   console.error("저장소 계약 검증에 실패했습니다.");
@@ -86,7 +101,11 @@ if (failures.length > 0) {
   process.exit(1);
 }
 
-console.log("저장소 구조, 문서 링크, 단계 계약, 버전과 생성물 경계를 확인했습니다.");
+console.log(
+  learningContractOnly
+    ? "README 학습 지도와 project-wide 구현 순서 계약을 확인했습니다."
+    : "저장소 구조, 학습 지도, 구현 순서, 문서 링크, 단계 계약, 버전과 생성물 경계를 확인했습니다."
+);
 
 async function verifyPaths() {
   for (const relative of requiredPaths) {
@@ -261,6 +280,341 @@ async function verifyStageMarkers() {
   }
   const leaked = referenceText.match(/TODO\(stage-0[1-5]\)/g) ?? [];
   if (leaked.length > 0) failures.push(`reference에 미완성 단계 표시가 남아 있습니다: ${[...new Set(leaked)].join(", ")}`);
+}
+
+async function verifyLearningMap() {
+  const readme = await readText("README.md");
+  if (readme === null) {
+    failures.push("README.md가 없어 학습 순서를 검증할 수 없습니다.");
+    return;
+  }
+
+  const section = markdownSection(readme, "학습 순서");
+  if (section === null) {
+    failures.push("README에 canonical 학습 순서 section이 없습니다.");
+    return;
+  }
+
+  const rows = markdownTableRows(section);
+  const expectedRows = [
+    {
+      order: "0",
+      doc: "docs/00-roadmap-and-prerequisites.md",
+      direct: ["./prepare.sh", "pnpm exercise:create"],
+      edit: ["—"],
+      verify: ["pnpm check:repository"],
+      next: ["pnpm exercise:verify:01", "docs/01-project-onboarding.md"]
+    },
+    {
+      order: "1",
+      doc: "docs/01-project-onboarding.md",
+      direct: ["exercises/project-catalog/specs/01-project-onboarding.md", "Stage 01"],
+      edit: ["exercises/project-catalog/workspace/app/page.tsx"],
+      verify: ["pnpm exercise:verify:01"],
+      next: ["exercises/project-catalog/reference/app/page.tsx", "Page", "Stage 02"]
+    },
+    {
+      order: "2",
+      doc: "docs/02-ui-and-state-architecture.md",
+      direct: ["exercises/project-catalog/specs/02-ui-state-architecture.md", "Stage 02"],
+      edit: [
+        "exercises/project-catalog/workspace/lib/catalog-contract.ts",
+        "exercises/project-catalog/workspace/lib/catalog-model.ts"
+      ],
+      verify: ["pnpm exercise:verify:02"],
+      next: ["exercises/project-catalog/reference/lib/", "Stage 03"]
+    },
+    {
+      order: "3",
+      doc: "docs/03-nextjs-data-effects-and-concurrency.md",
+      direct: ["exercises/project-catalog/specs/03-data-effects-concurrency.md", "Stage 03"],
+      edit: [
+        "exercises/project-catalog/workspace/lib/request-coordinator.ts",
+        "exercises/project-catalog/workspace/app/project-catalog.tsx"
+      ],
+      verify: ["pnpm exercise:verify:03"],
+      next: [
+        "exercises/project-catalog/reference/lib/request-coordinator.ts",
+        "runSearch",
+        "rename",
+        "ProjectEditor",
+        "Stage 04"
+      ]
+    },
+    {
+      order: "4",
+      doc: "docs/04-testing-accessibility-and-performance.md",
+      direct: ["exercises/project-catalog/specs/04-testing-accessibility-performance.md", "Stage 04"],
+      edit: [
+        "exercises/project-catalog/workspace/app/project-catalog.tsx",
+        "exercises/project-catalog/workspace/app/styles.css"
+      ],
+      verify: ["pnpm exercise:verify:04"],
+      next: [
+        "exercises/project-catalog/reference/app/project-catalog.tsx",
+        "exercises/project-catalog/reference/app/styles.css",
+        "ProjectEditor",
+        "Stage 05"
+      ]
+    },
+    {
+      order: "5",
+      doc: "docs/05-production-runtime-contract.md",
+      direct: ["exercises/project-catalog/specs/05-production-runtime-contract.md", "Stage 05"],
+      edit: ["exercises/project-catalog/workspace/app/api/health/route.ts"],
+      verify: ["pnpm exercise:verify:05"],
+      next: [
+        "exercises/project-catalog/reference/app/api/health/route.ts",
+        "GET",
+        "전체 검증"
+      ]
+    },
+    {
+      order: "90",
+      doc: "docs/90-practical-checklist.md",
+      direct: ["Stage 01–05"],
+      edit: ["—"],
+      verify: ["pnpm exercise:verify"],
+      next: ["guide-web-infrastructure"]
+    }
+  ];
+
+  if (rows.some((row) => row.length !== 7)) {
+    failures.push("README 학습 순서 표는 순서·문서·관찰 예제·직접 수행·수정 위치·검증·완료 뒤 비교·다음의 7개 열이어야 합니다.");
+  }
+
+  const dataRows = rows.filter((row) => expectedRows.some((expected) => expected.order === row[0]));
+  if (rows.length !== expectedRows.length) {
+    failures.push(`README 학습 순서 표에 예상하지 않은 행이 있습니다: ${rows.length}/${expectedRows.length}`);
+  }
+  if (dataRows.length !== expectedRows.length) {
+    failures.push(`README 학습 순서 행 수가 예상과 다릅니다: ${dataRows.length}/${expectedRows.length}`);
+  }
+  const expectedOrder = expectedRows.map((row) => row.order);
+  const actualOrder = dataRows.map((row) => row[0]);
+  if (actualOrder.join(",") !== expectedOrder.join(",")) {
+    failures.push(`README 학습 순서 행이 물리적 순서와 다릅니다: ${actualOrder.join(",")}`);
+  }
+
+  for (const expected of expectedRows) {
+    const matches = dataRows.filter((row) => row[0] === expected.order);
+    if (matches.length !== 1) {
+      failures.push(`README 학습 순서 ${expected.order}번 행은 정확히 하나여야 합니다.`);
+      continue;
+    }
+    const row = matches[0];
+    if (!row[1].includes(expected.doc)) {
+      failures.push(`README 학습 순서 ${expected.order}번 문서가 다릅니다: ${expected.doc}`);
+    }
+    if (row[2] !== "—") {
+      failures.push(`README 학습 순서 ${expected.order}번은 별도 관찰 예제가 없음을 —로 표시해야 합니다.`);
+    }
+    verifyCellTokens(expected.order, "직접 수행", row[3], expected.direct);
+    verifyCellTokens(expected.order, "수정 위치", row[4], expected.edit);
+    verifyCellTokens(expected.order, "검증", row[5], expected.verify);
+    verifyCellTokens(expected.order, "완료 뒤 비교·다음", row[6], expected.next);
+  }
+}
+
+async function verifyImplementationAnnotations() {
+  const scopeReadmePath = "exercises/project-catalog/README.md";
+  const annotationRoot = "exercises/project-catalog/reference/";
+  const requiredAnnotatedFiles = new Set([
+    `${annotationRoot}app/page.tsx`,
+    `${annotationRoot}app/project-catalog.tsx`,
+    `${annotationRoot}app/styles.css`,
+    `${annotationRoot}app/api/health/route.ts`,
+    `${annotationRoot}lib/catalog-contract.ts`,
+    `${annotationRoot}lib/catalog-model.ts`,
+    `${annotationRoot}lib/request-coordinator.ts`
+  ]);
+  const scopeReadme = await readText(scopeReadmePath);
+  const declaredAnchors = new Map();
+  const validLabel = /^[1-9]\d*(?:-[1-9]\d*)?$/u;
+
+  if (scopeReadme === null) {
+    failures.push(`${scopeReadmePath}가 없어 권장 구현 순서 index를 검증할 수 없습니다.`);
+  } else {
+    const indexSection = markdownSection(scopeReadme, "권장 구현 순서");
+    if (indexSection === null) {
+      failures.push(`${scopeReadmePath}에 권장 구현 순서 section이 없습니다.`);
+    } else {
+      const indexRows = markdownTableRows(indexSection).filter((row) => validLabel.test(row[0] ?? ""));
+      for (const row of indexRows) {
+        const label = row[0];
+        if (row.length !== 3 || row[1].length === 0 || row[2].length === 0) {
+          failures.push(`README 구현 순서 ${label}번은 파일·symbol과 책임을 모두 설명해야 합니다.`);
+        }
+        if (declaredAnchors.has(label)) {
+          failures.push(`README 구현 순서 ${label}번이 중복되었습니다.`);
+          continue;
+        }
+        const declaredPath = row[1].match(/`([^`]+)`/u)?.[1];
+        if (!declaredPath || !isAllowedAnnotationPath(declaredPath)) {
+          failures.push(`README 구현 순서 ${label}번의 source 경로가 허용 범위가 아닙니다: ${declaredPath ?? "<missing>"}`);
+          continue;
+        }
+        declaredAnchors.set(label, `${annotationRoot}${declaredPath}`);
+      }
+
+      const actualIndex = [...declaredAnchors.keys()];
+      const sortedIndex = [...actualIndex].sort(compareImplementationLabels);
+      if (actualIndex.join(",") !== sortedIndex.join(",")) {
+        failures.push(`README 구현 순서 index가 recommended construction order와 다릅니다: ${actualIndex.join(",")}`);
+      }
+      if (declaredAnchors.size === 0) {
+        failures.push("README 권장 구현 순서에 source anchor가 없습니다.");
+      }
+    }
+  }
+
+  const extensions = new Set([".md", ".mjs", ".js", ".ts", ".tsx", ".css", ".json", ".yaml", ".yml", ".sh"]);
+  const files = await collectFiles(repositoryRoot, {
+    extensions,
+    skipGenerated: true,
+    skipWorkspace: true
+  });
+  const occurrences = new Map();
+  const markerPrefix = "[" + "Implementation ";
+  const broadMarker = new RegExp("\\[" + "Implementation " + "([^\\]\\n]+)\\]", "gu");
+
+  for (const file of files) {
+    const content = await readFile(file, "utf8");
+    const lines = content.split("\n");
+    for (let lineIndex = 0; lineIndex < lines.length; lineIndex += 1) {
+      for (const match of lines[lineIndex].matchAll(broadMarker)) {
+        const label = match[1];
+        const location = `${relative(file)}:${lineIndex + 1}`;
+        if (!validLabel.test(label)) {
+          failures.push(`허용되지 않은 Implementation marker입니다: ${location} [${label}]`);
+          continue;
+        }
+        const entries = occurrences.get(label) ?? [];
+        entries.push({ file: relative(file), line: lineIndex + 1, text: lines[lineIndex].trim() });
+        occurrences.set(label, entries);
+      }
+    }
+  }
+
+  for (const [label, expectedFile] of declaredAnchors) {
+    const entries = occurrences.get(label) ?? [];
+    if (entries.length !== 1) {
+      failures.push(`Implementation ${label} anchor는 scope 전체에서 정확히 한 번이어야 합니다: ${entries.length}`);
+      continue;
+    }
+    if (entries[0].file !== expectedFile) {
+      failures.push(`Implementation ${label} anchor 위치가 다릅니다: ${entries[0].file} (expected ${expectedFile})`);
+    }
+    if (!isAllowedAnnotationFile(entries[0].file)) {
+      failures.push(`Implementation ${label} anchor가 reference production source 밖에 있습니다: ${entries[0].file}`);
+    }
+    if (
+      !entries[0].text.startsWith(`// ${markerPrefix}`) &&
+      !entries[0].text.startsWith(`/* ${markerPrefix}`)
+    ) {
+      failures.push(`Implementation ${label} anchor는 source comment여야 합니다: ${entries[0].file}:${entries[0].line}`);
+    }
+  }
+
+  for (const [label, entries] of occurrences) {
+    if (!declaredAnchors.has(label)) {
+      for (const entry of entries) {
+        failures.push(`scope 밖 또는 금지된 Implementation ${label} anchor입니다: ${entry.file}:${entry.line}`);
+      }
+    }
+  }
+
+  verifyAnnotationContinuity(occurrences);
+
+  const annotatedFiles = new Set(
+    [...occurrences.values()].flat().map((entry) => entry.file).filter(isAllowedAnnotationFile)
+  );
+  for (const requiredFile of requiredAnnotatedFiles) {
+    if (!annotatedFiles.has(requiredFile)) {
+      failures.push(`완성 learner source에 project-wide Implementation anchor가 없습니다: ${requiredFile}`);
+    }
+  }
+}
+
+function isAllowedAnnotationPath(declaredPath) {
+  if (path.isAbsolute(declaredPath) || declaredPath.includes("\\")) return false;
+  const normalized = path.posix.normalize(declaredPath);
+  if (normalized !== declaredPath || normalized.startsWith("../")) return false;
+  if (!/^(?:app|lib)\//u.test(normalized)) return false;
+  return /\.(?:ts|tsx|css)$/u.test(normalized);
+}
+
+function isAllowedAnnotationFile(file) {
+  if (!file.startsWith("exercises/project-catalog/reference/")) return false;
+  return isAllowedAnnotationPath(file.slice("exercises/project-catalog/reference/".length));
+}
+
+function compareImplementationLabels(left, right) {
+  const leftParts = left.split("-").map(Number);
+  const rightParts = right.split("-").map(Number);
+  return leftParts[0] - rightParts[0] || (leftParts[1] ?? 0) - (rightParts[1] ?? 0);
+}
+
+function verifyCellTokens(order, name, cell, tokens) {
+  for (const token of tokens) {
+    if (!cell.includes(token)) failures.push(`README 학습 순서 ${order}번 ${name}에 ${token}이(가) 없습니다.`);
+  }
+}
+
+function verifyAnnotationContinuity(occurrences) {
+  const labels = [...occurrences.keys()].filter((label) => /^(?:0|[1-9]\d*(?:-[1-9]\d*)?)$/u.test(label));
+  const topLevels = labels
+    .filter((label) => label !== "0" && !label.includes("-"))
+    .map(Number)
+    .sort((left, right) => left - right);
+  const expectedTopLevels = Array.from({ length: topLevels.at(-1) ?? 0 }, (_, index) => index + 1);
+  if (topLevels.join(",") !== expectedTopLevels.join(",")) {
+    failures.push(`Implementation top-level 번호는 1부터 연속해야 합니다: ${topLevels.join(",")}`);
+  }
+  if ((occurrences.get("0") ?? []).length > 1) {
+    failures.push("Implementation 0은 scope당 최대 한 번만 허용됩니다.");
+  }
+
+  const children = new Map();
+  for (const label of labels.filter((candidate) => candidate.includes("-"))) {
+    const [parent, child] = label.split("-").map(Number);
+    if (!occurrences.has(String(parent))) {
+      failures.push(`Implementation ${label}의 parent ${parent} anchor가 없습니다.`);
+    }
+    const values = children.get(parent) ?? [];
+    values.push(child);
+    children.set(parent, values);
+  }
+  for (const [parent, values] of children) {
+    values.sort((left, right) => left - right);
+    const expected = Array.from({ length: values.at(-1) ?? 0 }, (_, index) => index + 1);
+    if (values.join(",") !== expected.join(",")) {
+      failures.push(`Implementation ${parent} substep은 1부터 연속해야 합니다: ${values.join(",")}`);
+    }
+  }
+}
+
+function markdownSection(content, heading) {
+  const marker = `## ${heading}`;
+  const start = content.indexOf(marker);
+  if (start < 0) return null;
+  const bodyStart = start + marker.length;
+  const rest = content.slice(bodyStart);
+  const next = rest.search(/^## /mu);
+  return next < 0 ? rest : rest.slice(0, next);
+}
+
+function markdownTableRows(section) {
+  const rows = [];
+  for (const line of section.split("\n")) {
+    const trimmed = line.trim();
+    if (!trimmed.startsWith("|") || !trimmed.endsWith("|")) continue;
+    const cells = trimmed.slice(1, -1).split("|").map((cell) => cell.trim());
+    if (cells.every((cell) => /^:?-+:?$/u.test(cell))) continue;
+    if (cells[0] === "순서") continue;
+    rows.push(cells);
+  }
+  return rows;
 }
 
 async function verifyMarkdownLinks() {

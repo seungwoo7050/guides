@@ -32,6 +32,7 @@ import type {
   SearchResult
 } from "../lib/project-types";
 
+// [Implementation 3-1] 검색 draft, 확인된 catalog, live announcement와 request coordinator의 owner를 이 client boundary에 모은다.
 export function ProjectCatalog({
   initialQuery,
   initialResult
@@ -47,6 +48,7 @@ export function ProjectCatalog({
   );
   const coordinator = useRef(createRequestCoordinator());
 
+  // [Implementation 4-1] history 기록 여부를 호출자가 정하고, runtime 검증과 generation 확인을 마친 최신 결과만 state에 commit한다.
   const runSearch = useCallback(
     async (query: ProjectQuery, options: { writeHistory: boolean }) => {
       if (options.writeHistory) writeQueryToHistory(query);
@@ -107,6 +109,7 @@ export function ProjectCatalog({
     await runSearch(query, { writeHistory: true });
   }
 
+  // [Implementation 4-2] optimistic 값과 이전 server 값을 분리해 실패는 rollback하고 충돌은 최신 server 값과 local draft를 함께 보존한다.
   async function rename(project: Project, title: string): Promise<RenameOutcome> {
     const optimistic = { ...project, title };
     setCatalog((current) => replaceProjectInCatalogState(current, optimistic));
@@ -208,6 +211,7 @@ export function ProjectCatalog({
   );
 }
 
+// [Implementation 5] 조건부 editor가 saving, local draft와 focus 복구 시점을 소유해 성공과 실패의 lifecycle을 구분한다.
 function ProjectEditor({
   project,
   onRename

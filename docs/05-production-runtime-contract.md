@@ -12,7 +12,7 @@
 - readiness 판단에 사용할 최소 health response를 설계한다.
 - release identifier를 browser와 server 오류에 연결한다.
 - public·server-only 환경 변수를 분리하고 canary로 누출을 검사한다.
-- 고유 port에서 production server를 시작해 standalone smoke test를 실행한다.
+- 제공된 standalone smoke harness의 소유권·실패·정리 계약을 분석하고 고유 port에서 실행한다.
 - application contract와 infrastructure responsibility를 구분한다.
 
 연결 실습은 [Stage 05](../exercises/project-catalog/specs/05-production-runtime-contract.md)다.
@@ -122,9 +122,9 @@ source commit
 
 이 검사는 모든 형태의 secret leak을 증명하지는 않지만 server-only 값을 client module에서 import하는 회귀를 잡는 안전망이다.
 
-## Standalone smoke test를 만듭니다
+## 제공된 Standalone smoke 검증을 분석·실행합니다
 
-smoke test는 기존 개발 서버에 의존하지 않는다.
+연결 실습은 repository-owned smoke harness를 제공한다. 학습자는 script 자체를 구현하지 않고, health route를 구현한 뒤 harness의 아래 수명과 실패 정리 계약을 읽고 실행 증거를 확인한다. smoke 검증은 기존 개발 서버에 의존하지 않는다.
 
 ```text
 사용 가능한 임시 port 선택

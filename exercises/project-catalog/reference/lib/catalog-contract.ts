@@ -1,5 +1,6 @@
 import type { Project, ProjectQuery, ProjectStatus, SearchResult } from "./project-types";
 
+// [Implementation 1] URL query와 unknown API 응답을 이 경계에서 검증해 내부 모델이 신뢰할 canonical data만 반환한다.
 export class ContractError extends Error {
   constructor(message: string) {
     super(message);

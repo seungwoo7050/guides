@@ -1,5 +1,6 @@
 import type { Project, SearchResult } from "./project-types";
 
+// [Implementation 2] 확인된 결과를 ready/empty가 소유하고 pending/error는 그 결과를 보존하게 해 모순된 화면 상태를 막는다.
 export type CatalogState =
   | { status: "ready"; result: SearchResult }
   | { status: "empty"; result: SearchResult }

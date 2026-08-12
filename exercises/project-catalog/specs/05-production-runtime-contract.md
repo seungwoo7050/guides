@@ -14,14 +14,16 @@
 - `Cache-Control: no-store`를 설정한다.
 - 환경 변수 전체나 secret을 반환하지 않는다.
 
-### Test boundary
+### 제공된 Test boundary
 
-기존 reset Route Handler가 다음 두 조건을 모두 요구하는지 확인한다.
+제공된 reset Route Handler는 다음 두 조건을 모두 요구한다. 학습자는 이 route를 구현하는 대신 Stage 검증으로 경계가 유지되는지 확인한다.
 
 - `NODE_ENV=test` 또는 `PLAYWRIGHT=1`
 - `x-catalog-test-token`과 `CATALOG_TEST_RESET_TOKEN` 일치
 
-### Production smoke
+### 제공된 Production smoke 검증
+
+제공된 smoke harness는 학습자가 구현한 health route와 production 산출물을 다음 계약으로 검증한다. smoke script 자체는 learner 수정 대상이 아니다.
 
 - production server를 사용 가능한 고유 port에서 시작한다.
 - 제한 시간 안에 health 준비를 기다린다.

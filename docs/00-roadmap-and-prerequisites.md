@@ -127,9 +127,9 @@ Node.js 24는 현재 LTS 계열이고 Next.js 16은 Active LTS다. 수명주기 
 | 02 | runtime validation과 discriminated UI state | malformed input, state transition, typecheck |
 | 03 | history, cancellation, generation, optimistic recovery | unit test, build, deterministic browser test |
 | 04 | keyboard, focus, responsive layout, reduced motion, budget | production browser test |
-| 05 | health, release, secret boundary, production smoke | build, browser, standalone smoke |
+| 05 | health·release 구현, 제공된 secret boundary·production smoke 검증 | build, browser, standalone smoke |
 
-`reference/`를 먼저 읽지 않는다. 요구사항과 실패 출력으로 구현하고 해당 Stage를 통과한 뒤 설계 차이를 비교한다.
+`reference/`를 먼저 읽지 않는다. 요구사항과 실패 출력으로 구현하고 해당 Stage를 통과한 뒤, [실습 README의 Stage별 범위](../exercises/project-catalog/README.md#reference-비교)만 비교한다. 공유 파일의 다음 Stage symbol은 그 Stage를 통과하기 전에 읽지 않는다.
 
 ## 학습 방식
 
@@ -142,7 +142,7 @@ Node.js 24는 현재 LTS 계열이고 Next.js 16은 Active LTS다. 수명주기 
 → 가장 작은 수직 변경 구현
 → 대표 실패를 재현
 → production 조건에서 검증
-→ reference와 설계 차이 비교
+→ 통과한 Stage 범위의 reference와 설계 차이 비교
 ```
 
 검사가 실패하면 정답 모양을 추측하지 않는다. 먼저 실패한 계약이 순수 변환, 컴포넌트 행동, HTTP 경계, 브라우저, 운영 런타임 중 어디에 속하는지 분류한다.
@@ -153,10 +153,12 @@ Node.js 24는 현재 LTS 계열이고 Next.js 16은 Active LTS다. 수명주기 
 
 ```sh
 nvm use
-corepack enable
-pnpm install --frozen-lockfile
+./prepare.sh
 pnpm exercise:create
+pnpm check:repository
 pnpm exercise:verify:01
 ```
+
+마지막 명령은 Stage 01 구현 전에는 실패해야 한다. 이 초기 실패가 확인되면 Stage 01 명세에 따라 구현을 시작한다.
 
 `workspace/`는 생성 후 자동으로 덮어쓰지 않는다. 진행 중인 구현을 보존한 뒤에만 직접 삭제하거나 다시 만든다.

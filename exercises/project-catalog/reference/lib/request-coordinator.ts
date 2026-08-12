@@ -9,6 +9,7 @@ export type RequestCoordinator = {
   cancel(): void;
 };
 
+// [Implementation 4] abort는 transport에 알리고 monotonic generation은 이미 늦어진 응답의 state commit까지 차단한다.
 export function createRequestCoordinator(): RequestCoordinator {
   let generation = 0;
   let controller: AbortController | null = null;
