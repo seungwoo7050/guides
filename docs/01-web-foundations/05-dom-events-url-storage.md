@@ -161,4 +161,4 @@ function add(title) {
 
 ## 다음 단계
 
-network 요청처럼 결과가 나중에 도착하는 작업은 [`비동기 작업과 fetch`](06-async-fetch-errors.md)에서 다룹니다.
+먼저 [`첫 웹 애플리케이션`](../../exercises/00-first-web-app/README.md)과 [`브라우저 UI`](../../exercises/02-browser/README.md)의 생성된 `work/`에서 이 장의 DOM·URL·storage 계약을 구현하고 검증합니다. 두 exercise-local `reference/` 비교까지 끝낸 뒤, 결과가 나중에 도착하는 작업을 [`비동기 작업과 fetch`](06-async-fetch-errors.md)에서 다룹니다.

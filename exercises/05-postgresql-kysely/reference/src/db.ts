@@ -1,6 +1,7 @@
 import { Kysely, PostgresDialect, type Generated, type Insertable, type Selectable } from "kysely";
 import { Pool } from "pg";
 
+// [Implementation 2] 실제 SQL schema를 Kysely table type으로 옮겨 query column을 compile time에 제한하고 pool owner를 노출합니다.
 interface EventTable {
   id: Generated<string>;
   name: string;

@@ -69,7 +69,7 @@ Playwright package와 브라우저 binary는 별개입니다. 해당 프로젝�
 
 ```sh
 pnpm --dir exercises/08-testing/reference exec playwright install chromium
-pnpm --dir projects/collaboration-board exec playwright install chromium
+pnpm --dir exercises/collaboration-board/reference exec playwright install chromium
 ```
 
 첫 브라우저 실습의 dependency 없는 CDP 검사와 Playwright 검사는 서로 다른 경로입니다.

@@ -10,11 +10,11 @@
 
 ## 작업하기
 
+저장소 루트에서 실행하면 canonical `skeleton/`이 비덮어쓰기 방식으로 `work/`에 복사됩니다.
+
 ```sh
-cd exercises/02-browser
-rm -rf work
-cp -R skeleton work
-node tests/verify.mjs work
+pnpm workspace:create 02-browser
+node exercises/02-browser/tests/verify.mjs exercises/02-browser/work
 ```
 
 검사는 완성 전에는 실패하는 것이 정상입니다. 실패 메시지를 한 항목씩 줄이며 구현합니다. Chrome이나 Chromium을 찾지 못하면 `CHROMIUM_PATH`를 지정합니다.
@@ -29,10 +29,24 @@ node tests/verify.mjs work
 - 첫 Tab에서 본문 건너뛰기 링크가 나타납니다.
 - 320px에서도 가로 overflow가 생기지 않습니다.
 
+## Reference 구현 순서
+
+아래 번호는 역사적 작성 순서가 아니라 `reference/` 세 파일이 공유하는 권장 construction order입니다.
+
+| 번호 | 위치 | 책임 |
+|---:|---|---|
+| 1 | `reference/index.html` | 검색 form, label, status와 건너뛰기 링크의 의미 구조를 정의합니다. |
+| 2 | `reference/style.css` | 초점 표시와 320px에서도 줄어드는 layout을 만듭니다. |
+| 3 | `reference/app.js` 초기 상태 | 검색 자료와 DOM 소유 경계를 연결합니다. |
+| 4 | `parseLocation` | 현재 URL을 공유 가능한 검색 상태의 정본으로 해석합니다. |
+| 5 | `render` | 검색 결과를 안전한 DOM node로 투영합니다. |
+| 6 | submit handler | 정규화한 검색어를 history에 기록한 뒤 화면을 갱신합니다. |
+| 7 | popstate handler | 뒤로 가기에서 메모리 사본이 아니라 URL을 다시 읽습니다. |
+
 ## 자동 검증
 
 ```sh
-node tests/verify.mjs work
+node exercises/02-browser/tests/verify.mjs exercises/02-browser/work
 ```
 
 이 검사는 정적 문자열 존재 여부로 끝나지 않습니다. 실제 브라우저에서 두 검색을 수행하고 뒤로 가기로 이전 검색을 복원하며, 키보드 초점과 viewport overflow를 확인합니다.

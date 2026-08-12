@@ -1,5 +1,6 @@
 import { expect, it } from "vitest";
 import { buildApp } from "./app";
+// [Implementation 4] app.inject 검사는 실제 route와 serialization을 지나며 각 case가 만든 app resource를 닫습니다.
 it("increments through HTTP", async () => {
   const app = buildApp();
   await app.ready();

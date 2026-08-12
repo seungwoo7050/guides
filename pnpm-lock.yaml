@@ -168,7 +168,7 @@ importers:
         specifier: ^3.1.2
         version: 3.2.7(@types/node@26.1.1)(jiti@1.21.7)(jsdom@26.1.0)(tsx@4.23.1)
 
-  projects/collaboration-board:
+  exercises/collaboration-board/reference:
     devDependencies:
       '@playwright/test':
         specifier: 1.61.1
@@ -186,7 +186,7 @@ importers:
         specifier: ^8.18.0
         version: 8.21.1
 
-  projects/collaboration-board/apps/api:
+  exercises/collaboration-board/reference/apps/api:
     dependencies:
       '@board/contracts':
         specifier: workspace:*
@@ -226,7 +226,7 @@ importers:
         specifier: ^3.1.2
         version: 3.2.7(@types/node@26.1.1)(jiti@1.21.7)(jsdom@26.1.0)(tsx@4.23.1)
 
-  projects/collaboration-board/apps/web:
+  exercises/collaboration-board/reference/apps/web:
     dependencies:
       '@board/contracts':
         specifier: workspace:*
@@ -275,7 +275,7 @@ importers:
         specifier: ^3.1.2
         version: 3.2.7(@types/node@24.13.3)(jiti@1.21.7)(jsdom@26.1.0)(tsx@4.23.1)
 
-  projects/collaboration-board/packages/contracts:
+  exercises/collaboration-board/reference/packages/contracts:
     dependencies:
       zod:
         specifier: ^3.24.4
@@ -288,7 +288,7 @@ importers:
         specifier: ^3.1.2
         version: 3.2.7(@types/node@26.1.1)(jiti@1.21.7)(jsdom@26.1.0)(tsx@4.23.1)
 
-  projects/collaboration-board/packages/db:
+  exercises/collaboration-board/reference/packages/db:
     dependencies:
       '@board/contracts':
         specifier: workspace:*

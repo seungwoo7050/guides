@@ -132,4 +132,4 @@ framework 기능을 사용하더라도 입력 검증·권한·업무 service 경
 
 ## 다음 단계
 
-프런트엔드가 의존할 실제 전송 계약을 설계하려면 [`HTTP API 모델`](../03-backend/01-http-api-model.md)로 이동합니다.
+먼저 [`React와 Next.js`](../../exercises/03-react-nextjs/README.md)의 생성된 `work/`에서 Part 02의 상태·요청 수명·동적 경로 계약을 검증하고 완료 뒤 `reference/`와 비교합니다. 그다음 실제 전송 계약을 설계하려면 [`HTTP API 모델`](../03-backend/01-http-api-model.md)로 이동합니다.

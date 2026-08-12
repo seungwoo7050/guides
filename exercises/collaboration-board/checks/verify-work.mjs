@@ -1,4 +1,4 @@
-import { access, readFile, readdir } from "node:fs/promises";
+import { access, lstat, readFile, readdir, realpath } from "node:fs/promises";
 import { createRequire } from "node:module";
 import path from "node:path";
 import { spawn } from "node:child_process";
@@ -7,24 +7,28 @@ import { fileURLToPath } from "node:url";
 const exerciseRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const repositoryRoot = path.resolve(exerciseRoot, "..", "..");
 const postgresVerifier = path.join(repositoryRoot, "scripts", "verify-collaboration-postgresql.mjs");
-const requireFromProject = createRequire(new URL("../../../projects/collaboration-board/package.json", import.meta.url));
+const requireFromProject = createRequire(new URL("../../../exercises/collaboration-board/reference/package.json", import.meta.url));
 const ts = requireFromProject("typescript");
 const [workArgument = "work", stageArgument, ...flags] = process.argv.slice(2);
 const stage = Number(stageArgument);
 const structureOnly = flags.includes("--structure-only");
+const policyFixture = flags.includes("--policy-fixture");
 
 if (!Number.isInteger(stage) || stage < 1 || stage > 8) {
-  fail("사용법: node checks/verify-work.mjs <work-directory> <1-8> [--structure-only]");
+  fail("사용법: node exercises/collaboration-board/checks/verify-work.mjs exercises/collaboration-board/work <1-8> [--structure-only]");
 }
 
-const workRoot = path.resolve(exerciseRoot, workArgument);
+const workRoot = resolveWorkArgument(workArgument);
 const relativeWork = path.relative(exerciseRoot, workRoot);
-if (!relativeWork || relativeWork.startsWith("..") || path.isAbsolute(relativeWork)) {
-  fail("work directory는 exercises/collaboration-board 아래에 있어야 합니다.");
+const canonicalWork = path.join(exerciseRoot, "work");
+if (policyFixture) {
+  if (!structureOnly || !relativeWork.startsWith(`.guide-tmp${path.sep}verify-work-policy-`)) {
+    fail("policy fixture는 저장소 소유 meta-test에서만 사용할 수 있습니다.");
+  }
+} else if (workRoot !== canonicalWork) {
+  fail("canonical learner workspace인 exercises/collaboration-board/work만 검증할 수 있습니다.");
 }
-if (["skeleton", "patches", "specs", "checks"].includes(relativeWork.split(path.sep)[0])) {
-  fail("skeleton·명세·검사기를 직접 수정하지 말고 별도 work directory를 사용합니다.");
-}
+await assertSafeWorkTree(workRoot);
 
 const errors = [];
 const stageScript = `verify:${String(stage).padStart(2, "0")}`;
@@ -215,6 +219,43 @@ async function exists(relative) {
   } catch {
     return false;
   }
+}
+
+function resolveWorkArgument(argument) {
+  if (path.isAbsolute(argument)) return path.resolve(argument);
+  if (argument === "exercises" || argument.startsWith(`exercises${path.sep}`) || argument.startsWith("exercises/")) {
+    return path.resolve(repositoryRoot, argument);
+  }
+  return path.resolve(exerciseRoot, argument);
+}
+
+async function assertSafeWorkTree(directory) {
+  let stat;
+  try {
+    stat = await lstat(directory);
+  } catch (error) {
+    fail(`learner workspace를 읽을 수 없습니다: ${error instanceof Error ? error.message : String(error)}`);
+  }
+  if (stat.isSymbolicLink() || !stat.isDirectory()) {
+    fail("learner workspace root는 symbolic link가 아닌 실제 디렉터리여야 합니다.");
+  }
+
+  const [exerciseReal, workReal] = await Promise.all([realpath(exerciseRoot), realpath(directory)]);
+  const expectedReal = path.resolve(exerciseReal, path.relative(exerciseRoot, directory));
+  if (workReal !== expectedReal) fail("learner workspace real path가 허용된 경로를 벗어났습니다.");
+
+  async function walk(current) {
+    for (const entry of await readdir(current, { withFileTypes: true })) {
+      const target = path.join(current, entry.name);
+      if (entry.isSymbolicLink()) {
+        if (entry.name === "node_modules") continue;
+        fail(`learner workspace의 symbolic link를 허용하지 않습니다: ${path.relative(directory, target)}`);
+      }
+      if (entry.name === "node_modules" || entry.name === ".git") continue;
+      if (entry.isDirectory()) await walk(target);
+    }
+  }
+  await walk(directory);
 }
 
 async function findUnfinishedMarkers(directory) {

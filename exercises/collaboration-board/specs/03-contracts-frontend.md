@@ -27,7 +27,7 @@ HTTP·WebSocket 전송 schema를 공유 package에 정의하고, Next.js 화면�
 검증 진입점은 다음과 같습니다. `work/package.json`의 `verify:03`는 이 단계까지의 형 검사·테스트·build를 누적 실행해야 합니다.
 
 ```sh
-node checks/verify-work.mjs work 3
+node exercises/collaboration-board/checks/verify-work.mjs exercises/collaboration-board/work 3
 ```
 
 ## 완료 계약

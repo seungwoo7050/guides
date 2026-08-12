@@ -184,4 +184,4 @@ git commit -m "feat(notes): 메모 생성 계약 구현"
 
 ## 다음 단계
 
-브라우저 기초를 component model로 확장하려면 [`React 컴포넌트와 상태`](../02-frontend/01-react-components-state.md)로 이동합니다.
+먼저 [`실행 환경과 작업 공간`](../../exercises/01-runtime/README.md)의 생성된 `work/`에서 package 공개 경계·runtime validation·event loop를 검증하고 완료 뒤 `reference/`와 비교합니다. 그다음 브라우저 기초를 component model로 확장하려면 [`React 컴포넌트와 상태`](../02-frontend/01-react-components-state.md)로 이동합니다.

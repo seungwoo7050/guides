@@ -1,5 +1,6 @@
 import { z } from "zod";
 
+// [Implementation 1] 연결에서 받은 JSON은 runtime schema로 좁히고 server event는 별도 outbound contract로 유지합니다.
 const boardId = z.string().min(1);
 const itemId = z.string().min(1);
 export const ClientEventSchema = z.discriminatedUnion("type", [

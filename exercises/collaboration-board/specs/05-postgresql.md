@@ -26,7 +26,7 @@
 검증 진입점은 다음과 같습니다. `work/package.json`의 `verify:05`는 이 단계까지의 형 검사·테스트·build를 누적 실행해야 합니다.
 
 ```sh
-node checks/verify-work.mjs work 5
+node exercises/collaboration-board/checks/verify-work.mjs exercises/collaboration-board/work 5
 ```
 
 ## 완료 계약

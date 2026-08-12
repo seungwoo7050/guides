@@ -1,13 +1,13 @@
-From b008224f74e91681801d3ad3947c6c836b85e36c Mon Sep 17 00:00:00 2001
+From 471def81a554f27d3704b8163ce555e6bf34b247 Mon Sep 17 00:00:00 2001
 From: Seungwoo Kim <seungwoo7050@naver.com>
 Date: Wed, 15 Oct 2025 21:31:00 +0900
 Subject: [PATCH] feat(realtime): WebSocket 상태 동기화 구현
 
 diff --git a/src/app.ts b/src/app.ts
-index 6ce409a..f21de1f 100644
+index 6ce409a..deefd5e 100644
 --- a/src/app.ts
 +++ b/src/app.ts
-@@ -1,21 +1,135 @@
+@@ -1,21 +1,142 @@
 +import { randomUUID } from "node:crypto";
  import websocket from "@fastify/websocket";
  import Fastify, { type FastifyRequest } from "fastify";
@@ -15,6 +15,7 @@ index 6ce409a..f21de1f 100644
 +import { WebSocket } from "ws";
 +import { ClientEventSchema, type BoardSnapshot, type ServerEvent } from "./protocol";
 
++// [Implementation 2] app instance가 client connection과 board snapshot의 수명을 소유하도록 state model을 먼저 정의합니다.
  type Role = "editor" | "viewer";
 +type Client = {
 +  id: string;
@@ -33,6 +34,7 @@ index 6ce409a..f21de1f 100644
    await app.register(websocket);
 -  app.get("/ws", { websocket: true }, (socket) => {
 +
++  // [Implementation 3] connection handler는 listener를 등록하고 모든 message를 parse한 뒤 join-before-write를 강제합니다.
 +  app.get("/ws", { websocket: true }, (socket, request) => {
 +    const client: Client = {
 +      id: randomUUID(),
@@ -60,10 +62,12 @@ index 6ce409a..f21de1f 100644
 +      if (event.type === "snapshot.request") {
 +        return send(client, { type: "board.snapshot", snapshot: board(event.boardId) });
 +      }
++      // [Implementation 5] 읽기 전용 role의 영속 write는 client UI가 아니라 server connection boundary에서 거부합니다.
 +      if (client.role === "viewer" && event.type !== "cursor.move") {
 +        return client.socket.close(1008, "write permission required");
 +      }
 +      const current = board(event.boardId);
++      // [Implementation 6] 새 항목은 item, board version과 sequence를 한 server-owned state transition으로 전진시킵니다.
 +      if (event.type === "item.create") {
 +        current.version += 1;
 +        current.sequence += 1;
@@ -75,6 +79,7 @@ index 6ce409a..f21de1f 100644
 +          version: 1
 +        });
 +      }
++      // [Implementation 7] update와 move는 baseVersion을 검사하고 transient preview와 final persistence를 구분합니다.
 +      if (event.type === "item.update" || event.type === "item.move") {
 +        const item = current.items.find((candidate) => candidate.id === event.itemId);
 +        if (!item || item.version !== event.baseVersion) {
@@ -112,6 +117,7 @@ index 6ce409a..f21de1f 100644
    });
 -  // TODO: 연결 확인 타이머와 `onClose` 정리를 구현해 주세요.
 +
++  // [Implementation 8] heartbeat timer와 socket collection을 app onClose에 묶어 성공·실패 뒤 열린 handle을 남기지 않습니다.
 +  const heartbeat = setInterval(() => {
 +    for (const client of clients) {
 +      if (!client.alive) {
@@ -130,6 +136,7 @@ index 6ce409a..f21de1f 100644
 +    clients.clear();
 +  });
 +
++  // [Implementation 4] board와 presence helper가 room별 snapshot 및 참가자 projection의 단일 owner가 됩니다.
 +  function board(boardId: string) {
 +    const current = boards.get(boardId) ?? { boardId, version: 0, sequence: 0, items: [] };
 +    boards.set(boardId, current);
@@ -150,5 +157,25 @@ index 6ce409a..f21de1f 100644
 +function safeJson(raw: string) {
 +  try { return JSON.parse(raw); } catch { return null; }
 +}
+diff --git a/src/protocol.ts b/src/protocol.ts
+index 86966a8..8281931 100644
+--- a/src/protocol.ts
++++ b/src/protocol.ts
+@@ -1,5 +1,6 @@
+ import { z } from "zod";
+
++// [Implementation 1] 연결에서 받은 JSON은 runtime schema로 좁히고 server event는 별도 outbound contract로 유지합니다.
+ const boardId = z.string().min(1);
+ const itemId = z.string().min(1);
+ export const ClientEventSchema = z.discriminatedUnion("type", [
+diff --git a/src/server.ts b/src/server.ts
+index d00c1d6..570f850 100644
+--- a/src/server.ts
++++ b/src/server.ts
+@@ -1,3 +1,4 @@
+ import { buildApp } from "./app";
++// [Implementation 9] executable composition root에서 비동기 app 구성을 마친 뒤 network listener를 시작합니다.
+ const app = await buildApp();
+ await app.listen({ host: "0.0.0.0", port: 4000 });
 --
 2.47.3

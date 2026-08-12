@@ -1,3 +1,4 @@
+// [Implementation 3] 작업 배열과 URL filter를 화면 상태의 소유자로 두고 첫 DOM projection을 시작합니다.
 const STORAGE_KEY = "guide-web.tasks.v1";
 const allowedFilters = new Set(["all", "open", "done"]);
 
@@ -13,6 +14,7 @@ let filter = readFilter();
 filterInput.value = filter;
 render();
 
+// [Implementation 4] 제출 경계에서 입력을 정규화해 빈 값은 거부하고 새 작업은 불변 갱신합니다.
 form.addEventListener("submit", (event) => {
   event.preventDefault();
   const title = titleInput.value.trim();
@@ -44,6 +46,7 @@ window.addEventListener("popstate", () => {
   render();
 });
 
+// [Implementation 5] 목록 하나에 event delegation을 두어 완료·삭제 동작과 render 책임을 연결합니다.
 list.addEventListener("change", (event) => {
   const checkbox = event.target.closest('input[type="checkbox"][data-task-id]');
   if (!checkbox) return;
@@ -95,6 +98,7 @@ function render() {
   status.textContent = `전체 ${tasks.length}개, 미완료 ${open}개`;
 }
 
+// [Implementation 6] 저장소 입력은 다시 검증하고 URL을 filter 정본으로 삼아 새로고침과 history 이동에서 복구합니다.
 function persist() {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(tasks));
 }

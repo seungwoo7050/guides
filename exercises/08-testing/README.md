@@ -8,16 +8,15 @@
 
 ## 작업하기
 
+저장소 루트에서 실행하면 canonical `skeleton/`이 비덮어쓰기 방식으로 `work/`에 복사됩니다.
+
 ```sh
-cd exercises/08-testing
-rm -rf work
-cp -R skeleton work
-cd work
-pnpm install
-pnpm typecheck
-pnpm test
-pnpm exec playwright install chromium
-pnpm test:e2e
+pnpm workspace:create 08-testing
+pnpm --dir exercises/08-testing/work install
+pnpm --dir exercises/08-testing/work typecheck
+pnpm --dir exercises/08-testing/work test
+pnpm --dir exercises/08-testing/work exec playwright install chromium
+pnpm --dir exercises/08-testing/work test:e2e
 ```
 
 ## 비교할 위험
@@ -28,6 +27,21 @@ pnpm test:e2e
 | HTTP 상태·직렬화·hook | `app.inject` API 검사 |
 | 버튼의 접근 가능한 이름과 실제 사용자 흐름 | 브라우저 검사 |
 | 서버와 브라우저 정리 누락 | 통합 검사 종료 상태 |
+
+## Reference 구현 순서
+
+아래 번호는 역사적 작성 순서가 아니라 production code와 learner-authored test가 공유하는 권장 construction order입니다. 이 실습은 테스트 구현 자체가 학습 목표이므로 `reference/`의 test와 Playwright config도 annotation 대상입니다. JSON config는 이 표에서만 설명합니다.
+
+| 번호 | 위치 | 책임 |
+|---:|---|---|
+| [Implementation 0] | `pnpm install`, `package.json`, `tsconfig.json` | Fastify·Vitest·Playwright·TypeScript 실행 기반과 test 명령을 준비합니다. |
+| 1 | `src/counter.ts` | framework와 무관한 순수 상태 전이를 만듭니다. |
+| 2 | `src/counter.test.ts` | 경계값을 가장 작은 unit test에서 증명합니다. |
+| 3 | `src/app.ts` | 순수 함수를 HTTP와 접근 가능한 HTML에 연결합니다. |
+| 4 | `src/app.test.ts` | `app.inject`로 HTTP 계약과 app cleanup을 검증합니다. |
+| 5 | `src/server.ts` | 실행 가능한 server entry와 port ownership을 만듭니다. |
+| 6 | `playwright.config.ts` | 실행별 port, web server와 browser test lifecycle을 구성합니다. |
+| 7 | `tests/counter.spec.ts` | role·name selector와 관찰 가능한 UI 결과로 사용자 흐름을 증명합니다. |
 
 ## 실패 주입
 
@@ -42,7 +56,7 @@ pnpm test:e2e
 
 ## Reference 비교
 
-자동 검증을 모두 통과한 뒤에만 `diff -ru work reference`로 구현을 비교합니다. 파일 배치나 표현이 달라도 계약을 만족하면 올바른 구현이며, 차이를 선택한 이유를 설명합니다.
+자동 검증을 모두 통과한 뒤에만 `diff -ru exercises/08-testing/work exercises/08-testing/reference`로 구현을 비교합니다. 파일 배치나 표현이 달라도 계약을 만족하면 올바른 구현이며, 차이를 선택한 이유를 설명합니다.
 
 ## 완료 기준
 

@@ -2,6 +2,8 @@
 
 세 번째 프로젝트는 브라우저·API·DB·세션·권한을 하나의 작은 풀스택 애플리케이션으로 연결합니다. 실시간 기능은 아직 넣지 않습니다. 먼저 요청마다 사용자를 식별하고, 공유된 자원에서 역할별 허용 동작이 일관되게 지켜지는지 완성합니다.
 
+> **형태:** 이 문서는 보안 실습 뒤 선택해서 수행하는 self-directed expected-evidence brief입니다. 저장소에는 이 brief 전용 skeleton, 자동 verifier 또는 reference 구현이 없습니다. 저장소 밖의 학습자 소유 프로젝트에서 구현하고 아래 evidence rubric으로 완료를 검토합니다.
+
 ## 목표
 
 사용자는 다음 일을 할 수 있습니다.
@@ -15,7 +17,7 @@
 7. conflict가 발생하면 최신 내용과 자신의 draft를 비교합니다.
 8. 작은 화면과 keyboard로 핵심 흐름을 사용할 수 있습니다.
 
-이 프로젝트는 [`collaboration-board`](../../exercises/collaboration-board/README.md)의 **1~6단계**를 단순한 메모 도메인으로 구현하는 중간 checkpoint로 사용할 수 있습니다. WebSocket·Canvas는 다음 capstone에서 추가합니다.
+이 프로젝트의 책임 경계는 최종 [`collaboration-board`](../../exercises/collaboration-board/README.md) Stage 01–06과 개념적으로 대응합니다. 그러나 협업 보드 검사기는 board 전용 경로·script·계약을 요구하므로 notes 프로젝트를 검증하지 않습니다. 해당 skeleton이나 verifier를 우회해 재사용하지 말고, 이 문서의 수동 evidence rubric을 사용합니다. WebSocket·Canvas는 다음 capstone의 별도 도메인에서 추가합니다.
 
 ## 사용자 흐름
 
@@ -231,6 +233,21 @@ keyboard와 작은 화면
 - 409 conflict에서도 사용자 draft와 최신 상태를 함께 보존합니다.
 - 핵심 인증·권한 흐름을 실제 browser와 DB로 검사합니다.
 
+## Expected evidence rubric
+
+학습자 프로젝트에 다음 증거를 남깁니다. 자동 채점 답안이 아니라 명령과 결과를 다시 실행할 수 있는 review record입니다.
+
+| 증거 | 최소 내용 |
+|---|---|
+| state ownership | URL·server·component·session 상태의 정본과 adapter 경계 |
+| security | cookie 속성, session 폐기, Origin/CSRF, 401·403·404 선택 근거 |
+| authorization | owner·editor·viewer 행렬과 마지막 owner·다른 note 거부 결과 |
+| transaction | note·membership·activity의 commit/rollback·경쟁 결과 |
+| browser | 로그인부터 logout, viewer 거부, 409 draft 보존, keyboard·320px 결과 |
+| lifecycle | app·pool·browser와 외부 resource의 시작·종료 명령 |
+
+guides 저장소에는 이 결과와 비교할 reference가 없으며 collaboration-board gate 통과를 공유 메모의 완료 증거로 주장할 수 없습니다. 자동 검증이 필요한 기본 경로는 `06-security`에서 Part 05로 이어집니다.
+
 ## 다음 단계
 
-연결 수명, 임시 상태와 여러 사용자의 실시간 수렴을 추가하는 최종 프로젝트는 [`실시간 협업 보드`](04-collaboration-board.md)입니다.
+기본 학습 경로의 `07-websocket`과 `08-testing`을 먼저 완료한 뒤, 연결 수명·임시 상태·여러 사용자의 수렴을 통합하는 최종 runnable 프로젝트 [`실시간 협업 보드`](04-collaboration-board.md)로 이동합니다.

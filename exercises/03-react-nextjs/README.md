@@ -11,12 +11,11 @@
 
 ## 작업 공간
 
+저장소 루트에서 실행하면 canonical `skeleton/`이 비덮어쓰기 방식으로 `work/`에 복사됩니다.
+
 ```sh
-cd exercises/03-react-nextjs
-rm -rf work
-cp -R skeleton work
-cd work
-pnpm install
+pnpm workspace:create 03-react-nextjs
+pnpm --dir exercises/03-react-nextjs/work install
 ```
 
 ## 구현 순서
@@ -28,13 +27,26 @@ pnpm install
 5. 목록 key에는 배열 위치가 아니라 사용자 식별자를 사용합니다.
 6. `/profile/[handle]` 동적 경로를 만들고 직접 새로 고침해도 내용을 얻습니다.
 
+## Reference 구현 순서
+
+아래 번호는 역사적 작성 순서가 아니라 하나의 Next.js reference가 공유하는 권장 construction order입니다. JSON config는 직접 주석하지 않고 이 표가 bootstrap 책임을 설명합니다.
+
+| 번호 | 위치 | 책임 |
+|---:|---|---|
+| [Implementation 0] | `pnpm install`, `package.json`, `tsconfig.json`, `next.config.mjs` | Next.js·React·TypeScript 의존성과 App Router project contract를 준비합니다. |
+| 1 | `app/layout.tsx`, `app/style.css` | server root layout과 전역 접근성·반응형 기반을 만듭니다. |
+| 2 | `lib/fake-api.ts` | 취소 가능한 검색 경계와 성공·실패·지연을 모델링합니다. |
+| 3 | `app/page.tsx` 상태 모델 | UI state owner와 판별 가능한 요청 상태를 정의합니다. |
+| 4 | `app/page.tsx` effect | 요청 수명을 AbortController와 effect cleanup에 묶습니다. |
+| 5 | `app/page.tsx` render | loading·error·empty·success를 배타적으로 투영합니다. |
+| 6 | `app/profile/[handle]/page.tsx` | 직접 접근 가능한 server dynamic route를 완성합니다. |
+
 ## 검증
 
 ```sh
-pnpm typecheck
-pnpm build
-cd ..
-node tests/run.mjs work
+pnpm --dir exercises/03-react-nextjs/work typecheck
+pnpm --dir exercises/03-react-nextjs/work build
+node exercises/03-react-nextjs/tests/run.mjs exercises/03-react-nextjs/work
 ```
 
 마지막 명령은 Next.js 개발 서버와 실제 Chromium을 시작합니다. `a` 검색의 느린 응답보다 `beta` 검색의 빠른 응답이 먼저 도착하는 상황을 만들고, 오래된 응답이 최신 화면을 덮지 않는지 확인합니다. 오류 상태와 동적 경로 직접 접근도 함께 검사합니다.
@@ -49,7 +61,7 @@ node tests/run.mjs work
 
 ## Reference 비교
 
-자동 검증을 모두 통과한 뒤에만 `diff -ru work reference`로 구현을 비교합니다. 파일 배치나 표현이 달라도 계약을 만족하면 올바른 구현이며, 차이를 선택한 이유를 설명합니다.
+자동 검증을 모두 통과한 뒤에만 `diff -ru exercises/03-react-nextjs/work exercises/03-react-nextjs/reference`로 구현을 비교합니다. 파일 배치나 표현이 달라도 계약을 만족하면 올바른 구현이며, 차이를 선택한 이유를 설명합니다.
 
 ## 완료 기준
 

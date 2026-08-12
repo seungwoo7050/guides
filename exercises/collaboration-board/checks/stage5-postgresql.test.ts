@@ -5,7 +5,7 @@ import { pathToFileURL } from "node:url";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 
 const requireFromDatabasePackage = createRequire(
-  new URL("../../../projects/collaboration-board/packages/db/package.json", import.meta.url)
+  new URL("../../../exercises/collaboration-board/reference/packages/db/package.json", import.meta.url)
 );
 const { Client } = requireFromDatabasePackage("pg") as typeof import("pg");
 const workRoot = process.env.LEARNER_WORK_ROOT;

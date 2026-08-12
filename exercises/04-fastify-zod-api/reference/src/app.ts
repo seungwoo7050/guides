@@ -3,6 +3,7 @@ import { CreateMemoSchema } from "./contracts";
 import { ConflictError, createMemo } from "./service";
 import type { MemoRepository } from "./repository";
 
+// [Implementation 4] app factory가 repository를 주입받아 test별 state를 격리하고 예상하지 못한 failure를 안정된 body로 닫습니다.
 export function buildApp(repo: MemoRepository) {
   const app = Fastify({ logger: false });
 
@@ -19,6 +20,7 @@ export function buildApp(repo: MemoRepository) {
     });
   });
 
+  // [Implementation 5] 조회 route는 HTTP parameter와 repository result를 변환하며 resource 부재를 404로 구분합니다.
   app.get("/memos", async () => ({ memos: await repo.list() }));
 
   app.get("/memos/:id", async (request, reply) => {
@@ -28,6 +30,7 @@ export function buildApp(repo: MemoRepository) {
     return { memo };
   });
 
+  // [Implementation 6] 생성 route는 body parse, service 호출과 예상 가능한 conflict의 409 변환만 조정합니다.
   app.post("/memos", async (request, reply) => {
     const parsed = CreateMemoSchema.safeParse(request.body);
     if (!parsed.success) {

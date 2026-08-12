@@ -1,3 +1,4 @@
+-- [Implementation 1] 먼저 schema가 PK, FK, check와 좌석 unique constraint로 경쟁 요청에서도 저장 불변식을 지키게 합니다.
 create extension if not exists pgcrypto;
 create table if not exists events (
   id uuid primary key default gen_random_uuid(),

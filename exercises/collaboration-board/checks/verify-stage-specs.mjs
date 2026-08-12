@@ -22,7 +22,10 @@ for (const name of specs) {
     if (!text.includes(heading)) errors.push(`${name}: ${heading} 누락`);
   }
   const stage = String(specs.indexOf(name) + 1).padStart(2, "0");
-  if (!text.includes(`verify:${stage}`) || !text.includes(`verify-work.mjs work ${Number(stage)}`)) {
+  if (
+    !text.includes(`verify:${stage}`) ||
+    !text.includes(`verify-work.mjs exercises/collaboration-board/work ${Number(stage)}`)
+  ) {
     errors.push(`${name}: 누적 단계 검증 명령 누락`);
   }
 }
@@ -37,7 +40,7 @@ for (const pathName of [
   "walkthrough-base/README.md",
   "walkthrough-base/.gitignore",
   "patches",
-  "../../projects/collaboration-board"
+  "reference"
 ]) {
   try { await access(path.resolve(root, pathName)); }
   catch { errors.push(`협업 보드 자료 누락: ${pathName}`); }

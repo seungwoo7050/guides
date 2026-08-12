@@ -2,7 +2,7 @@
 
 최종 프로젝트는 앞선 화면·API·DB·인증 위에 WebSocket, presence, Canvas와 충돌 복구를 추가합니다. 목표는 기능 수가 많은 제품이 아니라 **여러 경계가 동시에 실패해도 정본·소유권·종료 계약을 추적할 수 있는 시스템**입니다.
 
-기본 작업 공간과 단계별 계약은 [`실시간 협업 보드 실습`](../../exercises/collaboration-board/README.md)에 있습니다. 기본 학습 경로는 patch 적용이 아니라 skeleton에서 직접 구현하고 각 stage 요구사항을 통과하는 것입니다.
+기본 작업 공간과 단계별 계약은 [`실시간 협업 보드 실습`](../../exercises/collaboration-board/README.md)에 있습니다. 기본 학습 경로는 patch 적용이나 canonical skeleton 직접 수정이 아니라 `pnpm workspace:create collaboration-board`로 생성한 `work/`에서 각 stage 요구사항을 통과하는 것입니다.
 
 ## 종료 능력
 
@@ -103,7 +103,7 @@ packages/db
 
 상세 요구사항: [`06-security.md`](../../exercises/collaboration-board/specs/06-security.md)
 
-이 단계까지가 이전 capstone인 공유 메모의 종료점입니다.
+선택형 공유 메모 brief와 책임 범위가 개념적으로 겹치지만, 이 verifier는 board 도메인만 검사합니다.
 
 ### 7. Realtime
 
@@ -234,7 +234,7 @@ full verify
 
 ## Patch 자료의 역할
 
-기존 단계별 patch는 삭제하지 않고 선택적 walkthrough로 보존합니다. patch 전용 `walkthrough-base/`와 학습자용 `skeleton/`은 서로 다른 계약입니다.
+curated 단계별 patch는 선택적 권장 구현 순서 walkthrough로 보존합니다. 실제 Git history가 아니며 patch 전용 `walkthrough-base/`와 학습자용 `skeleton/`은 서로 다른 계약입니다.
 
 ```sh
 pnpm check:walkthrough

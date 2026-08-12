@@ -3,6 +3,8 @@ import { readdir, readFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
+import { isLearnerWorkspace } from "./lib/exercise-paths.mjs";
+
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const files = await collect(root);
 const errors = [];
@@ -40,6 +42,7 @@ async function collect(directory) {
   for (const entry of await readdir(directory, { withFileTypes: true })) {
     if (["node_modules", ".git", ".next", ".guide-tmp", "coverage", "dist", "target"].includes(entry.name)) continue;
     const full = path.join(directory, entry.name);
+    if (entry.isDirectory() && isLearnerWorkspace(root, full)) continue;
     if (entry.isDirectory()) out.push(...await collect(full));
     else if (/\.(md|json|mjs|js|ts|tsx|yaml|yml|css|html|sql|patch)$/.test(entry.name)) out.push(full);
   }

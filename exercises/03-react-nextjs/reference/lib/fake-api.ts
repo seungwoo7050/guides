@@ -1,3 +1,4 @@
+// [Implementation 2] UI 밖의 비동기 adapter가 지연·실패와 AbortSignal 수명을 소유하도록 분리합니다.
 export interface User { id: string; handle: string; displayName: string }
 const users: User[] = [
   { id: "u1", handle: "alpha", displayName: "알파" },

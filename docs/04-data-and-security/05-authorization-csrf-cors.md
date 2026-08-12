@@ -206,4 +206,4 @@ HTTP와 WebSocket에 같은 행렬을 적용합니다.
 
 ## 다음 단계
 
-오래 유지되는 연결에서 인증·권한과 message 수명을 다루는 방법은 [`WebSocket 프로토콜`](../05-realtime-and-quality/01-websocket-protocol.md)에서 이어집니다.
+먼저 [`세션과 권한`](../../exercises/06-security/README.md)의 생성된 `work/`에서 session 폐기·role·ownership·Origin 계약을 검증하고 완료 뒤 `reference/`와 비교합니다. 원한다면 이 시점에 자동 verifier나 reference가 없는 선택형 [`공유 메모 expected-evidence brief`](../06-capstones/03-shared-notes.md)를 수행합니다. 기본 경로는 [`WebSocket 프로토콜`](../05-realtime-and-quality/01-websocket-protocol.md)로 이어집니다.

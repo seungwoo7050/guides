@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { searchUsers, type User } from "../lib/fake-api";
 
+// [Implementation 3] 요청 상태를 판별 가능한 union으로 두어 loading, success와 failure가 동시에 참이 되지 않게 합니다.
 type LoadState =
   | { status: "loading" }
   | { status: "success"; users: User[] }
@@ -16,6 +17,7 @@ export default function HomePage() {
   const nameInputRef = useRef<HTMLInputElement>(null);
   const formRef = useRef<HTMLFormElement>(null);
 
+  // [Implementation 4] effect가 시작한 요청을 cleanup의 AbortController가 끝내 오래된 응답의 state 소유권을 회수합니다.
   useEffect(() => {
     const controller = new AbortController();
     setState({ status: "loading" });
@@ -51,6 +53,7 @@ export default function HomePage() {
     return () => form.removeEventListener("submit", onSubmit);
   }, []);
 
+  // [Implementation 5] 상태 union을 loading·error·empty·success의 배타적인 화면으로 투영하고 server route로 연결합니다.
   return <main>
     <h1>안녕하세요, {name}</h1>
     <form ref={formRef}>

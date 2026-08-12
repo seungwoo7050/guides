@@ -102,6 +102,8 @@ exercises/collaboration-board/checks/postgresql.compose.yml
 scripts/verify-collaboration-postgresql.mjs
 scripts/verify-exercise-contracts.mjs
 scripts/verify-checker-quality.mjs
+scripts/new-workspace.mjs
+scripts/test-new-workspace.mjs
 prepare.sh
 verify.sh
 '
@@ -124,22 +126,12 @@ docs/07-realtime-websocket-canvas.md
 docs/08-testing-quality.md
 docs/09-collaboration-board.md
 prepare-verify.sh
-make-out.txt
 '
 
 printf '%s\n' "$OBSOLETE_PATHS" | while IFS= read -r relative
 do
     [ -n "$relative" ] || continue
-    if [ -e "$relative" ]; then
-        rm -rf -- "$relative"
-        printf '[DELETE] %s\n' "$relative"
-    fi
-done
-
-printf '%s\n' "$OBSOLETE_PATHS" | while IFS= read -r relative
-do
-    [ -n "$relative" ] || continue
-    [ ! -e "$relative" ] || die "이전 경로를 제거하지 못했습니다: $relative"
+    [ ! -e "$relative" ] || die "이전 경로가 남아 있습니다. prepare는 source를 삭제하지 않습니다: $relative"
 done
 
 chmod +x prepare.sh verify.sh
@@ -160,7 +152,7 @@ for project in \
     exercises/06-security/reference \
     exercises/07-websocket/reference \
     exercises/08-testing/reference \
-    projects/collaboration-board
+    exercises/collaboration-board/reference
 do
     [ -f "$project/package.json" ] || die "package.json 누락: $project"
     (cd "$project" && pnpm_run exec tsc --version >/dev/null)
@@ -168,7 +160,7 @@ done
 printf '[OK] TypeScript 실행 환경을 확인했습니다.\n'
 
 say "4/7 Playwright Chromium 준비"
-for project in exercises/08-testing/reference projects/collaboration-board
+for project in exercises/08-testing/reference exercises/collaboration-board/reference
 do
     (cd "$project" && pnpm_run exec playwright install chromium)
 done

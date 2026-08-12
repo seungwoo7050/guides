@@ -11,9 +11,16 @@ const temporaryParent = path.join(root, ".guide-tmp");
 await mkdir(temporaryParent, { recursive: true });
 const temporaryBase = await mkdtemp(path.join(temporaryParent, "checker-quality-"));
 let cleanupPromise;
+let handlingSignal = false;
+const activeChildren = new Set();
+const activeComposeProjects = new Map();
 
 for (const [signal, code] of [["SIGINT", 130], ["SIGTERM", 143], ["SIGHUP", 129]]) {
   process.once(signal, () => {
+    if (handlingSignal) return;
+    handlingSignal = true;
+    for (const child of activeChildren) terminate(child, signal);
+    cleanupActiveComposeProjects();
     cleanupTemporary().finally(() => process.exit(code));
   });
 }
@@ -309,6 +316,7 @@ async function runDatabaseSuite(temporary, composeProject, expectSuccess, label)
     POSTGRES_PORT: String(port),
     DATABASE_URL: `postgres://postgres:postgres@127.0.0.1:${port}/board_dev`
   };
+  activeComposeProjects.set(composeProject, { exerciseRoot, environment });
   let primaryError;
   try {
     await runRequired(
@@ -337,9 +345,24 @@ async function runDatabaseSuite(temporary, composeProject, expectSuccess, label)
       environment,
       120_000
     );
+    activeComposeProjects.delete(composeProject);
     if (cleanup.code !== 0 && !primaryError) primaryError = new Error(`PostgreSQL quality 정리 실패\n${cleanup.output}`);
   }
   if (primaryError) throw primaryError;
+}
+
+function cleanupActiveComposeProjects() {
+  for (const [composeProject, { exerciseRoot, environment }] of activeComposeProjects) {
+    const cleanup = spawnSync(
+      "docker",
+      ["compose", "-p", composeProject, "-f", "compose.test.yml", "down", "-v", "--remove-orphans"],
+      { cwd: exerciseRoot, env: environment, encoding: "utf8", timeout: 120_000 }
+    );
+    if (cleanup.status !== 0) {
+      console.error(`signal cleanup 실패 (${composeProject})\n${cleanup.stdout ?? ""}\n${cleanup.stderr ?? ""}`);
+    }
+    activeComposeProjects.delete(composeProject);
+  }
 }
 
 async function runReactBrowser(temporary) {
@@ -417,6 +440,7 @@ function run(command, args, cwd, env, timeoutMs = 120_000) {
       detached,
       stdio: ["ignore", "pipe", "pipe"]
     });
+    activeChildren.add(child);
     let output = "";
     let completed = false;
     let timedOut = false;
@@ -438,6 +462,7 @@ function run(command, args, cwd, env, timeoutMs = 120_000) {
     function finish(code, signal, captured) {
       if (completed) return;
       completed = true;
+      activeChildren.delete(child);
       clearTimeout(timer);
       if (forceTimer) clearTimeout(forceTimer);
       resolve({ code: timedOut ? 124 : code, signal, output: captured, timedOut });

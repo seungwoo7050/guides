@@ -1,3 +1,4 @@
+/* [Implementation 2] 키보드 초점과 좁은 viewport에서도 검색 form과 결과가 줄어드는 layout 계약을 만듭니다. */
 :root { font-family: system-ui, sans-serif; color: #172033; background: #f5f7fb; }
 * { box-sizing: border-box; }
 body { margin: 0; }

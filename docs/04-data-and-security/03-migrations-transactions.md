@@ -204,4 +204,4 @@ schema migration을 각 application instance의 일반 startup에 무조건 묶�
 
 ## 다음 단계
 
-데이터베이스에 저장할 수 없는 비밀번호와 로그인 상태의 수명은 [`비밀번호, 세션과 cookie`](04-passwords-sessions-cookies.md)에서 다룹니다.
+먼저 [`PostgreSQL과 Kysely`](../../exercises/05-postgresql-kysely/README.md)의 생성된 `work/`에서 migration·제약·rollback·경쟁을 검증하고 완료 뒤 `reference/`와 비교합니다. 원한다면 이 시점에 자동 verifier나 reference가 없는 선택형 [`메모 API expected-evidence brief`](../06-capstones/02-notes-api.md)를 수행합니다. 기본 경로는 [`비밀번호, 세션과 cookie`](04-passwords-sessions-cookies.md)로 이어집니다.

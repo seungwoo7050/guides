@@ -121,10 +121,10 @@ Console 오류만 보는 습관보다 Network에서 실제 전송 결과를 먼�
 정적 파일 server를 시작합니다.
 
 ```sh
-node scripts/serve-static.mjs exercises/00-first-web-app/reference 8080
+node scripts/serve-static.mjs exercises/00-first-web-app/skeleton 8080
 ```
 
-브라우저에서 `http://127.0.0.1:8080`을 열고 Network 탭에서 HTML 요청을 확인합니다. 존재하지 않는 `/missing.html`을 열어 404가 어떻게 보이는지도 확인합니다. server process를 종료한 뒤 다시 열어 연결 실패와 HTTP 404의 차이를 비교합니다.
+브라우저에서 `http://127.0.0.1:8080`을 열고 Network 탭에서 HTML 요청을 확인합니다. 이 관찰에는 완성 구현이 필요하지 않으므로 `reference/`를 먼저 실행하지 않습니다. 존재하지 않는 `/missing.html`을 열어 404가 어떻게 보이는지도 확인합니다. server process를 종료한 뒤 다시 열어 연결 실패와 HTTP 404의 차이를 비교합니다.
 
 ## 실패 조건
 

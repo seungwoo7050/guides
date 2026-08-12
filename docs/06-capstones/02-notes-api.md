@@ -2,6 +2,8 @@
 
 두 번째 프로젝트는 화면을 제외하고 HTTP API와 PostgreSQL에 집중합니다. Fastify route, Zod 전송 계약, application service, Kysely repository와 실제 transaction을 연결해 **한 요청이 어디서 검증되고 어떤 상태를 남기는지** 추적합니다.
 
+> **형태:** 이 문서는 DB 실습 뒤 선택해서 수행하는 self-directed expected-evidence brief입니다. 저장소에는 이 brief 전용 skeleton, Compose, 자동 verifier 또는 reference 구현이 없습니다. `04-fastify-zod-api`와 `05-postgresql-kysely`를 통과한 뒤 저장소 밖의 새 학습자 소유 프로젝트에서 구현하며, 아래 evidence rubric으로 스스로 검토합니다.
+
 ## 목표
 
 다음 API를 구현합니다.
@@ -23,7 +25,7 @@ GET    /notes/:id/activity
 - [`Fastify와 Zod API`](../../exercises/04-fastify-zod-api/README.md)
 - [`PostgreSQL과 Kysely`](../../exercises/05-postgresql-kysely/README.md)
 
-두 실습의 reference를 복사해 합치는 것이 아니라, 이 문서의 계약을 보고 새 디렉터리에서 직접 조립합니다.
+두 실습의 reference를 복사해 합치는 것이 아니라, 이 문서의 계약을 보고 저장소 밖의 새 디렉터리에서 직접 조립합니다. 이 디렉터리의 위치·package manager·Git 수명은 학습자가 소유하며 guides verifier는 그 경로를 읽거나 변경하지 않습니다.
 
 ## 데이터 모델
 
@@ -170,7 +172,7 @@ activity insert 전에 의도적으로 예외를 발생시키는 검사로 note 
 - schema type과 Kysely `Database` type 일치
 - test DB마다 깨끗한 schema 또는 고유 database 사용
 
-제공된 Compose 파일로 전용 PostgreSQL을 실행할 수 있습니다.
+PostgreSQL 실행 방식과 resource cleanup도 프로젝트 계약의 일부입니다. 기존 `05-postgresql-kysely`의 Compose 구성을 이해한 뒤 새 프로젝트에 필요한 구성을 직접 만들고, 고유 project name·port·volume과 종료 명령을 evidence에 기록합니다.
 
 ## 검사 목록
 
@@ -226,6 +228,20 @@ activity insert 전에 의도적으로 예외를 발생시키는 검사로 note 
 - 실제 PostgreSQL에서 migration·constraint·rollback·경쟁을 검사합니다.
 - 프로세스 종료 시 server와 DB pool을 닫습니다.
 
+## Expected evidence rubric
+
+자동 정답 비교 대신 학습자 프로젝트에 다음 증거를 남깁니다. 형식은 자유지만 각 항목의 명령, 종료 코드, 관찰 결과와 실패 주입 결과를 재현할 수 있어야 합니다.
+
+| 증거 | 최소 내용 |
+|---|---|
+| contract | endpoint·status·공개 DTO·stable error code와 범위 밖 기능 |
+| ownership | route·service·repository·pool의 책임과 close owner |
+| database | 빈 DB migration, 제약 위반, update+activity rollback, 두 update 경쟁 |
+| verification | typecheck·API·DB 명령과 성공 결과, known-bad 하나 이상의 거부 결과 |
+| cleanup | server·pool·Compose project·volume을 종료하는 명령과 종료 후 상태 |
+
+guides 저장소에는 이 결과와 비교할 하나의 prose answer가 없습니다. 위 계약을 만족하는 여러 구조가 가능하며, 자동 검증이 필요한 기본 경로는 `05-postgresql-kysely`에서 끝납니다.
+
 ## 다음 단계
 
-React 화면, 사용자 session과 자원별 권한을 결합하는 세 번째 프로젝트는 [`공유 메모`](03-shared-notes.md)입니다.
+선택 프로젝트를 계속 확장하려면 [`공유 메모`](03-shared-notes.md)로 이동합니다. 기본 runnable 경로로 돌아가려면 [`비밀번호, 세션과 cookie`](../04-data-and-security/04-passwords-sessions-cookies.md)를 읽고 `06-security`를 시작합니다.

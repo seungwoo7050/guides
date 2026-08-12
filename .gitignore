@@ -37,6 +37,17 @@ test-results/
 .pnpm-store/
 /.turbo/
 .turbo/
-/make-out.txt
 /verify.log
 /tree.txt
+
+# 학습자 전용 workspace (canonical skeleton/reference와 분리)
+/exercises/00-first-web-app/work/
+/exercises/01-runtime/work/
+/exercises/02-browser/work/
+/exercises/03-react-nextjs/work/
+/exercises/04-fastify-zod-api/work/
+/exercises/05-postgresql-kysely/work/
+/exercises/06-security/work/
+/exercises/07-websocket/work/
+/exercises/08-testing/work/
+/exercises/collaboration-board/work/

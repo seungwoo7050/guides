@@ -5,22 +5,20 @@ HTML·CSS·JavaScript를 처음 연결하는 누적 문제입니다. 완성 코�
 ## 시작하기
 
 ```sh
-cd exercises/00-first-web-app
-rm -rf work
-cp -R skeleton work
-node ../../scripts/serve-static.mjs work 8080
+pnpm workspace:create 00-first-web-app
+node scripts/serve-static.mjs exercises/00-first-web-app/work 8080
 ```
 
 브라우저에서 `http://127.0.0.1:8080`을 열고 한 단계씩 구현합니다. 다른 터미널에서는 다음 검사를 실행합니다.
 
 ```sh
-node tests/verify.mjs work
+node exercises/00-first-web-app/tests/verify.mjs exercises/00-first-web-app/work
 ```
 
 검사는 Chrome 또는 Chromium을 실제로 실행합니다. 자동으로 찾지 못하면 실행 파일을 지정합니다.
 
 ```sh
-CHROMIUM_PATH=/path/to/chromium node tests/verify.mjs work
+CHROMIUM_PATH=/path/to/chromium node exercises/00-first-web-app/tests/verify.mjs exercises/00-first-web-app/work
 ```
 
 ## 구현 순서
@@ -31,6 +29,19 @@ CHROMIUM_PATH=/path/to/chromium node tests/verify.mjs work
 4. 작업 완료 상태와 삭제 동작을 구현합니다.
 5. 작업 목록은 `localStorage`에 저장하되, 읽을 때 형식이 잘못되면 안전한 빈 목록으로 복구합니다.
 6. 필터는 URL의 `filter` 쿼리를 정본으로 삼고 뒤로 가기에서 화면을 복원합니다.
+
+## Reference 구현 순서
+
+아래 번호는 Git 기록이 아니라 `reference/`를 다시 만들 때 권장하는 학습용 construction order입니다. 이 HTML·CSS·JavaScript 세 파일은 하나의 번호 범위를 공유하며 파일마다 번호를 다시 시작하지 않습니다.
+
+| 번호 | 위치 | 책임 |
+|---:|---|---|
+| 1 | `reference/index.html` | 의미 구조, 레이블, 건너뛰기 링크와 live region을 먼저 정의합니다. |
+| 2 | `reference/style.css` | 키보드 초점과 작은 화면에서도 유지되는 시각 계약을 만듭니다. |
+| 3 | `reference/app.js` 상태 초기화 | 작업 목록과 필터의 소유자를 정하고 첫 화면을 투영합니다. |
+| 4 | `reference/app.js` 제출 처리 | 입력을 정규화하고 새 작업을 불변 갱신합니다. |
+| 5 | `reference/app.js` 목록 처리 | 완료·삭제 event delegation과 DOM projection을 연결합니다. |
+| 6 | `reference/app.js` 저장·URL 처리 | 저장소 입력을 검증하고 URL을 필터 정본으로 유지합니다. |
 
 ## 완료 계약
 
@@ -47,7 +58,7 @@ CHROMIUM_PATH=/path/to/chromium node tests/verify.mjs work
 먼저 `work/`가 모든 검사를 통과하게 만듭니다. 그 뒤에만 다음처럼 차이를 봅니다.
 
 ```sh
-diff -ru work reference
+diff -ru exercises/00-first-web-app/work exercises/00-first-web-app/reference
 ```
 
 정답과 코드 모양이 달라도 완료 계약을 만족하면 올바른 구현입니다. 차이가 생긴 이유를 설명할 수 있는지가 더 중요합니다.

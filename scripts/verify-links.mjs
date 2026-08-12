@@ -2,6 +2,8 @@ import { access, readdir, readFile, stat } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
+import { isLearnerWorkspace } from "./lib/exercise-paths.mjs";
+
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const markdown = await collect(root, (file) => file.endsWith(".md"));
 const errors = [];
@@ -62,6 +64,7 @@ async function collect(directory, accept) {
   for (const entry of await readdir(directory, { withFileTypes: true })) {
     if (["node_modules", ".git", ".next", ".guide-tmp", "coverage", "dist", "target"].includes(entry.name)) continue;
     const full = path.join(directory, entry.name);
+    if (entry.isDirectory() && isLearnerWorkspace(root, full)) continue;
     if (entry.isDirectory()) out.push(...await collect(full, accept));
     else if (accept(full)) out.push(full);
   }

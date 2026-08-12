@@ -1,12 +1,12 @@
 import { spawn } from "node:child_process";
 import { randomBytes } from "node:crypto";
-import { mkdtemp, readFile, readdir, rm } from "node:fs/promises";
+import { lstat, mkdtemp, readFile, readdir, realpath, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
-const projectRoot = path.join(root, "projects", "collaboration-board");
+const projectRoot = path.join(root, "exercises", "collaboration-board", "reference");
 const composeFile = path.join(root, "exercises", "collaboration-board", "checks", "postgresql.compose.yml");
 const postgresTest = path.join(projectRoot, "packages", "db", "src", "postgres.test.ts");
 const learnerOracle = path.join(root, "exercises", "collaboration-board", "checks", "stage5-postgresql.test.ts");
@@ -23,7 +23,7 @@ if (process.argv.includes("--self-test")) {
   if (learnerFlagIndex !== -1 && !learnerWork) throw new Error("--learner-work 뒤에 work directory가 필요합니다.");
   await verifyPostgresIntegration({
     databaseOnly: process.argv.includes("--database-only"),
-    learnerWork: learnerWork ? validateLearnerWork(learnerWork) : undefined
+    learnerWork: learnerWork ? await validateLearnerWork(learnerWork) : undefined
   });
 }
 
@@ -344,16 +344,46 @@ function expectReportFailure(report, expected) {
   throw new Error("잘못된 PostgreSQL Vitest report가 허용되었습니다.");
 }
 
-function validateLearnerWork(argument) {
+async function validateLearnerWork(argument) {
   const exercise = path.join(root, "exercises", "collaboration-board");
   const resolved = path.resolve(argument);
   const relative = path.relative(exercise, resolved);
   if (!relative || relative.startsWith("..") || path.isAbsolute(relative)) {
     throw new Error("학습자 work directory는 exercises/collaboration-board 아래에 있어야 합니다.");
   }
-  const blocked = new Set(["checks", "fixtures", "patches", "skeleton", "specs", "walkthrough-base"]);
-  if (blocked.has(relative.split(path.sep)[0])) throw new Error(`검증할 수 없는 학습자 work directory입니다: ${relative}`);
+  const parts = relative.split(path.sep);
+  const policyPrefix = "verify-work-postgres-";
+  const policyFixture =
+    parts.length === 2 &&
+    parts[0] === ".guide-tmp" &&
+    parts[1].startsWith(policyPrefix) &&
+    parts[1].length > policyPrefix.length;
+  if (relative !== "work" && !policyFixture) {
+    throw new Error("canonical learner workspace 또는 저장소 소유 PostgreSQL policy fixture만 검증할 수 있습니다.");
+  }
+
+  const stat = await lstat(resolved);
+  if (stat.isSymbolicLink() || !stat.isDirectory()) {
+    throw new Error("학습자 PostgreSQL work root는 symbolic link가 아닌 실제 디렉터리여야 합니다.");
+  }
+  const [exerciseReal, workReal] = await Promise.all([realpath(exercise), realpath(resolved)]);
+  if (workReal !== path.resolve(exerciseReal, relative)) {
+    throw new Error("학습자 PostgreSQL work real path가 허용된 경로를 벗어났습니다.");
+  }
+  await rejectLearnerSymlinks(resolved, resolved);
   return resolved;
+}
+
+async function rejectLearnerSymlinks(directory, workRoot) {
+  for (const entry of await readdir(directory, { withFileTypes: true })) {
+    const target = path.join(directory, entry.name);
+    if (entry.isSymbolicLink()) {
+      if (entry.name === "node_modules") continue;
+      throw new Error(`학습자 PostgreSQL work의 symbolic link를 허용하지 않습니다: ${path.relative(workRoot, target)}`);
+    }
+    if (entry.name === "node_modules" || entry.name === ".git") continue;
+    if (entry.isDirectory()) await rejectLearnerSymlinks(target, workRoot);
+  }
 }
 
 function terminateChild(child, signal = "SIGTERM") {

@@ -82,85 +82,113 @@ export async function launchBrowser(url, options = {}) {
   const child = spawn(executable, browserArgs, { stdio: ["ignore", "ignore", "pipe"] });
 
   let stderr = "";
+  let spawnError;
+  child.once("error", (error) => { spawnError = error; });
   child.stderr.on("data", (chunk) => { stderr += chunk.toString(); });
-  const version = await pollJson(`http://127.0.0.1:${port}/json/version`, child, () => stderr);
-  const target = await fetch(`http://127.0.0.1:${port}/json/new?about:blank`, { method: "PUT" }).then((response) => {
-    if (!response.ok) throw new Error(`브라우저 탭을 열지 못했습니다: HTTP ${response.status}`);
-    return response.json();
-  });
-  const session = new CdpSession(target.webSocketDebuggerUrl);
-  await session.open();
-  await Promise.all([
-    session.call("Page.enable"),
-    session.call("Runtime.enable"),
-    session.call("DOM.enable")
-  ]);
-  await session.call("Emulation.setDeviceMetricsOverride", {
-    width: options.width ?? 1280,
-    height: options.height ?? 800,
-    deviceScaleFactor: 1,
-    mobile: false
-  });
-  let destination = url;
-  if (options.serveDirectory) {
-    const staticRoot = path.resolve(options.serveDirectory);
-    destination = "http://guide.local/";
-    await session.call("Fetch.enable", { patterns: [{ urlPattern: "http://guide.local/*" }] });
-    session.on("Fetch.requestPaused", async ({ requestId, request }) => {
-      try {
-        const parsed = new URL(request.url);
-        const decoded = decodeURIComponent(parsed.pathname);
-        const candidate = path.resolve(staticRoot, `.${decoded}`);
-        if (candidate !== staticRoot && !candidate.startsWith(`${staticRoot}${path.sep}`)) {
-          await session.call("Fetch.fulfillRequest", { requestId, responseCode: 403, body: Buffer.from("forbidden").toString("base64") });
-          return;
-        }
-        let file = candidate;
-        const info = await stat(file).catch(() => null);
-        if (info?.isDirectory()) file = path.join(file, "index.html");
-        const body = await readFile(file);
-        await session.call("Fetch.fulfillRequest", {
-          requestId,
-          responseCode: 200,
-          responseHeaders: [
-            { name: "Content-Type", value: MIME.get(path.extname(file)) ?? "application/octet-stream" },
-            { name: "Cache-Control", value: "no-store" }
-          ],
-          body: body.toString("base64")
-        });
-      } catch {
-        await session.call("Fetch.fulfillRequest", { requestId, responseCode: 404, body: Buffer.from("not found").toString("base64") });
-      }
+  let session;
+  try {
+    const version = await pollJson(
+      `http://127.0.0.1:${port}/json/version`,
+      child,
+      () => stderr,
+      () => spawnError
+    );
+    const target = await fetch(`http://127.0.0.1:${port}/json/new?about:blank`, { method: "PUT" }).then((response) => {
+      if (!response.ok) throw new Error(`브라우저 탭을 열지 못했습니다: HTTP ${response.status}`);
+      return response.json();
     });
-  }
-  await session.call("Page.navigate", { url: destination });
-  await waitFor(async () => await session.evaluate("document.readyState") === "complete", 10_000, "페이지 로드");
-
-  return {
-    version: version.Browser,
-    evaluate: (expression) => session.evaluate(expression),
-    call: (method, params) => session.call(method, params),
-    on: (method, handler) => session.on(method, handler),
-    async resize(width, height) {
-      await session.call("Emulation.setDeviceMetricsOverride", { width, height, deviceScaleFactor: 1, mobile: false });
-    },
-    async press(key) {
-      const code = key === "Tab" ? "Tab" : key === "Enter" ? "Enter" : key;
-      const keyCode = key === "Tab" ? 9 : key === "Enter" ? 13 : 0;
-      await session.call("Input.dispatchKeyEvent", { type: "keyDown", key, code, windowsVirtualKeyCode: keyCode });
-      await session.call("Input.dispatchKeyEvent", { type: "keyUp", key, code, windowsVirtualKeyCode: keyCode });
-    },
-    waitFor: (predicate, timeout, label) => waitFor(predicate, timeout, label),
-    async close() {
-      session.close();
-      child.kill("SIGTERM");
-      await new Promise((resolve) => {
-        const timer = setTimeout(() => { child.kill("SIGKILL"); resolve(); }, 2_000);
-        child.once("exit", () => { clearTimeout(timer); resolve(); });
+    session = new CdpSession(target.webSocketDebuggerUrl);
+    await session.open();
+    await Promise.all([
+      session.call("Page.enable"),
+      session.call("Runtime.enable"),
+      session.call("DOM.enable")
+    ]);
+    await session.call("Emulation.setDeviceMetricsOverride", {
+      width: options.width ?? 1280,
+      height: options.height ?? 800,
+      deviceScaleFactor: 1,
+      mobile: false
+    });
+    let destination = url;
+    if (options.serveDirectory) {
+      const staticRoot = path.resolve(options.serveDirectory);
+      destination = "http://guide.local/";
+      await session.call("Fetch.enable", { patterns: [{ urlPattern: "http://guide.local/*" }] });
+      session.on("Fetch.requestPaused", async ({ requestId, request }) => {
+        try {
+          const parsed = new URL(request.url);
+          const decoded = decodeURIComponent(parsed.pathname);
+          const candidate = path.resolve(staticRoot, `.${decoded}`);
+          if (candidate !== staticRoot && !candidate.startsWith(`${staticRoot}${path.sep}`)) {
+            await session.call("Fetch.fulfillRequest", {
+              requestId,
+              responseCode: 403,
+              body: Buffer.from("forbidden").toString("base64")
+            });
+            return;
+          }
+          let file = candidate;
+          const info = await stat(file).catch(() => null);
+          if (info?.isDirectory()) file = path.join(file, "index.html");
+          const body = await readFile(file);
+          await session.call("Fetch.fulfillRequest", {
+            requestId,
+            responseCode: 200,
+            responseHeaders: [
+              { name: "Content-Type", value: MIME.get(path.extname(file)) ?? "application/octet-stream" },
+              { name: "Cache-Control", value: "no-store" }
+            ],
+            body: body.toString("base64")
+          });
+        } catch {
+          await session.call("Fetch.fulfillRequest", {
+            requestId,
+            responseCode: 404,
+            body: Buffer.from("not found").toString("base64")
+          });
+        }
       });
-      await rm(profile, { recursive: true, force: true });
     }
-  };
+    await session.call("Page.navigate", { url: destination });
+    await waitFor(async () => await session.evaluate("document.readyState") === "complete", 10_000, "페이지 로드");
+
+    return {
+      version: version.Browser,
+      evaluate: (expression) => session.evaluate(expression),
+      call: (method, params) => session.call(method, params),
+      on: (method, handler) => session.on(method, handler),
+      async resize(width, height) {
+        await session.call("Emulation.setDeviceMetricsOverride", { width, height, deviceScaleFactor: 1, mobile: false });
+      },
+      async press(key) {
+        const code = key === "Tab" ? "Tab" : key === "Enter" ? "Enter" : key;
+        const keyCode = key === "Tab" ? 9 : key === "Enter" ? 13 : 0;
+        await session.call("Input.dispatchKeyEvent", { type: "keyDown", key, code, windowsVirtualKeyCode: keyCode });
+        await session.call("Input.dispatchKeyEvent", { type: "keyUp", key, code, windowsVirtualKeyCode: keyCode });
+      },
+      waitFor: (predicate, timeout, label) => waitFor(predicate, timeout, label),
+      async close() {
+        session.close();
+        await stopProcess(child);
+        await rm(profile, { recursive: true, force: true });
+      }
+    };
+  } catch (error) {
+    session?.close();
+    await stopProcess(child);
+    await rm(profile, { recursive: true, force: true });
+    throw error;
+  }
+}
+
+async function stopProcess(child) {
+  if (child.exitCode !== null || child.signalCode !== null || child.pid === undefined) return;
+  child.kill("SIGTERM");
+  await new Promise((resolve) => {
+    const timer = setTimeout(() => { child.kill("SIGKILL"); resolve(); }, 2_000);
+    child.once("exit", () => { clearTimeout(timer); resolve(); });
+  });
 }
 
 export async function waitFor(predicate, timeout = 5_000, label = "조건") {
@@ -206,8 +234,10 @@ async function freePort() {
   return address.port;
 }
 
-async function pollJson(url, child, stderr) {
+async function pollJson(url, child, stderr, getSpawnError) {
   for (let attempt = 0; attempt < 200; attempt += 1) {
+    const spawnError = getSpawnError();
+    if (spawnError) throw new Error(`브라우저 process를 시작하지 못했습니다: ${spawnError.message}`);
     if (child.exitCode !== null) throw new Error(`브라우저가 일찍 종료되었습니다.\n${stderr()}`);
     try {
       const response = await fetch(url);

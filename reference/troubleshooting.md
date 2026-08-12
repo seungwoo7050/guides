@@ -29,7 +29,7 @@ pnpm --version
 
 ```sh
 export CHROMIUM_PATH=/usr/bin/chromium
-node exercises/00-first-web-app/tests/verify.mjs reference
+node exercises/00-first-web-app/tests/verify.mjs exercises/00-first-web-app/work
 ```
 
 CI container에서 root로 실행할 때만 환경 정책에 따라 `CHROMIUM_NO_SANDBOX=1`이 필요할 수 있습니다. 일반 desktop에서는 sandbox를 끄지 않습니다.
@@ -84,14 +84,14 @@ pnpm verify:database
 수동 관찰:
 
 ```sh
-docker compose -f exercises/05-postgresql-kysely/compose.test.yml up -d --wait
+POSTGRES_PORT=55432 docker compose -p guide-web-app-05-manual -f exercises/05-postgresql-kysely/compose.test.yml up -d --wait
 export DATABASE_URL=postgres://postgres:postgres@127.0.0.1:55432/board_dev
-pnpm --dir exercises/05-postgresql-kysely/reference migrate
-pnpm --dir exercises/05-postgresql-kysely/reference test
-docker compose -f exercises/05-postgresql-kysely/compose.test.yml down -v
+pnpm --dir exercises/05-postgresql-kysely/work migrate
+pnpm --dir exercises/05-postgresql-kysely/work test
+docker compose -p guide-web-app-05-manual -f exercises/05-postgresql-kysely/compose.test.yml down -v
 ```
 
-port 충돌, container health, migration 적용 여부와 `DATABASE_URL`의 DB 이름을 함께 확인합니다. 개인 데이터가 있는 DB를 test 대상으로 사용하지 않습니다.
+port 충돌, container health, migration 적용 여부와 `DATABASE_URL`의 DB 이름을 함께 확인합니다. 병렬 worktree에서는 Compose project name 접미사와 `POSTGRES_PORT`를 고유하게 바꾸고 `DATABASE_URL`에도 같은 port를 사용합니다. 개인 데이터가 있는 DB를 test 대상으로 사용하지 않습니다.
 
 ## Transaction 검사가 통과했지만 일부 데이터가 남습니다
 
@@ -106,8 +106,8 @@ server와 browser의 첫 render에서 시각·무작위 값·storage·viewport�
 개발 server와 production build는 다른 검증입니다.
 
 ```sh
-pnpm --dir exercises/03-react-nextjs/reference typecheck
-pnpm --dir exercises/03-react-nextjs/reference build
+pnpm --dir exercises/03-react-nextjs/work typecheck
+pnpm --dir exercises/03-react-nextjs/work build
 ```
 
 server/client import 경계, dynamic route의 `params`, 환경 변수 노출과 build 시점 data access를 확인합니다.

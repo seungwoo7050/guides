@@ -1,6 +1,7 @@
 import { randomUUID } from "node:crypto";
 import type { CreateMemoInput, Memo } from "./contracts";
 
+// [Implementation 2] 저장 port가 service의 의존 경계를 정하고 각 repository instance가 자신의 row 수명을 소유합니다.
 export interface MemoRepository {
   list(): Promise<Memo[]>;
   find(id: string): Promise<Memo | null>;

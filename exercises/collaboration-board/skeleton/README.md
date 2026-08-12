@@ -11,14 +11,10 @@
 첫 단계는 다음 명령으로 확인합니다.
 
 ```sh
-cd exercises/collaboration-board
-rm -rf work
-cp -R skeleton work
-cd work
+pnpm workspace:create collaboration-board
 corepack enable
-pnpm install
-cd ..
-node checks/verify-work.mjs work 1
+pnpm --dir exercises/collaboration-board/work install
+node exercises/collaboration-board/checks/verify-work.mjs exercises/collaboration-board/work 1
 ```
 
 이 시작점은 최종 구조를 대신하지 않습니다. 단계 02부터 route·contract·repository·migration·security·realtime 경계를 직접 추가하고, 각 단계마다 `verify:0N` 명령과 자동 검사를 누적합니다.
@@ -26,7 +22,7 @@ node checks/verify-work.mjs work 1
 ```text
 한 단계의 명세 읽기
 → 구현과 검사를 함께 작성
-→ node checks/verify-work.mjs work N
+→ node exercises/collaboration-board/checks/verify-work.mjs exercises/collaboration-board/work N
 → 자신의 commit 기록
 → 필요한 경우에만 완성 프로젝트와 patch 비교
 ```

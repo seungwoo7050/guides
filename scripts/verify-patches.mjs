@@ -56,7 +56,7 @@ async function verifyCollaborationBoard() {
   const exercise = path.join(root, "exercises", "collaboration-board");
   const temporary = await mkdtemp(path.join(tmpdir(), "board-walkthrough-"));
   try {
-    // The learner starter evolves independently. Historical patches always apply to this immutable base.
+    // The learner starter evolves independently. Curated construction patches apply only to this immutable base.
     await cp(path.join(exercise, "walkthrough-base"), temporary, { recursive: true });
     const patchDirectory = path.join(exercise, "patches");
     const patches = (await readdir(patchDirectory))
@@ -81,11 +81,11 @@ async function verifyCollaborationBoard() {
 
     const missing = [...collaborationCheckpoints.keys()].filter((name) => !observedCheckpoints.includes(name));
     if (missing.length) throw new Error(`누적 단계 검사 지점을 찾지 못했습니다: ${missing.join(", ")}`);
-    await assertSameTree(temporary, path.join(root, "projects", "collaboration-board"), "협업 보드");
+    await assertSameTree(temporary, path.join(exercise, "reference"), "협업 보드");
   } finally {
     await rm(temporary, { recursive: true, force: true });
   }
-  console.log("역사적 누적 patch 10개와 단계별 내부 의존성을 확인했습니다.");
+  console.log("curated 학습용 누적 patch 10개와 단계별 내부 의존성을 확인했습니다.");
 }
 
 async function verifyInternalImports(projectRoot, checkpoint) {
@@ -238,7 +238,7 @@ async function walk(directory) {
     const full = path.join(directory, entry.name);
     if (entry.isDirectory()) output.push(...await walk(full));
     else if (entry.isSymbolicLink()) {
-      if ((await lstat(full)).isSymbolicLink()) continue;
+      throw new Error(`patch tree의 symbolic link를 허용하지 않습니다: ${path.relative(root, full)}`);
     } else if ((await stat(full)).isFile()) output.push(full);
   }
   return output.sort();

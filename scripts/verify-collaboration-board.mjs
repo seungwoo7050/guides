@@ -1,7 +1,7 @@
 import { access, readFile } from "node:fs/promises";
 import path from "node:path";
 
-const root = path.resolve(new URL("../projects/collaboration-board", import.meta.url).pathname);
+const root = path.resolve(new URL("../exercises/collaboration-board/reference", import.meta.url).pathname);
 const required = [
   "package.json",
   "pnpm-workspace.yaml",

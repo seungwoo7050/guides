@@ -3,6 +3,25 @@
 ROOT=$(CDPATH= cd "$(dirname "$0")" && pwd -P)
 cd "$ROOT" || exit 2
 
+EXPECTED_PNPM=$(node -p 'require("./package.json").packageManager.split("@").at(-1)') || exit 2
+if [ -x "$ROOT/.guide-tools/bin/pnpm" ]
+then
+    PNPM="$ROOT/.guide-tools/bin/pnpm"
+    PATH="$ROOT/.guide-tools/bin:$PATH"
+    export PATH
+elif command -v pnpm >/dev/null 2>&1
+then
+    PNPM=$(command -v pnpm)
+else
+    printf 'VERIFY ERROR: pnpm 실행기를 찾을 수 없습니다. 먼저 ./prepare.sh를 실행하십시오.\n' >&2
+    exit 2
+fi
+if [ "$("$PNPM" --version 2>/dev/null)" != "$EXPECTED_PNPM" ]
+then
+    printf 'VERIFY ERROR: pnpm %s가 필요합니다. 먼저 ./prepare.sh를 실행하십시오.\n' "$EXPECTED_PNPM" >&2
+    exit 2
+fi
+
 TIMESTAMP=$(date +%Y%m%d-%H%M%S)
 LOG=${VERIFY_LOG:-${TMPDIR:-/tmp}/guide-web-app-verify-${TIMESTAMP}-$$.log}
 case "$LOG" in
@@ -12,12 +31,20 @@ case "$LOG" in
         exit 2
         ;;
 esac
-mkdir -p "$(dirname "$LOG")" 2>/dev/null || {
-    printf 'VERIFY ERROR: 로그 디렉터리를 만들 수 없습니다: %s\n' "$(dirname "$LOG")" >&2
+case "$LOG" in
+    "$ROOT"|"$ROOT"/*)
+        printf 'VERIFY ERROR: VERIFY_LOG는 저장소 밖의 경로여야 합니다: %s\n' "$LOG" >&2
+        exit 2
+        ;;
+esac
+LOG_PARENT=$(dirname "$LOG")
+if [ ! -d "$LOG_PARENT" ]
+then
+    printf 'VERIFY ERROR: 저장소 밖의 로그 디렉터리를 먼저 만들어야 합니다: %s\n' "$LOG_PARENT" >&2
     exit 2
-}
-LOG_DIRECTORY=$(CDPATH= cd "$(dirname "$LOG")" && pwd -P) || {
-    printf 'VERIFY ERROR: 로그 디렉터리를 확인할 수 없습니다: %s\n' "$(dirname "$LOG")" >&2
+fi
+LOG_DIRECTORY=$(CDPATH= cd "$LOG_PARENT" && pwd -P) || {
+    printf 'VERIFY ERROR: 로그 디렉터리를 확인할 수 없습니다: %s\n' "$LOG_PARENT" >&2
     exit 2
 }
 LOG="$LOG_DIRECTORY/$(basename "$LOG")"
@@ -27,10 +54,18 @@ case "$LOG" in
         exit 2
         ;;
 esac
+if [ -e "$LOG" ] || [ -L "$LOG" ]
+then
+    printf 'VERIFY ERROR: 기존 파일이나 symbolic link를 VERIFY_LOG로 덮어쓰지 않습니다: %s\n' "$LOG" >&2
+    exit 2
+fi
 FAILED=0
 CLEANED=0
 
-: > "$LOG"
+( set -C; : > "$LOG" ) 2>/dev/null || {
+    printf 'VERIFY ERROR: 새 verify log를 안전하게 만들 수 없습니다: %s\n' "$LOG" >&2
+    exit 2
+}
 
 SOURCE_STATE_DIRECTORY=$(mktemp -d "${TMPDIR:-/tmp}/guide-web-app-source-state.XXXXXX") || {
     printf 'VERIFY ERROR: 소스 상태를 기록할 임시 디렉터리를 만들 수 없습니다.\n' >&2
@@ -84,7 +119,7 @@ cleanup()
 
     if \
         find . \
-            \( -path './.git' -o -path '*/node_modules' -o -path '*/.pnpm-store' \) \
+            \( -path './.git' -o -path './exercises/*/work' -o -path '*/node_modules' -o -path '*/.pnpm-store' \) \
             -prune -o \
             -type d \
             \( \
@@ -99,7 +134,7 @@ cleanup()
             >> "$LOG" 2>&1 \
         && \
         find . \
-            \( -path './.git' -o -path '*/node_modules' -o -path '*/.pnpm-store' \) \
+            \( -path './.git' -o -path './exercises/*/work' -o -path '*/node_modules' -o -path '*/.pnpm-store' \) \
             -prune -o \
             -type f \
             \( -name '*.tsbuildinfo' -o -name 'next-env.d.ts' \) \
@@ -166,7 +201,7 @@ trap 'handle_signal 143 TERM' TERM
 
 run "git"            git --version
 run "node"           node --version
-run "pnpm"           pnpm --version
+run "pnpm"           "$PNPM" --version
 run "docker-compose" docker compose version
 
 # ----------------------------------------------------------------------
@@ -175,6 +210,18 @@ run "docker-compose" docker compose version
 
 run "structure" \
     node scripts/verify-guide-structure.mjs
+
+run "learning-contract" \
+    "$PNPM" check:learning-contract
+
+run "workspace-helper" \
+    node scripts/test-new-workspace.mjs
+
+run "verify-log-policy" \
+    node scripts/test-verify-log-policy.mjs
+
+run "browser-harness-failure-cleanup" \
+    node scripts/test-browser-harness.mjs
 
 run "links" \
     node scripts/verify-links.mjs
@@ -198,7 +245,7 @@ run "capstone-postgresql-runner-quality" \
     node scripts/verify-collaboration-postgresql.mjs --self-test
 
 run "walkthrough-patches" \
-    pnpm check:walkthrough
+    "$PNPM" check:walkthrough
 
 run "checker-quality" \
     node scripts/verify-checker-quality.mjs
@@ -208,31 +255,31 @@ run "checker-quality" \
 # ----------------------------------------------------------------------
 
 run "foundations" \
-    pnpm verify:foundations
+    "$PNPM" verify:foundations
 
 run "runtime-workspace" \
-    pnpm verify:runtime
+    "$PNPM" verify:runtime
 
 run "react-nextjs" \
-    pnpm verify:react
+    "$PNPM" verify:react
 
 run "fastify-zod-api" \
-    pnpm verify:api
+    "$PNPM" verify:api
 
 run "postgresql-kysely" \
-    pnpm verify:database
+    "$PNPM" verify:database
 
 run "security" \
-    pnpm verify:security
+    "$PNPM" verify:security
 
 run "websocket" \
-    pnpm verify:realtime
+    "$PNPM" verify:realtime
 
 run "testing" \
-    pnpm verify:testing
+    "$PNPM" verify:testing
 
 run "collaboration-board" \
-    pnpm verify:collaboration
+    "$PNPM" verify:collaboration
 
 # ----------------------------------------------------------------------
 # Repository hygiene

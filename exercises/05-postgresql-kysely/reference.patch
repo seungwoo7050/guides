@@ -1,13 +1,18 @@
-From 751a222d436198e506d7b23ccc28d43e54ca651a Mon Sep 17 00:00:00 2001
+From 507bda2a379b98a879add845789c17647da73044 Mon Sep 17 00:00:00 2001
 From: Seungwoo Kim <seungwoo7050@naver.com>
 Date: Tue, 30 Sep 2025 21:16:00 +0900
 Subject: [PATCH] feat(data): PostgreSQL 트랜잭션 구현
 
 diff --git a/migrations/001_initial.sql b/migrations/001_initial.sql
-index d2f2081..8f85f34 100644
+index d2f2081..2b1fe72 100644
 --- a/migrations/001_initial.sql
 +++ b/migrations/001_initial.sql
-@@ -12,3 +12,9 @@ create table if not exists reservations (
+@@ -1,3 +1,4 @@
++-- [Implementation 1] 먼저 schema가 PK, FK, check와 좌석 unique constraint로 경쟁 요청에서도 저장 불변식을 지키게 합니다.
+ create extension if not exists pgcrypto;
+ create table if not exists events (
+   id uuid primary key default gen_random_uuid(),
+@@ -12,3 +13,9 @@ create table if not exists reservations (
    created_at timestamptz not null default now(),
    unique (event_id, seat_no)
  );
@@ -18,10 +23,18 @@ index d2f2081..8f85f34 100644
 +  created_at timestamptz not null default now()
 +);
 diff --git a/src/db.ts b/src/db.ts
-index 7c51667..0cf4e40 100644
+index 7c51667..663f6aa 100644
 --- a/src/db.ts
 +++ b/src/db.ts
-@@ -13,7 +13,17 @@ interface ReservationTable {
+@@ -1,6 +1,7 @@
+ import { Kysely, PostgresDialect, type Generated, type Insertable, type Selectable } from "kysely";
+ import { Pool } from "pg";
+
++// [Implementation 2] 실제 SQL schema를 Kysely table type으로 옮겨 query column을 compile time에 제한하고 pool owner를 노출합니다.
+ interface EventTable {
+   id: Generated<string>;
+   name: string;
+@@ -13,7 +14,17 @@ interface ReservationTable {
    seat_no: number;
    created_at: Generated<Date>;
  }
@@ -40,8 +53,20 @@ index 7c51667..0cf4e40 100644
  export type EventRow = Selectable<EventTable>;
  export type NewEvent = Insertable<EventTable>;
 
+diff --git a/src/migrate.ts b/src/migrate.ts
+index 06b178f..0c641b1 100644
+--- a/src/migrate.ts
++++ b/src/migrate.ts
+@@ -1,6 +1,7 @@
+ import { readFile } from "node:fs/promises";
+ import { sql } from "kysely";
+ import { createDb } from "./db";
++// [Implementation 3] migration runner가 SQL source와 DB resource의 수명을 소유해 성공·실패 모두 connection을 닫습니다.
+ const { db, pool } = createDb();
+ try {
+   const source = await readFile(new URL("../migrations/001_initial.sql", import.meta.url), "utf8");
 diff --git a/src/repository.ts b/src/repository.ts
-index ade8b1a..d39b751 100644
+index ade8b1a..eb53ec3 100644
 --- a/src/repository.ts
 +++ b/src/repository.ts
 @@ -1,4 +1,4 @@
@@ -50,17 +75,20 @@ index ade8b1a..d39b751 100644
  import type { Database } from "./db";
 
  export class SeatTakenError extends Error {}
-@@ -8,8 +8,7 @@ export interface ReserveSeatOptions {
+@@ -7,18 +7,44 @@ export interface ReserveSeatOptions {
+   afterReservation?: () => void | Promise<void>;
  }
 
++// [Implementation 4] 첫 query부터 Kysely value binding을 사용해 사용자 값을 SQL syntax와 분리합니다.
  export async function createEvent(db: Kysely<Database>, name: string) {
 -  // TODO: INSERT ... RETURNING 쿼리를 구현해 주세요.
 -  throw new Error("TODO");
 +  return db.insertInto("events").values({ name }).returningAll().executeTakeFirstOrThrow();
  }
 
++// [Implementation 5] transaction 수명을 use case에 두고 PostgreSQL unique failure만 안정된 domain failure로 변환합니다.
  export async function reserveSeat(
-@@ -17,8 +16,32 @@ export async function reserveSeat(
+   db: Kysely<Database>,
    input: { eventId: string; userId: string; seatNo: number },
    options: ReserveSeatOptions = {}
  ) {
@@ -76,6 +104,7 @@ index ade8b1a..d39b751 100644
 +  }
 +}
 +
++// [Implementation 6] 예약 row와 audit row를 같은 transaction resource로 써서 둘이 함께 commit하거나 rollback되게 합니다.
 +async function reserveInTransaction(
 +  trx: Transaction<Database>,
 +  input: { eventId: string; userId: string; seatNo: number },

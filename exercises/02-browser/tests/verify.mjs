@@ -5,8 +5,9 @@ import { fileURLToPath, pathToFileURL } from "node:url";
 import { launchBrowser } from "../../../scripts/lib/browser-harness.mjs";
 
 const exercise = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
+const repositoryRoot = path.resolve(exercise, "..", "..");
 const targetName = process.argv[2] ?? "work";
-const target = path.resolve(exercise, targetName);
+const target = resolveTarget(targetName);
 for (const file of ["index.html", "style.css", "app.js"]) await access(path.join(target, file));
 const js = await readFile(path.join(target, "app.js"), "utf8");
 assert.doesNotMatch(js, /\.innerHTML\s*=/, "검색 결과는 DOM 노드와 textContent로 렌더링해 주세요.");
@@ -51,4 +52,13 @@ try {
   console.log(`${targetName}: 브라우저 UI 계약을 확인했습니다.`);
 } finally {
   await browser.close();
+}
+
+function resolveTarget(argument) {
+  if (path.isAbsolute(argument)) return path.resolve(argument);
+  const normalized = path.normalize(argument);
+  if (normalized === "exercises" || normalized.startsWith(`exercises${path.sep}`)) {
+    return path.resolve(repositoryRoot, normalized);
+  }
+  return path.resolve(exercise, normalized);
 }

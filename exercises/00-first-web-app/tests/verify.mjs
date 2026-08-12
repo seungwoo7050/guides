@@ -5,8 +5,9 @@ import { access, readFile } from "node:fs/promises";
 import { launchBrowser } from "../../../scripts/lib/browser-harness.mjs";
 
 const exercise = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
+const repositoryRoot = path.resolve(exercise, "..", "..");
 const targetName = process.argv[2] ?? "work";
-const target = path.resolve(exercise, targetName);
+const target = resolveTarget(targetName);
 for (const file of ["index.html", "style.css", "app.js"]) await access(path.join(target, file));
 
 const html = await readFile(path.join(target, "index.html"), "utf8");
@@ -91,4 +92,13 @@ try {
   console.log(`${targetName}: 첫 웹 애플리케이션 계약을 확인했습니다.`);
 } finally {
   await browser.close();
+}
+
+function resolveTarget(argument) {
+  if (path.isAbsolute(argument)) return path.resolve(argument);
+  const normalized = path.normalize(argument);
+  if (normalized === "exercises" || normalized.startsWith(`exercises${path.sep}`)) {
+    return path.resolve(repositoryRoot, normalized);
+  }
+  return path.resolve(exercise, normalized);
 }

@@ -1,6 +1,7 @@
 import Fastify from "fastify";
 import { reduceCounter } from "./counter";
 
+// [Implementation 3] app factory가 순수 transition을 HTTP route와 접근 가능한 HTML projection에 연결합니다.
 export function buildApp() {
   const app = Fastify({ logger: false });
   let value = 0;

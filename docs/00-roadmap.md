@@ -71,6 +71,8 @@ docker compose version
 
 ## 읽는 순서
 
+아래 01–30 번호는 문서의 개념 순서를 보여 주는 카탈로그입니다. 실제 구현은 Part가 끝날 때 연결 exercise로 이동하고, `브라우저 작업 목록`은 Part 01 직후, 선택형 notes brief는 해당 DB·보안 문서 직후, `실시간 협업 보드`는 모든 독립 exercise 뒤에 수행합니다. 따라서 Part 06 문서를 마지막에 한꺼번에 실행하지 않습니다.
+
 ### Part 01. 웹 기초
 
 | 순서 | 문서 | 핵심 질문 |
@@ -124,27 +126,30 @@ docker compose version
 
 ### Part 06. Capstone
 
-| 순서 | 문서 | 통합 범위 |
-|---:|---|---|
-| 27 | [브라우저 작업 목록](06-capstones/01-browser-task-list.md) | HTML·CSS·JavaScript·URL·저장소 |
-| 28 | [메모 API](06-capstones/02-notes-api.md) | TypeScript·Fastify·PostgreSQL |
-| 29 | [공유 메모](06-capstones/03-shared-notes.md) | React·API·DB·세션·권한 |
-| 30 | [실시간 협업 보드](06-capstones/04-collaboration-board.md) | 전체 과정과 실시간 동기화 |
+| 순서 | 문서 | 통합 범위 | 실제 위치 |
+|---:|---|---|---|
+| 27 | [브라우저 작업 목록](06-capstones/01-browser-task-list.md) | HTML·CSS·JavaScript·URL·저장소 | Part 01 뒤 `00-first-web-app`과 같은 계약 |
+| 28 | [메모 API](06-capstones/02-notes-api.md) | TypeScript·Fastify·PostgreSQL | DB 실습 뒤 선택형 expected-evidence brief |
+| 29 | [공유 메모](06-capstones/03-shared-notes.md) | React·API·DB·세션·권한 | 보안 실습 뒤 선택형 expected-evidence brief |
+| 30 | [실시간 협업 보드](06-capstones/04-collaboration-board.md) | 전체 과정과 실시간 동기화 | 모든 독립 실습 뒤 Stage 01–08 최종 문제 |
 
 ## 문서와 실습 대응
 
-| 문서 범위 | 실습 | 자동 검증 |
-|---|---|---|
-| Part 01의 첫 5장 | [`00-first-web-app`](../exercises/00-first-web-app/README.md) | 실제 browser, URL, 저장소, 키보드, 320px |
-| 비동기·TypeScript·Node | [`01-runtime`](../exercises/01-runtime/README.md) | typecheck와 실행 결과 |
-| HTML·CSS·DOM·URL | [`02-browser`](../exercises/02-browser/README.md) | 실제 browser와 history |
-| Part 02 | [`03-react-nextjs`](../exercises/03-react-nextjs/README.md) | typecheck, build, 실제 browser와 요청 순서 역전 |
-| Part 03 | [`04-fastify-zod-api`](../exercises/04-fastify-zod-api/README.md) | `app.inject` API 검사 |
-| Part 04의 DB | [`05-postgresql-kysely`](../exercises/05-postgresql-kysely/README.md) | 실제 PostgreSQL, 경쟁과 rollback |
-| Part 04의 보안 | [`06-security`](../exercises/06-security/README.md) | session·role·ownership·Origin 요청 검사 |
-| Part 05의 실시간 | [`07-websocket`](../exercises/07-websocket/README.md) | 두 socket, reconnect와 cleanup |
-| Part 05의 테스트 | [`08-testing`](../exercises/08-testing/README.md) | unit·API·browser 비교 |
-| 전체 | [`collaboration-board`](../exercises/collaboration-board/README.md) | typecheck·test·build·DB·WS·E2E |
+별도 관찰 `examples/`는 없습니다. 각 독립 exercise가 좁은 관찰과 직접 구현을 함께 제공하며, 표의 모든 수정 위치는 생성된 `work/`입니다.
+
+| 학습 순서 | 문서 범위 | 직접 수행 | 검증 | 완료 뒤 이동 |
+|---:|---|---|---|---|
+| 1 | Part 01 01–05와 [Capstone 01 brief](06-capstones/01-browser-task-list.md) | [`00-first-web-app`](../exercises/00-first-web-app/README.md), [`02-browser`](../exercises/02-browser/README.md) | 실제 browser·URL·storage·keyboard | 각 `reference/` 비교 → Part 01 06–08 |
+| 2 | Part 01 06–08 | [`01-runtime`](../exercises/01-runtime/README.md) | typecheck·실행 결과 | `reference/` 비교 → Part 02 |
+| 3 | Part 02 01–05 | [`03-react-nextjs`](../exercises/03-react-nextjs/README.md) | typecheck·build·실제 browser | `reference/` 비교 → Part 03 |
+| 4 | Part 03 01–04 | [`04-fastify-zod-api`](../exercises/04-fastify-zod-api/README.md) | `app.inject` API 검사 | `reference/` 비교 → DB |
+| 5 | Part 04 01–03 | [`05-postgresql-kysely`](../exercises/05-postgresql-kysely/README.md) | 실제 PostgreSQL·경쟁·rollback | `reference/` 비교 → 선택 notes API 또는 보안 |
+| 6 | Capstone 02 | [선택형 메모 API evidence brief](06-capstones/02-notes-api.md) | 수동 evidence rubric | repo reference 없음 → 보안 |
+| 7 | Part 04 04–05 | [`06-security`](../exercises/06-security/README.md) | session·role·ownership·Origin | `reference/` 비교 → 선택 shared notes 또는 Part 05 |
+| 8 | Capstone 03 | [선택형 공유 메모 evidence brief](06-capstones/03-shared-notes.md) | 수동 evidence rubric | repo reference 없음 → Part 05 |
+| 9 | Part 05 01–03 | [`07-websocket`](../exercises/07-websocket/README.md) | 두 socket·reconnect·cleanup | `reference/` 비교 → 품질 |
+| 10 | Part 05 04 | [`08-testing`](../exercises/08-testing/README.md) | unit·API·browser | `reference/` 비교 → 최종 문제 |
+| 11 | Capstone 04 | [`collaboration-board`](../exercises/collaboration-board/README.md) Stage 01–08 | 누적 typecheck·test·build·DB·WS·E2E | exercise-local `reference/` 비교 → 종료 |
 
 ## 학습 방법
 
@@ -152,15 +157,15 @@ docker compose version
 
 ```text
 문제와 완료 계약 읽기
-→ skeleton을 work로 복사
+→ 저장소 루트에서 pnpm workspace:create <exercise>
 → 실패하는 검사 실행
-→ 한 계약씩 구현
+→ 생성된 work/에서 한 계약씩 구현
 → 정상·실패·경계 검사 통과
 → 자신의 commit 기록
 → 마지막에만 reference와 비교
 ```
 
-`reference`는 복사할 정답이 아니라 설계 선택을 비교할 자료입니다. 구현 모양이 달라도 외부 계약과 실패 후 상태를 만족하면 올바른 해결입니다.
+생성기는 기존 `work/`나 symbolic link를 덮어쓰지 않습니다. exercise-local `reference/`는 복사할 정답이 아니라 완료 뒤 설계 선택을 비교할 자료입니다. 루트 `reference/`는 언제든 읽는 빠른 참조 문서입니다. 구현 모양이 달라도 외부 계약과 실패 후 상태를 만족하면 올바른 해결입니다.
 
 ## 범위 밖
 

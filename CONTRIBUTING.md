@@ -15,7 +15,7 @@
 ## 코드를 고칠 때
 
 - 구현 문제는 `exercises` 아래에 `skeleton`, 자동 검사와 `reference`를 함께 둡니다.
-- 기본 학습 순서는 `skeleton 복사 → 직접 구현 → 검사 통과 → reference 비교`입니다.
+- 기본 학습 순서는 `pnpm workspace:create <exercise> → work/ 직접 구현 → 검사 통과 → reference 비교`입니다. canonical `skeleton/`과 `reference/`를 직접 수정해 학습하지 않습니다.
 - `skeleton`은 구현할 경계를 드러내고, `reference`에는 `TODO`, 임시 반환값이나 비활성 검사를 남기지 않습니다.
 - 검사기는 정답 파일의 문구나 소스 배치보다 실제 입력·출력·상태 전이를 확인합니다.
 - 브라우저·서버·socket·timer·DB pool과 임시 파일은 성공과 실패 경로 모두에서 정리합니다.
@@ -41,13 +41,13 @@ pnpm verify:foundations
 ```sh
 pnpm install --frozen-lockfile
 pnpm --dir exercises/08-testing/reference exec playwright install chromium
-pnpm --dir projects/collaboration-board exec playwright install chromium
+pnpm --dir exercises/collaboration-board/reference exec playwright install chromium
 pnpm verify
 ```
 
 실습 계약과 검사기의 결함 검출력만 다시 확인할 때는 같은 환경에서 `pnpm check`를 실행합니다.
 
-기존 누적 patch는 선택적 walkthrough 자료입니다. patch 무결성만 확인하려면 다음 명령을 사용합니다.
+누적 patch는 실제 Git history가 아니라 source에서 파생한 curated 권장 구현 순서 walkthrough입니다. patch 무결성과 freshness만 확인하려면 다음 명령을 사용합니다.
 
 ```sh
 pnpm check:walkthrough

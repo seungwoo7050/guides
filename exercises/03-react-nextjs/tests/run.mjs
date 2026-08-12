@@ -4,29 +4,39 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 const exercise = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
-const target = path.resolve(exercise, process.argv[2] ?? "work");
+const repositoryRoot = path.resolve(exercise, "..", "..");
+const target = resolveTarget(process.argv[2] ?? "work");
 const port = await freePort();
 const command = process.platform === "win32" ? "pnpm.cmd" : "pnpm";
 const child = spawn(command, ["exec", "next", "dev", "-H", "127.0.0.1", "-p", String(port)], {
   cwd: target,
+  detached: process.platform !== "win32",
   stdio: ["ignore", "pipe", "pipe"]
 });
 let output = "";
 let spawnError;
+let interrupted;
 child.once("error", (error) => { spawnError = error; });
 child.stdout.on("data", (chunk) => { output += chunk.toString(); });
 child.stderr.on("data", (chunk) => { output += chunk.toString(); });
+for (const [signal, code] of [["SIGHUP", 129], ["SIGINT", 130], ["SIGTERM", 143]]) {
+  process.once(signal, () => {
+    interrupted ??= code;
+    terminate(child, signal);
+  });
+}
 try {
   await waitForUrl(`http://127.0.0.1:${port}`, child, () => output, () => spawnError);
   const verifier = path.join(exercise, "tests", "verify-browser.mjs");
   await run(process.execPath, [verifier, `http://127.0.0.1:${port}`], exercise);
 } finally {
-  child.kill("SIGTERM");
+  terminate(child, "SIGTERM");
   await new Promise((resolve) => {
-    const timer = setTimeout(() => { child.kill("SIGKILL"); resolve(); }, 2_000);
+    const timer = setTimeout(() => { terminate(child, "SIGKILL"); resolve(); }, 2_000);
     child.once("exit", () => { clearTimeout(timer); resolve(); });
   });
 }
+if (interrupted) process.exit(interrupted);
 
 async function waitForUrl(url, processHandle, getOutput, getSpawnError) {
   for (let attempt = 0; attempt < 200; attempt += 1) {
@@ -43,6 +53,23 @@ function run(command, args, cwd) {
     child.once("error", reject);
     child.once("exit", (code) => code === 0 ? resolve() : reject(new Error(`검증 종료 코드: ${code}`)));
   });
+}
+function terminate(processHandle, signal) {
+  if (!processHandle.pid) return;
+  try {
+    if (process.platform === "win32") processHandle.kill(signal);
+    else process.kill(-processHandle.pid, signal);
+  } catch {
+    try { processHandle.kill(signal); } catch {}
+  }
+}
+function resolveTarget(argument) {
+  if (path.isAbsolute(argument)) return path.resolve(argument);
+  const normalized = path.normalize(argument);
+  if (normalized === "exercises" || normalized.startsWith(`exercises${path.sep}`)) {
+    return path.resolve(repositoryRoot, normalized);
+  }
+  return path.resolve(exercise, normalized);
 }
 function freePort() {
   return new Promise((resolve, reject) => {

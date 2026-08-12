@@ -188,4 +188,4 @@ Canvas 픽셀만으로는 screen reader가 항목 구조를 알기 어렵습니�
 
 ## 다음 단계
 
-각 위험을 가장 짧은 검사에서 증명하고 전체 애플리케이션 품질을 조립하는 방법은 [`테스트와 품질`](04-testing-quality.md)에서 다룹니다.
+먼저 [`WebSocket 스냅숏과 패치`](../../exercises/07-websocket/README.md)의 생성된 `work/`에서 Part 05의 연결·snapshot·patch·reconnect 계약을 검증하고 완료 뒤 `reference/`와 비교합니다. 그다음 각 위험을 가장 짧은 검사에서 증명하는 [`테스트와 품질`](04-testing-quality.md)로 이동합니다. Canvas 통합은 최종 협업 보드 Stage 07에서 수행합니다.

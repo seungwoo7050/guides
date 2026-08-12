@@ -146,8 +146,11 @@ filter button을 누르면 `history.pushState`로 URL을 바꾸고, `popstate`�
 
 ## 자동 검증
 
+저장소 루트에서 안전한 학습자 workspace를 한 번 생성한 뒤 검사합니다.
+
 ```sh
-node exercises/00-first-web-app/tests/verify.mjs work
+pnpm workspace:create 00-first-web-app
+node exercises/00-first-web-app/tests/verify.mjs exercises/00-first-web-app/work
 ```
 
 `skeleton/`을 복사한 직후의 `work/`는 실패해야 합니다. 구현을 진행하며 같은 명령의 실패 항목을 하나씩 줄이고, 완료 뒤에는 모두 통과시킵니다.
@@ -184,4 +187,4 @@ node exercises/00-first-web-app/tests/verify.mjs work
 
 ## 다음 단계
 
-화면 없이 HTTP와 PostgreSQL 경계를 먼저 만드는 두 번째 프로젝트는 [`메모 API`](02-notes-api.md)입니다.
+기본 경로는 [`비동기 작업과 fetch`](../01-web-foundations/06-async-fetch-errors.md)부터 Part 01을 마치고 `01-runtime`으로 이어집니다. DB까지 완료한 뒤 선택형 self-directed 프로젝트가 필요할 때만 [`메모 API`](02-notes-api.md)를 수행합니다.

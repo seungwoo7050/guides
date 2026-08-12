@@ -2,6 +2,8 @@ import { readdir, rm } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
+import { isLearnerWorkspace } from "./lib/exercise-paths.mjs";
+
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const generatedDirectories = new Set([
   ".next",
@@ -21,6 +23,7 @@ async function clean(directory) {
   for (const entry of await readdir(directory, { withFileTypes: true })) {
     if (entry.name === ".git") continue;
     const target = path.join(directory, entry.name);
+    if (entry.isDirectory() && isLearnerWorkspace(root, target)) continue;
     if (entry.isDirectory() && generatedDirectories.has(entry.name)) {
       await rm(target, { recursive: true, force: true });
       removed += 1;

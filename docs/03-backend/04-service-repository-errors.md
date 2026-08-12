@@ -157,4 +157,4 @@ application service는 Fastify·Kysely 구체 class보다 작은 interface에 �
 
 ## 다음 단계
 
-저장소가 보호할 관계와 불변식은 [`관계 모델과 SQL`](../04-data-and-security/01-sql-relational-model.md)에서 다룹니다.
+먼저 [`Fastify와 Zod API`](../../exercises/04-fastify-zod-api/README.md)의 생성된 `work/`에서 Part 03의 route·service·repository·error 계약을 검증하고 완료 뒤 `reference/`와 비교합니다. 그다음 저장소가 보호할 관계와 불변식은 [`관계 모델과 SQL`](../04-data-and-security/01-sql-relational-model.md)에서 다룹니다.

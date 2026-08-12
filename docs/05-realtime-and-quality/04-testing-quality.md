@@ -225,4 +225,4 @@ WebSocket listener cleanup 제거
 
 ## 다음 단계
 
-이제 작은 범위부터 전체 시스템까지 네 개의 누적 프로젝트로 지식을 통합합니다. 첫 프로젝트는 [`브라우저 작업 목록`](../06-capstones/01-browser-task-list.md)입니다.
+먼저 [`테스트 경계 비교`](../../exercises/08-testing/README.md)의 생성된 `work/`에서 unit·API·browser 검사가 서로 다른 위험을 증명하는지 확인하고 완료 뒤 `reference/`와 비교합니다. Part 01에서 이미 브라우저 작업 목록을 수행했고 중간 notes brief는 선택 사항이므로, 다음 필수 단계는 runnable Stage 01–08의 최종 [`실시간 협업 보드`](../06-capstones/04-collaboration-board.md)입니다.

@@ -48,6 +48,13 @@ const requiredSupport = [
   "reference/troubleshooting.md",
   "scripts/lib/browser-harness.mjs",
   "scripts/serve-static.mjs",
+  "scripts/new-workspace.mjs",
+  "scripts/test-new-workspace.mjs",
+  "scripts/test-verify-log-policy.mjs",
+  "scripts/test-browser-harness.mjs",
+  "scripts/verify-learning-contract.mjs",
+  "scripts/test-learning-contract.mjs",
+  "scripts/lib/exercise-paths.mjs",
   "scripts/verify-links.mjs",
   "scripts/verify-snippets.mjs",
   "scripts/capture-source-state.mjs",
@@ -71,13 +78,14 @@ const requiredSupport = [
   "exercises/collaboration-board/walkthrough-base/README.md",
   "exercises/collaboration-board/walkthrough-base/.gitignore",
   "scripts/verify-patches.mjs",
+  "scripts/generate-patches.mjs",
   "exercises/collaboration-board/skeleton/package.json",
   "exercises/collaboration-board/skeleton/.gitignore",
   "exercises/collaboration-board/skeleton/pnpm-workspace.yaml",
   "exercises/collaboration-board/skeleton/apps/web/app/page.tsx",
   "exercises/collaboration-board/skeleton/apps/web/next.config.mjs",
-  "projects/collaboration-board/apps/web/next.config.mjs",
-  "projects/collaboration-board/.gitignore",
+  "exercises/collaboration-board/reference/apps/web/next.config.mjs",
+  "exercises/collaboration-board/reference/.gitignore",
   "exercises/collaboration-board/skeleton/apps/api/src/app.test.ts"
 ];
 const obsoleteDocs = [
@@ -93,7 +101,7 @@ const obsoleteDocs = [
   "docs/09-collaboration-board.md"
 ];
 const requiredScripts = [
-  "check", "check:repository", "check:contracts", "check:capstone-verifier", "check:capstone-db-runner",
+  "workspace:create", "check:workspace-helper", "check:verify-log-policy", "check:browser-harness", "check:learning-contract", "check", "check:repository", "check:contracts", "check:capstone-verifier", "check:capstone-db-runner",
   "check:checker-quality", "check:walkthrough", "verify:foundations", "verify:runtime", "verify:react",
   "verify:api", "verify:database", "verify:security", "verify:realtime", "verify:testing",
   "verify:collaboration:database", "verify:collaboration", "verify", "serve:static"
@@ -162,7 +170,7 @@ for (const relative of [
   "exercises/03-react-nextjs/skeleton/.gitignore",
   "exercises/collaboration-board/skeleton/.gitignore",
   "exercises/collaboration-board/walkthrough-base/.gitignore",
-  "projects/collaboration-board/.gitignore"
+  "exercises/collaboration-board/reference/.gitignore"
 ]) {
   const source = await readFile(path.join(root, relative), "utf8");
   if (!source.split(/\r?\n/).includes("next-env.d.ts")) {
@@ -173,7 +181,7 @@ for (const relative of [
   "exercises/03-react-nextjs/reference/next.config.mjs",
   "exercises/03-react-nextjs/skeleton/next.config.mjs",
   "exercises/collaboration-board/skeleton/apps/web/next.config.mjs",
-  "projects/collaboration-board/apps/web/next.config.mjs"
+  "exercises/collaboration-board/reference/apps/web/next.config.mjs"
 ]) {
   const source = await readFile(path.join(root, relative), "utf8");
   if (!/\bagentRules\s*:\s*false\b/.test(source)) {
@@ -184,7 +192,7 @@ for (const relative of [
   "exercises/03-react-nextjs/reference/package.json",
   "exercises/03-react-nextjs/skeleton/package.json",
   "exercises/collaboration-board/skeleton/apps/web/package.json",
-  "projects/collaboration-board/apps/web/package.json"
+  "exercises/collaboration-board/reference/apps/web/package.json"
 ]) {
   const manifest = JSON.parse(await readFile(path.join(root, relative), "utf8"));
   if (manifest.dependencies?.next !== "^16.3.0") {
@@ -201,8 +209,8 @@ for (const relative of [
   "exercises/03-react-nextjs/skeleton/package.json",
   "exercises/collaboration-board/skeleton/apps/api/package.json",
   "exercises/collaboration-board/skeleton/apps/web/package.json",
-  "projects/collaboration-board/package.json",
-  "projects/collaboration-board/apps/web/package.json"
+  "exercises/collaboration-board/reference/package.json",
+  "exercises/collaboration-board/reference/apps/web/package.json"
 ]) {
   const manifest = JSON.parse(await readFile(path.join(root, relative), "utf8"));
   if (manifest.devDependencies?.["@types/node"] !== "^24.13.3") {
@@ -212,7 +220,7 @@ for (const relative of [
 for (const name of requiredScripts) {
   if (!packageJson.scripts?.[name]) errors.push(`package script 누락: ${name}`);
 }
-for (const name of ["check:repository", "check:contracts", "check:capstone-verifier", "check:capstone-db-runner", "check:checker-quality"]) {
+for (const name of ["check:workspace-helper", "check:verify-log-policy", "check:browser-harness", "check:learning-contract", "check:repository", "check:contracts", "check:capstone-verifier", "check:capstone-db-runner", "check:checker-quality"]) {
   if (!packageJson.scripts?.check?.includes(`pnpm ${name}`)) {
     errors.push(`공식 check에서 품질 gate 호출 누락: ${name}`);
   }
@@ -223,11 +231,27 @@ if (!packageJson.scripts?.verify?.includes("pnpm check")) {
 if (packageJson.scripts?.["verify:collaboration"] !== "node scripts/verify-collaboration-postgresql.mjs") {
   errors.push("협업 보드 공식 검증에서 PostgreSQL 통합 gate 호출 누락");
 }
+const collaborationReferenceReadme = await readFile(path.join(root, "exercises/collaboration-board/reference/README.md"), "utf8");
+for (const phrase of ["export DATABASE_URL=", 'docker compose -p "$BOARD_COMPOSE_PROJECT"', "down -v"]) {
+  if (!collaborationReferenceReadme.includes(phrase)) {
+    errors.push(`협업 보드 수동 PostgreSQL lifecycle 계약 누락: ${phrase}`);
+  }
+}
+if (collaborationReferenceReadme.includes("cp .env.example .env")) {
+  errors.push("협업 보드 reference가 자동으로 읽히지 않는 root .env를 실행 계약으로 제시합니다.");
+}
+const collaborationCompose = await readFile(path.join(root, "exercises/collaboration-board/reference/compose.dev.yml"), "utf8");
+if (!collaborationCompose.includes("${POSTGRES_PORT:-5432}:5432")) {
+  errors.push("협업 보드 개발 DB의 worktree별 host port 계약이 누락됐습니다.");
+}
 if (!packageJson.scripts?.verify?.includes("pnpm verify:collaboration")) {
   errors.push("공식 verify에서 협업 보드 gate 호출 누락");
 }
 const rootVerify = await readFile(path.join(root, "verify.sh"), "utf8");
-if (!rootVerify.includes("pnpm verify:collaboration")) {
+if (!rootVerify.includes("check:learning-contract")) {
+  errors.push("verify.sh에서 canonical learning contract gate 호출 누락");
+}
+if (!rootVerify.includes("verify:collaboration")) {
   errors.push("verify.sh에서 협업 보드 공식 gate 호출 누락");
 }
 for (const verifier of [
@@ -251,7 +275,7 @@ for (const packagePath of [
   if (!manifest.scripts?.typecheck) errors.push(`협업 보드 starter typecheck 누락: ${packagePath}`);
 }
 
-const capstoneDatabase = JSON.parse(await readFile(path.join(root, "projects/collaboration-board/packages/db/package.json"), "utf8"));
+const capstoneDatabase = JSON.parse(await readFile(path.join(root, "exercises/collaboration-board/reference/packages/db/package.json"), "utf8"));
 if (capstoneDatabase.scripts?.test !== "vitest run") {
   errors.push(`capstone DB unit test 명령 불일치: ${capstoneDatabase.scripts?.test ?? "<missing>"}`);
 }

@@ -6,6 +6,7 @@ import { fileURLToPath } from "node:url";
 const exerciseRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const repositoryRoot = path.resolve(exerciseRoot, "..", "..");
 const skeletonRoot = path.join(exerciseRoot, "skeleton");
+const referenceRoot = path.join(exerciseRoot, "reference");
 const verifier = path.join(exerciseRoot, "checks", "verify-work.mjs");
 const postgresVerifier = path.join(repositoryRoot, "scripts", "verify-collaboration-postgresql.mjs");
 const temporaryRoots = [];
@@ -15,6 +16,7 @@ await mkdir(temporaryParent, { recursive: true });
 
 try {
   await expectPostgresPolicy();
+  await expectPostgresRunnerPathPolicy();
   if (databasePolicy) {
     await expectPostgresFixtureAccepted();
     await expectPostgresFixtureRejected();
@@ -111,6 +113,14 @@ export { quotedMarker, templateMarker };
     const testPath = path.join(workRoot, "apps", "api", "src", "app.test.ts");
     await writeFile(testPath, `${await readFile(testPath, "utf8")}\n// learner mutation\n`);
   }, "기준 검사는 수정하지 않고");
+  await expectRejected("nested symbolic link", async (workRoot) => {
+    await symlink(path.join(workRoot, "package.json"), path.join(workRoot, "linked-package.json"));
+  }, "symbolic link를 허용하지 않습니다");
+  await expectRejected(".git symbolic link", async (workRoot) => {
+    await symlink(path.join(workRoot, "package.json"), path.join(workRoot, ".git"));
+  }, "symbolic link를 허용하지 않습니다");
+  await expectReservedPathRejected();
+  await expectRootSymlinkRejected();
   console.log(databasePolicy
     ? "협업 보드 검사기가 PostgreSQL runtime skip·semantic no-op과 기존 검증 우회를 거부함을 확인했습니다."
     : "협업 보드 검사기가 PostgreSQL skip report policy와 기존 검증 우회를 거부함을 확인했습니다.");
@@ -128,6 +138,21 @@ async function expectPostgresPolicy() {
   const result = await run(process.execPath, [postgresVerifier, "--self-test"]);
   if (result.code !== 0 || !result.output.includes("skip·빈 test report를 거부")) {
     throw new Error(`PostgreSQL skip report meta 검사가 실패했습니다.\n${result.output}`);
+  }
+}
+
+async function expectPostgresRunnerPathPolicy() {
+  const reserved = await run(process.execPath, [postgresVerifier, "--learner-work", referenceRoot]);
+  if (reserved.code === 0 || !reserved.output.includes("canonical learner workspace")) {
+    throw new Error(`PostgreSQL runner가 reserved reference 경로를 허용했습니다.\n${reserved.output}`);
+  }
+
+  const linkPath = path.join(temporaryParent, `verify-work-postgres-link-${process.pid}`);
+  temporaryRoots.push(linkPath);
+  await symlink(referenceRoot, linkPath, "dir");
+  const linked = await run(process.execPath, [postgresVerifier, "--learner-work", linkPath]);
+  if (linked.code === 0 || !linked.output.includes("symbolic link가 아닌 실제 디렉터리")) {
+    throw new Error(`PostgreSQL runner가 symbolic link work root를 허용했습니다.\n${linked.output}`);
   }
 }
 
@@ -195,16 +220,16 @@ async function postgresFixture(testSource) {
   }, null, 2)}\n`);
   await writeFile(path.join(packageRoot, "tests", "postgres", "database.test.ts"), testSource.trimStart());
   await cp(
-    path.join(repositoryRoot, "projects", "collaboration-board", "packages", "db", "migrations", "001_initial.sql"),
+    path.join(referenceRoot, "packages", "db", "migrations", "001_initial.sql"),
     path.join(packageRoot, "migrations", "001_initial.sql")
   );
   for (const sourceFile of ["postgres.ts", "index.ts", "db-types.ts"]) {
     await cp(
-      path.join(repositoryRoot, "projects", "collaboration-board", "packages", "db", "src", sourceFile),
+      path.join(referenceRoot, "packages", "db", "src", sourceFile),
       path.join(packageRoot, "src", sourceFile)
     );
   }
-  await symlink(path.join(repositoryRoot, "projects", "collaboration-board", "packages", "db", "node_modules"), path.join(packageRoot, "node_modules"), "dir");
+  await symlink(path.join(referenceRoot, "packages", "db", "node_modules"), path.join(packageRoot, "node_modules"), "dir");
   return workRoot;
 }
 
@@ -226,7 +251,39 @@ async function exerciseCopy(mutate) {
   temporaryRoots.push(workRoot);
   await cp(skeletonRoot, workRoot, { recursive: true });
   await mutate(workRoot);
-  return run(process.execPath, [verifier, path.relative(exerciseRoot, workRoot), "1", "--structure-only"]);
+  return run(process.execPath, [
+    verifier,
+    path.relative(exerciseRoot, workRoot),
+    "1",
+    "--structure-only",
+    "--policy-fixture"
+  ]);
+}
+
+async function expectReservedPathRejected() {
+  const result = await run(process.execPath, [verifier, "fixtures", "1", "--structure-only"]);
+  if (result.code === 0 || !result.output.includes("canonical learner workspace")) {
+    throw new Error(`reserved/non-canonical 경로를 허용했습니다.\n${result.output}`);
+  }
+}
+
+async function expectRootSymlinkRejected() {
+  const workRoot = await mkdtemp(path.join(temporaryParent, "verify-work-policy-root-"));
+  temporaryRoots.push(workRoot);
+  await cp(skeletonRoot, workRoot, { recursive: true });
+  const linkPath = `${workRoot}-link`;
+  temporaryRoots.push(linkPath);
+  await symlink(workRoot, linkPath, "dir");
+  const result = await run(process.execPath, [
+    verifier,
+    path.relative(exerciseRoot, linkPath),
+    "1",
+    "--structure-only",
+    "--policy-fixture"
+  ]);
+  if (result.code === 0 || !result.output.includes("symbolic link가 아닌 실제 디렉터리")) {
+    throw new Error(`symbolic link workspace root를 허용했습니다.\n${result.output}`);
+  }
 }
 
 async function writePolicyTest(workRoot, source) {
