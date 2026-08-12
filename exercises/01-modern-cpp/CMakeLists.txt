@@ -1,3 +1,4 @@
+# [Implementation 1] Modern C++ 실습 전체가 공유할 C++20 프로젝트와 platform thread 탐색 경계를 먼저 세웁니다.
 cmake_minimum_required(VERSION 3.20)
 
 project(guide_cpp_modern_exercises LANGUAGES CXX)
@@ -7,9 +8,11 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 include(CTest)
 find_package(Threads REQUIRED)
 
+# [Implementation 2] 언어 표준은 caller에게 전파하고 경고·sanitizer 정책은 구현 target에만 적용하는 공용 build policy를 구성합니다.
 option(GUIDE_ENABLE_SANITIZERS "Enable AddressSanitizer and UndefinedBehaviorSanitizer" OFF)
 option(GUIDE_ENABLE_THREAD_SANITIZER "Enable ThreadSanitizer" OFF)
 option(GUIDE_WARNINGS_AS_ERRORS "Treat compiler warnings as errors" ON)
+option(GUIDE_TEST_SKELETONS "Register learner workspace skeleton tests" OFF)
 
 if(GUIDE_ENABLE_SANITIZERS AND GUIDE_ENABLE_THREAD_SANITIZER)
     message(FATAL_ERROR "Address/Undefined sanitizers and ThreadSanitizer need separate build directories")
@@ -74,6 +77,7 @@ elseif(GUIDE_ENABLE_THREAD_SANITIZER)
     )
 endif()
 
+# [Implementation 3] 독립 실습을 조립하고 기본 official CTest에는 reference만, GUIDE_TEST_SKELETONS=ON인 learner workspace에만 skeleton test를 등록합니다.
 add_subdirectory(01-strong-types-and-cmake)
 add_subdirectory(02-unique-file)
 add_subdirectory(03-query-pipeline)
@@ -98,4 +102,3 @@ add_custom_target(
         local_job_runner_reference_tests
         local_job_runner_reference_app
 )
-

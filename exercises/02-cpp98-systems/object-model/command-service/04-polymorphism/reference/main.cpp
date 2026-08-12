@@ -3,6 +3,7 @@
 #include <iostream>
 #include <string>
 
+// [Implementation 4] main은 Request를 route한 뒤 구체 타입을 모른 채 Handler 계약으로 dispatch합니다.
 int main()
 {
     Router router;

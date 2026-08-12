@@ -1,5 +1,6 @@
 #include "CommandService.hpp"
 
+// [Implementation 4] CommandService가 요청별 domain 결정을 내리고 상태 변경은 KeyValueStore에 위임합니다.
 Response CommandService::execute(const Request &request) const
 {
     std::string value;

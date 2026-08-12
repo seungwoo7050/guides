@@ -19,17 +19,20 @@
 
 ## 다형 라우터로 동작 확인
 
-`../exercises/02-cpp98-systems/object-model/command-service/04-polymorphism`은 switch 기반 시작 코드와 `Handler`/`Router` 기반 참조 구현을 함께 제공합니다.
+[교체 가능한 핸들러 실습](../../exercises/02-cpp98-systems/object-model/command-service/04-polymorphism/README.md)은 switch 기반 시작 코드와 `Handler`/`Router` 기반 참조 구현을 함께 제공합니다.
 
 ```sh
-cd ../exercises/02-cpp98-systems/object-model/command-service/04-polymorphism
+cd exercises/02-cpp98-systems/object-model/command-service/04-polymorphism
 make observe
-make exercise-test
-make test
-make fail-nonvirtual
 ```
 
-`make fail-nonvirtual`은 가상 함수가 있지만 소멸자가 가상이 아닌 기반 클래스를 통한 삭제를 컴파일러 경고로 검출합니다. 정의되지 않은 동작을 실제로 실행해 결과에 의존하지 않습니다. 목표는 상속을 늘리는 것이 아니라 호출자가 구체 구현을 몰라도 되는 경계를 확인하는 것입니다.
+위 명령은 저장소 루트에서 시작합니다. `make observe`는 먼저 결과를 예상한 뒤 `reference/` source를 열지 않고 실행 결과만 보는 선택적 black-box oracle입니다. workspace의 `skeleton/`을 구현한 뒤 다시 저장소 루트에서 검사합니다.
+
+```sh
+make cpp98-exercise-test CPP98_EXERCISE=object-model/command-service/04-polymorphism
+```
+
+learner 검증 뒤에만 reference source와 비교합니다. canonical `fail-nonvirtual` 검사는 가상 함수가 있지만 소멸자가 가상이 아닌 기반 클래스를 통한 삭제를 컴파일러 경고로 검출합니다. 정의되지 않은 동작을 실제로 실행해 결과에 의존하지 않습니다. 목표는 상속을 늘리는 것이 아니라 호출자가 구체 구현을 몰라도 되는 경계를 확인하는 것입니다.
 
 ---
 

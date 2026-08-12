@@ -154,6 +154,7 @@ destination = Path(sys.argv[2]).resolve()
 
 ignored_exact = {
     ".git",
+    ".workspace",
     "make-out.txt",
     "tree.txt",
     "before-verify.sh",

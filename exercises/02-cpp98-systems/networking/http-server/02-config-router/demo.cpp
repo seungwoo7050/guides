@@ -2,6 +2,7 @@
 
 #include <iostream>
 
+// [Implementation 6] 짧은 설정을 실제 Router로 구성해 health와 echo 선택 결과를 관찰합니다.
 int main()
 {
     ConfigParser parser;

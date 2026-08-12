@@ -18,17 +18,22 @@
 
 ## 명령 서비스를 단계별로 분리
 
-`../exercises/02-cpp98-systems/object-model/command-service/03-responsibilities`는 동작은 맞지만 책임이 뒤섞인 시작 코드와, 같은 입출력을 유지하면서 `RequestParser`, `KeyValueStore`, `CommandService`, `ResponseFormatter`로 분리한 참조 구현을 제공합니다.
+[책임 분리 실습](../../exercises/02-cpp98-systems/object-model/command-service/03-responsibilities/README.md)은 동작은 맞지만 책임이 뒤섞인 시작 코드와, 같은 입출력을 유지하면서 `RequestParser`, `KeyValueStore`, `CommandService`, `ResponseFormatter`로 분리한 참조 구현을 제공합니다.
 
 ```sh
-cd ../exercises/02-cpp98-systems/object-model/command-service/03-responsibilities
+cd exercises/02-cpp98-systems/object-model/command-service/03-responsibilities
 make observe
-make exercise-test
-make test
-make interface-check
 ```
 
-`make interface-check`는 각 헤더를 외부 호출자처럼 포함하고 파싱, 저장,
+위 명령은 저장소 루트에서 시작합니다. 이 단계의 `make observe`는 reference가 아니라 `skeleton/legacy.cpp`의 리팩터링 전 동작을 관찰합니다. workspace에서 리팩터링한 뒤 다시 저장소 루트에서 검사합니다.
+
+```sh
+make cpp98-exercise-test CPP98_EXERCISE=object-model/command-service/03-responsibilities
+```
+
+reference source는 learner 검증을 통과한 뒤에만 비교합니다. canonical reference의 공개 경계를 별도로 검사할 때는 저장소 루트에서 `make -C exercises/02-cpp98-systems/object-model/command-service/03-responsibilities interface-check`를 사용합니다.
+
+`interface-check`는 각 헤더를 외부 호출자처럼 포함하고 파싱, 저장,
 서비스 실행과 응답 변환을 연결합니다. 파일 이름이나 특정 문자열을 찾는
 검사와 달리 공개 타입이 실제로 함께 컴파일되고 같은 동작을 만드는지
 확인합니다. 저장 용량 검사를 `main`으로 옮겨 본 뒤에도 이 검사가 어떤

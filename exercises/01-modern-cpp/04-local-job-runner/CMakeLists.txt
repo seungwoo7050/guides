@@ -78,3 +78,23 @@ set_tests_properties(
         TIMEOUT 20
         PASS_REGULAR_EXPRESSION "1 succeeded compile-ready"
 )
+
+if(GUIDE_TEST_SKELETONS)
+    add_test(
+        NAME modern.learner.local-job-runner
+        COMMAND local_job_runner_skeleton_tests
+    )
+    set_tests_properties(modern.learner.local-job-runner PROPERTIES TIMEOUT 20)
+    add_test(
+        NAME modern.learner.local-job-runner.app
+        COMMAND
+            local_job_runner_skeleton_app
+            ${CMAKE_CURRENT_BINARY_DIR}/local-job-runner-learner.tsv
+    )
+    set_tests_properties(
+        modern.learner.local-job-runner.app
+        PROPERTIES
+            TIMEOUT 20
+            PASS_REGULAR_EXPRESSION "1 succeeded compile-ready"
+    )
+endif()

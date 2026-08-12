@@ -19,17 +19,20 @@ raw input → 문법 검증 → 타입 변환 → 도메인 검증 → 상태 �
 
 ## 오류 경로를 코드로 검증
 
-`../exercises/02-cpp98-systems/object-model/command-service/05-errors`는 파서 오류, 도메인 오류와 최상위 응답 변환을 분리합니다.
+[오류 경계 실습](../../exercises/02-cpp98-systems/object-model/command-service/05-errors/README.md)은 파서 오류, 도메인 오류와 최상위 응답 변환을 분리합니다.
 
 ```sh
-cd ../exercises/02-cpp98-systems/object-model/command-service/05-errors
+cd exercises/02-cpp98-systems/object-model/command-service/05-errors
 make observe
-make exercise-test
-make test
-make fail-commit
 ```
 
-`make fail-commit`은 검증 전에 상태를 변경하는 잘못된 구현을 실행합니다. 요청이 실패한 뒤 저장소 내용이 달라지는지 확인하고, prepare-then-반영 구현과 비교합니다.
+위 명령은 저장소 루트에서 시작합니다. `make observe`는 먼저 결과를 예상한 뒤 `reference/` source를 열지 않고 실행 결과만 보는 선택적 black-box oracle입니다. workspace의 `skeleton/`을 구현한 뒤 다시 저장소 루트에서 검사합니다.
+
+```sh
+make cpp98-exercise-test CPP98_EXERCISE=object-model/command-service/05-errors
+```
+
+learner 검증 뒤에만 reference source와 비교합니다. canonical `fail-commit` 검사는 검증 전에 상태를 변경하는 잘못된 구현을 실행합니다. 요청이 실패한 뒤 저장소 내용이 달라지는지 확인하고, prepare-then-반영 구현과 비교합니다.
 
 ---
 

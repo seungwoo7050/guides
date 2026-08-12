@@ -4,6 +4,7 @@
 #include <string>
 #include <vector>
 
+// [Implementation 1] 한 입력 줄을 명령과 인자로 분리하되 저장 상태나 출력 정책은 알지 않게 합니다.
 static std::vector<std::string> split(const std::string &line)
 {
     std::istringstream input(line);
@@ -14,6 +15,7 @@ static std::vector<std::string> split(const std::string &line)
     return parts;
 }
 
+// [Implementation 2] main이 store 상태를 소유하고 각 명령의 arity, 상태 변경과 외부 출력 계약을 한 흐름으로 연결합니다.
 int main()
 {
     std::map<std::string, std::string> store;

@@ -5,10 +5,13 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import re
 import sys
 from pathlib import Path
 from urllib.parse import unquote, urlsplit
+
+from validate_annotations import validate_repository_contracts
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -27,7 +30,9 @@ REQUIRED_ROOT = [
     "exercises",
     "scripts",
     "scripts/manage_artifacts.py",
+    "scripts/new_workspace.py",
     "scripts/run_with_timeout.py",
+    "scripts/validate_annotations.py",
     "scripts/validate_docs.py",
     "scripts/verify_modern_skeletons.py",
     "scripts/selftest_verifiers.py",
@@ -134,6 +139,7 @@ TEXT_SUFFIXES = {".md", ".py", ".sh", ".txt", ".json", ".cmake", ".yml", ".yaml"
 LINK_PATTERN = re.compile(r"!?\[[^\]]*\]\(([^)]+)\)")
 FENCE_PATTERN = re.compile(r"^\s{0,3}(`{3,}|~{3,})(.*)$")
 SCHEME_PATTERN = re.compile(r"^[A-Za-z][A-Za-z0-9+.-]*:")
+PRUNED_DIRECTORY_NAMES = {".git", ".guide-probes", ".pytest_cache", ".workspace", "__pycache__", "build"}
 
 
 def rel(path: Path) -> str:
@@ -145,6 +151,54 @@ def rel(path: Path) -> str:
 
 def text_file(path: Path) -> bool:
     return path.name in {"Makefile", "CMakeLists.txt"} or path.suffix.lower() in TEXT_SUFFIXES
+
+
+def repository_files(root: Path, *, suffix: str | None = None):
+    """Yield files without entering generated data or learner workspaces."""
+
+    for current_text, directory_names, file_names in os.walk(
+        root, topdown=True, followlinks=False
+    ):
+        current = Path(current_text)
+        directory_names[:] = [
+            name
+            for name in directory_names
+            if name not in PRUNED_DIRECTORY_NAMES
+            and not name.startswith("build-")
+            and not name.endswith(".dSYM")
+            and not (current / name).is_symlink()
+        ]
+        for name in file_names:
+            path = current / name
+            if path.is_symlink() or (suffix is not None and path.suffix.lower() != suffix):
+                continue
+            yield path
+
+
+def skeleton_tests_outside_learner_guard(content: str) -> bool:
+    """Return true when add_test registers a skeleton outside its opt-in guard."""
+
+    guarded_depth = 0
+    lines = content.splitlines()
+    index = 0
+    while index < len(lines):
+        stripped = lines[index].strip()
+        if re.match(r"if\s*\(\s*GUIDE_TEST_SKELETONS\s*\)", stripped, re.IGNORECASE):
+            guarded_depth += 1
+        elif guarded_depth and re.match(r"endif\s*\(", stripped, re.IGNORECASE):
+            guarded_depth -= 1
+
+        if re.match(r"add_test\s*\(", stripped, re.IGNORECASE):
+            block = [stripped]
+            balance = stripped.count("(") - stripped.count(")")
+            while balance > 0 and index + 1 < len(lines):
+                index += 1
+                block.append(lines[index])
+                balance += lines[index].count("(") - lines[index].count(")")
+            if "skeleton" in "\n".join(block).lower() and guarded_depth == 0:
+                return True
+        index += 1
+    return False
 
 
 def visible_lines(text: str, path: Path, errors: list[str]) -> list[str]:
@@ -244,10 +298,19 @@ def validate_structure(errors: list[str]) -> None:
         if (ROOT / item).exists():
             errors.append(f"이전 구조 경로가 남아 있음: {item}")
 
-    executable_scripts = [ROOT / "prepare.sh", ROOT / "verify.sh"]
-    executable_scripts.extend(
-        path for path in ROOT.rglob("*.sh") if ".git" not in path.parts
-    )
+    workspace = ROOT / ".workspace"
+    if workspace.is_symlink():
+        errors.append("learner workspace root가 symlink임: .workspace")
+    elif workspace.exists() and not workspace.is_dir():
+        errors.append("learner workspace root가 directory가 아님: .workspace")
+
+    executable_scripts = [
+        ROOT / "prepare.sh",
+        ROOT / "verify.sh",
+        ROOT / "scripts/new_workspace.py",
+        ROOT / "scripts/validate_annotations.py",
+    ]
+    executable_scripts.extend(repository_files(ROOT, suffix=".sh"))
     for script in sorted(set(executable_scripts), key=lambda value: value.as_posix()):
         if script.is_file() and not script.stat().st_mode & 0o111:
             errors.append(f"실행 스크립트에 실행 권한이 없음: {rel(script)}")
@@ -290,7 +353,7 @@ def validate_structure(errors: list[str]) -> None:
             content = cmake.read_text(encoding="utf-8")
             if "skeleton" not in content or "reference" not in content:
                 errors.append(f"skeleton/reference target이 모두 연결되지 않음: {rel(cmake)}")
-            if re.search(r"add_test\s*\([^)]*skeleton", content, re.IGNORECASE | re.DOTALL):
+            if skeleton_tests_outside_learner_guard(content):
                 errors.append(f"미완성 skeleton이 CTest 정상 suite에 등록됨: {rel(cmake)}")
 
     for exercise_text in CPP98_EXERCISES:
@@ -351,6 +414,7 @@ def validate_structure(errors: list[str]) -> None:
             "cxx_std_20",
             "modern_skeletons",
             "modern_references",
+            "GUIDE_TEST_SKELETONS",
             "GUIDE_ENABLE_SANITIZERS",
             "GUIDE_ENABLE_THREAD_SANITIZER",
         ]
@@ -363,11 +427,14 @@ def validate_structure(errors: list[str]) -> None:
         content = root_makefile.read_text(encoding="utf-8")
         required_targets = [
             "docs-check:",
+            "workspace:",
             "modern-start-state:",
             "modern-test:",
             "modern-release:",
             "modern-sanitize:",
             "modern-thread-sanitize:",
+            "modern-exercise-test:",
+            "cpp98-exercise-test:",
             "skeleton-build:",
             "test:",
             "failure-check:",
@@ -391,12 +458,7 @@ def validate_structure(errors: list[str]) -> None:
 
 
 def validate_content(errors: list[str]) -> None:
-    markdown_files = [
-        path
-        for path in ROOT.rglob("*.md")
-        if ".git" not in path.parts
-        and not any(part == "build" or part.startswith("build-") for part in path.parts)
-    ]
+    markdown_files = list(repository_files(ROOT, suffix=".md"))
     for path in markdown_files:
         validate_markdown(path, errors)
 
@@ -466,6 +528,8 @@ def validate_content(errors: list[str]) -> None:
                 if command not in text:
                     errors.append(f"정본 루트 명령이 문서에 없음: {path_text} -> {command}")
 
+    errors.extend(validate_repository_contracts(ROOT))
+
 
 def main() -> int:
     parser = argparse.ArgumentParser()
@@ -485,7 +549,7 @@ def main() -> int:
     if args.mode == "structure":
         print("저장소 구조 검사: PASS")
     else:
-        markdown_count = sum(1 for _ in ROOT.rglob("*.md"))
+        markdown_count = sum(1 for _ in repository_files(ROOT, suffix=".md"))
         print(
             f"문서·구조 검사: 필수 문서 {len(REQUIRED_DOCUMENTS)}개, "
             f"Modern 실습 {len(MODERN_EXERCISES)}개, "

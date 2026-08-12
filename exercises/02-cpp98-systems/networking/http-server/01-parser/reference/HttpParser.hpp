@@ -5,6 +5,7 @@
 #include <map>
 #include <string>
 
+// [Implementation 1] HttpParser가 byte buffer, ready request와 sticky error를 소유하는 증분 parsing 계약을 정의합니다.
 struct HttpRequest
 {
     std::string method;

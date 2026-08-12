@@ -15,17 +15,22 @@
 
 ## 세 문제로 컨테이너 선택 연습
 
-`../exercises/02-cpp98-systems/generic-programming/stl-problems`에는 날짜 조회기, RPN 계산기와 레코드 정렬기가 독립된 실행 단위로 들어 있습니다.
+[STL 문제 해결 실습](../../exercises/02-cpp98-systems/generic-programming/stl-problems/README.md)에는 날짜 조회기, RPN 계산기와 레코드 정렬기가 독립된 실행 단위로 들어 있습니다.
 
 ```sh
-cd ../exercises/02-cpp98-systems/generic-programming/stl-problems
+cd exercises/02-cpp98-systems/generic-programming/stl-problems
 make observe
-make exercise-test
-make test
-make randomized-test
 ```
 
-각 프로그램은 정상 입력뿐 아니라 빈 입력, 중복, 범위 오류와 잘못된 토큰을 검증합니다. 정렬기는 결과를 `std::sort`와 대조하고 비교 횟수와 측정 범위를 별도로 출력합니다.
+위 명령은 저장소 루트에서 시작합니다. `make observe`는 세 reference executable을 source 미열람 상태에서 실행하는 선택적 black-box oracle입니다. 각 결과를 먼저 예상하고 workspace의 세 skeleton을 차례로 구현한 뒤, 다시 저장소 루트에서 각 learner 검증을 실행합니다.
+
+```sh
+make cpp98-exercise-test CPP98_EXERCISE=generic-programming/stl-problems/date-lookup
+make cpp98-exercise-test CPP98_EXERCISE=generic-programming/stl-problems/rpn
+make cpp98-exercise-test CPP98_EXERCISE=generic-programming/stl-problems/sorter
+```
+
+각 검증을 통과한 뒤에만 해당 reference source와 비교합니다. 각 프로그램은 정상 입력뿐 아니라 빈 입력, 중복, 범위 오류와 잘못된 토큰을 검증합니다. 정렬기는 결과를 `std::sort`와 대조하고 비교 횟수와 측정 범위를 별도로 출력합니다.
 
 ---
 

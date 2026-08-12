@@ -18,17 +18,20 @@ C++에서는 수명이 끝난 객체에 접근하거나 같은 자원을 두 번
 
 ## 값과 소유권을 코드로 확인
 
-`../exercises/02-cpp98-systems/object-model/command-service/02-value-ownership`에 안전한 시작 코드, 참조 구현과 자동 테스트가 있습니다.
+[값 의미론과 소유권 실습](../../exercises/02-cpp98-systems/object-model/command-service/02-value-ownership/README.md)에 안전한 시작 코드, 참조 구현과 자동 테스트가 있습니다.
 
 ```sh
-cd ../exercises/02-cpp98-systems/object-model/command-service/02-value-ownership
+cd exercises/02-cpp98-systems/object-model/command-service/02-value-ownership
 make observe
-make exercise-test
-make test
-make fail-copy
 ```
 
-`make fail-copy`는 복사 도중 예외를 발생시키고 대상 객체와 살아 있는 인스턴스 수를 검사합니다. 실행 전에 어떤 생성자와 소멸자가 몇 번 호출될지 적은 뒤 실제 로그와 비교합니다.
+위 명령은 저장소 루트에서 시작합니다. `make observe`는 먼저 결과를 예상한 뒤 `reference/` source를 열지 않고 실행 결과만 보는 선택적 black-box oracle입니다. workspace의 `skeleton/`을 구현한 뒤 다시 저장소 루트에서 검사합니다.
+
+```sh
+make cpp98-exercise-test CPP98_EXERCISE=object-model/command-service/02-value-ownership
+```
+
+learner 검증 뒤에만 reference source와 비교합니다. canonical failure experiment인 `make -C exercises/02-cpp98-systems/object-model/command-service/02-value-ownership fail-copy`는 복사 도중 예외를 발생시키고 대상 객체와 살아 있는 인스턴스 수를 검사합니다. 실행 전에 어떤 생성자와 소멸자가 몇 번 호출될지 적은 뒤 실제 로그와 비교합니다.
 
 ---
 

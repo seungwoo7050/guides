@@ -7,6 +7,7 @@
 
 namespace
 {
+// [Implementation 1-1] protocol 상한과 요청 줄·header·body 검증 뒤에만 request를 commit하고 pipeline 나머지를 보존합니다.
 const std::size_t MaxHeaderBytes = 8192;
 const std::size_t MaxBodyBytes = 1024 * 1024;
 const std::size_t MaxHeaderCount = 100;

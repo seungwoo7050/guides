@@ -3,6 +3,7 @@
 #include <sstream>
 #include <vector>
 
+// [Implementation 3] 외부 문자열 문법을 검증해 유효한 Request 또는 Invalid 값으로만 변환합니다.
 Request RequestParser::parse(const std::string &line) const
 {
     std::istringstream input(line);

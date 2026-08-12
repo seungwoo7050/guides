@@ -5,6 +5,7 @@
 #include <cstddef>
 #include <stdexcept>
 
+// [Implementation 1] Array가 고정 길이 heap storage와 원소 수를 함께 소유하고 빈 배열도 유효한 상태로 둡니다.
 template <class T>
 class Array
 {
@@ -23,6 +24,7 @@ public:
     {
     }
 
+    // [Implementation 2] 깊은 복사를 완성하지 못하면 새 storage를 정리하고 대입은 copy-and-swap으로 기존 값을 보존합니다.
     Array(const Array &other)
         : data_(other.size_ != 0 ? new T[other.size_] : 0),
           size_(other.size_)
@@ -62,6 +64,7 @@ public:
         return size_;
     }
 
+    // [Implementation 3] mutable/const 접근과 반열린 iterator 범위를 같은 storage 수명 위에 제공합니다.
     T &operator[](std::size_t index)
     {
         return data_[index];
@@ -111,6 +114,7 @@ private:
     std::size_t size_;
 };
 
+// [Implementation 4] container 타입 대신 iterator와 callable 계약만 요구하는 재사용 가능한 순회 알고리즘을 만듭니다.
 template <class Iterator, class Function>
 void apply(Iterator first, Iterator last, Function function)
 {

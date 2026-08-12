@@ -9,6 +9,7 @@
 #include <sys/epoll.h>
 #include <unistd.h>
 
+// [Implementation 2-1] Linux adapter가 epoll descriptor를 소유하고 interest와 native event bit를 상호 변환합니다.
 class EpollPoller : public Poller
 {
 public:

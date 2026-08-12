@@ -1,4 +1,4 @@
-.PHONY: observe exercise-test test failure-test clean
+.PHONY: observe start-state exercise-test test failure-test clean
 observe:
 	@$(MAKE) -C 01-parser observe
 	@$(MAKE) -C 02-config-router observe
@@ -11,6 +11,8 @@ exercise-test:
 	@$(MAKE) -C 03-nonblocking-server exercise-test
 	@$(MAKE) -C 04-cgi-process exercise-test
 	@$(MAKE) -C 05-integrated-server exercise-test
+start-state:
+	@$(MAKE) -C 05-integrated-server start-state
 test:
 	@$(MAKE) -C 01-parser test
 	@$(MAKE) -C 02-config-router test

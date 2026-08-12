@@ -14,6 +14,7 @@
 
 extern char **environ;
 
+// [Implementation 1] ScopedFd가 각 pipe endpoint를 소유해 정상·예외 경로에서 descriptor를 정확히 한 번 닫습니다.
 class ScopedFd
 {
 public:
@@ -49,6 +50,7 @@ private:
     int fd_;
 };
 
+// [Implementation 2] ChildGuard가 child 수명과 reap 상태를 추적해 scope 종료 시 orphan이나 zombie를 남기지 않습니다.
 class ChildGuard
 {
 public:
@@ -131,6 +133,7 @@ private:
     bool reaped_;
 };
 
+// [Implementation 3] deadline 계산, nonblocking 설정과 child stdio 복제를 process orchestration에서 분리합니다.
 static long elapsedMilliseconds(const timeval &start)
 {
     timeval now;
@@ -175,6 +178,7 @@ static int parsePositiveTimeout(const char *text)
     return static_cast<int>(value);
 }
 
+// [Implementation 4] stdin/stdout pipe를 만든 뒤 fork하고 child에서 endpoint를 dup2한 다음 CGI executable로 교체합니다.
 int main(int argc, char **argv)
 {
     if (argc != 4)
@@ -227,6 +231,7 @@ int main(int argc, char **argv)
             _exit(127);
         }
 
+        // [Implementation 5] parent는 사용하지 않는 pipe 끝을 즉시 닫고 자신이 소유한 두 끝만 nonblocking으로 전환합니다.
         ChildGuard childGuard(child);
 
         // 부모는 자식 표준 입력의 쓰기 끝과 자식 표준 출력의 읽기 끝만 소유합니다.
@@ -246,6 +251,7 @@ int main(int argc, char **argv)
         if (::gettimeofday(&started, 0) == -1)
             throw std::runtime_error("gettimeofday");
 
+        // [Implementation 6] 하나의 deadline 아래 partial stdin write와 stdout read를 함께 poll하고 EOF·output cap을 관리합니다.
         while (outputOpen || !childDone)
         {
             if (parentInputWrite.valid()
@@ -385,6 +391,7 @@ int main(int argc, char **argv)
             childDone = childGuard.collectIfExited(childStatus);
         }
 
+        // [Implementation 7] child를 반드시 수거한 뒤 output과 정상·signal·timeout 상태를 안정된 CLI 결과로 변환합니다.
         std::cout << output;
         if (!WIFEXITED(childStatus))
             return 1;

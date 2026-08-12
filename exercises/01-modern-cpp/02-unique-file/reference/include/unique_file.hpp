@@ -10,6 +10,7 @@
 
 namespace guide::io
 {
+// [Implementation 1] UniqueFile이 FILE*의 유일 소유권을 갖고 open 실패는 별도의 값 계약으로 돌려줍니다.
 struct FileError
 {
     std::filesystem::path path;

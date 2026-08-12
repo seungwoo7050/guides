@@ -19,40 +19,61 @@
 ./prepare.sh
 ```
 
+## 안전한 학습 작업 공간
+
+정본 skeleton은 repository baseline 검증의 입력이므로 직접 수정하지 않습니다. 저장소 루트에서 다음 명령으로 non-overwriting 학습 공간을 만든 뒤 `.workspace/02-cpp98-systems` 안의 `skeleton/`만 수정합니다.
+
+```sh
+make workspace TRACK=cpp98
+```
+
+각 단계의 learner 검증은 다음 형식을 사용합니다.
+
+```sh
+make cpp98-exercise-test CPP98_EXERCISE=<track-relative-leaf>
+```
+
+`make observe`가 있는 단계에서는 이를 선택적 black-box oracle로만 사용합니다. 결과를 먼저 예상하고 reference source는 열지 않은 채 실행 결과만 관찰합니다. learner 검증을 통과한 뒤에만 reference source의 책임 배치와 실패 뒤 상태를 비교합니다.
+
 ## Part 1. 객체 모델과 책임
 
-1. [프로그램과 타입 모델](01-program-and-type-model.md)
-2. [수명·값·소유권](02-lifetime-value-and-ownership.md)
-3. [객체 책임 배치](03-assigning-object-responsibilities.md)
-4. [상속과 다형성](04-inheritance-and-polymorphism.md)
-5. [오류·검증·캐스트](05-errors-validation-and-casts.md)
+하나의 명령 처리기를 다음 다섯 물리 단계로 확장합니다.
 
-연결 실습은 `exercises/02-cpp98-systems/object-model/command-service`입니다. 하나의 명령 처리기를 절차형 코드에서 값 소유권, 책임 분리, 다형성, 실패 안전성 단계로 확장합니다.
+1. [프로그램과 타입 모델](01-program-and-type-model.md) → [`01-procedural`](../../exercises/02-cpp98-systems/object-model/command-service/01-procedural/README.md)
+2. [수명·값·소유권](02-lifetime-value-and-ownership.md) → [`02-value-ownership`](../../exercises/02-cpp98-systems/object-model/command-service/02-value-ownership/README.md)
+3. [객체 책임 배치](03-assigning-object-responsibilities.md) → [`03-responsibilities`](../../exercises/02-cpp98-systems/object-model/command-service/03-responsibilities/README.md)
+4. [상속과 다형성](04-inheritance-and-polymorphism.md) → [`04-polymorphism`](../../exercises/02-cpp98-systems/object-model/command-service/04-polymorphism/README.md)
+5. [오류·검증·캐스트](05-errors-validation-and-casts.md) → [`05-errors`](../../exercises/02-cpp98-systems/object-model/command-service/05-errors/README.md)
 
 ## Part 2. 제네릭 프로그래밍과 STL
 
 6. [템플릿·반복자·STL](06-templates-iterators-and-stl.md)
 7. [STL로 문제 해결](07-solving-problems-with-stl.md)
 
-연결 실습은 다음입니다.
-
-- `exercises/02-cpp98-systems/generic-programming/template-array`
-- `exercises/02-cpp98-systems/generic-programming/mini-vector`
-- `exercises/02-cpp98-systems/generic-programming/stl-problems`
-
-`mini-vector`는 표준 컨테이너를 다시 만드는 것이 일반 애플리케이션의 권장 설계라는 뜻이 아닙니다. 복사 실패, 부분 생성, 강한 예외 보장과 iterator 계약을 직접 관찰하기 위한 제한된 학습 장치입니다.
+연결 실습은 [template-array](../../exercises/02-cpp98-systems/generic-programming/template-array/README.md)와 [STL 세 문제](../../exercises/02-cpp98-systems/generic-programming/stl-problems/README.md)입니다. [mini-vector](../../exercises/02-cpp98-systems/generic-programming/mini-vector/README.md)는 [STL 내부 구조 appendix](../90-appendix/04-stl-internals.md)와 연결된 **선택 심화**입니다. 표준 컨테이너를 다시 만드는 것이 일반 애플리케이션의 권장 설계라는 뜻이 아니라 복사 실패, 부분 생성, 강한 예외 보장과 iterator 계약을 직접 관찰하기 위한 제한된 학습 장치입니다.
 
 ## Part 3. 네트워크와 HTTP
 
 8. [POSIX socket과 event loop](08-posix-sockets-and-event-loop.md)
 9. [객체지향 HTTP 서버](09-object-oriented-http-server.md)
 
-연결 실습은 다음입니다.
-
-- `exercises/02-cpp98-systems/networking/line-server`
-- `exercises/02-cpp98-systems/networking/http-server`
+연결 실습은 [line-server](../../exercises/02-cpp98-systems/networking/line-server/README.md)와 [5단계 HTTP 서버](../../exercises/02-cpp98-systems/networking/http-server/README.md)입니다. HTTP 실습은 `01-parser` → `02-config-router` → `03-nonblocking-server` → `04-cgi-process` → `05-integrated-server`의 실제 디렉터리 순서를 따릅니다.
 
 이 과정은 단일 `recv`가 하나의 메시지를 돌려준다고 가정하지 않습니다. 읽기 가능·쓰기 가능 이벤트, 부분 I/O, 연결별 버퍼, close 순서와 timeout을 상태 전이로 관리합니다.
+
+## 문서와 실습의 ordered mapping
+
+| 순서 | 문서 | 관찰 예제 | 직접 수행 | 수정 위치 | 검증 | 완료 뒤 비교·다음 |
+|---|---|---|---|---|---|---|
+| 1 | 01 프로그램·타입 | 선택 black-box oracle | `01-procedural` | `.workspace/02-cpp98-systems/object-model/command-service/01-procedural/skeleton/` | `make cpp98-exercise-test CPP98_EXERCISE=object-model/command-service/01-procedural` | `reference/` → 2 |
+| 2 | 02 수명·소유권 | 선택 black-box oracle | `02-value-ownership` | `.workspace/02-cpp98-systems/object-model/command-service/02-value-ownership/skeleton/` | `make cpp98-exercise-test CPP98_EXERCISE=object-model/command-service/02-value-ownership` | `reference/` → 3 |
+| 3 | 03 책임 | legacy 시작점 | `03-responsibilities` | `.workspace/02-cpp98-systems/object-model/command-service/03-responsibilities/skeleton/` | `make cpp98-exercise-test CPP98_EXERCISE=object-model/command-service/03-responsibilities` | `reference/` → 4 |
+| 4 | 04 다형성 | 선택 black-box oracle | `04-polymorphism` | `.workspace/02-cpp98-systems/object-model/command-service/04-polymorphism/skeleton/` | `make cpp98-exercise-test CPP98_EXERCISE=object-model/command-service/04-polymorphism` | `reference/` → 5 |
+| 5 | 05 오류 | 선택 black-box oracle | `05-errors` | `.workspace/02-cpp98-systems/object-model/command-service/05-errors/skeleton/` | `make cpp98-exercise-test CPP98_EXERCISE=object-model/command-service/05-errors` | `reference/` → 6 |
+| 6 | 06 템플릿·반복자·STL | template-array demo | template-array; mini-vector는 선택 심화 | `.workspace/02-cpp98-systems/generic-programming/<exercise>/skeleton/` | `make cpp98-exercise-test CPP98_EXERCISE=generic-programming/<exercise>` | 각 `reference/` → 7 |
+| 7 | 07 STL 문제 해결 | 세 선택 black-box oracle | date-lookup → rpn → sorter | `.workspace/02-cpp98-systems/generic-programming/stl-problems/<problem>/skeleton/` | `make cpp98-exercise-test CPP98_EXERCISE=generic-programming/stl-problems/<problem>` | 각 `reference/` → 8 |
+| 8 | 08 POSIX socket·event loop | 선택 black-box line server | line-server | `.workspace/02-cpp98-systems/networking/line-server/skeleton/` | `make cpp98-exercise-test CPP98_EXERCISE=networking/line-server` | `reference/` → 9 |
+| 9 | 09 객체지향 HTTP 서버 | parser/router demo와 나머지 선택 black-box oracle | HTTP 01 → 02 → 03 → 04 → 05 | `.workspace/02-cpp98-systems/networking/http-server/<stage>/skeleton/` | `make cpp98-exercise-test CPP98_EXERCISE=networking/http-server/<stage>` | 각 `reference/`, 05 뒤 C++98 종료 |
 
 ## Modern C++ 트랙과의 관계
 

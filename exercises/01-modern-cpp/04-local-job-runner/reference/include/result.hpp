@@ -8,6 +8,7 @@
 
 namespace guide
 {
+// [Implementation 1] 예상 가능한 성공과 실패를 variant 한 칸에 소유하고 잘못된 쪽 접근은 즉시 거부합니다.
 template <typename Value, typename Error>
 class Result
 {

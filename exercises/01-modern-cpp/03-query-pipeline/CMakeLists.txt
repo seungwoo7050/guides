@@ -34,3 +34,8 @@ target_link_libraries(
 
 add_test(NAME modern.query-pipeline COMMAND query_pipeline_reference_tests)
 set_tests_properties(modern.query-pipeline PROPERTIES TIMEOUT 20)
+
+if(GUIDE_TEST_SKELETONS)
+    add_test(NAME modern.learner.query-pipeline COMMAND query_pipeline_skeleton_tests)
+    set_tests_properties(modern.learner.query-pipeline PROPERTIES TIMEOUT 20)
+endif()

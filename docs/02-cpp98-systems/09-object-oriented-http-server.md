@@ -19,15 +19,14 @@ CGI 요청 → 자식 표준 입출력과 프로세스 수명 → Response
 
 ## 사용 방법
 
-여섯 단계를 차례로 구현하며, 각 단계에서 요구하는 동작을 테스트한 뒤 다음 단계로 이동합니다.
+다음 다섯 물리 실습을 차례로 구현하며, 각 단계에서 요구하는 동작을 테스트한 뒤 다음 단계로 이동합니다.
 
 ```text
-1. 증분 HTTP 파서
-2. 요청과 응답
-3. 설정과 라우팅
-4. 정적 메서드 핸들러
-5. CGI 프로세스
-6. 연결 유지, 제한 시간과 통합 검증
+1. `01-parser`: 증분 HTTP 파서와 요청
+2. `02-config-router`: 설정 검증과 라우팅
+3. `03-nonblocking-server`: 논블로킹 연결과 HTTP 처리
+4. `04-cgi-process`: CGI 프로세스와 제한 시간
+5. `05-integrated-server`: 파서·라우터·소켓·CGI 통합 검증
 ```
 
 처음 구현에서는 `Content-Length` 본문까지만 지원해도 됩니다. 청크 본문은 기본 구조가 안정된 뒤 확장합니다.
@@ -35,24 +34,34 @@ CGI 요청 → 자식 표준 입출력과 프로세스 수명 → Response
 
 ## 실행 패키지
 
-`../exercises/02-cpp98-systems/networking/http-server`는 거대한 완성 서버 하나가 아니라 네 개의 작은 검증 단위로 구성됩니다.
+[단계형 HTTP 서버 실습](../../exercises/02-cpp98-systems/networking/http-server/README.md)은 거대한 완성 서버 하나가 아니라 다섯 개의 검증 단위로 구성됩니다.
 
 ```text
 01-parser         바이트 조각 → Request
 02-config-router  설정 → 검증된 라우트 → Handler
 03-nonblocking-server    논블로킹 HTTP/1.1 최소 서버와 연결 유지
 04-cgi-process    fork/pipe/exec와 제한 시간 관찰
+05-integrated-server    파서·라우터·소켓·CGI를 하나의 요청 흐름으로 통합
 ```
 
 ```sh
-cd ../exercises/02-cpp98-systems/networking/http-server
+cd exercises/02-cpp98-systems/networking/http-server
 make observe
-make exercise-test
-make test
-make failure-test
 ```
 
-각 하위 실습은 독립적으로 실행되며 앞 단계의 참조 구현이 다음 단계의 시작점 역할을 합니다. 전체 서버를 먼저 구현하지 않고 파서, 라우터, 소켓 어댑터, 자식 프로세스를 각각 검증한 뒤 결합합니다.
+위 명령은 저장소 루트에서 시작합니다. `make observe`는 선택 사항입니다. 01과 02는 좁은 demo를, 03–05는 reference executable을 source 미열람 상태에서 실행하는 black-box oracle입니다. 먼저 결과를 예상하고 workspace의 각 skeleton을 구현한 뒤, 다시 저장소 루트에서 해당 learner 검증을 실행합니다.
+
+```sh
+make cpp98-exercise-test CPP98_EXERCISE=networking/http-server/01-parser
+make cpp98-exercise-test CPP98_EXERCISE=networking/http-server/02-config-router
+make cpp98-exercise-test CPP98_EXERCISE=networking/http-server/03-nonblocking-server
+make cpp98-exercise-test CPP98_EXERCISE=networking/http-server/04-cgi-process
+make cpp98-exercise-test CPP98_EXERCISE=networking/http-server/05-integrated-server
+```
+
+각 learner 검증을 통과한 뒤에만 해당 reference source를 비교합니다. 각 하위 실습은 독립적으로 실행되며 앞 단계에서 배운 계약이 다음 단계의 개념적 출발점이 됩니다. 전체 서버를 먼저 구현하지 않고 파서, 라우터, 소켓 어댑터, 자식 프로세스를 각각 검증한 뒤 05에서 결합합니다.
+
+문서 아래의 더 세분화된 설계 절차와 `종합 구현 순서`는 다섯 디렉터리를 다시 늘린 물리 stage가 아니라 각 실습 안에서 사용할 construction checklist입니다.
 
 ---
 

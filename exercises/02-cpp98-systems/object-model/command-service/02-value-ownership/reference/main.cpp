@@ -15,6 +15,7 @@ static std::vector<std::string> split(const std::string &line)
     return parts;
 }
 
+// [Implementation 4] store가 TextBuffer 값을 직접 소유하도록 명령 처리 흐름에 복사·대입 계약을 통합합니다.
 int main()
 {
     std::map<std::string, TextBuffer> store;

@@ -39,7 +39,25 @@ C++20을 기준으로 다음 순서로 진행합니다.
 → 종료 가능한 로컬 작업 실행기
 ```
 
-각 실습은 `skeleton`, `reference`, 공통 계약 테스트와 CMake target을 제공합니다. 먼저 skeleton을 직접 완성하고 같은 테스트를 통과한 뒤 reference와 설계 차이를 비교합니다.
+각 실습은 `skeleton`, `reference`, 공통 계약 테스트와 CMake target을 제공합니다. 정본 skeleton을 직접 바꾸지 않고 `make workspace TRACK=modern`으로 `.workspace/01-modern-cpp`를 만든 뒤 그 사본만 완성합니다. 같은 테스트를 통과한 다음 reference와 설계 차이를 비교합니다.
+
+### Modern C++ 학습 순서
+
+<!-- learning-map: modern -->
+| 순서 | 문서 | 관찰 예제 | 직접 수행 | 수정 위치 | 검증 | 완료 뒤 비교·다음 |
+|---|---|---|---|---|---|---|
+| 1 <!-- learning-row: modern-01 --> | [프로그램·빌드·CMake](docs/01-modern-cpp/01-program-build-cmake.md) | — | workspace를 만들고 첫 실습의 target·공개 헤더 경계 확인 | `.workspace/01-modern-cpp/01-strong-types-and-cmake/` | `make modern-start-state`로 정본 출발점 확인 | 2에서 값 계약을 배운 뒤 구현 |
+| 2 <!-- learning-row: modern-02 --> | [값·수명·복사·이동](docs/01-modern-cpp/02-values-lifetimes-and-move.md) | — | [강한 타입과 CMake](exercises/01-modern-cpp/01-strong-types-and-cmake/README.md) | `.workspace/01-modern-cpp/01-strong-types-and-cmake/skeleton/` | `make modern-exercise-test MODERN_EXERCISE=01-strong-types-and-cmake` | 해당 `reference/` → 3 |
+| 3 <!-- learning-row: modern-03 --> | [RAII·smart pointer·Rule of Zero](docs/01-modern-cpp/03-raii-smart-pointers-and-rule-of-zero.md) | — | [이동 전용 파일 소유자](exercises/01-modern-cpp/02-unique-file/README.md) | `.workspace/01-modern-cpp/02-unique-file/skeleton/` | `make modern-exercise-test MODERN_EXERCISE=02-unique-file` | 해당 `reference/` → 4 |
+| 4 <!-- learning-row: modern-04 --> | [클래스·책임·다형성](docs/01-modern-cpp/04-classes-responsibilities-and-polymorphism.md) | — | capstone의 상태 소유자와 책임 경계 설계 | 학습 메모 | 문서의 책임 checklist | 5에서 오류 경계 추가 |
+| 5 <!-- learning-row: modern-05 --> | [오류·optional·variant·expected](docs/01-modern-cpp/05-errors-optional-variant-and-expected.md) | — | capstone의 거부·예외·terminal 상태 설계 | 학습 메모 | 문서의 오류 checklist | 6에서 조회 경계 구현 |
+| 6 <!-- learning-row: modern-06 --> | [알고리즘·ranges·templates·concepts](docs/01-modern-cpp/06-algorithms-ranges-templates-and-concepts.md) | — | [조회 파이프라인](exercises/01-modern-cpp/03-query-pipeline/README.md) | `.workspace/01-modern-cpp/03-query-pipeline/skeleton/` | `make modern-exercise-test MODERN_EXERCISE=03-query-pipeline` | 해당 `reference/` → 7 |
+| 7 <!-- learning-row: modern-07 --> | [동시성·시간·filesystem](docs/01-modern-cpp/07-concurrency-time-and-filesystem.md) | — | capstone의 queue·취소·journal 수명 설계 | 학습 메모 | 문서의 상태 전이 checklist | 8에서 검증 계획 작성 |
+| 8 <!-- learning-row: modern-08 --> | [테스트·디버깅·도구](docs/01-modern-cpp/08-testing-debugging-and-tooling.md) | — | capstone의 deterministic test와 실패 근거 설계 | 학습 메모 | 문서의 테스트 checklist | 9에서 capstone 구현 |
+| 9 <!-- learning-row: modern-09 --> | [로컬 작업 실행기 capstone](docs/01-modern-cpp/09-application-capstone.md) | 완료 뒤 application driver | [로컬 작업 실행기](exercises/01-modern-cpp/04-local-job-runner/README.md) spec 01–04 | `.workspace/01-modern-cpp/04-local-job-runner/skeleton/` | `make modern-exercise-test MODERN_EXERCISE=04-local-job-runner` | 해당 `reference/` → Modern C++ 종료 |
+<!-- /learning-map -->
+
+문서 04·05는 capstone의 설계를 먼저 준비하지만, 실제 capstone 구현은 문서 06–09와 앞선 세 실습을 완료한 뒤 시작합니다.
 
 ## C++98 시스템 과정
 
@@ -53,6 +71,24 @@ C++98 제약이 있는 객체·STL·네트워크 프로젝트는 [C++98 시스�
 ```
 
 Modern C++을 먼저 학습했다면 [Modern C++에서 C++98로 이동할 때의 대응표](docs/90-appendix/01-modern-to-cpp98-crosswalk.md)를 함께 사용합니다.
+
+정본 skeleton을 보존하려면 `make workspace TRACK=cpp98`로 `.workspace/02-cpp98-systems`를 만들고 그 안의 `skeleton/`만 수정합니다. 각 단계의 `make observe`는 선택 사항입니다. 먼저 결과를 예상하고 reference source를 열지 않은 채 실행 결과만 black-box로 관찰합니다.
+
+### C++98 학습 순서
+
+<!-- learning-map: cpp98 -->
+| 순서 | 문서 | 관찰 예제 | 직접 수행 | 수정 위치 | 검증 | 완료 뒤 비교·다음 |
+|---|---|---|---|---|---|---|
+| 1 <!-- learning-row: cpp98-01 --> | [프로그램·타입](docs/02-cpp98-systems/01-program-and-type-model.md) | 선택 black-box oracle | `01-procedural` | `.workspace/02-cpp98-systems/object-model/command-service/01-procedural/skeleton/` | `make cpp98-exercise-test CPP98_EXERCISE=object-model/command-service/01-procedural` | `reference/` → 2 |
+| 2 <!-- learning-row: cpp98-02 --> | [수명·소유권](docs/02-cpp98-systems/02-lifetime-value-and-ownership.md) | 선택 black-box oracle | `02-value-ownership` | `.workspace/02-cpp98-systems/object-model/command-service/02-value-ownership/skeleton/` | `make cpp98-exercise-test CPP98_EXERCISE=object-model/command-service/02-value-ownership` | `reference/` → 3 |
+| 3 <!-- learning-row: cpp98-03 --> | [책임](docs/02-cpp98-systems/03-assigning-object-responsibilities.md) | legacy 시작점 | `03-responsibilities` | `.workspace/02-cpp98-systems/object-model/command-service/03-responsibilities/skeleton/` | `make cpp98-exercise-test CPP98_EXERCISE=object-model/command-service/03-responsibilities` | `reference/` → 4 |
+| 4 <!-- learning-row: cpp98-04 --> | [다형성](docs/02-cpp98-systems/04-inheritance-and-polymorphism.md) | 선택 black-box oracle | `04-polymorphism` | `.workspace/02-cpp98-systems/object-model/command-service/04-polymorphism/skeleton/` | `make cpp98-exercise-test CPP98_EXERCISE=object-model/command-service/04-polymorphism` | `reference/` → 5 |
+| 5 <!-- learning-row: cpp98-05 --> | [오류](docs/02-cpp98-systems/05-errors-validation-and-casts.md) | 선택 black-box oracle | `05-errors` | `.workspace/02-cpp98-systems/object-model/command-service/05-errors/skeleton/` | `make cpp98-exercise-test CPP98_EXERCISE=object-model/command-service/05-errors` | `reference/` → 6 |
+| 6 <!-- learning-row: cpp98-06 --> | [템플릿·반복자·STL](docs/02-cpp98-systems/06-templates-iterators-and-stl.md) | template-array demo | template-array; [mini-vector](exercises/02-cpp98-systems/generic-programming/mini-vector/README.md)는 선택 심화 | `.workspace/02-cpp98-systems/generic-programming/<exercise>/skeleton/` | `make cpp98-exercise-test CPP98_EXERCISE=generic-programming/<exercise>` | 각 `reference/` → 7 |
+| 7 <!-- learning-row: cpp98-07 --> | [STL 문제 해결](docs/02-cpp98-systems/07-solving-problems-with-stl.md) | 세 선택 black-box oracle | date-lookup → rpn → sorter | `.workspace/02-cpp98-systems/generic-programming/stl-problems/<problem>/skeleton/` | `make cpp98-exercise-test CPP98_EXERCISE=generic-programming/stl-problems/<problem>` | 각 `reference/` → 8 |
+| 8 <!-- learning-row: cpp98-08 --> | [POSIX socket·event loop](docs/02-cpp98-systems/08-posix-sockets-and-event-loop.md) | 선택 black-box line server | line-server | `.workspace/02-cpp98-systems/networking/line-server/skeleton/` | `make cpp98-exercise-test CPP98_EXERCISE=networking/line-server` | `reference/` → 9 |
+| 9 <!-- learning-row: cpp98-09 --> | [객체지향 HTTP 서버](docs/02-cpp98-systems/09-object-oriented-http-server.md) | parser/router demo와 선택 black-box oracle | HTTP 01 → 02 → 03 → 04 → 05 | `.workspace/02-cpp98-systems/networking/http-server/<stage>/skeleton/` | `make cpp98-exercise-test CPP98_EXERCISE=networking/http-server/<stage>` | 각 `reference/`, 05 뒤 C++98 종료 |
+<!-- /learning-map -->
 
 ## 처음 준비하기
 
@@ -96,7 +132,7 @@ Modern C++을 먼저 학습했다면 [Modern C++에서 C++98로 이동할 때의
 기본 로그는 저장소 밖의 임시 디렉터리에 남고 마지막에 경로가 출력됩니다. 다른 위치가 필요하면 지정할 수 있습니다.
 
 ```sh
-VERIFY_LOG=/tmp/guide-cpp.log ./verify.sh
+VERIFY_LOG="${TMPDIR:-/tmp}/guide-cpp-verify-$$.log" ./verify.sh
 ```
 
 환경에 따라 선택 검사의 정책을 바꿀 수 있습니다.
@@ -117,8 +153,12 @@ CXX=clang++ ./verify.sh                  # 기준 compiler 선택
 
 ```sh
 make check
+make workspace TRACK=modern
+make workspace TRACK=cpp98
 make modern-start-state
 make modern-test
+make modern-exercise-test MODERN_EXERCISE=01-strong-types-and-cmake
+make cpp98-exercise-test CPP98_EXERCISE=object-model/command-service/01-procedural
 make modern-release
 make modern-sanitize
 make modern-thread-sanitize
@@ -126,7 +166,7 @@ make cpp98-verify
 make clean
 ```
 
-개별 target은 개발 피드백을 줄이기 위한 도구이고, 최종 완료 판정은 `./verify.sh`를 기준으로 합니다. 컴파일러와 운영체제 차이는 [컴파일러와 플랫폼 노트](docs/90-appendix/02-compiler-platform-notes.md)를 확인합니다.
+`make modern-start-state`는 배포된 Modern skeleton의 의도된 초기 실패를, `make modern-test`는 reference만 검사합니다. `modern-exercise-test`와 `cpp98-exercise-test`가 `.workspace`의 학습자 구현을 검사합니다. 개별 target은 개발 피드백을 줄이기 위한 도구이고, 저장소 전체의 최종 완료 판정은 `./verify.sh`를 기준으로 합니다. 컴파일러와 운영체제 차이는 [컴파일러와 플랫폼 노트](docs/90-appendix/02-compiler-platform-notes.md)를 확인합니다.
 
 ## 실습 원칙
 

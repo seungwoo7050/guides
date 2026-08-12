@@ -34,3 +34,8 @@ target_link_libraries(
 
 add_test(NAME modern.unique-file COMMAND unique_file_reference_tests)
 set_tests_properties(modern.unique-file PROPERTIES TIMEOUT 20)
+
+if(GUIDE_TEST_SKELETONS)
+    add_test(NAME modern.learner.unique-file COMMAND unique_file_skeleton_tests)
+    set_tests_properties(modern.learner.unique-file PROPERTIES TIMEOUT 20)
+endif()

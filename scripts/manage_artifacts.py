@@ -18,6 +18,7 @@ from pathlib import Path
 from typing import Iterable, Iterator
 
 ROOT_LOG_NAMES = {"make-out.txt", "tree.txt"}
+PRESERVED_DIR_NAMES = {".workspace"}
 GENERATED_DIR_NAMES = {
     "build",
     "__pycache__",
@@ -91,7 +92,7 @@ def walk_clean_tree(root: Path) -> Iterator[tuple[Path, list[str], list[str]]]:
         kept: list[str] = []
         for name in directory_names:
             child = current / name
-            if name == ".git" or is_generated_dir_name(name):
+            if name == ".git" or name in PRESERVED_DIR_NAMES or is_generated_dir_name(name):
                 continue
             # os.walk does not descend directory symlinks when followlinks is
             # false, but removing them from the list makes that contract clear.
@@ -110,6 +111,8 @@ def generated_dirs(root: Path) -> list[Path]:
         for name in directory_names:
             child = current / name
             if name == ".git":
+                continue
+            if name in PRESERVED_DIR_NAMES:
                 continue
             if is_generated_dir_name(name):
                 found.append(child)
@@ -176,7 +179,7 @@ def snapshot(root: Path) -> list[dict[str, object]]:
         kept: list[str] = []
         for name in directory_names:
             child = current / name
-            if name == ".git" or is_generated_dir_name(name):
+            if name == ".git" or name in PRESERVED_DIR_NAMES or is_generated_dir_name(name):
                 continue
             if child.is_symlink():
                 records.append(

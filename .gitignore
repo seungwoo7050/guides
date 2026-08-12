@@ -49,6 +49,7 @@ compile_commands.json
 # guide-cpp local verification artifacts
 make-out.txt
 tree.txt
+.workspace/
 
 # C++98 exercise executables
 exercises/**/reference/app

@@ -6,6 +6,7 @@
 #include <memory>
 #include <stdexcept>
 
+// [Implementation 1] MiniVector가 allocator storage, constructed size와 reserved capacity의 불변식을 함께 소유합니다.
 template <class T>
 class MiniVector
 {
@@ -19,6 +20,7 @@ public:
     {
     }
 
+    // [Implementation 2] 복사 생성·소멸·copy-and-swap 대입이 constructed 원소와 raw storage 수명을 한 번씩 정리합니다.
     MiniVector(const MiniVector &other)
         : data_(0), size_(0), capacity_(0), allocator_()
     {
@@ -45,6 +47,7 @@ public:
         std::swap(capacity_, other.capacity_);
     }
 
+    // [Implementation 3] 원소 수·capacity·checked access와 반열린 iterator를 representation 위에 노출합니다.
     std::size_t size() const
     {
         return size_;
@@ -104,6 +107,7 @@ public:
         return size_ == 0 ? data_ : data_ + size_;
     }
 
+    // [Implementation 5] push_back은 기존 storage를 commit 전까지 살려 self-alias와 마지막 원소 복사 실패를 안전하게 처리합니다.
     void push_back(const T &value)
     {
         if (size_ < capacity_)
@@ -136,6 +140,7 @@ public:
         replaceStorage(candidate, built, nextCapacity);
     }
 
+    // [Implementation 4] reserve는 candidate storage를 완성한 뒤에만 교체하고 부분 생성 실패는 역순으로 rollback합니다.
     void reserve(std::size_t requestedCapacity)
     {
         if (requestedCapacity <= capacity_)

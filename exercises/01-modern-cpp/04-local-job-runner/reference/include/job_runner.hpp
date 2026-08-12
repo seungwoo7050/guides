@@ -22,6 +22,7 @@
 
 namespace guide::jobs
 {
+// [Implementation 2] 식별자·상태·snapshot·작업 callback을 worker 구현과 분리된 도메인 계약으로 정의합니다.
 class JobId
 {
 public:
@@ -64,6 +65,7 @@ using SubmitResult = guide::Result<JobId, SubmitError>;
 
 [[nodiscard]] std::string_view to_string(JobStatus status) noexcept;
 
+// [Implementation 3] JobRunner가 queue, record, cancellation source와 worker join 상태의 단일 owner가 됩니다.
 class JobRunner
 {
 public:

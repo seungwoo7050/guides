@@ -39,6 +39,7 @@ void installSignalHandler(int signalNumber)
         throw std::runtime_error("sigaction");
 }
 
+// [Implementation 2] signal, listener와 accepted fd의 nonblocking/CLOEXEC 초기화 및 실패 cleanup 경계를 세웁니다.
 void setNonblockingAndCloseOnExec(int fd)
 {
     const int statusFlags = ::fcntl(fd, F_GETFL, 0);
@@ -135,6 +136,7 @@ std::string lowercase(std::string text)
     return text;
 }
 
+// [Implementation 3] route 결과와 connection policy를 wire-level HTTP 응답으로 직렬화하는 순수 계층을 만듭니다.
 std::string reasonPhrase(int status)
 {
     switch (status)
@@ -208,6 +210,7 @@ std::string dispatch(const HttpRequest &request, int &status)
     return "찾을 수 없습니다\n";
 }
 
+// [Implementation 4] Connection이 client fd, parser, pending output와 close/dead lifecycle의 단일 owner가 됩니다.
 class Connection
 {
 public:
@@ -259,6 +262,7 @@ public:
             dead_ = true;
     }
 
+    // [Implementation 4-1] recv 조각을 parser에 공급해 완성된 요청만 dispatch하고 pipeline과 keep-alive 상태를 이어 갑니다.
     void readReady()
     {
         char buffer[4096];
@@ -293,6 +297,7 @@ public:
         }
     }
 
+    // [Implementation 4-2] partial send offset과 output 상한을 관리해 write readiness와 close-after-write를 결정합니다.
     void writeReady()
     {
         while (writeOffset_ < output_.size())
@@ -391,6 +396,7 @@ private:
 
 typedef std::map<int, Connection *> ConnectionMap;
 
+// [Implementation 5] accepted fd의 설정과 Connection 생성을 완료한 뒤 map으로 소유권을 넘기며 실패는 역순 정리합니다.
 void acceptAll(int listener, ConnectionMap &connections)
 {
     for (;;)
@@ -439,6 +445,7 @@ void destroyConnections(ConnectionMap &connections)
 }
 }
 
+// [Implementation 6] poll interest를 connection 상태에서 재구성하고 event·signal·오류 종료마다 모든 socket을 회수합니다.
 int main(int argc, char **argv)
 {
     if (argc != 2)

@@ -37,9 +37,8 @@
 ## 검증
 
 ```sh
-make modern-skeleton-build
-make modern-test
-make modern-sanitize
+make modern-exercise-test MODERN_EXERCISE=02-unique-file
+make modern-exercise-sanitize MODERN_EXERCISE=02-unique-file
 ```
 
 ## 명시적인 한계
@@ -52,3 +51,16 @@ make modern-sanitize
 - 이동 전·후 소유 상태가 정확합니다.
 - 열기 실패에 경로와 오류 코드가 남습니다.
 - 테스트와 sanitizer를 모두 통과합니다.
+
+## 권장 구현 순서
+
+<!-- implementation-scope: modern-unique-file -->
+아래 번호는 실제 과거 작성 순서가 아니라 권장 구현 순서입니다.
+
+| 번호 | anchor | 책임 |
+|---|---|---|
+| `1` | `reference/include/unique_file.hpp` | 파일 핸들의 단일 소유권과 열기 실패 계약을 정의합니다. |
+| `2` | `reference/src/unique_file.cpp` | 소멸·이동·close가 핸들을 한 번만 정리하게 합니다. |
+| `3` | `reference/src/unique_file.cpp` | partial I/O와 `errno`를 operation 실패로 변환합니다. |
+| `4` | `reference/src/unique_file.cpp` | 자원 획득 실패에 경로와 error code를 보존합니다. |
+<!-- /implementation-scope -->

@@ -27,6 +27,7 @@ bool supportedHandler(const std::string &handler)
 }
 }
 
+// [Implementation 2-1] 모든 지시어와 중복을 candidate 목록에서 검증한 뒤 Router가 handler name만 resolve하게 합니다.
 std::vector<RouteSpec> ConfigParser::parse(const std::string &text) const
 {
     std::istringstream input(text);

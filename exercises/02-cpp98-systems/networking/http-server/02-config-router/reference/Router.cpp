@@ -5,6 +5,7 @@
 
 namespace
 {
+// [Implementation 4] 구체 handler는 socket이나 raw header를 알지 않고 구조화된 Response만 생성합니다.
 class HealthHandler : public Handler
 {
 public:
@@ -39,6 +40,7 @@ bool supportedMethod(const std::string &method)
 }
 }
 
+// [Implementation 3] 설정 전체를 candidate RouteSpec으로 검증해 중복·미지원 지시어가 있는 부분 구성을 노출하지 않습니다.
 std::vector<RouteSpec> ConfigParser::parse(const std::string &text) const
 {
     std::istringstream input(text);
@@ -94,6 +96,7 @@ std::string Router::key(
     return method + " " + path;
 }
 
+// [Implementation 5] Router가 handler 수명을 소유하고 검증된 route key를 해당 구현에 원자적으로 연결합니다.
 Router::Router(const std::vector<RouteSpec> &specs)
     : routes_(), health_(0), echo_(0)
 {

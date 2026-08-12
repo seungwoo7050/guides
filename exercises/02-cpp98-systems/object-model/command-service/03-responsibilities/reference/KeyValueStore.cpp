@@ -1,5 +1,6 @@
 #include "KeyValueStore.hpp"
 
+// [Implementation 2] KeyValueStore만 capacity와 map 상태를 소유하고 가득 찬 경우 새 key의 commit을 거부합니다.
 KeyValueStore::KeyValueStore(std::size_t capacity)
     : capacity_(capacity), data_()
 {

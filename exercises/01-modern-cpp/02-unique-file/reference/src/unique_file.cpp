@@ -23,6 +23,7 @@ std::error_code current_io_error()
 }
 } // namespace
 
+// [Implementation 2] 소멸·이동·close가 하나의 핸들을 정확히 한 번 정리하고 moved-from 객체도 유효하게 유지합니다.
 UniqueFile::~UniqueFile()
 {
     close();
@@ -41,6 +42,7 @@ UniqueFile& UniqueFile::operator=(UniqueFile&& other) noexcept
     return *this;
 }
 
+// [Implementation 3] 열린 상태를 확인하고 partial I/O와 errno를 operation별 system_error 경계로 변환합니다.
 void UniqueFile::write(std::string_view text)
 {
     if (!is_open())
@@ -90,6 +92,7 @@ void UniqueFile::close() noexcept
     handle_ = nullptr;
 }
 
+// [Implementation 4] 자원 획득 실패를 경로와 원래 error_code를 보존한 FileError 값으로 반환합니다.
 OpenResult open_file(const std::filesystem::path& path, const char* mode)
 {
     if (mode == nullptr)

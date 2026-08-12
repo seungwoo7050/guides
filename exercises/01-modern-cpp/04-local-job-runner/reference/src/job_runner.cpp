@@ -39,6 +39,7 @@ std::string_view to_string(JobStatus status) noexcept
     return "unknown";
 }
 
+// [Implementation 4] 유효한 capacity와 쓰기 가능한 journal을 먼저 확인한 뒤 worker 수명을 시작합니다.
 JobRunner::JobRunner(std::filesystem::path journal_path, std::size_t queue_capacity)
     : journal_path_(std::move(journal_path)), queue_capacity_(queue_capacity)
 {
@@ -61,6 +62,7 @@ JobRunner::~JobRunner()
     stop();
 }
 
+// [Implementation 5] 제출 거부를 값으로 반환하고 record와 queue 삽입은 예외 시 원래 상태로 되돌립니다.
 SubmitResult JobRunner::submit(std::string name, Work work)
 {
     if (name.empty())
@@ -100,6 +102,7 @@ SubmitResult JobRunner::submit(std::string name, Work work)
     return SubmitResult::success(id);
 }
 
+// [Implementation 6] queued 작업은 즉시 terminal로 옮기고 running 작업에는 협력적 stop 요청만 전달합니다.
 bool JobRunner::cancel(JobId id)
 {
     bool cancellation_changed = false;
@@ -158,6 +161,7 @@ bool JobRunner::journal_healthy() const
     return journal_healthy_;
 }
 
+// [Implementation 9] 새 제출을 닫고 대기·실행 작업에 취소를 전파한 뒤 self-join 없이 worker 종료를 합류합니다.
 void JobRunner::stop()
 {
     {
@@ -196,6 +200,7 @@ bool JobRunner::is_terminal(JobStatus status) noexcept
            status == JobStatus::cancelled;
 }
 
+// [Implementation 7] worker만 queued 작업을 running과 terminal 상태로 전이시키고 callback 예외를 실패 snapshot으로 격리합니다.
 void JobRunner::run(std::stop_token stop_token)
 {
     while (true)
@@ -253,6 +258,7 @@ void JobRunner::run(std::stop_token stop_token)
     }
 }
 
+// [Implementation 8] 상태 전이를 journal에 남기되 기록 실패는 작업 결과를 덮지 않는 sticky health 저하로 보존합니다.
 void JobRunner::append_transition_locked(const JobSnapshot& snapshot) noexcept
 {
     try

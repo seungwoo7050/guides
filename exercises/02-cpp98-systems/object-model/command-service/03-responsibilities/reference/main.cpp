@@ -5,6 +5,7 @@
 #include <iostream>
 #include <string>
 
+// [Implementation 6] composition root에서 parser, service, formatter를 연결하고 main은 I/O와 종료만 소유합니다.
 int main()
 {
     KeyValueStore store(2);

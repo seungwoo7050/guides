@@ -6,6 +6,7 @@
 #include <string>
 #include <vector>
 
+// [Implementation 2] 설정 원문을 검증된 route key와 handler name의 immutable lookup 계약으로 변환합니다.
 class ConfigError : public std::runtime_error
 {
 public:

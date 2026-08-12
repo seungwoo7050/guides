@@ -12,6 +12,7 @@
 
 using namespace std::chrono_literals;
 
+// [Implementation 10] 공개 JobRunner API를 실행 파일 흐름으로 조립하고 제출·대기·snapshot 실패를 process exit로 번역합니다.
 int main(int argc, char* argv[])
 {
     if (argc != 2)

@@ -89,7 +89,7 @@ Windows에서는 Modern C++ 과정은 진행할 수 있지만 전체 루트 검�
 8. [테스트·디버깅·도구](01-modern-cpp/08-testing-debugging-and-tooling.md)
 9. [로컬 작업 실행기 capstone](01-modern-cpp/09-application-capstone.md)
 
-각 문서를 읽은 직후 연결된 실습을 수행합니다. reference를 먼저 읽지 않고 skeleton을 구현한 뒤 비교합니다.
+문서를 1번부터 끝까지 읽은 뒤 실습을 몰아서 시작하지 않습니다. 다만 문서 번호와 실습 번호가 1:1인 것도 아닙니다. 실제 순서는 아래 대응표처럼 01–02 뒤 첫 실습, 03 뒤 둘째 실습, 06 뒤 셋째 실습을 수행하고, 04–05에서 설계한 capstone은 07–09까지 읽은 뒤 구현합니다. 정본 skeleton을 직접 바꾸지 않고 `make workspace TRACK=modern`으로 만든 `.workspace/01-modern-cpp`에서 작업하며, reference source는 학습자 검증을 통과한 뒤 비교합니다.
 
 ### 42 C++98 객체·STL 과정을 진행하는 경우
 
@@ -105,16 +105,17 @@ C++98 트랙 전체를 따릅니다. 증분 parser, route 결정, static file, C
 
 ## 문서와 실습 대응
 
-| Modern C++ 문서 | 주 실습 | 확인할 계약 |
-|---|---|---|
-| 프로그램·빌드·CMake | `01-strong-types-and-cmake` | target, compile feature, 공개 include 경계 |
-| 값·수명·이동 | `01-strong-types-and-cmake`, `02-unique-file` | 값 타입, 명시적 변환, moved-from 상태 |
-| RAII·smart pointer | `02-unique-file` | 단일 소유권, 이동 대입, 반복 가능한 정리 |
-| 클래스·책임·다형성 | `04-local-job-runner` | 상태 변경 주체, composition, 수명 소유자 |
-| 오류 모델 | `04-local-job-runner` | 예상 가능한 거부와 예외 경계 분리 |
-| algorithms·ranges·concepts | `03-query-pipeline` | 비소유 view, 결정적 정렬, 제약된 템플릿 |
-| 동시성·시간·filesystem | `04-local-job-runner` | bounded queue, stop token, deadline, journal |
-| 테스트·도구 | 모든 실습 | reference 통과, skeleton 초기 실패, sanitizer |
+| 순서 | 문서 | 관찰 예제 | 직접 수행 | 수정 위치 | 검증 | 완료 뒤 비교·다음 |
+|---|---|---|---|---|---|---|
+| M1 | 01 프로그램·빌드·CMake | — | workspace와 첫 실습의 target·공개 헤더 경계 확인 | `.workspace/01-modern-cpp/01-strong-types-and-cmake/` | `make modern-start-state` | M2에서 값 계약 뒤 구현 |
+| M2 | 02 값·수명·이동 | — | `01-strong-types-and-cmake` | `.workspace/01-modern-cpp/01-strong-types-and-cmake/skeleton/` | `make modern-exercise-test MODERN_EXERCISE=01-strong-types-and-cmake` | 해당 `reference/` → M3 |
+| M3 | 03 RAII·smart pointer | — | `02-unique-file` | `.workspace/01-modern-cpp/02-unique-file/skeleton/` | `make modern-exercise-test MODERN_EXERCISE=02-unique-file` | 해당 `reference/` → M4 |
+| M4 | 04 클래스·책임 | — | capstone 상태 소유자·책임 경계 설계 | 학습 메모 | 문서 checklist | M5 |
+| M5 | 05 오류 모델 | — | capstone 거부·예외·terminal 상태 설계 | 학습 메모 | 문서 checklist | M6 |
+| M6 | 06 algorithms·ranges·concepts | — | `03-query-pipeline` | `.workspace/01-modern-cpp/03-query-pipeline/skeleton/` | `make modern-exercise-test MODERN_EXERCISE=03-query-pipeline` | 해당 `reference/` → M7 |
+| M7 | 07 동시성·시간·filesystem | — | capstone queue·취소·journal 수명 설계 | 학습 메모 | 문서 checklist | M8 |
+| M8 | 08 테스트·도구 | — | capstone deterministic test·실패 근거 설계 | 학습 메모 | 문서 checklist | M9 |
+| M9 | 09 capstone | 완료 뒤 application driver | `04-local-job-runner` spec 01–04 | `.workspace/01-modern-cpp/04-local-job-runner/skeleton/` | `make modern-exercise-test MODERN_EXERCISE=04-local-job-runner` | 해당 `reference/` → Modern C++ 종료 |
 
 실습 루트는 [`exercises/01-modern-cpp`](../exercises/01-modern-cpp/README.md)입니다.
 
@@ -154,15 +155,19 @@ VERIFY_SANITIZERS=required VERIFY_TSAN=required VERIFY_STRICT=1 ./verify.sh
 수정 중인 영역만 빠르게 확인할 때는 다음 개별 target을 사용합니다.
 
 ```sh
+make workspace TRACK=modern
+make workspace TRACK=cpp98
 make modern-skeleton-build
 make modern-test
+make modern-exercise-test MODERN_EXERCISE=01-strong-types-and-cmake
+make cpp98-exercise-test CPP98_EXERCISE=object-model/command-service/01-procedural
 make modern-release
 make modern-sanitize
 make modern-thread-sanitize
 make cpp98-verify
 ```
 
-개별 target은 개발 피드백용이며 최종 완료 판정은 `./verify.sh`를 기준으로 합니다.
+`make modern-start-state`와 루트 검증은 배포된 canonical skeleton의 초기 실패를 검사합니다. `make modern-test`는 reference-only 검사입니다. `.workspace`의 학습자 구현은 `modern-exercise-test` 또는 `cpp98-exercise-test`로 검사합니다. 개별 target은 개발 피드백용이며 최종 저장소 완료 판정은 `./verify.sh`를 기준으로 합니다.
 
 skeleton 테스트 실행 파일은 의도적으로 실패합니다. 출발점이 이미 정답이면 학습자가 구현할 계약이 없기 때문입니다. 반면 skeleton 자체는 컴파일되어야 하고, 실패는 exit code `1`과 공통 test failure 요약으로 끝나야 합니다. crash, timeout, loader 오류 또는 sanitizer abort를 올바른 출발점으로 인정하지 않습니다.
 

@@ -2,6 +2,7 @@
 
 #include <sstream>
 
+// [Implementation 5] 구조화된 Response를 외부 protocol 문자열로 바꾸는 책임을 상태 규칙과 분리합니다.
 std::string ResponseFormatter::format(const Response &response) const
 {
     std::ostringstream output;

@@ -13,6 +13,7 @@
 #include <sys/time.h>
 #include <unistd.h>
 
+// [Implementation 2-2] BSD adapter가 fd별 filter 상태를 소유하고 read/write kevent를 하나의 PollEvent로 병합합니다.
 class KqueuePoller : public Poller
 {
 public:

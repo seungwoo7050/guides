@@ -8,7 +8,9 @@ it must also clean generated artifacts without touching source files.
 from __future__ import annotations
 
 import importlib.util
+import json
 import os
+import shutil
 import socket
 import subprocess
 import sys
@@ -16,10 +18,13 @@ import tempfile
 import time
 from pathlib import Path
 
+import validate_annotations
+
 ROOT = Path(__file__).resolve().parents[1]
 SKELETON_VERIFIER = ROOT / "scripts/verify_modern_skeletons.py"
 ARTIFACT_MANAGER = ROOT / "scripts/manage_artifacts.py"
 TIMEOUT_RUNNER = ROOT / "scripts/run_with_timeout.py"
+NEW_WORKSPACE = ROOT / "scripts/new_workspace.py"
 NETWORK_TEST_MODULES = [
     ROOT / "exercises/02-cpp98-systems/networking/line-server/tests.py",
     ROOT / "exercises/02-cpp98-systems/networking/http-server/03-nonblocking-server/tests.py",
@@ -126,9 +131,19 @@ def test_artifact_manager(temp: Path) -> None:
     native.write_bytes(b"\x7fELF" + b"\0" * 32)
     native.chmod(0o755)
 
+    learner = repository / ".workspace/01-modern-cpp/skeleton/main.cpp"
+    learner.parent.mkdir(parents=True)
+    learner.write_text("int learner() { return 1; }\n", encoding="utf-8")
+    learner_build = repository / ".workspace/01-modern-cpp/build/result.o"
+    learner_build.parent.mkdir(parents=True)
+    learner_build.write_bytes(b"learner object")
+
     before = run_manager("snapshot", str(repository))
     if before.returncode != 0:
         raise AssertionError(before.stdout + before.stderr)
+    before_records = json.loads(before.stdout)
+    if any(str(record["path"]).startswith(".workspace/") for record in before_records):
+        raise AssertionError("artifact snapshot이 learner workspace를 포함했습니다")
 
     cleaned = run_manager("clean", str(repository))
     if cleaned.returncode != 0:
@@ -139,6 +154,10 @@ def test_artifact_manager(temp: Path) -> None:
 
     if source.read_text(encoding="utf-8") != "int main() { return 0; }\n":
         raise AssertionError("artifact cleanup이 source를 변경했습니다")
+    if learner.read_text(encoding="utf-8") != "int learner() { return 1; }\n":
+        raise AssertionError("artifact cleanup이 learner workspace를 변경했습니다")
+    if learner_build.read_bytes() != b"learner object":
+        raise AssertionError("artifact cleanup이 learner workspace build를 삭제했습니다")
     for generated in (
         repository / "build",
         repository / "make-out.txt",
@@ -151,6 +170,79 @@ def test_artifact_manager(temp: Path) -> None:
     after = run_manager("snapshot", str(repository))
     if after.returncode != 0 or before.stdout != after.stdout:
         raise AssertionError("생성 산출물 정리 전후 source snapshot이 달라졌습니다")
+
+
+def create_workspace_fixture(root: Path) -> Path:
+    scripts = root / "scripts"
+    scripts.mkdir(parents=True)
+    shutil.copy2(NEW_WORKSPACE, scripts / "new_workspace.py")
+    shutil.copy2(ARTIFACT_MANAGER, scripts / "manage_artifacts.py")
+
+    modern = root / "exercises/01-modern-cpp/skeleton"
+    cpp98 = root / "exercises/02-cpp98-systems/skeleton"
+    modern.mkdir(parents=True)
+    cpp98.mkdir(parents=True)
+    (modern / "main.cpp").write_text("int modern;\n", encoding="utf-8")
+    (cpp98 / "main.cpp").write_text("int cpp98;\n", encoding="utf-8")
+    return scripts / "new_workspace.py"
+
+
+def run_workspace_creator(script: Path, track: str) -> subprocess.CompletedProcess[str]:
+    return subprocess.run(
+        [sys.executable, str(script), track],
+        text=True,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        timeout=30,
+        check=False,
+    )
+
+
+def test_workspace_creator(temp: Path) -> None:
+    repository = temp / "basic"
+    script = create_workspace_fixture(repository)
+
+    created = run_workspace_creator(script, "modern")
+    if created.returncode != 0:
+        raise AssertionError(created.stdout + created.stderr)
+    destination = repository / ".workspace/01-modern-cpp"
+    if (destination / "skeleton/main.cpp").read_text(encoding="utf-8") != "int modern;\n":
+        raise AssertionError("workspace 기본 생성이 canonical source를 복사하지 못했습니다")
+
+    learner = destination / "learner-note.txt"
+    learner.write_text("preserve\n", encoding="utf-8")
+    repeated = run_workspace_creator(script, "modern")
+    if repeated.returncode != 2 or learner.read_text(encoding="utf-8") != "preserve\n":
+        raise AssertionError("workspace creator가 기존 destination을 보존하며 exit 2하지 않았습니다")
+
+    symlink_target = repository / "outside.cpp"
+    symlink_target.write_text("outside\n", encoding="utf-8")
+    source_link = repository / "exercises/02-cpp98-systems/skeleton/link.cpp"
+    source_link.symlink_to(symlink_target)
+    rejected = run_workspace_creator(script, "cpp98")
+    if rejected.returncode != 2 or (repository / ".workspace/02-cpp98-systems").exists():
+        raise AssertionError("workspace creator가 canonical source symlink를 거부하지 않았습니다")
+
+    concurrent_repository = temp / "concurrent"
+    concurrent_script = create_workspace_fixture(concurrent_repository)
+    processes = [
+        subprocess.Popen(
+            [sys.executable, str(concurrent_script), "modern"],
+            text=True,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+        )
+        for _ in range(2)
+    ]
+    results = []
+    for process in processes:
+        stdout, stderr = process.communicate(timeout=30)
+        results.append((process.returncode, stdout, stderr))
+    if sorted(result[0] for result in results) != [0, 2]:
+        raise AssertionError(f"동시 workspace 생성 결과가 0/2가 아닙니다: {results}")
+    concurrent_destination = concurrent_repository / ".workspace/01-modern-cpp"
+    if not (concurrent_destination / "skeleton/main.cpp").is_file():
+        raise AssertionError("동시 workspace 생성 뒤 완전한 destination이 없습니다")
 
 
 def process_exists(pid: int) -> bool:
@@ -279,13 +371,183 @@ def test_network_harnesses() -> None:
         second.close()
 
 
+def implementation_token(label: str) -> str:
+    # Construct tokens so this verifier source is not itself an annotation.
+    return "[" + "Implementation " + label + "]"
+
+
+def write_annotation_fixture(
+    root: Path,
+    source_labels: list[str],
+    index_labels: list[str] | None = None,
+) -> tuple[validate_annotations.ScopeSpec, Path, Path]:
+    source = root / "exercise/reference/main.cpp"
+    readme = root / "exercise/README.md"
+    source.parent.mkdir(parents=True)
+    readme.parent.mkdir(parents=True, exist_ok=True)
+    source.write_text(
+        "".join(f"// {implementation_token(label)} contract\n" for label in source_labels),
+        encoding="utf-8",
+    )
+    rows = source_labels if index_labels is None else index_labels
+    readme.write_text(
+        "# Exercise\n\n"
+        "<!-- implementation-scope: synthetic -->\n"
+        "권장 구현 순서입니다.\n\n"
+        "| 번호 | anchor | 책임 |\n"
+        "|---|---|---|\n"
+        + "".join(
+            f"| `{label}` | `reference/main.cpp` | contract |\n" for label in rows
+        )
+        + "<!-- /implementation-scope -->\n",
+        encoding="utf-8",
+    )
+    scope = validate_annotations.ScopeSpec(
+        "synthetic",
+        "exercise/README.md",
+        ("exercise/reference/main.cpp",),
+        (),
+    )
+    return scope, source, readme
+
+
+def assert_validation_error(errors: list[str], expected: str) -> None:
+    if not any(expected in error for error in errors):
+        raise AssertionError(f"검증기가 {expected!r} 결함을 거부하지 못했습니다: {errors}")
+
+
+def test_annotation_validator(temp: Path) -> None:
+    valid = temp / "valid"
+    scope, _, _ = write_annotation_fixture(valid, ["1", "2", "2-1", "2-2", "3"])
+    errors = validate_annotations.validate_annotation_contracts(valid, (scope,))
+    if errors:
+        raise AssertionError(f"유효한 annotation fixture가 거부되었습니다: {errors}")
+
+    duplicate = temp / "duplicate"
+    scope, _, _ = write_annotation_fixture(duplicate, ["1", "1"], ["1"])
+    assert_validation_error(
+        validate_annotations.validate_annotation_contracts(duplicate, (scope,)),
+        "marker 중복",
+    )
+
+    gap = temp / "gap"
+    scope, _, _ = write_annotation_fixture(gap, ["1", "3"])
+    assert_validation_error(
+        validate_annotations.validate_annotation_contracts(gap, (scope,)),
+        "1부터 연속적이지 않음",
+    )
+
+    parentless = temp / "parentless"
+    scope, _, _ = write_annotation_fixture(parentless, ["1", "2-1"])
+    assert_validation_error(
+        validate_annotations.validate_annotation_contracts(parentless, (scope,)),
+        "parent marker 없는 substep",
+    )
+
+    forbidden = temp / "forbidden"
+    scope, _, _ = write_annotation_fixture(forbidden, ["1"])
+    skeleton = forbidden / "exercise/skeleton/main.cpp"
+    skeleton.parent.mkdir(parents=True)
+    skeleton.write_text(f"// {implementation_token('2')} forbidden\n", encoding="utf-8")
+    assert_validation_error(
+        validate_annotations.validate_annotation_contracts(forbidden, (scope,)),
+        "금지 경계",
+    )
+
+    mismatch = temp / "mismatch"
+    scope, _, _ = write_annotation_fixture(mismatch, ["1", "2"], ["1", "3"])
+    assert_validation_error(
+        validate_annotations.validate_annotation_contracts(mismatch, (scope,)),
+        "source/README implementation index 불일치",
+    )
+
+    malformed = temp / "malformed"
+    scope, source, _ = write_annotation_fixture(malformed, ["1"])
+    source.write_text(
+        source.read_text(encoding="utf-8") + "// " + implementation_token("01") + " malformed\n",
+        encoding="utf-8",
+    )
+    assert_validation_error(
+        validate_annotations.validate_annotation_contracts(malformed, (scope,)),
+        "malformed implementation marker",
+    )
+
+
+def learning_map_block(map_id: str) -> str:
+    rows = "".join(
+        f"| {number} <!-- learning-row: {map_id}-{number:02d} --> "
+        "| doc | example | exercise | path | verify | next |\n"
+        for number in range(1, 10)
+    )
+    return (
+        f"<!-- learning-map: {map_id} -->\n"
+        "| 순서 | 문서 | 관찰 예제 | 직접 수행 | 수정 위치 | 검증 | 완료 뒤 비교·다음 |\n"
+        "|---|---|---|---|---|---|---|\n"
+        f"{rows}"
+        "<!-- /learning-map -->\n"
+    )
+
+
+def test_learning_map_and_shell_cd_validators(temp: Path) -> None:
+    repository = temp / "repository"
+    existing = repository / "exercises/example"
+    existing.mkdir(parents=True)
+    readme = repository / "README.md"
+    readme.write_text(
+        "# Guide\n\n"
+        + learning_map_block("modern")
+        + "\n"
+        + learning_map_block("cpp98")
+        + (
+            "\n```sh\n"
+            "cd exercises/example\n"
+            "command --flag \\\n"
+            "  value\n"
+            "command --another-flag \\\n"
+            "  cd missing/path\n"
+            "```\n"
+        ),
+        encoding="utf-8",
+    )
+    learning_errors = validate_annotations.validate_learning_maps(repository)
+    shell_errors = validate_annotations.validate_fenced_shell_cd(repository)
+    if learning_errors or shell_errors:
+        raise AssertionError(
+            f"유효한 learning map/shell fixture가 거부되었습니다: "
+            f"{learning_errors + shell_errors}"
+        )
+
+    readme.write_text(
+        readme.read_text(encoding="utf-8").replace(
+            "| 9 <!-- learning-row: modern-09 --> | doc | example | exercise | path | verify | next |\n",
+            "",
+        ),
+        encoding="utf-8",
+    )
+    assert_validation_error(
+        validate_annotations.validate_learning_maps(repository),
+        "row coverage 불일치",
+    )
+
+    bad_cd = repository / "docs/bad.md"
+    bad_cd.parent.mkdir(parents=True)
+    bad_cd.write_text("# Bad\n\n```sh\ncd missing/path\n```\n", encoding="utf-8")
+    assert_validation_error(
+        validate_annotations.validate_fenced_shell_cd(repository),
+        "cd target이 없음",
+    )
+
+
 def main() -> int:
     with tempfile.TemporaryDirectory(prefix="guide-cpp-verifier-selftest-") as directory:
         temp = Path(directory)
         test_skeleton_verifier(temp / "skeleton")
         test_artifact_manager(temp / "artifacts")
+        test_workspace_creator(temp / "workspace")
         test_timeout_runner(temp / "runner")
         test_network_harnesses()
+        test_annotation_validator(temp / "annotations")
+        test_learning_map_and_shell_cd_validators(temp / "documentation")
     print("검증기 메타 검사: PASS")
     return 0
 

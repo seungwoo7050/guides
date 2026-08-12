@@ -3,6 +3,7 @@
 #include <stdexcept>
 #include <utility>
 
+// [Implementation 3] Router가 handler 소유권을 넘겨받고 중복·할당 실패 시 부분 등록을 전부 되돌립니다.
 Router::Router()
     : handlers_()
 {

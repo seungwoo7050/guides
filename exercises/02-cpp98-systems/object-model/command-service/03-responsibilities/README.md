@@ -25,3 +25,18 @@ make interface-check
 ## 확인할 동작
 
 각 클래스의 변경 이유를 한 문장으로 설명할 수 있고, 저장 규칙은 `KeyValueStore`, 문법은 파서, 외부 문자열은 포매터가 책임집니다.
+
+## 권장 구현 순서
+
+<!-- implementation-scope: cpp98-command-03 -->
+아래 번호는 실제 과거 작성 순서가 아니라 권장 구현 순서입니다.
+
+| 번호 | anchor | 책임 |
+|---|---|---|
+| `1` | `reference/Request.hpp` | 책임 사이에서 전달할 Request·Response message 경계를 정의합니다. |
+| `2` | `reference/KeyValueStore.cpp` | capacity와 key-value 상태의 owner를 고정합니다. |
+| `3` | `reference/RequestParser.cpp` | 외부 문자열 문법을 구조화된 Request로 변환합니다. |
+| `4` | `reference/CommandService.cpp` | domain 결정을 수행하고 상태 변경을 store에 위임합니다. |
+| `5` | `reference/ResponseFormatter.cpp` | 구조화된 Response를 외부 protocol 문자열로 변환합니다. |
+| `6` | `reference/main.cpp` | parser·service·formatter를 I/O 경계에 조립합니다. |
+<!-- /implementation-scope -->

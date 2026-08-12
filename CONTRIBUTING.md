@@ -55,6 +55,16 @@ Modern C++ 문서는 최소한 다음 절을 가집니다.
 
 운영체제 수준 도구는 자동 설치하지 않습니다. compiler, Make, CMake 또는 Python이 없다면 출력된 설치 예시를 검토한 뒤 사용자가 설치합니다.
 
+학습 구현은 추적된 `skeleton/`을 직접 바꾸지 않고 덮어쓰지 않는 전용 workspace에서 진행합니다.
+
+```sh
+make workspace TRACK=modern
+# 또는
+make workspace TRACK=cpp98
+```
+
+생성 경로는 각각 `.workspace/01-modern-cpp`, `.workspace/02-cpp98-systems`입니다. 이미 경로가 있으면 스크립트는 종료 코드 `2`로 중단하고 아무 파일도 덮어쓰지 않습니다. 완성 후에만 같은 실습의 `reference/`를 열어 설계 차이를 비교합니다.
+
 ## 변경 확인
 
 수정 중에는 필요한 target만 사용할 수 있습니다.
@@ -67,6 +77,13 @@ make modern-release
 make modern-sanitize
 make modern-thread-sanitize
 make cpp98-verify
+```
+
+위 명령은 canonical reference와 배포 skeleton의 출발 상태를 검사합니다. 학습자가 workspace에서 완성한 구현은 다음 전용 target으로 검사합니다.
+
+```sh
+make modern-exercise-test MODERN_EXERCISE=01-strong-types-and-cmake
+make cpp98-exercise-test CPP98_EXERCISE=object-model/command-service/01-procedural
 ```
 
 최종 확인은 저장소 루트의 정본 진입점 하나로 수행합니다.

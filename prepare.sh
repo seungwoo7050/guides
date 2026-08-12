@@ -230,7 +230,9 @@ chmod +x \
     prepare.sh \
     verify.sh \
     scripts/manage_artifacts.py \
+    scripts/new_workspace.py \
     scripts/run_with_timeout.py \
+    scripts/validate_annotations.py \
     scripts/validate_docs.py \
     scripts/verify_modern_skeletons.py \
     scripts/selftest_verifiers.py

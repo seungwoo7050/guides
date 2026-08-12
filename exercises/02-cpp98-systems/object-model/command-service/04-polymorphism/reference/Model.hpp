@@ -6,6 +6,7 @@
 #include <string>
 #include <vector>
 
+// [Implementation 1] 명령과 인자를 Request로 만들고 Store를 handler들이 공유하는 상태 owner로 둡니다.
 struct Request
 {
     std::string command;

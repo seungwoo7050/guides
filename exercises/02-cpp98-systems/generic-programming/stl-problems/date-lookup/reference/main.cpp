@@ -8,6 +8,7 @@
 #include <string>
 #include <utility>
 
+// [Implementation 1] Date가 달력 유효성을 생성 시 확립하고 정렬 가능한 canonical YYYY-MM-DD 표현을 소유합니다.
 class Date
 {
 public:
@@ -73,6 +74,7 @@ private:
     }
 };
 
+// [Implementation 2] 경계 공백을 제거한 뒤 문자열 전체가 유한한 수인지 확인하는 입력 정규화 계층을 만듭니다.
 static std::string trim(const std::string &text)
 {
     const std::size_t first = text.find_first_not_of(" \t");
@@ -97,6 +99,7 @@ static double parseFiniteNumber(const std::string &text)
     return value;
 }
 
+// [Implementation 3] RateBook은 CSV 전체를 candidate map으로 검증한 뒤 swap하여 실패한 load가 기존 상태를 바꾸지 않게 합니다.
 class RateBook
 {
 public:
@@ -138,6 +141,7 @@ public:
         rates_.swap(candidate);
     }
 
+    // [Implementation 4] upper_bound의 직전 원소를 선택하고 가장 이른 날짜보다 앞선 조회는 명시적으로 거부합니다.
     double atOrBefore(const Date &date) const
     {
         std::map<Date, double>::const_iterator found
@@ -152,6 +156,7 @@ private:
     std::map<Date, double> rates_;
 };
 
+// [Implementation 5] 데이터 파일 실패는 process 경계에서, 개별 조회 실패는 다음 입력을 계속 받을 수 있는 결과로 번역합니다.
 int main(int argc, char **argv)
 {
     if (argc != 2)

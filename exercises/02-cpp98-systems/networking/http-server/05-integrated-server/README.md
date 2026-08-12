@@ -38,7 +38,35 @@ route POST /cgi cgi;
 ## 검사
 
 ```sh
-make check
+make workspace TRACK=cpp98
+make cpp98-exercise-test CPP98_EXERCISE=networking/http-server/05-integrated-server
 ```
 
-검사는 분할 요청, 파이프라이닝, 라우트 선택, CGI 본문 전달, 연결 종료를 실제 TCP 소켓으로 확인합니다. 느린 CGI, 출력 초과, 실행 파일 누락, 잘못된 설정과 요청 뒤에도 서버가 다음 요청을 받을 수 있는지 함께 검사합니다.
+완성 검사는 `.workspace/02-cpp98-systems/networking/http-server/05-integrated-server/skeleton/`을 build하고 분할 요청, 파이프라이닝, 라우트 선택, CGI 본문 전달, 연결 종료를 실제 TCP 소켓으로 확인합니다. 느린 CGI, 출력 초과, 실행 파일 누락, 잘못된 설정과 요청 뒤에도 서버가 다음 요청을 받을 수 있는지 함께 검사합니다.
+
+canonical 저장소의 `make start-state`는 배포 skeleton이 의도한 exit `78`로 종료하는지 확인하는 negative-fixture 검사입니다. learner 완성 판정과 다르며, `make check`는 canonical start-state·reference·failure 계약을 함께 검사합니다.
+
+## 권장 구현 순서
+
+<!-- implementation-scope: cpp98-http-05 -->
+아래 번호는 실제 과거 작성 순서가 아니라 권장 구현 순서입니다.
+
+| 번호 | anchor | 책임 |
+|---|---|---|
+| `1` | `reference/HttpParser.hpp` | 증분 HTTP parser의 독립 module 계약을 유지합니다. |
+| `1-1` | `reference/HttpParser.cpp` | protocol 검증 뒤 request를 commit하고 pipeline bytes를 보존합니다. |
+| `2` | `reference/Router.hpp` | 설정을 route key와 handler name lookup 계약으로 정의합니다. |
+| `2-1` | `reference/Router.cpp` | 설정 전체를 검증한 뒤 handler name을 resolve합니다. |
+| `3` | `reference/CgiRunner.hpp` | process exit·timeout·output limit을 구조화된 결과로 정의합니다. |
+| `3-1` | `reference/CgiRunner.cpp` | pipe fd와 child terminate·wait 수명을 관리합니다. |
+| `3-2` | `reference/CgiRunner.cpp` | pipe·process group을 만들고 child를 executable로 교체합니다. |
+| `3-3` | `reference/CgiRunner.cpp` | parent poll·deadline·output cap을 CgiResult로 commit합니다. |
+| `4` | `reference/main.cpp` | CLI·설정·listener startup 의존성을 검증합니다. |
+| `5` | `reference/main.cpp` | route·CGI outcome을 HTTP status와 wire 응답으로 변환합니다. |
+| `6` | `reference/main.cpp` | socket·parser·router/CGI와 response lifecycle의 owner를 만듭니다. |
+| `6-1` | `reference/main.cpp` | handler name을 health·echo·CGI 실행에 연결합니다. |
+| `6-2` | `reference/main.cpp` | parser completion을 dispatch·pipeline·keep-alive에 연결합니다. |
+| `6-3` | `reference/main.cpp` | partial send와 output 상한·close-after-write를 관리합니다. |
+| `7` | `reference/main.cpp` | shared 의존성을 가진 Connection 소유권 이전을 처리합니다. |
+| `8` | `reference/main.cpp` | startup, poll loop와 typed exit·shutdown 경계를 조립합니다. |
+<!-- /implementation-scope -->

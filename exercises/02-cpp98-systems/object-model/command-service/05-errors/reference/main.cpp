@@ -6,6 +6,7 @@
 #include <utility>
 #include <vector>
 
+// [Implementation 1] 문법 오류와 domain 충돌을 별도 예외 타입으로 나눠 외부 응답 경계를 준비합니다.
 class ParseError : public std::runtime_error
 {
 public:
@@ -30,6 +31,7 @@ struct Request
     std::vector<std::string> args;
 };
 
+// [Implementation 2] 파서는 명령별 arity와 지원 범위를 검사하고 유효한 Request만 반환합니다.
 static Request parse(const std::string &line)
 {
     Request request;
@@ -58,6 +60,7 @@ static Request parse(const std::string &line)
     return request;
 }
 
+// [Implementation 3] Store는 충돌을 검사한 뒤에만 새 값을 commit해 실패 시 기존 공개 상태를 보존합니다.
 class Store
 {
 public:
@@ -83,6 +86,7 @@ private:
     std::map<std::string, std::string> data_;
 };
 
+// [Implementation 4] 최상위 경계가 내부 오류 taxonomy를 안정된 protocol 응답으로 번역하고 진단 문자열 노출을 막습니다.
 int main()
 {
     Store store;

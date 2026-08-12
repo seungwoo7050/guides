@@ -18,17 +18,20 @@
 
 ## line-server로 이벤트 루프 확인
 
-`../exercises/02-cpp98-systems/networking/line-server`는 블로킹 단일 연결 서버에서 시작해, 플랫폼별 poller를 사용하는 논블로킹 참조 서버까지 제공합니다.
+[논블로킹 줄 단위 서버 실습](../../exercises/02-cpp98-systems/networking/line-server/README.md)은 블로킹 단일 연결 서버에서 시작해, 플랫폼별 poller를 사용하는 논블로킹 참조 서버까지 제공합니다.
 
 ```sh
-cd ../exercises/02-cpp98-systems/networking/line-server
+cd exercises/02-cpp98-systems/networking/line-server
 make observe
-make test
-make stress
-make leak-check
 ```
 
-테스트는 실제 TCP 연결을 열어 부분 프레임, 여러 프레임의 병합, 동시 클라이언트, 느린 수신자, `QUIT` 후 EOF와 SIGTERM 종료를 검증합니다. Linux에서는 epoll, macOS/BSD에서는 kqueue 구현이 선택됩니다.
+위 명령은 저장소 루트에서 시작합니다. `make observe`는 reference server를 source 미열람 상태에서 실행하는 선택적 black-box oracle입니다. workspace의 `skeleton/`을 구현한 뒤 다시 저장소 루트에서 검사합니다.
+
+```sh
+make cpp98-exercise-test CPP98_EXERCISE=networking/line-server
+```
+
+learner 검증 뒤에만 reference source와 비교합니다. canonical reference의 `stress`, `backpressure`, `leak-check`는 repository 검증에서 별도로 실행합니다. 테스트는 실제 TCP 연결을 열어 부분 프레임, 여러 프레임의 병합, 동시 클라이언트, 느린 수신자, `QUIT` 후 EOF와 SIGTERM 종료를 검증합니다. Linux에서는 epoll, macOS/BSD에서는 kqueue 구현이 선택됩니다.
 
 ---
 

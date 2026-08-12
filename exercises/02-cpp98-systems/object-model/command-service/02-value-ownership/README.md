@@ -25,3 +25,16 @@ make fail-copy
 ## 확인할 동작
 
 복사한 두 객체가 독립적이고, 자기 대입이 안전하며, 실패한 대입 뒤 대상 값과 살아 있는 객체 수가 그대로입니다.
+
+## 권장 구현 순서
+
+<!-- implementation-scope: cpp98-command-02 -->
+아래 번호는 실제 과거 작성 순서가 아니라 권장 구현 순서입니다.
+
+| 번호 | anchor | 책임 |
+|---|---|---|
+| `1` | `reference/TextBuffer.hpp` | heap 문자열의 표현과 Rule of Three 공개 계약을 정의합니다. |
+| `2` | `reference/TextBuffer.cpp` | 할당과 생성·소멸 경계에서 object와 memory 수명을 함께 관리합니다. |
+| `3` | `reference/TextBuffer.cpp` | copy-and-swap으로 자기 대입과 할당 실패에도 기존 값을 보존합니다. |
+| `4` | `reference/main.cpp` | TextBuffer의 값 소유권을 명령 service store에 통합합니다. |
+<!-- /implementation-scope -->

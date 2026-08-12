@@ -15,6 +15,7 @@
 
 namespace guide::query
 {
+// [Implementation 1] 원본 Job의 소유권은 caller에 남기고 조회 조건과 비소유 결과를 명시적인 값으로 모델링합니다.
 enum class Status
 {
     pending,
@@ -53,6 +54,7 @@ using JobReference = std::reference_wrapper<const Job>;
     std::span<const Job> jobs,
     const Query& query);
 
+// [Implementation 2] summarize가 JobReference를 실제로 순회하는 range에만 참여하도록 공개 template 계약을 좁힙니다.
 template <typename Range>
 concept JobReferenceRange =
     std::ranges::input_range<Range> &&

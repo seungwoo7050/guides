@@ -7,6 +7,7 @@
 #include <stdexcept>
 #include <vector>
 
+// [Implementation 1] 정렬 key와 원래 입력 위치를 함께 보존하는 record 및 stable 비교 계약을 정의합니다.
 struct Record
 {
     int value;
@@ -26,6 +27,7 @@ struct RecordLess
     }
 };
 
+// [Implementation 2] 각 argument 전체를 소비하고 음이 아닌 int 범위만 입력 모델로 받아들입니다.
 static int parseNonNegativeInteger(const char *text)
 {
     char *end = 0;
@@ -51,6 +53,7 @@ static void printValues(
     std::cout << '\n';
 }
 
+// [Implementation 3] 검증된 argument를 입력 순서를 가진 Record 목록으로 materialize합니다.
 int main(int argc, char **argv)
 {
     if (argc < 2)
@@ -72,6 +75,7 @@ int main(int argc, char **argv)
 
         printValues("정렬 전:", records);
 
+        // [Implementation 4] stable_sort의 결과와 측정 구간을 분리해 동일 key의 입력 순서 보존을 관찰합니다.
         const std::clock_t startedAt = std::clock();
         std::stable_sort(records.begin(), records.end(), RecordLess());
         const std::clock_t finishedAt = std::clock();

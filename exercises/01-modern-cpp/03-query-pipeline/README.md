@@ -35,7 +35,7 @@
 ## 검증
 
 ```sh
-make modern-test
+make modern-exercise-test MODERN_EXERCISE=03-query-pipeline
 ```
 
 ## 완료 기준
@@ -44,3 +44,16 @@ make modern-test
 - 원본 데이터는 수정되지 않습니다.
 - 비소유 결과의 수명 전제를 설명할 수 있습니다.
 - concept이 문법 장식이 아니라 공개 템플릿 계약을 좁힙니다.
+
+## 권장 구현 순서
+
+<!-- implementation-scope: modern-query-pipeline -->
+아래 번호는 실제 과거 작성 순서가 아니라 권장 구현 순서입니다.
+
+| 번호 | anchor | 책임 |
+|---|---|---|
+| `1` | `reference/include/query.hpp` | source-owned Job과 조회 조건·비소유 결과를 모델링합니다. |
+| `2` | `reference/include/query.hpp` | `summarize`의 range 참여 조건을 concept으로 제한합니다. |
+| `3` | `reference/src/query.cpp` | filter view를 원본 수명을 공유하는 참조 목록으로 만듭니다. |
+| `4` | `reference/src/query.cpp` | key와 ID tie-breaker로 결과 순서를 결정적으로 만듭니다. |
+<!-- /implementation-scope -->

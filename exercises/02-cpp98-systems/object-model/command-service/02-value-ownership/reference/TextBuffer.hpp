@@ -3,6 +3,7 @@
 
 #include <cstddef>
 
+// [Implementation 1] TextBuffer가 heap 문자열의 표현과 Rule of Three 공개 계약을 한 타입 안에 소유합니다.
 class TextBuffer
 {
 public:

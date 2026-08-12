@@ -5,6 +5,7 @@
 #include <map>
 #include <string>
 
+// [Implementation 1] 선행 parser 과제의 byte buffer, ready request와 sticky error 계약을 server module 경계로 가져옵니다.
 struct HttpRequest
 {
     std::string method;

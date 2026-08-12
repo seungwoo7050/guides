@@ -29,19 +29,10 @@
 저장소 루트에서 다음 명령을 사용합니다.
 
 ```sh
-make modern-skeleton-build
-make modern-test
+make modern-exercise-test MODERN_EXERCISE=01-strong-types-and-cmake
 ```
 
-개별적으로 확인하려면 다음과 같이 실행합니다.
-
-```sh
-cmake --preset debug -S exercises/01-modern-cpp
-cmake --build exercises/01-modern-cpp/build/debug --target strong_types_skeleton_tests
-./exercises/01-modern-cpp/build/debug/01-strong-types-and-cmake/strong_types_skeleton_tests
-```
-
-완성 전 skeleton 테스트가 실패하는 것은 정상입니다. 컴파일은 성공해야 하며, TODO를 모두 구현한 뒤 같은 테스트가 통과해야 합니다.
+명령은 `.workspace/01-modern-cpp/01-strong-types-and-cmake/skeleton/`을 build하고 완성 계약 test를 실행합니다. 처음에는 실패하며, TODO를 모두 구현한 뒤 같은 명령이 통과해야 합니다.
 
 ## 완료 기준
 
@@ -49,3 +40,17 @@ cmake --build exercises/01-modern-cpp/build/debug --target strong_types_skeleton
 - 빈 제목으로 유효하지 않은 `Task`가 생기지 않습니다.
 - `TaskId`의 명시적 변환 계약을 컴파일 시점에 확인합니다.
 - reference를 보지 않고 테스트를 통과한 뒤 구현 차이를 설명할 수 있습니다.
+
+## 권장 구현 순서
+
+<!-- implementation-scope: modern-strong-types -->
+아래 번호는 실제 과거 작성 순서가 아니라 권장 구현 순서입니다.
+
+| 번호 | anchor | 책임 |
+|---|---|---|
+| `1` | `CMakeLists.txt` | 동일한 공개 계약을 reference와 skeleton target에 연결합니다. |
+| `2` | `reference/include/task.hpp` | 원시 값 대신 강한 ID·우선순위·Task 모델을 정의합니다. |
+| `3` | `reference/src/task.cpp` | 입력 전체를 검증한 뒤 domain 값으로 변환합니다. |
+| `4` | `reference/src/task.cpp` | Task 생성 시 빈 제목을 거부합니다. |
+| `5` | `reference/src/task.cpp` | 유효한 Task를 안정된 외부 형식으로 직렬화합니다. |
+<!-- /implementation-scope -->

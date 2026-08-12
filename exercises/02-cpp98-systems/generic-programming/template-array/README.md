@@ -21,3 +21,17 @@ make compile-fail
 ## 확인할 동작
 
 복사한 배열이 독립적이고, 빈 배열의 범위가 안전하며, const 배열을 수정하거나 반복자가 아닌 값을 범위로 넘기는 코드가 컴파일되지 않습니다.
+
+## 권장 구현 순서
+
+<!-- implementation-scope: cpp98-template-array -->
+아래 번호는 실제 과거 작성 순서가 아니라 권장 구현 순서입니다.
+
+| 번호 | anchor | 책임 |
+|---|---|---|
+| `1` | `reference/Array.hpp` | 고정 길이 heap storage와 빈 배열의 유효 상태를 정의합니다. |
+| `2` | `reference/Array.hpp` | 깊은 복사 실패를 정리하고 copy-and-swap으로 기존 값을 보존합니다. |
+| `3` | `reference/Array.hpp` | mutable·const 접근과 반열린 iterator 범위를 제공합니다. |
+| `4` | `reference/Array.hpp` | iterator와 callable만 요구하는 generic apply를 구현합니다. |
+| `5` | `demo.cpp` | Array를 채우고 apply로 순회 결과를 관찰합니다. |
+<!-- /implementation-scope -->

@@ -39,6 +39,7 @@ void installSignalHandler(int signalNumber)
         throw std::runtime_error("sigaction");
 }
 
+// [Implementation 3] listener와 accepted socket에 nonblocking/CLOEXEC를 설정하고 생성 실패마다 fd를 회수합니다.
 void setSocketFlags(int fd)
 {
     const int statusFlags = ::fcntl(fd, F_GETFL, 0);
@@ -125,6 +126,7 @@ ssize_t sendWithoutSigpipe(
 #endif
 }
 
+// [Implementation 4] Connection이 client fd, input/output buffer, write offset와 close 상태를 함께 소유합니다.
 class Connection
 {
 public:
@@ -177,6 +179,7 @@ public:
         dead_ = true;
     }
 
+    // [Implementation 5] recv 조각을 line frame으로 누적하고 완성된 command만 connection state 전이로 처리합니다.
     void readReady()
     {
         char buffer[4096];
@@ -213,6 +216,7 @@ public:
         }
     }
 
+    // [Implementation 6] partial send offset과 pending-output 상한을 유지하고 flush 뒤 close lifecycle을 마칩니다.
     void writeReady()
     {
         while (writeOffset_ < output_.size())
@@ -326,6 +330,7 @@ private:
 
 typedef std::map<int, Connection *> ClientMap;
 
+// [Implementation 7] 새 fd를 poller와 client map에 모두 등록한 뒤에만 Connection 소유권을 넘기며 실패는 역순 정리합니다.
 void acceptAll(int listener, Poller &poller, ClientMap &clients)
 {
     for (;;)
@@ -401,6 +406,7 @@ void destroyClients(Poller *poller, ClientMap &clients)
 }
 }
 
+// [Implementation 8] event 결과로 connection interest를 갱신하고 closing set과 signal shutdown에서 모든 fd를 한 번씩 정리합니다.
 int main(int argc, char **argv)
 {
     if (argc != 2)

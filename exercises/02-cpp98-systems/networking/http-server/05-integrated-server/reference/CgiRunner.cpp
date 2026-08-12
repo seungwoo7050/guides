@@ -15,6 +15,7 @@ extern char **environ;
 
 namespace
 {
+// [Implementation 3-1] pipe fd와 child wait/terminate helper가 모든 실패 경로의 descriptor와 process 수명을 회수합니다.
 class ScopedFd
 {
 public:
@@ -115,6 +116,7 @@ void duplicateOrExit(int source, int target)
 }
 }
 
+// [Implementation 3-2] pipe와 process group을 만든 뒤 child stdio를 연결하고 CGI executable로 교체합니다.
 CgiResult CgiRunner::run(
     const std::string &executable,
     const std::string &input,
@@ -183,6 +185,7 @@ CgiResult CgiRunner::run(
         throw std::runtime_error("gettimeofday");
     }
 
+    // [Implementation 3-3] parent는 deadline 아래 duplex pipe를 poll하고 output cap과 child outcome을 하나의 CgiResult로 commit합니다.
     try
     {
         while (outputOpen || !childDone)

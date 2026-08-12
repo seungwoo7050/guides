@@ -5,6 +5,7 @@
 
 #include <string>
 
+// [Implementation 2] 가상 소멸자를 가진 Handler 계약 뒤에 명령별 교체 가능한 동작을 배치합니다.
 class Handler
 {
 public:

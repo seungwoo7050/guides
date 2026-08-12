@@ -3,6 +3,7 @@
 #include <iostream>
 #include <string>
 
+// [Implementation 6] 하나의 요청을 두 feed로 나눠 NeedMore에서 Complete로 바뀌는 증분 상태를 관찰합니다.
 int main()
 {
     HttpParser parser;

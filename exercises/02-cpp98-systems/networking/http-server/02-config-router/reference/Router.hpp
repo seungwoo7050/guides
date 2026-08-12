@@ -6,6 +6,7 @@
 #include <string>
 #include <vector>
 
+// [Implementation 1] transport와 독립된 Request·Response 및 교체 가능한 Handler dispatch 계약을 정의합니다.
 struct Request
 {
     std::string method;
@@ -41,6 +42,7 @@ public:
     virtual Response handle(const Request &request) const = 0;
 };
 
+// [Implementation 2] 원문 설정을 검증된 RouteSpec 목록으로 바꾸기 위한 오류와 configuration model을 둡니다.
 class ConfigError : public std::runtime_error
 {
 public:

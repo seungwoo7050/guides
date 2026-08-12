@@ -34,10 +34,9 @@ terminal 상태에서 다른 상태로 되돌아가면 안 됩니다. `cancel`�
 ## 검증
 
 ```sh
-make modern-skeleton-build
-make modern-test
-make modern-sanitize
-make modern-thread-sanitize
+make modern-exercise-test MODERN_EXERCISE=04-local-job-runner
+make modern-exercise-sanitize MODERN_EXERCISE=04-local-job-runner
+make modern-exercise-thread-sanitize MODERN_EXERCISE=04-local-job-runner
 ```
 
 reference 공개 API를 실제 실행 파일에서 확인할 수도 있습니다.
@@ -46,7 +45,7 @@ reference 공개 API를 실제 실행 파일에서 확인할 수도 있습니다
 cmake --build exercises/01-modern-cpp/build/debug \
   --target local_job_runner_reference_app
 ./exercises/01-modern-cpp/build/debug/04-local-job-runner/local_job_runner_reference_app \
-  /tmp/guide-cpp-jobs.tsv
+  "${TMPDIR:-/tmp}/guide-cpp-jobs-$$.tsv"
 ```
 
 skeleton을 완성한 뒤에는 `local_job_runner_skeleton_app`도 같은 입력으로 실행되어야 합니다.
@@ -73,3 +72,22 @@ skeleton을 완성한 뒤에는 `local_job_runner_skeleton_app`도 같은 입력
 - 외부 `stop()`은 worker 종료를 기다리며, callback 내부 호출은 self-join을 피하는 이유를 설명할 수 있습니다.
 - runtime journal 실패와 작업 상태 전이의 우선순위를 설명할 수 있습니다.
 - 상태 전이, 소유권, 잠금 범위와 journal 기록 순서를 그림으로 설명할 수 있습니다.
+
+## 권장 구현 순서
+
+<!-- implementation-scope: modern-local-job-runner -->
+아래 번호는 실제 과거 작성 순서가 아니라 권장 구현 순서입니다.
+
+| 번호 | anchor | 책임 |
+|---|---|---|
+| `1` | `reference/include/result.hpp` | 예상 가능한 성공과 실패를 하나의 값 계약으로 두었습니다. |
+| `2` | `reference/include/job_runner.hpp` | Job ID·상태·snapshot·callback 모델을 정의합니다. |
+| `3` | `reference/include/job_runner.hpp` | queue·record·cancellation·worker join 상태의 owner를 고정합니다. |
+| `4` | `reference/src/job_runner.cpp` | 유효한 capacity와 journal을 확인한 뒤 worker를 시작합니다. |
+| `5` | `reference/src/job_runner.cpp` | 제출 거부를 값으로 돌리고 삽입 실패를 rollback합니다. |
+| `6` | `reference/src/job_runner.cpp` | queued/running 취소와 wait·snapshot 관찰 계약을 연결합니다. |
+| `7` | `reference/src/job_runner.cpp` | worker만 실행 상태를 전이시키고 callback 예외를 격리합니다. |
+| `8` | `reference/src/job_runner.cpp` | journal 기록 실패를 sticky health 저하로 보존합니다. |
+| `9` | `reference/src/job_runner.cpp` | 제출을 닫고 취소를 전파한 뒤 self-join 없이 worker를 합류합니다. |
+| `10` | `app/main.cpp` | 공개 API를 process 입력·출력·종료 경계로 조립합니다. |
+<!-- /implementation-scope -->

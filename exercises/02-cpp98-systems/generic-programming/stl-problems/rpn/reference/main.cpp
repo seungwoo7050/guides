@@ -7,6 +7,7 @@
 #include <stdexcept>
 #include <string>
 
+// [Implementation 1] token 전체를 소비하고 int 범위 안에 있을 때만 피연산자 값으로 변환합니다.
 static int parseInteger(const std::string &text)
 {
     char *end = 0;
@@ -21,6 +22,7 @@ static int parseInteger(const std::string &text)
     return static_cast<int>(value);
 }
 
+// [Implementation 2] operand 순서를 보존하고 0 나눗셈과 산술 overflow를 stack 상태 변경 전에 거부합니다.
 static int apply(char operation, int left, int right)
 {
     long result = 0;
@@ -51,6 +53,7 @@ static bool isOperator(const std::string &token)
         && std::string("+-*/").find(token[0]) != std::string::npos;
 }
 
+// [Implementation 3] 입력 token을 순서대로 stack reduction하여 각 연산자가 정확히 두 값을 소비하게 합니다.
 int main(int argc, char **argv)
 {
     if (argc != 2)
@@ -83,6 +86,7 @@ int main(int argc, char **argv)
             values.push(apply(token[0], left, right));
         }
 
+        // [Implementation 4] 전체 수식 뒤 값 하나만 남는 invariant를 확인하고 모든 실패를 안정된 CLI 종료로 변환합니다.
         if (values.size() != 1)
             throw std::runtime_error("수식 계산을 마친 뒤 값이 하나만 남아야 합니다");
 

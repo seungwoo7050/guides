@@ -7,6 +7,7 @@
 
 namespace
 {
+// [Implementation 2] protocol 상한과 header token/value/body-length helper를 socket과 독립된 순수 검증 계층으로 둡니다.
 const std::size_t MaxHeaderBytes = 8192;
 const std::size_t MaxBodyBytes = 1024 * 1024;
 const std::size_t MaxHeaderCount = 100;
@@ -93,6 +94,7 @@ HttpParser::HttpParser()
 {
 }
 
+// [Implementation 3] ready/error 상태를 보존하면서 새 byte만 buffer에 추가하고 가능한 만큼 parsing을 진행합니다.
 HttpParser::Result HttpParser::feed(
     const char *data,
     std::size_t size)
@@ -110,6 +112,7 @@ HttpParser::Result HttpParser::feed(
     return parseAvailable();
 }
 
+// [Implementation 4] 요청 줄·header·body를 모두 검증한 뒤에만 request를 commit하고 pipeline 나머지는 buffer에 남깁니다.
 HttpParser::Result HttpParser::parseAvailable()
 {
     const std::size_t headerEnd = buffer_.find("\r\n\r\n");
@@ -223,6 +226,7 @@ HttpParser::Result HttpParser::fail(const std::string &message)
     return Error;
 }
 
+// [Implementation 5] 완성된 request의 소유 값을 반환하고 parser를 다음 pipeline message를 받을 상태로 되돌립니다.
 HttpRequest HttpParser::take()
 {
     if (!hasReady_)

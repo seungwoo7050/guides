@@ -18,17 +18,20 @@ container ── begin/end iterator 범위 ── algorithm
 
 ## 배열과 vector를 구현하며 확인
 
-`../exercises/02-cpp98-systems/generic-programming/template-array`에서 함수 템플릿, 반복자 범위와 `Array<T>`를 순서대로 구현합니다.
+[템플릿 배열과 반복자 실습](../../exercises/02-cpp98-systems/generic-programming/template-array/README.md)에서 함수 템플릿, 반복자 범위와 `Array<T>`를 순서대로 구현합니다.
 
 ```sh
-cd ../exercises/02-cpp98-systems/generic-programming/template-array
+cd exercises/02-cpp98-systems/generic-programming/template-array
 make observe
-make exercise-test
-make test
-make compile-fail
 ```
 
-`make compile-fail`은 반복자 요구를 만족하지 않는 타입과 const 경계를 의도적으로 넘깁니다. 컴파일 실패도 라이브러리 계약을 검증하는 테스트임을 확인합니다.
+위 명령은 저장소 루트에서 시작합니다. `make observe`는 좁은 `demo.cpp`를 reference API에 연결해 결과만 관찰하는 선택 실험입니다. workspace의 `skeleton/`을 구현한 뒤 다시 저장소 루트에서 검사합니다.
+
+```sh
+make cpp98-exercise-test CPP98_EXERCISE=generic-programming/template-array
+```
+
+reference source는 learner 검증을 통과한 뒤에만 비교합니다. canonical `compile-fail` 검사는 반복자 요구를 만족하지 않는 타입과 const 경계를 의도적으로 넘깁니다. 컴파일 실패도 라이브러리 계약을 검증하는 테스트임을 확인합니다.
 
 ---
 

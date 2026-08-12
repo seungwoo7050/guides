@@ -174,7 +174,7 @@ TSAN_OPTIONS=halt_on_error=1 ./verify.sh
 성공·실패·중단과 관계없이 build 디렉터리, object/archive, 실행 파일, Python cache와 임시 probe를 제거합니다. 기본 로그는 저장소 밖의 임시 경로에 보존됩니다.
 
 ```sh
-VERIFY_LOG=/tmp/guide-cpp.log ./verify.sh
+VERIFY_LOG="${TMPDIR:-/tmp}/guide-cpp-verify-$$.log" ./verify.sh
 ```
 
 ## 재현 가능한 환경 기록

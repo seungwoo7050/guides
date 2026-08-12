@@ -7,6 +7,7 @@
 int TextBuffer::allocationCountdown_ = -1;
 int TextBuffer::liveCount_ = 0;
 
+// [Implementation 2] 할당과 생성·소멸 경계를 모아 실패한 생성이 live object나 소유 memory를 남기지 않게 합니다.
 char *TextBuffer::allocate(std::size_t count)
 {
     if (allocationCountdown_ == 0)
@@ -44,6 +45,7 @@ TextBuffer::~TextBuffer()
     --liveCount_;
 }
 
+// [Implementation 3] 후보 복사를 먼저 완성한 뒤 swap하여 자기 대입과 할당 실패에도 기존 값을 보존합니다.
 TextBuffer &TextBuffer::operator=(const TextBuffer &other)
 {
     TextBuffer candidate(other);

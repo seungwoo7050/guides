@@ -9,6 +9,7 @@
 
 namespace guide::tasks
 {
+// [Implementation 2] 원시 값 대신 TaskId·Priority·Task가 유효 상태와 공개 변환 경계를 소유하게 합니다.
 class TaskId
 {
 public:

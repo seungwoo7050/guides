@@ -24,15 +24,20 @@
 
 ## mini-vector와 함께 내부 동작 확인
 
-`../exercises/02-cpp98-systems/generic-programming/mini-vector`는 할당자, 미초기화 저장 공간, 부분 생성 롤백과 예외를 던지지 않는 포인터 교환을 실제 코드로 확인합니다.
+[mini-vector 선택 심화 실습](../../exercises/02-cpp98-systems/generic-programming/mini-vector/README.md)은 할당자, 미초기화 저장 공간, 부분 생성 롤백과 예외를 던지지 않는 포인터 교환을 실제 코드로 확인합니다. 이 실습은 C++98 주 경로를 완료하는 데 필수인 단계가 아니라 저장 공간과 예외 안전성을 더 깊게 확인하려는 학습자를 위한 선택 단계입니다.
 
 ```sh
-cd ../exercises/02-cpp98-systems/generic-programming/mini-vector
+cd exercises/02-cpp98-systems/generic-programming/mini-vector
 make observe
-make exercise-test
-make test
-make fail-copy
 ```
+
+위 명령은 저장소 루트에서 시작합니다. `make observe`는 좁은 `demo.cpp`로 크기와 용량 변화를 관찰하는 선택 실험입니다. workspace의 `skeleton/`을 구현한 뒤 다시 저장소 루트에서 검사합니다.
+
+```sh
+make cpp98-exercise-test CPP98_EXERCISE=generic-programming/mini-vector
+```
+
+reference source는 learner 검증을 통과한 뒤에만 비교합니다. canonical `fail-copy` 검사는 repository 검증에서 별도로 실행합니다.
 
 ---
 

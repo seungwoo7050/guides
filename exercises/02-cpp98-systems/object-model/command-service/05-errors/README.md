@@ -25,3 +25,16 @@ make fail-commit
 ## 확인할 동작
 
 문법 오류와 충돌 오류가 다른 응답으로 변환되고, 실패한 갱신 뒤 기존 공개 상태가 보존됩니다.
+
+## 권장 구현 순서
+
+<!-- implementation-scope: cpp98-command-05 -->
+아래 번호는 실제 과거 작성 순서가 아니라 권장 구현 순서입니다.
+
+| 번호 | anchor | 책임 |
+|---|---|---|
+| `1` | `reference/main.cpp` | 문법 오류와 domain 충돌의 taxonomy를 분리합니다. |
+| `2` | `reference/main.cpp` | 명령별 arity와 지원 범위를 검증해 Request를 만듭니다. |
+| `3` | `reference/main.cpp` | 충돌 검증 뒤에만 값을 commit해 실패 시 상태를 보존합니다. |
+| `4` | `reference/main.cpp` | 내부 예외를 안정된 외부 protocol 응답으로 번역합니다. |
+<!-- /implementation-scope -->

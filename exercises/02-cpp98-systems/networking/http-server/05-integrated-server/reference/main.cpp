@@ -118,6 +118,7 @@ int actualPort(int fd)
     return ntohs(address.sin_port);
 }
 
+// [Implementation 4] CLI 값·설정 파일·listener를 검증해 event loop가 사용할 immutable startup 의존성을 준비합니다.
 long parseLong(
     const char *text,
     long minimum,
@@ -172,6 +173,7 @@ std::string lowercase(std::string text)
     return text;
 }
 
+// [Implementation 5] route와 CGI outcome을 status/body로 정규화한 뒤 wire-level HTTP 응답으로 직렬화합니다.
 std::string reasonPhrase(int status)
 {
     switch (status)
@@ -274,6 +276,7 @@ DispatchResult parseCgiOutput(const CgiResult &cgi)
     return DispatchResult(status, cgi.output.substr(separator + 4));
 }
 
+// [Implementation 6] Connection이 socket, parser, router/CGI 의존성과 pending response lifecycle을 함께 소유합니다.
 class Connection
 {
 public:
@@ -367,6 +370,7 @@ public:
         }
     }
 
+    // [Implementation 6-3] partial send offset과 output 상한을 관리해 readiness와 close-after-write를 결정합니다.
     void writeReady()
     {
         while (writeOffset_ < output_.size())
@@ -438,6 +442,7 @@ private:
         return true;
     }
 
+    // [Implementation 6-1] Router가 고른 handler name을 health·echo·CGI 실행으로 연결하고 모든 결과를 HTTP domain 값으로 만듭니다.
     DispatchResult dispatch(const HttpRequest &request)
     {
         std::string handler;
@@ -458,6 +463,7 @@ private:
         return DispatchResult(500, "라우터 상태가 올바르지 않습니다\n");
     }
 
+    // [Implementation 6-2] parser completion을 dispatch·serialization으로 이어 pipeline과 keep-alive 또는 오류 종료를 결정합니다.
     void processParserResult(HttpParser::Result result)
     {
         while (result == HttpParser::Complete && !dead_)
@@ -494,6 +500,7 @@ private:
 
 typedef std::map<int, Connection *> ConnectionMap;
 
+// [Implementation 7] shared router/CGI 설정을 가진 Connection을 완성한 뒤 map으로 fd 소유권을 넘기고 실패는 회수합니다.
 void acceptAll(
     int listener,
     ConnectionMap &connections,
@@ -551,6 +558,7 @@ void destroyConnections(ConnectionMap &connections)
 }
 }
 
+// [Implementation 8] startup 의존성을 조립하고 poll loop와 typed error boundary에서 connection, listener와 exit code를 정리합니다.
 int main(int argc, char **argv)
 {
     if (argc != 5)

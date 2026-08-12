@@ -14,6 +14,7 @@ bool has_tag(const Job& job, std::string_view required)
 }
 } // namespace
 
+// [Implementation 3] 독립 필터를 조합한 view를 원본 수명을 공유하는 참조 목록으로 materialize합니다.
 std::vector<JobReference> select_jobs(std::span<const Job> jobs, const Query& query)
 {
     auto filtered = jobs | std::views::filter([&query](const Job& job) {
@@ -31,6 +32,7 @@ std::vector<JobReference> select_jobs(std::span<const Job> jobs, const Query& qu
     for (const Job& job : filtered)
         result.emplace_back(std::cref(job));
 
+    // [Implementation 4] 선택한 key 뒤에 ID tie-breaker를 두어 방향과 무관하게 결과 순서를 결정적으로 만듭니다.
     const auto ascending = [&query](JobReference left, JobReference right) {
         const Job& lhs = left.get();
         const Job& rhs = right.get();

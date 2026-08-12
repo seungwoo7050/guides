@@ -18,16 +18,20 @@ header의 선언 ─┐
 
 ## 명령줄 도구로 타입 모델 확인
 
-이 문서의 실행 단위는 `../exercises/02-cpp98-systems/object-model/command-service/01-procedural`입니다.
+이 문서의 실행 단위는 [절차적 명령 처리기](../../exercises/02-cpp98-systems/object-model/command-service/01-procedural/README.md)입니다.
 
 ```sh
-cd ../exercises/02-cpp98-systems/object-model/command-service/01-procedural
-make observe       # 완성 예제의 입출력을 확인합니다.
-make exercise-test # skeleton의 TODO를 검증합니다.
-make test          # reference를 자동 검증합니다.
+cd exercises/02-cpp98-systems/object-model/command-service/01-procedural
+make observe       # 선택: source를 열지 않고 입출력만 관찰합니다.
 ```
 
-먼저 출력과 오류를 예상한 뒤 `make observe`를 실행합니다. 그다음 `skeleton/main.cpp`의 TODO만 채웁니다. 실패 실험에서는 입력 종료 검사를 제거하거나 멤버 함수 포인터 호출식을 일반 함수 포인터처럼 바꾸고, 컴파일러와 실행 결과가 어느 경계에서 문제를 드러내는지 기록합니다.
+위 명령은 저장소 루트에서 시작합니다. `make observe`는 선택적인 black-box oracle입니다. 먼저 출력과 오류를 예상하고, `reference/` source는 열지 않은 채 실행 결과만 관찰합니다. [트랙 roadmap](00-roadmap.md)에 따라 만든 workspace의 `skeleton/main.cpp` TODO를 채운 뒤, 다시 저장소 루트에서 검사합니다.
+
+```sh
+make cpp98-exercise-test CPP98_EXERCISE=object-model/command-service/01-procedural
+```
+
+learner 검증을 통과한 뒤에만 reference source와 비교합니다. 실패 실험에서는 입력 종료 검사를 제거하거나 멤버 함수 포인터 호출식을 일반 함수 포인터처럼 바꾸고, 컴파일러와 실행 결과가 어느 경계에서 문제를 드러내는지 기록합니다.
 
 ---
 
@@ -391,7 +395,7 @@ QUIT
 
 ### 진행 순서
 
-1. 완성된 한 파일 예제를 실행합니다.
+1. 먼저 결과를 예상하고 완성된 한 파일 프로그램을 black-box로 실행합니다.
 2. 입력 분리 함수만 가리고 다시 작성합니다.
 3. `main.cpp`, `Parser.cpp`, `Store.cpp`로 나눕니다.
 4. 새 명령 `COUNT`를 추가합니다.

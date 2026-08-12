@@ -5,6 +5,7 @@
 #include <map>
 #include <string>
 
+// [Implementation 1] 선행 단계의 증분 parser 계약을 통합 server의 독립 protocol module로 유지합니다.
 struct HttpRequest
 {
     std::string method;

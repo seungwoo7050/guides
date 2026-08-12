@@ -302,7 +302,7 @@ make modern-test
 cmake --build exercises/01-modern-cpp/build/debug \
   --target local_job_runner_reference_app
 ./exercises/01-modern-cpp/build/debug/04-local-job-runner/local_job_runner_reference_app \
-  /tmp/guide-cpp-jobs.tsv
+  "${TMPDIR:-/tmp}/guide-cpp-jobs-$$.tsv"
 ```
 
 CTest는 API 계약 테스트와 CLI smoke test를 함께 실행합니다.

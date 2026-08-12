@@ -23,3 +23,14 @@ make test          # reference 구현을 검증합니다.
 ## 확인할 동작
 
 `PUT`, `GET`, `DELETE`, `COUNT`, `LIST`, `QUIT`의 출력이 테스트와 일치하고, 잘못된 명령과 인자 수를 명시적으로 거부합니다.
+
+## 권장 구현 순서
+
+<!-- implementation-scope: cpp98-command-01 -->
+아래 번호는 실제 과거 작성 순서가 아니라 권장 구현 순서입니다.
+
+| 번호 | anchor | 책임 |
+|---|---|---|
+| `1` | `reference/main.cpp` | 입력 줄을 명령과 인자로 분리합니다. |
+| `2` | `reference/main.cpp` | store 상태와 명령별 arity·출력 계약을 한 실행 흐름으로 연결합니다. |
+<!-- /implementation-scope -->

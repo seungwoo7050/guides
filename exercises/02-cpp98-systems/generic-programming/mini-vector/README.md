@@ -25,3 +25,18 @@ make fail-copy
 ## 확인할 동작
 
 재할당과 추가 복사 실패 뒤 원본 크기·값·살아 있는 인스턴스 수가 보존됩니다.
+
+## 권장 구현 순서
+
+<!-- implementation-scope: cpp98-mini-vector -->
+아래 번호는 실제 과거 작성 순서가 아니라 권장 구현 순서입니다.
+
+| 번호 | anchor | 책임 |
+|---|---|---|
+| `1` | `reference/MiniVector.hpp` | allocator storage와 size·capacity 불변식을 정의합니다. |
+| `2` | `reference/MiniVector.hpp` | constructed 원소와 raw storage의 복사·소멸 수명을 관리합니다. |
+| `3` | `reference/MiniVector.hpp` | checked access와 반열린 iterator 범위를 제공합니다. |
+| `4` | `reference/MiniVector.hpp` | candidate storage를 완성한 뒤 reserve를 commit합니다. |
+| `5` | `reference/MiniVector.hpp` | self-alias와 복사 실패에 안전한 push_back transaction을 구현합니다. |
+| `6` | `demo.cpp` | 연속 삽입에서 size와 capacity 전이를 관찰합니다. |
+<!-- /implementation-scope -->
