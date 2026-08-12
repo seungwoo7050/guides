@@ -11,7 +11,7 @@ import subprocess
 import sys
 import tempfile
 from pathlib import Path
-from typing import Any, Iterable
+from typing import Any, Callable, Iterable
 from urllib.parse import unquote
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -73,6 +73,39 @@ CAPSTONE_REQUIRED_ARTIFACTS = {
     "performance-and-release.md",
     "traceability-matrix.csv",
     "change-plan.md",
+}
+
+CAPSTONE_OPTIONAL_ARTIFACTS = {"ai-and-navigation.md"}
+
+LEARNING_MAP_DOCS = [
+    "docs/00-roadmap.md",
+    *CONCEPT_DOCS,
+    "docs/17-capstone.md",
+    "docs/90-engine-and-source-map.md",
+]
+
+LEARNING_MAP_EXERCISES = [f"exercises/{slug}/README.md" for slug in EXERCISES]
+
+IMPLEMENTATION_MARKER_RE = re.compile(r"\[Implementation ([^\]\n]+)\]")
+VALID_IMPLEMENTATION_LABEL_RE = re.compile(r"(?:0|[1-9]\d*)(?:-[1-9]\d*)?\Z")
+
+IMPLEMENTATION_SCOPES = {
+    "fixed-step-replay": {
+        "index": "examples/fixed-step-replay/README.md",
+        "heading": "## 권장 구현 순서",
+        "files": {
+            "examples/fixed-step-replay/README.md",
+            "examples/fixed-step-replay/sim.py",
+        },
+    },
+    "relay-arena-reference": {
+        "index": "projects/relay-arena-vertical-slice/README.md",
+        "heading": "### Reference 권장 구현 순서",
+        "files": {
+            "projects/relay-arena-vertical-slice/README.md",
+            "projects/relay-arena-vertical-slice/reference/relay_arena.py",
+        },
+    },
 }
 
 REQUIRED_FILES = [
@@ -159,6 +192,51 @@ def unique(items: Iterable[Any], context: str) -> None:
         fail(f"{context}: 중복 값이 있습니다")
 
 
+def split_markdown_row(line: str) -> list[str]:
+    stripped = line.strip()
+    if not stripped.startswith("|") or not stripped.endswith("|"):
+        fail(f"Markdown table row 형식이 아닙니다: {line!r}")
+    return [cell.strip() for cell in stripped[1:-1].split("|")]
+
+
+def markdown_table_after_heading(text: str, heading: str) -> tuple[list[str], list[list[str]]]:
+    lines = text.splitlines()
+    try:
+        heading_index = next(index for index, line in enumerate(lines) if line.strip() == heading)
+    except StopIteration:
+        fail(f"필수 heading이 없습니다: {heading}")
+
+    table_index: int | None = None
+    for index in range(heading_index + 1, len(lines) - 1):
+        stripped = lines[index].strip()
+        if stripped.startswith("##"):
+            break
+        if stripped.startswith("|") and lines[index + 1].strip().startswith("|"):
+            table_index = index
+            break
+    if table_index is None:
+        fail(f"{heading}: Markdown table이 없습니다")
+
+    headers = split_markdown_row(lines[table_index])
+    separators = split_markdown_row(lines[table_index + 1])
+    if len(headers) != len(separators) or any(
+        not re.fullmatch(r":?-{3,}:?", separator) for separator in separators
+    ):
+        fail(f"{heading}: Markdown table separator가 잘못됐습니다")
+
+    rows: list[list[str]] = []
+    for line in lines[table_index + 2 :]:
+        if not line.strip().startswith("|"):
+            break
+        cells = split_markdown_row(line)
+        if len(cells) != len(headers):
+            fail(f"{heading}: table column 수가 다릅니다")
+        rows.append(cells)
+    if not rows:
+        fail(f"{heading}: table row가 없습니다")
+    return headers, rows
+
+
 def positive_int(value: Any, context: str, *, allow_zero: bool = False) -> int:
     if not isinstance(value, int) or (value < 0 if allow_zero else value <= 0):
         rule = "0 이상의 정수" if allow_zero else "양의 정수"
@@ -237,6 +315,169 @@ def parse_markdown_target(raw: str) -> str:
     elif " '" in target:
         target = target.split(" '", 1)[0]
     return target
+
+
+def markdown_targets(cell: str) -> list[str]:
+    targets: list[str] = []
+    for raw in MARKDOWN_LINK_RE.findall(cell):
+        target = parse_markdown_target(raw)
+        file_part = unquote(target.split("#", 1)[0])
+        if file_part:
+            targets.append(file_part)
+    return targets
+
+
+def validate_readme_learning_map_text(text: str) -> None:
+    headers, rows = markdown_table_after_heading(text, "## 정본 진행 순서")
+    expected_headers = ["순서", "문서", "관찰 예제", "직접 수행", "수정 위치", "검증", "완료 뒤 비교·다음"]
+    if headers != expected_headers:
+        fail(f"README 정본 진행 순서 column이 다릅니다: {headers}")
+
+    expected_steps = [str(index) for index in range(18)] + ["참고"]
+    actual_steps = [row[0] for row in rows]
+    if actual_steps != expected_steps:
+        fail(f"README 학습 순서가 다릅니다: {actual_steps}")
+
+    document_targets = [target for row in rows for target in markdown_targets(row[1])]
+    if document_targets != LEARNING_MAP_DOCS:
+        fail(f"README 문서 순서가 다릅니다: {document_targets}")
+
+    all_targets = [target for row in rows for cell in row for target in markdown_targets(cell)]
+    for exercise in LEARNING_MAP_EXERCISES:
+        if all_targets.count(exercise) != 1:
+            fail(f"README 학습 지도에 실습 링크가 정확히 한 번 필요합니다: {exercise}")
+    for target in (
+        "examples/fixed-step-replay/README.md",
+        "projects/relay-arena-vertical-slice/README.md",
+    ):
+        if target not in all_targets:
+            fail(f"README 학습 지도에 연결이 없습니다: {target}")
+
+    for row in rows:
+        direct = row[3].strip()
+        if direct and direct != "—":
+            for index, name in ((4, "수정 위치"), (5, "검증"), (6, "완료 뒤 비교·다음")):
+                if not row[index].strip() or row[index].strip() == "—":
+                    fail(f"README {row[0]}단계의 {name}이 비어 있습니다")
+
+
+def check_readme_learning_map() -> None:
+    validate_readme_learning_map_text((ROOT / "README.md").read_text(encoding="utf-8"))
+
+
+def implementation_label_parts(label: str) -> tuple[int, int | None]:
+    parts = label.split("-", 1)
+    return int(parts[0]), int(parts[1]) if len(parts) == 2 else None
+
+
+def readable_source_texts() -> dict[str, str]:
+    texts: dict[str, str] = {}
+    for path in source_files():
+        try:
+            texts[rel(path)] = path.read_text(encoding="utf-8")
+        except UnicodeDecodeError:
+            continue
+    return texts
+
+
+def implementation_index_labels(text: str, heading: str) -> list[str]:
+    headers, rows = markdown_table_after_heading(text, heading)
+    expected_headers = ["순서", "파일·symbol", "먼저 고정할 책임", "다음 단계가 의존하는 결과"]
+    if headers != expected_headers:
+        fail(f"{heading}: 구현 순서 column이 다릅니다: {headers}")
+
+    labels: list[str] = []
+    for row in rows:
+        cell = row[0].strip().strip("`")
+        marker = re.fullmatch(r"\[Implementation ([^\]]+)\]", cell)
+        label = marker.group(1) if marker else cell
+        if not VALID_IMPLEMENTATION_LABEL_RE.fullmatch(label):
+            fail(f"{heading}: 잘못된 구현 순서 label {cell!r}")
+        labels.append(label)
+    return labels
+
+
+def natural_implementation_order(labels: set[str]) -> list[str]:
+    for label in labels:
+        number, child = implementation_label_parts(label)
+        if child is not None and str(number) not in labels:
+            fail(f"Implementation {label}의 parent {number}가 없습니다")
+    top_levels = sorted(
+        number for number, child in map(implementation_label_parts, labels) if child is None and number > 0
+    )
+    if not top_levels or top_levels != list(range(1, max(top_levels) + 1)):
+        fail(f"Implementation top-level 번호가 1부터 연속되지 않습니다: {top_levels}")
+
+    order: list[str] = []
+    if "0" in labels:
+        order.append("0")
+    for number in top_levels:
+        parent = str(number)
+        order.append(parent)
+        children = sorted(
+            child
+            for top, child in map(implementation_label_parts, labels)
+            if top == number and child is not None
+        )
+        if children and children != list(range(1, max(children) + 1)):
+            fail(f"Implementation {number} child 번호가 1부터 연속되지 않습니다: {children}")
+        order.extend(f"{number}-{child}" for child in children)
+    return order
+
+
+def validate_implementation_annotations(texts: dict[str, str]) -> None:
+    labels_by_scope: dict[str, list[str]] = {name: [] for name in IMPLEMENTATION_SCOPES}
+
+    for path, text in texts.items():
+        for marker in IMPLEMENTATION_MARKER_RE.finditer(text):
+            label = marker.group(1).strip()
+            if not any(character.isdigit() for character in label):
+                continue
+            if not VALID_IMPLEMENTATION_LABEL_RE.fullmatch(label):
+                fail(f"{path}: 잘못된 Implementation marker [{label}]")
+            number, child = implementation_label_parts(label)
+            if number == 0 and child is not None:
+                fail(f"{path}: Implementation 0 child는 허용하지 않습니다")
+
+            scope_name = next(
+                (name for name, config in IMPLEMENTATION_SCOPES.items() if path in config["files"]),
+                None,
+            )
+            if scope_name is None:
+                fail(f"{path}: annotation 허용 scope 밖의 [Implementation {label}]")
+
+            line_start = text.rfind("\n", 0, marker.start()) + 1
+            line_end = text.find("\n", marker.end())
+            line = text[line_start : line_end if line_end >= 0 else len(text)].strip()
+            if path.endswith(".py"):
+                if not line.startswith(f"# [Implementation {label}]"):
+                    fail(f"{path}: Python marker는 독립 comment anchor여야 합니다: {label}")
+            elif path == IMPLEMENTATION_SCOPES[scope_name]["index"]:
+                if not line.startswith(f"| [Implementation {label}] |"):
+                    fail(f"{path}: README sidecar marker는 구현 순서 표 첫 cell에 있어야 합니다: {label}")
+            else:
+                fail(f"{path}: 허용되지 않은 annotation anchor 형식입니다")
+            labels_by_scope[scope_name].append(label)
+
+    for scope_name, config in IMPLEMENTATION_SCOPES.items():
+        labels = labels_by_scope[scope_name]
+        if len(labels) != len(set(labels)):
+            fail(f"{scope_name}: 중복 Implementation anchor가 있습니다")
+        label_set = set(labels)
+        order = natural_implementation_order(label_set)
+        index_text = texts.get(config["index"])
+        if index_text is None:
+            fail(f"{scope_name}: implementation index README를 읽을 수 없습니다")
+        index_labels = implementation_index_labels(index_text, config["heading"])
+        if index_labels != order or set(index_labels) != label_set:
+            fail(
+                f"{scope_name}: README index와 authoritative anchor가 다릅니다: "
+                f"index={index_labels}, anchors={order}"
+            )
+
+
+def check_implementation_annotations() -> None:
+    validate_implementation_annotations(readable_source_texts())
 
 
 def check_markdown_links() -> None:
@@ -479,37 +720,79 @@ def check_exercise_fixtures() -> None:
         fail("release platform fixture에 미해결 상태가 필요합니다")
 
 
+def profile_a_artifacts(text: str, heading: str) -> set[str]:
+    headers, rows = markdown_table_after_heading(text, heading)
+    if headers[:2] not in (["번호", "제출 파일"], ["번호", "필수 제출 파일"]):
+        fail(f"{heading}: Profile A table column이 다릅니다: {headers}")
+    numbers = [row[0] for row in rows]
+    if numbers != [str(index) for index in range(1, 14)]:
+        fail(f"{heading}: 필수 제출 번호가 1~13이 아닙니다: {numbers}")
+
+    artifacts: set[str] = set()
+    for row in rows:
+        targets = markdown_targets(row[1])
+        if targets:
+            artifacts.add(Path(targets[0]).name)
+        else:
+            artifacts.add(row[1].strip().strip("`"))
+    return artifacts
+
+
+def validate_capstone_artifact_sets(
+    template_required: set[str],
+    template_optional: set[str],
+    reference_artifacts: set[str],
+) -> None:
+    if len(CAPSTONE_REQUIRED_ARTIFACTS) != 13:
+        fail("Capstone required artifact 계약은 정확히 13개여야 합니다")
+    if CAPSTONE_REQUIRED_ARTIFACTS & CAPSTONE_OPTIONAL_ARTIFACTS:
+        fail("Capstone required와 optional artifact가 겹칩니다")
+    if template_required != CAPSTONE_REQUIRED_ARTIFACTS:
+        fail(
+            "Capstone 필수 template set이 다릅니다: "
+            f"{sorted(CAPSTONE_REQUIRED_ARTIFACTS ^ template_required)}"
+        )
+    if template_optional != CAPSTONE_OPTIONAL_ARTIFACTS:
+        fail(
+            "Capstone 선택 template set이 다릅니다: "
+            f"{sorted(CAPSTONE_OPTIONAL_ARTIFACTS ^ template_optional)}"
+        )
+    if reference_artifacts != CAPSTONE_REQUIRED_ARTIFACTS:
+        fail(
+            "Capstone 필수 reference artifact set이 다릅니다: "
+            f"{sorted(CAPSTONE_REQUIRED_ARTIFACTS ^ reference_artifacts)}"
+        )
+
+
 def check_capstone_fixtures() -> None:
     base = ROOT / "projects/relay-arena-vertical-slice"
     inputs = base / "inputs"
     templates = base / "template"
-    expected_templates = {
-        "runtime-state-map.md",
-        "time-and-input-contract.md",
-        "state-ownership.csv",
-        "world-and-asset-plan.md",
-        "gameplay-rules.md",
-        "movement-and-space.md",
-        "presentation-contract.md",
-        "save-and-replay.md",
-        "ai-and-navigation.md",
-        "authority-and-latency.md",
-        "test-and-observability-plan.md",
-        "performance-and-release.md",
-        "traceability-matrix.csv",
-        "change-plan.md",
-    }
+    optional_templates = templates / "optional"
+    if not optional_templates.is_dir():
+        fail("Capstone optional template 디렉터리가 필요합니다")
+    if {path.name for path in templates.iterdir() if path.is_dir()} != {"optional"}:
+        fail("Capstone template에는 optional 하위 디렉터리만 허용됩니다")
     actual_templates = {path.name for path in templates.iterdir() if path.is_file()}
-    if actual_templates != expected_templates:
-        fail(f"Capstone template set이 다릅니다: {sorted(expected_templates ^ actual_templates)}")
-
+    actual_optional = {path.name for path in optional_templates.iterdir() if path.is_file()}
     reference_artifacts = base / "reference/artifacts"
     actual_artifacts = {path.name for path in reference_artifacts.iterdir() if path.is_file()}
-    if actual_artifacts != CAPSTONE_REQUIRED_ARTIFACTS:
-        fail(
-            "Capstone 필수 reference artifact set이 다릅니다: "
-            f"{sorted(CAPSTONE_REQUIRED_ARTIFACTS ^ actual_artifacts)}"
-        )
+    validate_capstone_artifact_sets(actual_templates, actual_optional, actual_artifacts)
+
+    optional_text = (optional_templates / "ai-and-navigation.md").read_text(encoding="utf-8")
+    if "선택 산출물" not in optional_text or "필수 13개" not in optional_text:
+        fail("AI template 자체에 선택 산출물 계약이 필요합니다")
+
+    project_artifacts = profile_a_artifacts(
+        (base / "README.md").read_text(encoding="utf-8"),
+        "## 필수 Profile A — 정확히 13개 제출 파일",
+    )
+    document_artifacts = profile_a_artifacts(
+        (ROOT / "docs/17-capstone.md").read_text(encoding="utf-8"),
+        "## 필수 Profile A — 정확히 13개 설계·검토 산출물",
+    )
+    if project_artifacts != CAPSTONE_REQUIRED_ARTIFACTS or document_artifacts != CAPSTONE_REQUIRED_ARTIFACTS:
+        fail("Capstone README와 docs/17의 필수 13개 표가 artifact contract와 다릅니다")
 
     _, req_rows = read_csv(inputs / "requirements.csv")
     req_ids = [row.get("requirement_id") for row in req_rows]
@@ -579,6 +862,75 @@ def check_capstone_fixtures() -> None:
         fail("Capstone release evidence의 requirement coverage가 부족합니다")
 
 
+def check_workspace_generator() -> None:
+    copied_roots = []
+    for exercise in EXERCISES:
+        base = ROOT / "exercises" / exercise
+        copied_roots.extend((base / "inputs", base / "template"))
+    project = ROOT / "projects/relay-arena-vertical-slice"
+    copied_roots.extend((project / "inputs", project / "template", project / "starter"))
+    for copied_root in copied_roots:
+        for path in (copied_root, *copied_root.rglob("*")):
+            if path.is_symlink():
+                fail(f"workspace 복사 source에 symlink가 있습니다: {rel(path)}")
+
+    with tempfile.TemporaryDirectory(prefix="game-guide-workspace-") as raw:
+        parent = Path(raw)
+        destination = parent / "learner"
+        command = [sys.executable, str(ROOT / "scripts/new_workspace.py"), str(destination)]
+        created = subprocess.run(command, cwd=ROOT, text=True, capture_output=True, check=False)
+        if created.returncode != 0 or "WORKSPACE_CREATED" not in created.stdout:
+            fail(f"learner workspace 생성 실패:\n{created.stdout}\n{created.stderr}")
+
+        workspace_readme = (destination / "README.md").read_text(encoding="utf-8")
+        if "exactly 13 required top-level submission files" not in workspace_readme:
+            fail("생성된 workspace README에 필수 13개 계약이 없습니다")
+
+        exercise_root = destination / "exercises"
+        actual_exercises = {path.name for path in exercise_root.iterdir() if path.is_dir()}
+        if actual_exercises != set(EXERCISES):
+            fail("생성된 workspace의 exercise set이 다릅니다")
+        if any(not (exercise_root / exercise / "submission").is_dir() for exercise in EXERCISES):
+            fail("생성된 workspace에 exercise submission이 없습니다")
+
+        capstone = destination / "relay-arena-vertical-slice"
+        submission = capstone / "submission"
+        required = {path.name for path in submission.iterdir() if path.is_file()}
+        optional = {path.name for path in (submission / "optional").iterdir() if path.is_file()}
+        validate_capstone_artifact_sets(required, optional, CAPSTONE_REQUIRED_ARTIFACTS)
+        if not (capstone / "starter/relay_arena.py").is_file():
+            fail("생성된 workspace에 Capstone starter가 없습니다")
+        if any(path.is_symlink() for path in destination.rglob("*")):
+            fail("생성된 workspace에 symlink가 있습니다")
+
+        repeated = subprocess.run(command, cwd=ROOT, text=True, capture_output=True, check=False)
+        if repeated.returncode == 0:
+            fail("workspace 생성기가 기존 destination을 거부하지 못했습니다")
+        relative = subprocess.run(
+            [sys.executable, str(ROOT / "scripts/new_workspace.py"), "relative-workspace"],
+            cwd=ROOT,
+            text=True,
+            capture_output=True,
+            check=False,
+        )
+        if relative.returncode == 0:
+            fail("workspace 생성기가 상대 경로를 거부하지 못했습니다")
+
+        link_target = parent / "link-target"
+        link_target.mkdir()
+        link = parent / "workspace-link"
+        link.symlink_to(link_target, target_is_directory=True)
+        linked = subprocess.run(
+            [sys.executable, str(ROOT / "scripts/new_workspace.py"), str(link)],
+            cwd=ROOT,
+            text=True,
+            capture_output=True,
+            check=False,
+        )
+        if linked.returncode == 0:
+            fail("workspace 생성기가 symlink destination을 거부하지 못했습니다")
+
+
 def run_example(*, expected: Path | None = None, should_succeed: bool = True) -> subprocess.CompletedProcess[str]:
     command = [sys.executable, str(EXAMPLE / "sim.py"), "--verify"]
     if expected is not None:
@@ -643,6 +995,145 @@ def check_reference_starter_and_mutants() -> None:
     )
 
 
+def expect_policy_failure(callback: Callable[[], None], context: str) -> None:
+    try:
+        callback()
+    except VerificationError:
+        return
+    fail(f"repository policy mutant를 거부하지 못했습니다: {context}")
+
+
+def implementation_marker(label: str) -> str:
+    return f"[Implementation {label}]"
+
+
+def check_repository_policy_mutants() -> None:
+    readme = (ROOT / "README.md").read_text(encoding="utf-8")
+    validate_readme_learning_map_text(readme)
+    prefix, learning_section = readme.split("## 정본 진행 순서", 1)
+
+    missing_doc = prefix + "## 정본 진행 순서" + learning_section.replace(
+        "(docs/03-input-command-camera-and-ui.md)",
+        "(docs/99-missing.md)",
+        1,
+    )
+    expect_policy_failure(lambda: validate_readme_learning_map_text(missing_doc), "README document missing")
+
+    swapped_section = learning_section.replace(
+        "(docs/02-game-loop-time-and-frames.md)", "(__DOC_TWO__)", 1
+    ).replace(
+        "(docs/03-input-command-camera-and-ui.md)",
+        "(docs/02-game-loop-time-and-frames.md)",
+        1,
+    ).replace("(__DOC_TWO__)", "(docs/03-input-command-camera-and-ui.md)", 1)
+    expect_policy_failure(
+        lambda: validate_readme_learning_map_text(prefix + "## 정본 진행 순서" + swapped_section),
+        "README document order swapped",
+    )
+
+    missing_exercise = prefix + "## 정본 진행 순서" + learning_section.replace(
+        "(exercises/04-asset-loading-plan/README.md)",
+        "(exercises/99-missing/README.md)",
+        1,
+    )
+    expect_policy_failure(
+        lambda: validate_readme_learning_map_text(missing_exercise),
+        "README exercise connection missing",
+    )
+
+    missing_location = prefix + "## 정본 진행 순서" + learning_section.replace(
+        "| 실습 01 `submission/*`; `$CAP/submission/time-and-input-contract.md` |",
+        "| — |",
+        1,
+    )
+    expect_policy_failure(
+        lambda: validate_readme_learning_map_text(missing_location),
+        "README learner location missing",
+    )
+
+    missing_required = set(CAPSTONE_REQUIRED_ARTIFACTS)
+    missing_required.remove("change-plan.md")
+    expect_policy_failure(
+        lambda: validate_capstone_artifact_sets(
+            missing_required,
+            set(CAPSTONE_OPTIONAL_ARTIFACTS),
+            set(CAPSTONE_REQUIRED_ARTIFACTS),
+        ),
+        "Capstone required template missing",
+    )
+    expect_policy_failure(
+        lambda: validate_capstone_artifact_sets(
+            set(CAPSTONE_REQUIRED_ARTIFACTS),
+            set(),
+            set(CAPSTONE_REQUIRED_ARTIFACTS),
+        ),
+        "Capstone optional template missing",
+    )
+    expect_policy_failure(
+        lambda: validate_capstone_artifact_sets(
+            set(CAPSTONE_REQUIRED_ARTIFACTS),
+            set(CAPSTONE_OPTIONAL_ARTIFACTS),
+            set(CAPSTONE_REQUIRED_ARTIFACTS | CAPSTONE_OPTIONAL_ARTIFACTS),
+        ),
+        "Capstone optional artifact treated as required reference",
+    )
+
+    texts = readable_source_texts()
+    validate_implementation_annotations(texts)
+    example_source = "examples/fixed-step-replay/sim.py"
+    duplicate = dict(texts)
+    duplicate[example_source] += f"\n# {implementation_marker('1')} duplicate\n"
+    expect_policy_failure(
+        lambda: validate_implementation_annotations(duplicate),
+        "duplicate annotation",
+    )
+
+    top_gap = dict(texts)
+    top_gap[example_source] = top_gap[example_source].replace(
+        implementation_marker("4"), implementation_marker("8"), 1
+    )
+    expect_policy_failure(
+        lambda: validate_implementation_annotations(top_gap),
+        "top-level annotation gap",
+    )
+
+    orphan = dict(texts)
+    orphan[example_source] = orphan[example_source].replace(
+        implementation_marker("3-1"), implementation_marker("8-1"), 1
+    )
+    expect_policy_failure(
+        lambda: validate_implementation_annotations(orphan),
+        "annotation child without parent",
+    )
+
+    invalid_zero_child = dict(texts)
+    invalid_zero_child[example_source] += f"\n# {implementation_marker('0-1')} invalid\n"
+    expect_policy_failure(
+        lambda: validate_implementation_annotations(invalid_zero_child),
+        "Implementation 0 child",
+    )
+
+    starter_path = "projects/relay-arena-vertical-slice/starter/relay_arena.py"
+    forbidden = dict(texts)
+    forbidden[starter_path] = (
+        forbidden[starter_path] + f"\n# {implementation_marker('1')} leaked answer order\n"
+    )
+    expect_policy_failure(
+        lambda: validate_implementation_annotations(forbidden),
+        "starter annotation leakage",
+    )
+
+    index_path = "examples/fixed-step-replay/README.md"
+    mismatched_index = dict(texts)
+    mismatched_index[index_path] = mismatched_index[index_path].replace(
+        "| 7 | `main()` |", "| 8 | `main()` |", 1
+    )
+    expect_policy_failure(
+        lambda: validate_implementation_annotations(mismatched_index),
+        "README implementation index mismatch",
+    )
+
+
 def run_checks(*, quick: bool, fixtures_only: bool, require_marker: bool) -> None:
     if require_marker:
         check_prepare_marker()
@@ -655,13 +1146,17 @@ def run_checks(*, quick: bool, fixtures_only: bool, require_marker: bool) -> Non
     else:
         check_required_structure()
         check_doc_sections()
+        check_readme_learning_map()
         check_markdown_links()
+        check_implementation_annotations()
         check_all_json_and_csv()
         check_exercise_fixtures()
         check_capstone_fixtures()
+        check_workspace_generator()
         check_example_and_meta(meta=not quick)
         if not quick:
             check_reference_starter_and_mutants()
+            check_repository_policy_mutants()
 
     after = source_fingerprint()
     if before != after:
@@ -673,7 +1168,22 @@ def main() -> int:
     parser.add_argument("--quick", action="store_true", help="skip verifier meta-test")
     parser.add_argument("--fixtures-only", action="store_true")
     parser.add_argument("--require-marker", action="store_true")
+    parser.add_argument("--policy-meta", action="store_true")
     args = parser.parse_args()
+
+    if args.policy_meta:
+        if args.quick or args.fixtures_only or args.require_marker:
+            parser.error("--policy-meta cannot be combined with other modes")
+        try:
+            check_readme_learning_map()
+            check_implementation_annotations()
+            check_capstone_fixtures()
+            check_repository_policy_mutants()
+        except VerificationError as exc:
+            print(f"VERIFY_ERROR: {exc}", file=sys.stderr)
+            return 1
+        print("POLICY_META_OK mutants=13")
+        return 0
 
     try:
         run_checks(quick=args.quick, fixtures_only=args.fixtures_only, require_marker=args.require_marker)

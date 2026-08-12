@@ -66,7 +66,9 @@ def create_workspace(destination: Path) -> None:
         (staging / "README.md").write_text(
             "# game-development learner workspace\n\n"
             "This directory was created outside the guide repository. "
-            "Edit only the copied `submission/` and `starter/` files.\n\n"
+            "Edit only the copied `submission/` and `starter/` files. "
+            "Relay Arena has exactly 13 required top-level submission files; "
+            "`submission/optional/ai-and-navigation.md` is optional and does not count as a 14th required file.\n\n"
             "Run repository checkers by passing this workspace path explicitly; "
             "the guide never deletes or replaces this directory.\n",
             encoding="utf-8",

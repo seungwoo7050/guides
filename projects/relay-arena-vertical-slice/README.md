@@ -58,6 +58,30 @@ boot/menu
 | [`reference/artifacts/`](reference/artifacts/) | 13개 필수 template 산출물의 reference 예시 |
 | [`reference/boundary-recovery.md`](reference/boundary-recovery.md) | update/render·presentation·asset·tool 경계를 headless 증거와 실제 엔진 확인 항목에 mapping한 예시 |
 
+### Reference 권장 구현 순서
+
+`reference/relay_arena.py`와 `reference/expected-contract.json`은 Capstone headless reference 하나의 annotation scope입니다. 다음 번호는 제출 파일 번호, 아래 학습 작업 순서, runtime call order나 Git history가 아니라 **처음부터 같은 공개 계약을 만드는 학습용 권장 구현 순서**입니다. Python 표준 라이브러리 파일을 직접 실행하므로 project generator, dependency 설치나 framework 초기화에 해당하는 Implementation 0은 없습니다. `migrate-save`는 bootstrap이 아니라 simulation contract 뒤에 추가하는 일곱 번째 application capability입니다.
+
+| 순서 | 파일·symbol | 먼저 고정할 책임 | 다음 단계가 의존하는 결과 |
+|---:|---|---|---|
+| 1 | `RelayError`, `load_json()` | 외부 JSON과 CLI failure boundary | 일관된 domain failure |
+| 1-1 | `write_json_atomic()` | temporary file ownership, flush·fsync·atomic replace와 실패 cleanup | 부분 파일 없는 evidence publish |
+| 2 | `canonical_state()`, `state_hash()`, `initial_state()` | authoritative state projection과 identity | schedule·replay·oracle 비교 기준 |
+| 3 | `reject()`, `emit_presentation()`, `apply_command()` | owner·sequence·phase·rule validation과 one-shot presentation | accepted/rejected command 전이 |
+| 3-1 | `step()` | command→movement→cooldown→tick의 fixed-step writer | 반복 가능한 simulation tick |
+| 4 | `frame_schedule()`, `commands_by_tick()` | frame variation과 실패 scenario를 tick input으로 정규화 | 정상·hitch·authority 실행 입력 |
+| 5 | `asset_report()` | generation-owned dependency closure, fallback과 cleanup | resource lifetime evidence |
+| 5-1 | `replay_evidence()` | checkpoint hash와 first divergence | replay failure evidence |
+| 5-2 | `authority_report()` | owner·duplicate·stale snapshot·result claim 거부 | authority evidence |
+| 6 | `simulate()` | bounded simulation과 subsystem evidence 조립 | `simulate` public result |
+| 7 | `migrate_save()` | v1 검증, stable-id/settings 보존과 atomic v2 publish | `migrate-save` compatibility result |
+| 8 | `profile_report()` | 같은 modeled workload 전후와 invariant 보존 | `profile` regression evidence |
+| 9 | `build_parser()` | 세 subcommand의 public argument schema | stable CLI boundary |
+| 9-1 | `main()` | dispatch, output, diagnostic과 exit status | executable reference command |
+| [Implementation 10] | `reference/expected-contract.json` | 모든 capability를 연결한 뒤 canonical state와 필수 rejection oracle을 동결 | source shape와 독립된 black-box acceptance 기준 |
+
+표에서 bracket 없는 번호는 `reference/relay_arena.py`의 authoritative source anchor를 가리킵니다. JSON은 주석을 허용하지 않으므로 Implementation 10의 exact anchor만 이 표가 소유합니다. starter, tests, inputs, template과 repository validator는 reference construction annotation 대상이 아닙니다.
+
 ## 필수 Profile A — 정확히 13개 제출 파일
 
 `template/`을 개인 작업 디렉터리에 복사한 뒤 작성한다.
@@ -84,7 +108,7 @@ boot/menu
 state_id,scope,authoritative_owner,writer,readers,serialized_in_save,recorded_in_replay,replicated,lifetime,invariant
 ```
 
-[`ai-and-navigation.md`](template/ai-and-navigation.md)는 선택 산출물이다. 제출하더라도 필수 파일 수를 14개로 세지 않으며, 제출하지 않아도 위 13개 계약은 줄어들지 않는다.
+[`optional/ai-and-navigation.md`](template/optional/ai-and-navigation.md)는 선택 산출물이다. workspace에서도 `submission/optional/`에 따로 복사되며, 제출하더라도 필수 top-level 파일 수를 14개로 세지 않는다. 제출하지 않아도 위 13개 계약은 줄어들지 않는다.
 
 Profile A만으로는 실제 작은 기능 구현이나 profiling 기반 수정 종료 능력을 충족하지 않는다. 아래 Profile B의 실행 증거도 필수다.
 

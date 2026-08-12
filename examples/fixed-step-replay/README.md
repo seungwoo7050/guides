@@ -21,6 +21,22 @@ frame delta clamp
 - [`expected-state.json`](expected-state.json): 모든 schedule이 도달해야 하는 canonical state와 hash
 - [`sim.py`](sim.py): 실행기와 검증기
 
+## 권장 구현 순서
+
+이 예제 전체가 하나의 annotation scope입니다. 다음 번호는 Git history나 runtime call order가 아니라, 같은 관찰 프로그램을 처음부터 만든다고 가정한 **학습용 권장 구현 순서**입니다. Python 표준 라이브러리 파일을 바로 실행하므로 project generator, dependency 설치나 framework 초기화에 해당하는 Implementation 0은 없습니다. JSON fixture는 주석을 허용하지 않으므로 관련 책임은 이 표와 `sim.py`의 단일 authoritative anchor에서 설명합니다.
+
+| 순서 | 파일·symbol | 먼저 고정할 책임 | 다음 단계가 의존하는 결과 |
+|---:|---|---|---|
+| 1 | `config.json`, `input-trace.json`, `load_json()`, `validate_inputs()` | 외부 입력 schema와 command identity를 state 변경 전에 거부 | 검증된 정수 시간·명령·schedule |
+| 2 | `canonical_bytes()`, `state_hash()` | gameplay state의 canonical JSON byte/hash 계약 | schedule 간 비교 가능한 state identity |
+| 3 | `commands_by_tick()` | command를 tick과 sequence 순서로 색인 | frame과 분리된 입력 소비 순서 |
+| 3-1 | `apply_command()` | move/dash의 accepted·rejected 전이 | 한 tick에서 적용할 결정적 command 결과 |
+| 4 | `step()` | command→fixed-point 이동→cooldown→tick의 단일 writer 순서 | 독립적으로 반복 가능한 fixed tick |
+| 5 | `run_schedule()` | clamp·accumulator·catch-up 상한·backlog 폐기 | hitch를 포함한 bounded simulation run |
+| 6 | `run_all()` | 동일 trace를 schedule별로 독립 실행 | schedule별 state와 frame evidence |
+| 6-1 | `verify()` | expected state/hash, schedule 동등성과 overload 방향 검사 | 관찰 예제가 주장할 수 있는 deterministic 범위 |
+| 7 | `main()` | 기본 fixture, 출력과 실패 exit status를 CLI로 조립 | `python3 sim.py --verify` public command |
+
 ## 실행
 
 ```sh

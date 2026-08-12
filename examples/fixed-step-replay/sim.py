@@ -13,6 +13,8 @@ from typing import Any
 HERE = Path(__file__).resolve().parent
 
 
+# [Implementation 1] 외부 JSON을 읽고 검증하는 경계를 먼저 세워 잘못된
+# fixture가 simulation state를 부분적으로 바꾸기 전에 실패하게 한다.
 class SimulationError(ValueError):
     pass
 
@@ -24,6 +26,8 @@ def load_json(path: Path) -> Any:
         raise SimulationError(f"cannot read {path.name}: {exc}") from exc
 
 
+# [Implementation 2] gameplay 정본을 key 순서와 공백에 무관한 byte 계약으로
+# 고정한 뒤 모든 schedule이 같은 state identity를 공유하게 한다.
 def canonical_bytes(state: dict[str, int]) -> bytes:
     return json.dumps(
         state,
@@ -80,6 +84,8 @@ def validate_inputs(config: dict[str, Any], trace: dict[str, Any]) -> None:
             raise SimulationError(f"schedule {name} contains an invalid delta")
 
 
+# [Implementation 3] command identity를 simulation tick에 색인하고 sequence로
+# 정렬해 render frame 구성과 입력 소비 순서를 분리한다.
 def commands_by_tick(trace: dict[str, Any]) -> dict[int, list[dict[str, Any]]]:
     result: dict[int, list[dict[str, Any]]] = {}
     for command in trace["commands"]:
@@ -89,6 +95,8 @@ def commands_by_tick(trace: dict[str, Any]) -> dict[int, list[dict[str, Any]]]:
     return result
 
 
+# [Implementation 3-1] command 전이는 accepted/rejected counter를 함께 소유해
+# 잘못된 입력도 결정적인 gameplay 결과로 남긴다.
 def apply_command(state: dict[str, int], command: dict[str, Any], config: dict[str, Any]) -> None:
     kind = command["kind"]
     if kind == "move":
@@ -122,6 +130,8 @@ def apply_command(state: dict[str, int], command: dict[str, Any], config: dict[s
     raise SimulationError(f"unsupported command kind: {kind}")
 
 
+# [Implementation 4] 한 fixed tick의 유일한 writer를 만들고 command 적용,
+# fixed-point 이동, cooldown과 tick 증가 순서를 한곳에 고정한다.
 def step(
     state: dict[str, int],
     commands: list[dict[str, Any]],
@@ -142,6 +152,8 @@ def step(
     state["tick"] += 1
 
 
+# [Implementation 5] frame delta clamp와 accumulator, catch-up 상한과 backlog
+# 폐기를 조립해 render hitch가 simulation step 수를 무한히 늘리지 못하게 한다.
 def run_schedule(
     schedule_name: str,
     frame_deltas: list[int],
@@ -209,6 +221,8 @@ def run_schedule(
     }
 
 
+# [Implementation 6] 같은 validated trace를 모든 frame schedule에 독립 실행해
+# schedule별 관측값과 canonical state를 한 결과 묶음으로 만든다.
 def run_all(config_path: Path, trace_path: Path) -> dict[str, Any]:
     config = load_json(config_path)
     trace = load_json(trace_path)
@@ -220,6 +234,8 @@ def run_all(config_path: Path, trace_path: Path) -> dict[str, Any]:
     return {"config": config, "runs": runs}
 
 
+# [Implementation 6-1] expected oracle과 schedule 간 hash를 모두 대조하고,
+# overload fixture가 실제 backlog 폐기 경계를 통과했는지도 확인한다.
 def verify(results: dict[str, Any], expected_path: Path) -> None:
     expected = load_json(expected_path)
     expected_state = expected.get("canonical_state")
@@ -242,6 +258,8 @@ def verify(results: dict[str, Any], expected_path: Path) -> None:
         raise SimulationError("overload schedule did not exercise backlog dropping")
 
 
+# [Implementation 7] 마지막에 CLI를 연결해 기본 fixture, 관찰 출력과
+# verification 실패의 exit status를 하나의 public command로 노출한다.
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--config", type=Path, default=HERE / "config.json")

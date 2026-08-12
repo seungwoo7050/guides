@@ -23,7 +23,7 @@ boot/menu
 1. 정확히 13개의 필수 template 기반 설계·검토 산출물
 2. 실행 가능한 구현과 public contract test, 정상·경계·실패·수정 전후 evidence bundle
 
-네트워크 transport 구현과 `ai-and-navigation.md`는 선택 심화입니다. 문서 산출물만 완성한 상태는 브랜치의 세 종료 능력을 모두 충족하지 않습니다.
+네트워크 transport 구현과 `template/optional/ai-and-navigation.md`는 선택 심화입니다. 문서 산출물만 완성한 상태는 브랜치의 세 종료 능력을 모두 충족하지 않습니다.
 
 ## 제품 brief
 
@@ -39,7 +39,7 @@ boot/menu
 
 ## 필수 Profile A — 정확히 13개 설계·검토 산출물
 
-`template/`의 현재 파일 중 `ai-and-navigation.md`만 선택입니다. 다음 13개는 모두 필수입니다.
+`template/` top-level의 다음 13개는 모두 필수입니다. 선택 AI 산출물은 `template/optional/`에 분리돼 있습니다.
 
 | 번호 | 필수 제출 파일 | 확인할 계약 |
 |---:|---|---|
@@ -63,7 +63,7 @@ boot/menu
 state_id,scope,authoritative_owner,writer,readers,serialized_in_save,recorded_in_replay,replicated,lifetime,invariant
 ```
 
-선택 산출물 `ai-and-navigation.md`는 agent의 sensing·decision·path lifetime을 게임 계층 통합 사례로 확장합니다. 제출하지 않아도 13개 필수 산출물 수는 변하지 않습니다.
+선택 산출물 [`optional/ai-and-navigation.md`](../projects/relay-arena-vertical-slice/template/optional/ai-and-navigation.md)는 agent의 sensing·decision·path lifetime을 게임 계층 통합 사례로 확장합니다. learner workspace에서는 `submission/optional/`에 놓이며, 제출하지 않아도 13개 필수 top-level 산출물 수는 변하지 않습니다.
 
 Profile A는 구현 전에 상태·책임·실패·검증 판단을 고정합니다. 이것만으로 실제 update/render/asset/tool 경계 복원, 작은 기능 구현, profiling 기반 수정이 모두 입증되지는 않습니다.
 

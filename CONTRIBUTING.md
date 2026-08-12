@@ -69,6 +69,16 @@ make meta
 
 known-bad case를 제거하거나 checker가 거짓 성공하도록 바꾸지 않는다.
 
+## 학습용 Implementation annotation
+
+- `examples/fixed-step-replay` 전체와 `projects/relay-arena-vertical-slice/reference` 전체가 각각 하나의 numbering scope다. 파일마다 번호를 다시 시작하지 않는다.
+- 번호는 Git history나 runtime call order가 아니라 README에 선언한 학습용 권장 구현 순서다.
+- exact `[Implementation N]` 또는 `[Implementation N-M]` anchor는 scope 안에서 한 번만 사용하고 top-level·child 번호를 각각 1부터 연속시킨다.
+- source anchor가 있는 단계는 README index에서 bracket 없는 번호를 사용한다. JSON처럼 주석을 허용하지 않는 artifact만 owning README 표가 exact sidecar anchor를 소유한다.
+- skeleton, template, starter, tests, fixtures, expected oracle, known-bad, scripts와 prepare/verify infrastructure에는 annotation을 넣지 않는다.
+- 이 브랜치의 두 scope에는 project/dependency/framework bootstrap이 없으므로 Implementation 0이 없다. workspace 복사, build, run과 verification을 0으로 만들지 않는다.
+- annotation 때문에 public CLI, JSON output, state hash, exit status와 mutant rejection을 바꾸지 않는다.
+
 ## 안전·생성물·커밋 범위
 
 - 실제 사용자·production 데이터, API key, token, cookie와 credential-bearing 설정을 fixture나 로그에 넣지 않는다.

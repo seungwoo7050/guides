@@ -24,7 +24,7 @@ WORK_PARENT="$(mktemp -d)"
 - 기존 경로와 symlink를 거부한다.
 - 저장소 자신, 저장소 안쪽과 저장소의 상위 경로를 거부한다.
 - 임시 sibling 디렉터리에 복사한 뒤 원자적으로 목적 이름을 공개한다.
-- 단계 실습은 `submission/`, Capstone은 `submission/`과 `starter/` 복사본만 만든다.
+- 단계 실습은 `submission/`, Capstone은 필수 13개가 있는 `submission/`, 선택 AI가 있는 `submission/optional/`과 `starter/` 복사본만 만든다.
 - 검사기는 `--submission` 또는 `--implementation`으로 전달한 경로를 읽으며 추적 source를 덮어쓰지 않는다.
 
 학습자 workspace는 사용자의 작업이므로 `make clean`이 삭제하지 않는다. 더 이상 필요 없을 때 사용자가 위에서 자신이 만든 정확한 경로를 확인한 뒤 직접 정리한다.

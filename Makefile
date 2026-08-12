@@ -30,6 +30,7 @@ capstone:
 meta:
 	python3 scripts/check_submission.py --self-test
 	python3 projects/relay-arena-vertical-slice/tests/check_mutants.py
+	python3 scripts/verify.py --policy-meta
 
 clean:
 	python3 scripts/cleanup.py

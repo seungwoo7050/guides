@@ -71,7 +71,7 @@
 
 ## Capstone 실행 evidence
 
-- [ ] 정확히 13개의 필수 설계 산출물이 있고 `ai-and-navigation.md`는 선택으로 구분된다.
+- [ ] `submission/` top-level에 정확히 13개의 필수 설계 산출물이 있고 `submission/optional/ai-and-navigation.md`는 선택으로 구분된다.
 - [ ] implementation identity에 source revision, Python 또는 engine/build/content identity가 있다.
 - [ ] smooth/jittered/hitch가 같은 canonical gameplay state를 만들고 catch-up 상한이 관측된다.
 - [ ] duplicate·stale·non-owner와 client result claim이 authoritative state를 바꾸지 않는다.

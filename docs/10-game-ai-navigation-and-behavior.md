@@ -194,7 +194,7 @@ bot, NPC와 projectile logic의 authority를 server 또는 agreed deterministic 
 
 ## 실습 연결
 
-Capstone의 지원 문서 `ai-and-navigation.md`에서 두 종류 agent의 perception, goal, navigation, action command와 debug trace를 설계합니다. 이 산출물은 movement·presentation·authority·profiling 계약을 같은 agent lifecycle에 적용했는지 보여 주며, pathfinding 알고리즘 자체의 구현을 요구하지 않습니다.
+이 문서의 command·lifecycle·budget 경계는 필수 Capstone 산출물의 movement·presentation·authority·profiling 계약에 반영합니다. 별도 AI 분석을 확장하려면 선택 지원 문서 [`optional/ai-and-navigation.md`](../projects/relay-arena-vertical-slice/template/optional/ai-and-navigation.md)에서 두 종류 agent의 perception, goal, navigation, action command와 debug trace를 설계합니다. 선택 산출물은 같은 agent lifecycle에 계약을 적용했는지 보여 주며, pathfinding 알고리즘 자체의 구현을 요구하지 않습니다.
 
 ## 기존 브랜치와 경계
 

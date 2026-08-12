@@ -116,7 +116,52 @@
 15. [플랫폼 입력, 접근성, 저장 수명과 release](docs/15-platform-accessibility-lifecycle-and-release.md)
 16. [게임 팀 경계와 안전한 변경](docs/16-game-team-interfaces-and-change-management.md)
 17. [Vertical Slice Capstone](docs/17-capstone.md)
-18. [엔진 교차표와 공식 자료 지도](docs/90-engine-and-source-map.md)
+
+[`docs/90-engine-and-source-map.md`](docs/90-engine-and-source-map.md)는 18번째 필수 단계가 아니라, 01~17을 선택한 엔진의 symbol·callback·asset/tool entry에 대응할 때 필요에 따라 확인하는 지원 자료입니다.
+
+## 정본 진행 순서
+
+문서를 모두 읽은 뒤 실습을 몰아서 하지 않습니다. 먼저 로드맵을 읽고 외부 learner workspace를 한 번 만든 다음, 아래 표의 문서→관찰→직접 수행→검증→비교 순서를 반복합니다.
+
+```sh
+./prepare.sh
+WORK_PARENT="$(mktemp -d)"
+make workspace DEST="$WORK_PARENT/game-development"
+WORK_ROOT="$WORK_PARENT/game-development"
+CAP="$WORK_ROOT/relay-arena-vertical-slice"
+```
+
+실습 검증은 다음 공통 형태로 실행합니다. 표의 `EXERCISE` 값과 실제 slug를 사용합니다.
+
+```sh
+make submission \
+  EXERCISE=01 \
+  SUBMISSION="$WORK_ROOT/exercises/01-time-step-analysis/submission"
+```
+
+| 순서 | 문서 | 관찰 예제 | 직접 수행 | 수정 위치 | 검증 | 완료 뒤 비교·다음 |
+|---:|---|---|---|---|---|---|
+| 0 | [로드맵](docs/00-roadmap.md) | — | 목표 직무와 Capstone 구현 경로를 고르고 외부 workspace 생성 | `$WORK_ROOT` | `./prepare.sh`; `make workspace DEST=...` | workspace 구조 확인 뒤 01 |
+| 1 | [01 제품·runtime 계약](docs/01-game-product-and-runtime-contract.md) | — | process→frontend→world→match→entity 초안 | `$CAP/submission/runtime-state-map.md` | 문서 완료 기준과 사람 검토 | 자신의 초안 뒤 Capstone `reference/artifacts/runtime-state-map.md`; 02 |
+| 2 | [02 game loop·시간](docs/02-game-loop-time-and-frames.md) | [fixed-step replay](examples/fixed-step-replay/README.md) | [실습 01](exercises/01-time-step-analysis/README.md)과 clock·fixed-step 계약 | 실습 01 `submission/*`; `$CAP/submission/time-and-input-contract.md` | `make example`; `make submission` (`EXERCISE=01`) | 실습 01 reference와 Capstone artifact; 03 |
+| 3 | [03 입력·command·UI](docs/03-input-command-camera-and-ui.md) | — | [실습 02](exercises/02-input-command-contract/README.md)와 action→command·focus 계약 | 실습 02 `submission/*`; `$CAP/submission/time-and-input-contract.md` | `make submission` (`EXERCISE=02`) | 실습 02 reference; 04 |
+| 4 | [04 world·entity lifecycle](docs/04-world-scene-entity-component-lifecycles.md) | — | [실습 03](exercises/03-world-lifecycle-review/README.md)과 owner·lifecycle 보완 | 실습 03 `submission/*`; `$CAP/submission/runtime-state-map.md`, `state-ownership.csv`, `world-and-asset-plan.md` | `make submission` (`EXERCISE=03`) | 실습 03 및 대응 Capstone references; 05 |
+| 5 | [05 gameplay rule·progression](docs/05-gameplay-rules-progression-and-data.md) | — | command acceptance, match invariant와 persistent owner 작성 | `$CAP/submission/gameplay-rules.md`, `state-ownership.csv` | 문서 완료 기준; release compatibility는 15에서 검증 | 자신의 초안 뒤 대응 Capstone references; 06 |
+| 6 | [06 asset·loading·memory](docs/06-assets-import-cooking-loading-and-memory.md) | — | [실습 04](exercises/04-asset-loading-plan/README.md)와 load graph·gate·budget | 실습 04 `submission/*`; `$CAP/submission/world-and-asset-plan.md` | `make submission` (`EXERCISE=04`) | 실습 04 및 Capstone reference; 07 |
+| 7 | [07 collision·movement·space](docs/07-collision-physics-movement-and-space.md) | — | transform writer와 collision→movement→correction 순서 | `$CAP/submission/movement-and-space.md` | 문서 완료 기준; authority correction은 11에서 검증 | 자신의 초안 뒤 Capstone reference; 08 |
+| 8 | [08 animation·audio·VFX](docs/08-animation-audio-vfx-and-presentation.md) | — | presentation event, acknowledgement와 dedupe 계약 | `$CAP/submission/presentation-contract.md` | 문서 완료 기준과 사람 검토 | 자신의 초안 뒤 Capstone reference; 09 |
+| 9 | [09 save·migration·replay](docs/09-save-migration-replay-and-determinism.md) | 앞서 실행한 [fixed-step replay](examples/fixed-step-replay/README.md)의 hash 재해석 | [실습 05](exercises/05-save-and-replay-migration/README.md)와 save/replay 계약 | 실습 05 `submission/*`; `$CAP/submission/save-and-replay.md` | `make submission` (`EXERCISE=05`) | 실습 05 및 Capstone reference; 10 |
+| 10 | [10 AI·navigation 통합](docs/10-game-ai-navigation-and-behavior.md) | — | 필수 command·lifecycle·budget 경계를 기존 산출물에 반영; AI 전용 분석은 선택 | 필수 movement·presentation·authority 산출물; 선택 `$CAP/submission/optional/ai-and-navigation.md` | 문서 완료 기준과 사람 검토 | 선택 분석에는 단일 답안을 강제하지 않음; 11 |
+| 11 | [11 authority·replication·latency](docs/11-network-authority-replication-and-latency.md) | — | [실습 06](exercises/06-authority-and-latency/README.md)과 intent·validation·correction | 실습 06 `submission/*`; `$CAP/submission/authority-and-latency.md` | `make submission` (`EXERCISE=06`) | 실습 06 및 Capstone reference; 12 |
+| 12 | [12 tool·build·content validation](docs/12-tools-editor-builds-and-content-validation.md) | — | build/content identity와 validator evidence 연결 | `$CAP/submission/world-and-asset-plan.md`, `traceability-matrix.csv` | 실습 04 결과 재검토; release gate는 15 | 자신의 초안 뒤 대응 Capstone references; 13 |
+| 13 | [13 test·debug·telemetry](docs/13-testing-debugging-telemetry-and-reproduction.md) | — | test pyramid, trace, known-bad와 learner evidence 계획 | `$CAP/submission/test-and-observability-plan.md` | `make meta`로 repository checker 방향 확인 | 자신의 초안 뒤 Capstone reference; 14 |
+| 14 | [14 performance·profiling](docs/14-performance-budgets-profiling-and-scalability.md) | — | [실습 07](exercises/07-performance-budget-review/README.md)과 target budget·전후 profile | 실습 07 `submission/*`; `$CAP/submission/performance-and-release.md` | `make submission` (`EXERCISE=07`) | 실습 07 및 Capstone reference; 15 |
+| 15 | [15 platform·accessibility·release](docs/15-platform-accessibility-lifecycle-and-release.md) | — | [실습 08](exercises/08-release-readiness/README.md)과 platform·save·release gate | 실습 08 `submission/*`; `$CAP/submission/performance-and-release.md` | `make submission` (`EXERCISE=08`) | 실습 08 및 Capstone reference; 16 |
+| 16 | [16 팀 경계·안전한 변경](docs/16-game-team-interfaces-and-change-management.md) | — | requirement→owner→implementation→test→release와 issue 순서 확정 | `$CAP/submission/traceability-matrix.csv`, `change-plan.md` | 필수 Profile A top-level 13개 사람 검토 | 자신의 초안 뒤 대응 Capstone references; 17 |
+| 17 | [17 Vertical Slice Capstone](docs/17-capstone.md) | — | [Relay Arena](projects/relay-arena-vertical-slice/README.md)의 필수 Profile A 13개와 Profile B 구현·evidence bundle 완성 | `$CAP/submission/` top-level 13개; `$CAP/starter/relay_arena.py`; `$CAP/evidence/` | `python3 projects/relay-arena-vertical-slice/tests/check_contract.py --implementation "$CAP/starter/relay_arena.py"` 또는 동등 engine assertions | learner 결과 뒤 `reference/relay_arena.py`, `reference/artifacts/`; 실제 프로젝트 또는 선택 Profile C |
+| 참고 | [90 엔진 교차표](docs/90-engine-and-source-map.md) | — | 선택 엔진의 symbol·callback·asset/tool entry에 개념 대응 | 실제 프로젝트 조사 기록 | engine version과 source revision을 사람이 확인 | 01~17에서 필요할 때 사용 |
+
+Exercise `reference/`와 Capstone artifact reference는 자신의 첫 결과를 만든 뒤 비교합니다. Capstone black-box test와 `expected-contract.json`은 구현 전에 checker 방향을 확인하는 oracle로 실행할 수 있지만, `reference/relay_arena.py` source는 learner 구현을 시도한 뒤 읽습니다. root [`reference/`](reference/)는 glossary·checklist·crosswalk 같은 quick-reference 문서이며 exercise 답안이 아닙니다. `./verify.sh`는 repository 자체를 검증하며 외부 learner workspace의 완료를 대신하지 않습니다.
 
 ## 단계 실습
 
@@ -171,7 +216,7 @@ input command → bounded fixed-step → gameplay state
 → failure reproduction → profile 전후 → regression result
 ```
 
-기본 Profile B는 Python 3.10 표준 라이브러리 기반 headless starter를 완성하는 경로입니다. `simulate`, `migrate-save`, `profile`과 같은 public contract로 정상·hitch·duplicate/non-owner·stale resource·corrupt save·replay divergence·수정 전후를 검사합니다. Unity, Unreal Engine, Godot 또는 자체 framework에서 같은 assertion과 identity/evidence를 제공하는 동등 경로로 대체할 수 있습니다. AI/navigation과 실제 network transport는 선택 심화입니다.
+필수 Profile B의 기본 경로는 Python 3.10 표준 라이브러리 기반 headless starter입니다. `simulate`, `migrate-save`, `profile`과 같은 public contract로 정상·hitch·duplicate/non-owner·stale resource·corrupt save·replay divergence·수정 전후를 검사합니다. Python 경로 자체는 Unity, Unreal Engine, Godot 또는 자체 framework에서 같은 assertion과 identity/evidence를 제공하는 동등 경로로 대체할 수 있지만, 실행 가능한 구현 evidence는 생략할 수 없습니다. AI 전용 추가 산출물과 실제 network transport는 선택 심화입니다.
 
 ## 준비와 검증
 
@@ -190,12 +235,15 @@ make meta
 `verify.sh`는 다음을 검사합니다.
 
 - 필수 문서·실습·Capstone 구조
+- README의 문서→예제→실습→수정 위치→검증→reference 학습 지도
 - Markdown 상대 링크
 - JSON fixture의 schema와 교차 참조
 - 문서 공통 절과 ownership 경계
+- example과 Capstone reference의 project-wide Implementation annotation scope·연속성·금지 위치
 - fixed-step replay 예제의 deterministic state hash
 - 8개 실습의 reference 통과, 미완성 template와 대표 오답 거부
 - Capstone reference 통과, starter와 네 종류 behavioral mutant 거부
+- learner workspace의 non-overwrite·symlink 거부와 필수 13개·선택 AI 분리
 - 검증 전후 원본 source snapshot 불변성
 
 학습자 파일은 저장소 밖 새 절대 경로에 만듭니다. 생성기는 기존 경로와 symlink를 덮어쓰지 않습니다.

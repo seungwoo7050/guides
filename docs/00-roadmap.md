@@ -212,6 +212,8 @@ Part II가 끝나면 “asset을 load한다”, “physics가 움직인다”, �
 16. [게임 팀 경계와 안전한 변경](16-game-team-interfaces-and-change-management.md)
 17. [Vertical Slice Capstone](17-capstone.md)
 
+[`90-engine-and-source-map.md`](90-engine-and-source-map.md)는 별도 18단계가 아니라, 01~17의 개념을 선택 엔진과 공식 자료에 대응할 때 사용하는 지원 reference입니다.
+
 Part III가 끝나면 기능 완료를 다음 수명 주기로 관리할 수 있어야 합니다.
 
 ```text
@@ -227,16 +229,27 @@ playable rule
 
 ## 문서와 실습 연결
 
-| 문서 영역 | 단계 실습 | 대표 실패 |
+root README의 [정본 진행 순서](../README.md#정본-진행-순서)가 실행 명령·수정 위치·reference 시점을 포함한 canonical workflow입니다. 아래 표는 roadmap에서 같은 01~17 순서를 개념과 직접 수행의 관계로 요약합니다.
+
+| 문서 | 관찰·단계 실습 | Capstone 누적 산출물 |
 |---|---|---|
-| 시간·frame·simulation | [01 시간 단계 분석](../exercises/01-time-step-analysis/README.md) | 긴 frame에서 무한 catch-up, pause 중 timer 진행, input 중복 소비 |
-| 입력·command·focus | [02 입력과 명령](../exercises/02-input-command-contract/README.md) | device key를 game rule에 직접 결합, UI와 gameplay가 동시에 입력 소비 |
-| world·entity 수명 | [03 월드 수명 검토](../exercises/03-world-lifecycle-review/README.md) | unload된 scene 객체를 참조, destroy event 뒤 callback 실행 |
-| asset·loading·memory | [04 asset loading 계획](../exercises/04-asset-loading-plan/README.md) | hard reference로 전체 bundle resident, async completion 후 owner 소멸 |
-| save·replay | [05 save와 replay migration](../exercises/05-save-and-replay-migration/README.md) | schema version 부재, 비결정 순서, float·random seed 차이 |
-| multiplayer | [06 authority와 latency](../exercises/06-authority-and-latency/README.md) | client가 reward·hit를 확정, stale correction이 최신 state를 덮음 |
-| performance | [07 성능 예산 검토](../exercises/07-performance-budget-review/README.md) | editor profile을 target device 결과로 오인, 평균만 보고 spike 무시 |
-| release | [08 release readiness](../exercises/08-release-readiness/README.md) | save compatibility·remap·suspend·crash context 없이 ship |
+| 01 제품·runtime | — | `runtime-state-map.md` |
+| 02 game loop·시간 | `fixed-step-replay` → [01 시간 단계 분석](../exercises/01-time-step-analysis/README.md) | `time-and-input-contract.md` |
+| 03 입력·command·focus | [02 입력과 명령](../exercises/02-input-command-contract/README.md) | `time-and-input-contract.md` |
+| 04 world·entity 수명 | [03 월드 수명 검토](../exercises/03-world-lifecycle-review/README.md) | `runtime-state-map.md`, `state-ownership.csv`, `world-and-asset-plan.md` |
+| 05 gameplay rule·progression | — | `gameplay-rules.md`, `state-ownership.csv` |
+| 06 asset·loading·memory | [04 asset loading 계획](../exercises/04-asset-loading-plan/README.md) | `world-and-asset-plan.md` |
+| 07 collision·movement·space | — | `movement-and-space.md` |
+| 08 animation·audio·VFX | — | `presentation-contract.md` |
+| 09 save·migration·replay | `fixed-step-replay` hash 재해석 → [05 save와 replay migration](../exercises/05-save-and-replay-migration/README.md) | `save-and-replay.md` |
+| 10 AI·navigation 통합 | 필수 concept; AI 전용 분석만 선택 | 기존 movement·presentation·authority 산출물, 선택 `optional/ai-and-navigation.md` |
+| 11 authority·replication·latency | [06 authority와 latency](../exercises/06-authority-and-latency/README.md) | `authority-and-latency.md` |
+| 12 tool·build·content validation | 실습 04 결과 재사용 | `world-and-asset-plan.md`, `traceability-matrix.csv` |
+| 13 test·debug·telemetry | 모든 실습의 known-bad와 evidence 연결 | `test-and-observability-plan.md` |
+| 14 performance·profiling | [07 성능 예산 검토](../exercises/07-performance-budget-review/README.md) | `performance-and-release.md` |
+| 15 platform·accessibility·release | [08 release readiness](../exercises/08-release-readiness/README.md) | `performance-and-release.md` |
+| 16 팀 경계·안전한 변경 | — | `traceability-matrix.csv`, `change-plan.md` |
+| 17 Vertical Slice Capstone | Profile A 13개 + Profile B 구현 evidence 통합 | learner 구현 뒤 reference code/artifact 비교 |
 
 ## Capstone profile
 
@@ -252,9 +265,9 @@ playable rule
 - authority table과 latency UX
 - test·telemetry·performance·release plan
 
-엔진이 없어도 완료할 수 있습니다. 이 profile이 문서 중심 가이드의 필수 완료 기준입니다.
+엔진이 없어도 작성할 수 있습니다. 이 profile은 문서 중심의 필수 계약 묶음이지만, 아래 Profile B 구현 evidence 없이 브랜치 전체를 완료한 것은 아닙니다.
 
-### Profile B. Local playable slice — 구현 종료 근거
+### Profile B. 실행 가능한 구현 evidence — 필수
 
 - menu에서 arena 진입
 - 한 명의 player와 두 종류의 obstacle 또는 agent
@@ -262,7 +275,7 @@ playable rule
 - pause·restart·save 또는 replay
 - target frame budget과 profile capture
 
-두 번째 종료 능력을 완료하려면 Profile B 또는 기존 엔진 프로젝트에서 입력→상태→표현→저장을 연결한 동등한 작은 기능 변경 근거가 필요합니다. 특정 Capstone 엔진을 강제하지 않는다는 뜻에서 Profile B는 선택 구현이며, 구현 능력 자체는 선택 종료 능력이 아닙니다.
+두 번째 종료 능력을 완료하려면 실행 가능한 구현 evidence가 반드시 필요합니다. 기본 Python headless path 대신 기존 Unity, Unreal Engine, Godot 또는 자체 framework 프로젝트에서 입력→상태→표현→저장을 연결한 동등한 작은 기능 변경과 assertion mapping을 제출할 수 있습니다. 선택 가능한 것은 구현 엔진과 물리 경로이며, 구현 evidence 자체는 선택이 아닙니다.
 
 ### Profile C. Networked slice — 선택 심화
 

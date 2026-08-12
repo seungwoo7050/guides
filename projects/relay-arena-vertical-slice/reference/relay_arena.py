@@ -15,6 +15,8 @@ MAX_STEPS_PER_FRAME = 4
 TARGET_TICKS = 90
 
 
+# [Implementation 1] 외부 fixture와 public CLI 실패를 하나의 domain error
+# boundary로 모아 partial state나 Python traceback이 계약 밖으로 새지 않게 한다.
 class RelayError(ValueError):
     pass
 
@@ -26,6 +28,8 @@ def load_json(path: Path) -> Any:
         raise RelayError(f"cannot read {path}: {exc}") from exc
 
 
+# [Implementation 1-1] evidence와 migrated save는 sibling temporary file을
+# fsync한 뒤 원자 교체하고, 실패하면 verifier-owned temporary file만 정리한다.
 def write_json_atomic(path: Path, value: Any) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     descriptor, raw_temp = tempfile.mkstemp(prefix=f".{path.name}.", suffix=".tmp", dir=path.parent)
@@ -42,6 +46,8 @@ def write_json_atomic(path: Path, value: Any) -> None:
         raise
 
 
+# [Implementation 2] simulation 내부 state에서 replay/save 비교에 필요한
+# authoritative projection만 고정해 presentation과 transient owner를 제외한다.
 def canonical_state(state: dict[str, Any]) -> dict[str, Any]:
     return {
         "active_cores": sorted(state["active_cores"]),
@@ -80,6 +86,8 @@ def initial_state() -> dict[str, Any]:
     }
 
 
+# [Implementation 3] command rejection과 presentation dedupe를 authoritative
+# state가 소유하게 해 duplicate/non-owner intent가 결과를 직접 쓰지 못하게 한다.
 def reject(state: dict[str, Any], command: dict[str, Any], reason: str) -> None:
     state["rejected_commands"].append({"sequence": command.get("sequence"), "reason": reason})
 
@@ -137,6 +145,8 @@ def apply_command(state: dict[str, Any], command: dict[str, Any], rules: dict[st
     state["accepted_commands"] += 1
 
 
+# [Implementation 3-1] 한 fixed tick의 단일 writer가 command, 이동, cooldown과
+# tick 증가 순서를 고정해 frame schedule과 gameplay state를 분리한다.
 def step(state: dict[str, Any], commands: list[dict[str, Any]], rules: dict[str, Any]) -> None:
     for command in commands:
         apply_command(state, command, rules)
@@ -148,6 +158,8 @@ def step(state: dict[str, Any], commands: list[dict[str, Any]], rules: dict[str,
     state["tick"] += 1
 
 
+# [Implementation 4] 관찰할 frame schedule과 실패 scenario를 deterministic
+# tick input으로 바꿔 정상·hitch·authority 경계를 같은 simulation에 주입한다.
 def frame_schedule(name: str) -> list[int]:
     if name == "smooth":
         return [FIXED_STEP_US] * 100
@@ -170,6 +182,8 @@ def commands_by_tick(trace: dict[str, Any], scenario: str) -> dict[int, list[dic
     return result
 
 
+# [Implementation 5] generation owner가 asset closure와 resident set을 관리하고
+# optional degradation, stale completion과 world-exit cleanup evidence를 남긴다.
 def asset_report(manifest: dict[str, Any], scenario: str) -> dict[str, Any]:
     assets = {item["id"]: item for item in manifest["assets"]}
     visits = 0
@@ -218,6 +232,8 @@ def asset_report(manifest: dict[str, Any], scenario: str) -> dict[str, Any]:
     }
 
 
+# [Implementation 5-1] 같은 command trace와 known-bad variant를 checkpoint마다
+# hash해 first divergence를 재현 가능한 tick으로 축소한다.
 def replay_evidence(trace: dict[str, Any], rules: dict[str, Any]) -> dict[str, Any]:
     checkpoints = [30, 60, 90]
 
@@ -251,6 +267,8 @@ def replay_evidence(trace: dict[str, Any], rules: dict[str, Any]) -> dict[str, A
     }
 
 
+# [Implementation 5-2] player owner와 command identity, snapshot sequence를
+# 검증해 duplicate·stale·client result claim을 authority evidence로 분리한다.
 def authority_report(network: dict[str, Any]) -> dict[str, Any]:
     owners = network["players"]
     identities: set[tuple[str, int]] = set()
@@ -275,6 +293,8 @@ def authority_report(network: dict[str, Any]) -> dict[str, Any]:
     return {"rejected": sorted(rejected), "accepted_command_identities": len(identities)}
 
 
+# [Implementation 6] bounded fixed simulation과 resource/replay/authority
+# observation을 하나의 public result로 조립하되 각 subsystem owner는 유지한다.
 def simulate(inputs: Path, schedule: str, scenario: str) -> dict[str, Any]:
     rules = load_json(inputs / "gameplay-rules.json")
     trace = load_json(inputs / "replay-trace.json")
@@ -330,6 +350,8 @@ def simulate(inputs: Path, schedule: str, scenario: str) -> dict[str, Any]:
     }
 
 
+# [Implementation 7] gameplay state 계약이 고정된 뒤 v1을 검증·정규화하고
+# stable id와 설정을 보존한 v2 전체가 준비된 경우에만 atomic publish한다.
 def migrate_save(source: Path, contract_path: Path, output: Path) -> dict[str, Any]:
     old = load_json(source)
     contract = load_json(contract_path)
@@ -363,6 +385,8 @@ def migrate_save(source: Path, contract_path: Path, output: Path) -> dict[str, A
     return migrated
 
 
+# [Implementation 8] 같은 modeled workload의 수정 전후 counter와 보존한
+# invariant를 함께 기록해 target-device timing으로 과장하지 않게 한다.
 def profile_report(inputs: Path) -> dict[str, Any]:
     manifest = load_json(inputs / "content-manifest.json")
     raw_edges = sum(len(item["dependencies"]) for item in manifest["assets"])
@@ -387,6 +411,8 @@ def profile_report(inputs: Path) -> dict[str, Any]:
     }
 
 
+# [Implementation 9] 마지막에 simulate, migrate-save, profile의 public CLI
+# schema를 고정해 implementation 내부 모양과 black-box contract를 분리한다.
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description="Headless Relay Arena reference")
     sub = parser.add_subparsers(dest="command", required=True)
@@ -407,6 +433,8 @@ def build_parser() -> argparse.ArgumentParser:
     return parser
 
 
+# [Implementation 9-1] subcommand dispatch, atomic output, diagnostic과 exit
+# status를 조립해 모든 failure가 동일한 process boundary를 통과하게 한다.
 def main() -> int:
     args = build_parser().parse_args()
     try:
