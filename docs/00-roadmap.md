@@ -56,7 +56,7 @@ docker compose version
 
 ## 종료 능력
 
-이 가이드를 마친 독자는 빈 디렉터리에서 다음 일을 할 수 있어야 합니다.
+이 가이드의 core 과정인 Part 01–06을 마친 독자는 빈 디렉터리에서 다음 일을 할 수 있어야 합니다.
 
 1. 의미 있는 HTML과 반응형 CSS로 키보드 사용이 가능한 화면을 만듭니다.
 2. JavaScript·TypeScript로 상태, 비동기 요청과 외부 입력 검증을 구현합니다.
@@ -67,11 +67,17 @@ docker compose version
 7. WebSocket snapshot·patch·sequence·재연결로 실시간 상태를 server 정본에 수렴시킵니다.
 8. 단위·계약·API·DB·WebSocket·browser 검사와 production build를 독립된 증거로 실행합니다.
 
+선택 과정인 Part 07까지 마치면 다음 능력을 추가로 증명합니다.
+
+9. 금액·가격 snapshot·재고·주문 상태 전이를 업무 불변식으로 모델링합니다.
+10. DB transaction 밖의 결제 요청을 durable command, idempotency와 webhook으로 최종 수렴시킵니다.
+11. 중복·지연·순서 역전·응답 유실·재시도에서 주문과 재고가 거짓 상태를 만들지 않음을 검사합니다.
+
 완료의 기준은 “코드를 한 번 실행했다”가 아니라 **정상·실패·경계 조건을 자동 검증할 수 있다**는 것입니다.
 
 ## 읽는 순서
 
-아래 01–30 번호는 문서의 개념 순서를 보여 주는 카탈로그입니다. 실제 구현은 Part가 끝날 때 연결 exercise로 이동하고, `브라우저 작업 목록`은 Part 01 직후, 선택형 notes brief는 해당 DB·보안 문서 직후, `실시간 협업 보드`는 모든 독립 exercise 뒤에 수행합니다. 따라서 Part 06 문서를 마지막에 한꺼번에 실행하지 않습니다.
+아래 01–33 번호는 문서의 개념 순서를 보여 주는 카탈로그입니다. 실제 구현은 Part가 끝날 때 연결 exercise로 이동하고, `브라우저 작업 목록`은 Part 01 직후, 선택형 notes brief는 해당 DB·보안 문서 직후, `실시간 협업 보드`는 모든 독립 exercise 뒤에 수행합니다. Part 07은 core 종료 뒤 수행하는 선택형 도메인 실습이며 Part 06의 선행 조건이 아닙니다.
 
 ### Part 01. 웹 기초
 
@@ -79,7 +85,7 @@ docker compose version
 |---:|---|---|
 | 01 | [웹은 어떻게 동작하는가](01-web-foundations/01-how-the-web-works.md) | 브라우저가 URL을 열 때 어떤 요청·응답·프로세스 경계를 지나는가 |
 | 02 | [HTML 폼과 접근성](01-web-foundations/02-html-forms-accessibility.md) | 브라우저의 기본 의미와 키보드 동작을 어떻게 보존하는가 |
-| 03 | [CSS 레이아웃과 반응형 화면](01-web-foundations/03-css-layout-responsive.md) | 내용과 viewport가 달라져도 왜 화면이 무너지지 않는가 |
+| 03 | [CSS 레이아웃과 반응형 화면](01-web-foundations/03-css-layout-responsive.md) | 내용과 viewport가 달라도 왜 화면이 무너지지 않는가 |
 | 04 | [JavaScript 기초](01-web-foundations/04-javascript-foundations.md) | 값·함수·배열·객체와 상태 변경을 어떻게 모델링하는가 |
 | 05 | [DOM, 이벤트, URL과 저장소](01-web-foundations/05-dom-events-url-storage.md) | 화면 상태의 정본을 어디에 둘 것인가 |
 | 06 | [비동기 작업과 fetch](01-web-foundations/06-async-fetch-errors.md) | 늦은 응답·취소·오류를 어떻게 구분하는가 |
@@ -133,6 +139,16 @@ docker compose version
 | 29 | [공유 메모](06-capstones/03-shared-notes.md) | React·API·DB·세션·권한 | 보안 실습 뒤 선택형 expected-evidence brief |
 | 30 | [실시간 협업 보드](06-capstones/04-collaboration-board.md) | 전체 과정과 실시간 동기화 | 모든 독립 실습 뒤 Stage 01–08 최종 문제 |
 
+### Part 07. 선택형 도메인 실전
+
+| 순서 | 문서 | 핵심 질문 | 연결 실습 |
+|---:|---|---|---|
+| 31 | [신뢰할 수 있는 command와 webhook](07-domain-practice/01-reliable-commands-and-webhooks.md) | DB와 외부 시스템이 한 transaction이 아닐 때 중복·응답 유실·재시도를 어떻게 흡수하는가 | `commerce-checkout` Stage 03–04 |
+| 32 | [커머스 업무 불변식](07-domain-practice/02-commerce-domain-invariants.md) | 금액·가격 snapshot·재고·주문 상태를 어떤 정본과 제약으로 보호하는가 | `commerce-checkout` Stage 01–02, 05 |
+| 33 | [커머스 checkout](07-domain-practice/03-commerce-checkout.md) | 앞선 계약을 하나의 작은 주문·결제 시스템으로 어떻게 결합하고 검증하는가 | [`commerce-checkout`](../exercises/commerce-checkout/README.md) Stage 01–06 |
+
+Part 07은 쇼핑몰 UI 제작 과정이 아닙니다. 상품·장바구니 화면보다 금액, 재고 경쟁, 주문 상태 전이, 결제 command와 webhook 실패 경계에 집중합니다. 실제 PG, 배송, 쿠폰, 세금, 다중 판매자는 범위 밖입니다.
+
 ## 문서와 실습 대응
 
 별도 관찰 `examples/`는 없습니다. 각 독립 exercise가 좁은 관찰과 직접 구현을 함께 제공하며, 표의 모든 수정 위치는 생성된 `work/`입니다.
@@ -149,11 +165,12 @@ docker compose version
 | 8 | Capstone 03 | [선택형 공유 메모 evidence brief](06-capstones/03-shared-notes.md) | 수동 evidence rubric | repo reference 없음 → Part 05 |
 | 9 | Part 05 01–03 | [`07-websocket`](../exercises/07-websocket/README.md) | 두 socket·reconnect·cleanup | `reference/` 비교 → 품질 |
 | 10 | Part 05 04 | [`08-testing`](../exercises/08-testing/README.md) | unit·API·browser | `reference/` 비교 → 최종 문제 |
-| 11 | Capstone 04 | [`collaboration-board`](../exercises/collaboration-board/README.md) Stage 01–08 | 누적 typecheck·test·build·DB·WS·E2E | exercise-local `reference/` 비교 → 종료 |
+| 11 | Capstone 04 | [`collaboration-board`](../exercises/collaboration-board/README.md) Stage 01–08 | 누적 typecheck·test·build·DB·WS·E2E | exercise-local `reference/` 비교 → core 종료 |
+| 12 | Part 07 31–33 | [`commerce-checkout`](../exercises/commerce-checkout/README.md) Stage 01–06 | domain·실제 PostgreSQL·동시 checkout·idempotency·HTTP provider·서명 webhook | exercise-local `reference/` 비교 → 선택 트랙 종료 |
 
 ## 학습 방법
 
-모든 실습은 같은 순서를 따릅니다.
+Core 실습은 같은 순서를 따릅니다.
 
 ```text
 문제와 완료 계약 읽기
@@ -167,6 +184,15 @@ docker compose version
 
 생성기는 기존 `work/`나 symbolic link를 덮어쓰지 않습니다. exercise-local `reference/`는 복사할 정답이 아니라 완료 뒤 설계 선택을 비교할 자료입니다. 루트 `reference/`는 언제든 읽는 빠른 참조 문서입니다. 구현 모양이 달라도 외부 계약과 실패 후 상태를 만족하면 올바른 해결입니다.
 
+`commerce-checkout`은 core exercise allowlist를 변경하지 않고도 덮어쓸 수 있는 선택형 추가 자료이므로 exercise-local 생성기를 사용합니다.
+
+```sh
+node exercises/commerce-checkout/checks/create-workspace.mjs
+node exercises/commerce-checkout/checks/verify-work.mjs 1
+```
+
+이 생성기도 기존 `work/`를 덮어쓰지 않고 symbolic link를 거부합니다.
+
 ## 범위 밖
 
 이 가이드가 의도적으로 깊게 다루지 않는 내용은 다음과 같습니다.
@@ -175,11 +201,12 @@ docker compose version
 - DB 저장 엔진, B+tree, MVCC·WAL 내부구조와 query planner
 - Docker·VPS·DNS·공인 TLS·CI/CD·관측 플랫폼·백업 운영
 - OAuth/OIDC provider 구축, 암호학 구현과 보안 감사 전체
-- 여러 서비스 사이 outbox·saga·재전달·분산 tracing
+- 여러 서비스 사이의 범용 outbox·saga·broker 재전달·분산 tracing
+- 실제 결제대행사 계약, 카드정보 처리, 회계·세금·배송·쿠폰·정산 시스템
 - Kubernetes, multi-region과 대규모 고가용성
 
-이 항목은 후속 전문 가이드가 소유합니다. 여기서는 작은 풀스택 애플리케이션을 시작하는 데 필요한 경계만 제공합니다.
+Part 07은 단일 애플리케이션 내부의 durable command와 idempotent webhook까지 다룹니다. 여러 서비스가 각자의 DB를 소유하는 분산 transaction과 범용 saga 운영은 후속 전문 가이드가 소유합니다.
 
 ## 첫 단계
 
-웹 요청 자체가 낯설면 [`웹은 어떻게 동작하는가`](01-web-foundations/01-how-the-web-works.md)로 이동합니다. 이미 브라우저 앱을 만들 수 있다면 각 장의 **완료 기준**을 확인하고 Part 02부터 시작해도 됩니다.
+웹 요청 자체가 낯설면 [`웹은 어떻게 동작하는가`](01-web-foundations/01-how-the-web-works.md)로 이동합니다. 이미 브라우저 앱을 만들 수 있다면 각 장의 **완료 기준**을 확인하고 Part 02부터 시작해도 됩니다. Core를 마쳤고 transaction과 외부 시스템의 실패 경계를 연습하려면 [`신뢰할 수 있는 command와 webhook`](07-domain-practice/01-reliable-commands-and-webhooks.md)으로 이동합니다.
