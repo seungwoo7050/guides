@@ -1,0 +1,30 @@
+:root { font-family: Inter, ui-sans-serif, system-ui, sans-serif; color: #172033; background: #eef2f7; }
+* { box-sizing: border-box; }
+body { margin: 0; }
+a { color: #1d4ed8; }
+button, input, select { font: inherit; }
+button { cursor: pointer; padding: .65rem .9rem; border: 0; border-radius: .55rem; background: #1d4ed8; color: white; font-weight: 700; }
+button:disabled { cursor: not-allowed; opacity: .55; }
+input, select { padding: .65rem; border: 1px solid #aab5c5; border-radius: .5rem; min-width: 0; }
+:focus-visible { outline: 3px solid #f59e0b; outline-offset: 3px; }
+.site-header { display: flex; align-items: center; justify-content: space-between; gap: 1rem; padding: 1rem max(1rem, calc((100% - 72rem) / 2)); background: #111827; color: white; }
+.site-header a { color: inherit; text-decoration: none; }
+.site-header nav { display: flex; gap: 1rem; }
+.brand { font-weight: 800; }
+main { width: min(72rem, calc(100% - 2rem)); margin: 2rem auto; }
+.wide-main { width: min(96rem, calc(100% - 2rem)); }
+.panel { padding: 1rem; border: 1px solid #d8e0eb; border-radius: .9rem; background: white; box-shadow: 0 8px 24px rgb(15 23 42 / .06); }
+.card-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 16rem), 1fr)); gap: 1rem; }
+.form-stack { display: grid; gap: .7rem; max-width: 30rem; }
+.inline-form { display: flex; flex-wrap: wrap; align-items: end; gap: .7rem; }
+.inline-form input { flex: 1 1 14rem; }
+.page-heading, .board-toolbar { display: flex; justify-content: space-between; align-items: center; gap: 1rem; flex-wrap: wrap; }
+.muted { color: #64748b; }
+.event-list { display: grid; gap: .6rem; padding-left: 1.5rem; }
+.board-canvas { position: relative; width: 100%; overflow: hidden; border: 1px solid #94a3b8; border-radius: 1rem; background-color: white; background-image: radial-gradient(#cbd5e1 1px, transparent 1px); background-size: 20px 20px; touch-action: none; }
+.board-item { position: absolute; min-width: 8rem; padding: .7rem; border: 1px solid #d6b85d; border-radius: .7rem; background: #fff7bf; box-shadow: 0 8px 20px rgb(15 23 42 / .14); overflow-wrap: anywhere; }
+.board-item.shape { border-color: #7aa7d9; background: #dbeafe; }
+.board-item p { margin-block: .5rem; }
+.board-item small { display: block; margin-top: .4rem; color: #64748b; }
+.drag-handle { padding: .3rem .5rem; background: #475569; touch-action: none; }
+@media (max-width: 40rem) { .site-header { align-items: flex-start; flex-direction: column; } .site-header nav { flex-wrap: wrap; } }

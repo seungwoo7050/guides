@@ -1,0 +1,4 @@
+# [Implementation 0] Separate browser, API, shared-contract, and persistence ownership while keeping them in one independently versioned workspace.
+packages:
+  - apps/*
+  - packages/*

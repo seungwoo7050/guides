@@ -1,0 +1,22 @@
+{
+  "name": "collaboration-board",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "packageManager": "pnpm@10.32.1",
+  "scripts": {
+    "dev": "pnpm --parallel --filter @board/api --filter @board/web dev",
+    "migrate": "pnpm --filter @board/db migrate",
+    "typecheck": "pnpm -r typecheck",
+    "build": "pnpm -r build",
+    "test": "pnpm -r test",
+    "test:e2e": "playwright test",
+    "verify": "pnpm typecheck && pnpm test && pnpm build"
+  },
+  "devDependencies": {
+    "@playwright/test": "1.61.1",
+    "@types/node": "24.13.3",
+    "typescript": "5.8.3",
+    "vitest": "3.1.2"
+  }
+}

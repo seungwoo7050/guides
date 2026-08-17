@@ -1,0 +1,33 @@
+{
+  "name": "commerce-checkout",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=24.19.0 <25"
+  },
+  "packageManager": "pnpm@10.32.1",
+  "scripts": {
+    "dev": "tsx src/server.ts",
+    "provider": "tsx fixtures/mock-provider.ts",
+    "migrate": "tsx src/migrate.ts",
+    "seed": "tsx src/seed.ts",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:unit": "vitest run tests/domain.test.ts tests/webhook.test.ts",
+    "test:integration": "vitest run tests/repository.integration.test.ts",
+    "verify": "pnpm typecheck && pnpm test"
+  },
+  "dependencies": {
+    "fastify": "5.2.1",
+    "kysely": "0.28.2",
+    "pg": "8.15.6",
+    "zod": "3.24.4"
+  },
+  "devDependencies": {
+    "@types/node": "24.13.3",
+    "@types/pg": "8.11.14",
+    "tsx": "4.19.2",
+    "typescript": "5.8.3",
+    "vitest": "3.1.2"
+  }
+}

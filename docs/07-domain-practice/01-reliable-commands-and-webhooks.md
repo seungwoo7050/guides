@@ -1,46 +1,46 @@
-# 신뢰할 수 있는 command와 webhook
+# 신뢰할 수 있는 명령과 웹훅
 
-DB transaction은 DB 안의 상태만 원자적으로 바꿉니다. 주문을 저장한 뒤 결제 API를 호출하거나 외부 시스템이 webhook을 보내는 순간, 애플리케이션은 하나의 transaction으로 묶을 수 없는 경계를 가집니다. 이 경계에서는 요청이 한 번 전달된다고 가정하지 않고 **중복·응답 유실·지연·순서 역전·프로세스 중단 뒤에도 최종 상태가 수렴하는 계약**을 먼저 정의합니다.
+데이터베이스 트랜잭션은 데이터베이스 내부 상태만 원자적으로 변경합니다. 주문을 저장한 뒤 결제 API를 호출하거나 외부 시스템이 웹훅을 보내는 순간부터는 모든 작업을 하나의 트랜잭션으로 묶을 수 없습니다. 이 경계에서는 요청이 정확히 한 번 전달된다고 가정하지 않습니다. **중복, 응답 유실, 지연, 순서 역전, 프로세스 중단 이후에도 최종 상태가 수렴하는 처리 규칙**을 먼저 정의해야 합니다.
 
 ## 목표
 
-- HTTP timeout과 성공 여부 불명확성을 구분합니다.
-- idempotency key의 scope, request fingerprint, 결과 보존 계약을 설계합니다.
-- DB commit과 외부 API 호출 사이의 간격을 durable command로 복구합니다.
-- webhook의 서명·중복·순서·재시도 계약을 구현합니다.
-- “exactly once delivery” 대신 반복 가능한 처리와 영속 deduplication으로 효과를 한 번만 남깁니다.
-- 재시도와 reconciliation이 필요한 실패를 숨기지 않고 관찰 가능한 상태로 남깁니다.
+- HTTP 타임아웃과 도메인 작업의 성공 여부가 불명확한 상태를 구분합니다.
+- 멱등성 키의 범위, 요청 지문, 결과 보존 규칙을 설계합니다.
+- 데이터베이스 커밋과 외부 API 호출 사이의 실패 구간을 영속 명령으로 복구합니다.
+- 웹훅의 서명, 중복, 순서, 재시도 규칙을 구현합니다.
+- “정확히 한 번 전달”을 가정하지 않고 반복 가능한 처리와 영속 중복 제거로 도메인 효과를 한 번만 반영합니다.
+- 재시도와 대사가 필요한 실패를 숨기지 않고 관찰 가능한 상태로 남깁니다.
 
-## timeout은 실패가 아니라 결과 불명확일 수 있습니다
+## 타임아웃은 실패가 아니라 결과 불명확일 수 있습니다
 
-다음 흐름에서 결제사는 이미 성공했지만 client는 응답을 받지 못할 수 있습니다.
+다음 흐름에서는 결제 제공자가 이미 작업을 완료했지만 클라이언트가 응답을 받지 못할 수 있습니다.
 
 ```text
 application ── create payment ──> provider
 application <── success ──X network timeout
 ```
 
-이때 다음 요청이 위험합니다.
+이 상태에서 다음과 같이 처리하면 위험합니다.
 
 ```text
-timeout
-→ 실패라고 단정
-→ 새 payment 생성
+타임아웃
+→ 결제 실패로 단정
+→ 새 결제 생성
 → 실제로는 두 번 결제
 ```
 
-transport 오류는 업무 결과와 같은 값이 아닙니다.
+전송 결과와 도메인 결과는 같은 값이 아닙니다.
 
 ```text
-transport result: timeout
-business result: unknown
+전송 결과: timeout
+도메인 결과: unknown
 ```
 
-client나 worker가 재시도하려면 같은 업무 command를 다시 식별할 수 있어야 합니다.
+클라이언트나 워커가 안전하게 재시도하려면 같은 도메인 명령을 다시 식별할 수 있어야 합니다.
 
-## Idempotency key는 header 이름이 아니라 수명 계약입니다
+## 멱등성 키는 헤더 이름이 아니라 수명 규칙입니다
 
-위험한 command는 key를 받고 다음 정보를 영속화할 수 있습니다.
+중복 효과가 위험한 명령에는 멱등성 키를 받고 다음 정보를 영속적으로 저장할 수 있습니다.
 
 ```text
 scope
@@ -53,7 +53,7 @@ created_at
 expires_at
 ```
 
-`scope`는 key가 유일한 범위를 정의합니다.
+`scope`는 키가 고유해야 하는 범위를 정의합니다.
 
 ```text
 checkout:user-42
@@ -61,21 +61,21 @@ refund:order-17
 provider-command:create-payment
 ```
 
-같은 문자열이라도 scope가 다르면 별도 command일 수 있습니다.
+키 문자열이 같아도 범위가 다르면 별개의 명령일 수 있습니다.
 
-### 같은 key와 같은 요청
+### 같은 키와 같은 요청
 
 ```text
-처음 요청
-→ 업무 효과 실행
+첫 요청
+→ 도메인 효과 실행
 → 결과 저장
 
 재시도
 → 저장된 결과 반환
-→ 업무 효과 반복 금지
+→ 도메인 효과 반복 금지
 ```
 
-### 같은 key와 다른 요청
+### 같은 키와 다른 요청
 
 ```text
 Idempotency-Key: abc
@@ -85,24 +85,24 @@ Idempotency-Key: abc
 body: { quantity: 2 }
 ```
 
-이 경우 기존 결과를 재사용해서는 안 됩니다. canonical request에서 hash를 계산하고 key가 다른 payload에 재사용되면 409 같은 명시적 충돌로 거부합니다.
+두 번째 요청에 기존 결과를 재사용해서는 안 됩니다. 정규화한 요청에서 해시를 계산하고, 같은 키가 다른 페이로드에 사용되면 409 같은 명시적인 충돌로 거부합니다.
 
-### 동시에 같은 key가 들어오는 경우
+### 같은 키의 요청이 동시에 들어오는 경우
 
-단순한 선행 조회는 경쟁에 안전하지 않습니다.
+먼저 조회한 뒤 처리하는 방식만으로는 경쟁 조건을 막을 수 없습니다.
 
 ```text
-A: key 없음 확인
-B: key 없음 확인
+A: 키 없음 확인
+B: 키 없음 확인
 A: 주문 생성
 B: 주문 생성
 ```
 
-DB의 unique constraint와 transaction을 최종 방어선으로 사용합니다. 첫 transaction이 완료되기 전 다른 요청이 대기할지, `request_in_progress`를 반환할지 정책을 정합니다. 무기한 대기는 허용하지 않습니다.
+데이터베이스의 고유 제약 조건과 트랜잭션을 최종 방어선으로 사용합니다. 첫 번째 트랜잭션이 끝날 때까지 다른 요청을 기다리게 할지, `request_in_progress`를 반환할지 정책을 정합니다. 무제한 대기는 허용하지 않습니다.
 
-## 응답 snapshot을 보존합니다
+## 최초 응답 스냅샷을 보존합니다
 
-idempotent replay는 “이미 처리됨”만 반환하는 것이 아니라 첫 성공 응답의 외부 계약을 재현해야 합니다.
+멱등성 재처리는 단순히 “이미 처리됨”이라고 응답하는 것이 아니라 첫 번째 성공 응답의 외부 계약을 재현해야 합니다.
 
 ```json
 {
@@ -112,11 +112,11 @@ idempotent replay는 “이미 처리됨”만 반환하는 것이 아니라 첫
 }
 ```
 
-업무 행을 다시 조회해 응답을 재조립하면 시간이 지난 뒤 상태가 바뀌어 첫 응답과 달라질 수 있습니다. 제품 계약에 따라 최초 응답 snapshot을 저장하거나, replay 응답이 현재 상태를 반환한다는 점을 별도로 문서화합니다. 이 실습은 최초 command 결과를 저장합니다.
+도메인 행을 다시 조회해 응답을 조립하면 시간이 지난 뒤 상태가 바뀌어 최초 응답과 달라질 수 있습니다. 제품 규칙에 따라 최초 응답 스냅샷을 저장하거나, 재처리 응답은 현재 상태를 반환한다고 명시해야 합니다. 이 실습에서는 최초 명령의 결과를 저장합니다.
 
-## 외부 HTTP를 DB transaction 안에서 기다리지 않습니다
+## 외부 HTTP 호출을 데이터베이스 트랜잭션 안에서 기다리지 않습니다
 
-다음 구조는 DB lock을 잡은 채 외부 timeout을 기다립니다.
+다음 구조는 데이터베이스 잠금을 유지한 채 외부 타임아웃을 기다립니다.
 
 ```text
 BEGIN
@@ -126,70 +126,70 @@ HTTP payment call ── 10초 대기
 COMMIT
 ```
 
-문제:
+문제는 다음과 같습니다.
 
-- lock 유지 시간이 외부 latency에 종속됩니다.
-- provider 장애가 DB connection 고갈로 전파됩니다.
-- 외부 성공 뒤 DB rollback이 발생해도 되돌릴 수 없습니다.
-- transaction retry가 외부 호출을 중복 실행할 수 있습니다.
+- 잠금 유지 시간이 외부 API 지연 시간에 좌우됩니다.
+- 결제 제공자 장애가 데이터베이스 연결 고갈로 전파됩니다.
+- 외부 호출은 성공했지만 데이터베이스가 롤백될 수 있습니다.
+- 트랜잭션 재시도가 외부 호출을 중복 실행할 수 있습니다.
 
-DB transaction에는 DB 불변식만 넣습니다.
+데이터베이스 트랜잭션에는 데이터베이스 불변식만 포함합니다.
 
-## Durable command로 commit 이후 작업을 남깁니다
+## 영속 명령으로 커밋 이후 작업을 기록합니다
 
-주문 생성 transaction에서 외부 요청 자체가 아니라 **보내야 할 command**를 함께 저장합니다.
+주문 생성 트랜잭션에서는 외부 요청을 직접 보내지 않고 **나중에 전송해야 할 명령**을 함께 저장합니다.
 
 ```text
 BEGIN
-order 생성
+주문 생성
 재고 차감
 payment_command 생성(status=pending)
-idempotency 결과 저장
+멱등성 결과 저장
 COMMIT
 ```
 
-그 뒤 worker가 command를 전송합니다.
+커밋 후 워커가 명령을 전송합니다.
 
 ```text
-pending command claim
-→ provider 호출
+대기 중인 명령 선점
+→ 결제 제공자 호출
 → 성공 결과 저장
-→ sent
+→ sent 상태로 변경
 ```
 
-프로세스가 commit 직후 중단돼도 command 행이 남습니다. 별도 broker가 없는 작은 애플리케이션에서는 DB table을 durable queue로 사용할 수 있습니다.
+프로세스가 커밋 직후 중단되어도 명령 행은 남습니다. 별도 메시지 브로커가 없는 작은 애플리케이션에서는 데이터베이스 테이블을 영속 큐로 사용할 수 있습니다.
 
-### Claim 계약
+### 명령 선점 규칙
 
-여러 worker가 같은 command를 동시에 보내지 않도록 다음 중 하나를 사용합니다.
+여러 워커가 같은 명령을 동시에 보내지 않도록 다음 방식 중 하나를 사용합니다.
 
 - `FOR UPDATE SKIP LOCKED`
-- lease owner와 lease expiry
-- 상태 조건부 update와 반환 행
+- 임대 소유자와 임대 만료 시각
+- 상태 조건부 `UPDATE`와 반환 행
 
-이 가이드의 exercise는 짧은 transaction에서 `FOR UPDATE SKIP LOCKED`로 하나를 claim합니다. 각 claim에는 새 token을 발급하고 complete·fail update가 같은 token을 조건으로 사용하게 합니다. lease가 만료돼 다른 worker가 다시 claim한 뒤에는 이전 worker가 새 처리 결과를 덮을 수 없습니다. 외부 HTTP 호출 동안 DB row lock을 유지하지 않고 `processing` 상태와 시도 횟수를 저장합니다.
+이 가이드의 실습에서는 짧은 트랜잭션 안에서 `FOR UPDATE SKIP LOCKED`로 명령 하나를 선점합니다. 선점할 때마다 새 토큰을 발급하고 완료·실패 갱신에도 같은 토큰을 조건으로 사용합니다. 임대가 만료되어 다른 워커가 다시 선점한 뒤에는 이전 워커가 새 처리 결과를 덮어쓸 수 없습니다. 외부 HTTP 호출 중에는 행 잠금을 유지하지 않고 `processing` 상태와 시도 횟수를 저장합니다.
 
-### 외부 성공 뒤 내부 저장 전 중단
+### 외부 호출 성공 후 내부 결과 저장 전에 중단되는 경우
 
-가장 까다로운 간격입니다.
+가장 처리하기 어려운 구간입니다.
 
 ```text
-provider 성공
-X process crash
-DB에는 sent 기록 없음
+결제 제공자 작업 성공
+X 프로세스 중단
+데이터베이스에는 sent 기록 없음
 ```
 
-worker는 command를 다시 보냅니다. 따라서 provider 호출에도 안정된 idempotency key를 사용해야 합니다.
+워커는 같은 명령을 다시 전송하게 됩니다. 따라서 결제 제공자 호출에도 안정적인 멱등성 키를 사용해야 합니다.
 
 ```text
 provider idempotency key = command.id
 ```
 
-provider가 같은 key의 효과를 재사용하면 worker 재시도가 안전해집니다. 내부 outbox만 있다고 중복 외부 효과가 자동으로 사라지는 것은 아닙니다.
+결제 제공자가 같은 키의 결과를 재사용하면 워커의 재시도가 안전해집니다. 내부에 아웃박스 테이블이 있다는 이유만으로 외부 중복 효과가 자동으로 사라지는 것은 아닙니다.
 
-## 재시도 상태는 숨기지 않습니다
+## 재시도 상태를 숨기지 않습니다
 
-command에는 최소한 다음 상태가 필요합니다.
+명령에는 최소한 다음 상태가 필요합니다.
 
 ```text
 pending
@@ -198,35 +198,35 @@ sent
 failed 또는 dead
 ```
 
-그리고 다음 정보를 관찰할 수 있어야 합니다.
+다음 정보도 관찰할 수 있어야 합니다.
 
-- attempts
-- last_error의 안전한 요약
-- next_attempt_at
-- processing lease
-- provider operation ID
-- created_at / updated_at
+- 시도 횟수
+- 마지막 오류의 안전한 요약
+- 다음 시도 시각
+- 처리 임대 정보
+- 결제 제공자의 작업 ID
+- 생성·수정 시각
 
-모든 오류를 영원히 재시도하지 않습니다.
-
-```text
-retryable: timeout, connection reset, 429, 일부 5xx
-permanent: schema 거부, 인증 실패, 잘못된 금액, 존재하지 않는 대상
-```
-
-시도 횟수, 전체 deadline과 backoff를 제한합니다. 비밀·card data·전체 provider 응답을 log나 오류 열에 저장하지 않습니다.
-
-## Webhook은 at-least-once 입력으로 취급합니다
-
-외부 provider는 성공 응답을 받지 못하면 같은 event를 다시 보낼 수 있습니다.
+모든 오류를 무제한 재시도하지 않습니다.
 
 ```text
+재시도 가능: timeout, connection reset, 429, 일부 5xx
+영구 실패: 스키마 거부, 인증 실패, 잘못된 금액, 존재하지 않는 대상
+```
+
+시도 횟수, 전체 제한 시간, 백오프를 제한합니다. 비밀값, 카드 데이터, 결제 제공자의 전체 응답을 로그나 오류 열에 저장하지 않습니다.
+
+## 웹훅은 한 번 이상 전달될 수 있는 입력으로 처리합니다
+
+외부 제공자는 성공 응답을 받지 못하면 같은 이벤트를 다시 보낼 수 있습니다.
+
+```text
 evt_42 payment.succeeded
 evt_42 payment.succeeded
 evt_42 payment.succeeded
 ```
 
-handler가 매번 재고·상태·감사 기록을 바꾸면 안 됩니다. provider event ID를 영속 저장하고 unique constraint로 중복을 막습니다.
+핸들러가 매번 재고, 주문 상태, 감사 기록을 다시 변경해서는 안 됩니다. 제공자 이벤트 ID를 영속적으로 저장하고 고유 제약 조건으로 중복을 막습니다.
 
 ```text
 provider_events
@@ -237,35 +237,35 @@ provider_events
 - received_at
 ```
 
-같은 event ID에 다른 payload가 오면 단순 duplicate로 처리하지 않습니다. provider bug, 공격 또는 canonicalization 오류일 수 있으므로 충돌로 기록하고 상태 변경을 거부합니다.
+같은 이벤트 ID에 다른 페이로드가 도착하면 단순 중복으로 처리하지 않습니다. 제공자 오류, 공격, 정규화 로직의 문제일 수 있으므로 충돌로 기록하고 상태 변경을 거부합니다.
 
-### Event가 내부 payment identity보다 먼저 도착하는 경우
+### 내부 결제 식별자가 저장되기 전에 이벤트가 도착하는 경우
 
-provider가 operation을 수락한 직후 webhook을 보내고, worker가 `provider_payment_id`를 DB에 기록하기 전에 event가 도착할 수 있습니다. 이 event를 성공 처리된 unknown으로 확정하면 이후 같은 delivery가 영원히 무시됩니다.
+결제 제공자가 작업을 수락한 직후 웹훅을 보내고, 워커가 `provider_payment_id`를 데이터베이스에 기록하기 전에 이벤트가 도착할 수 있습니다. 이 이벤트를 처리 완료된 알 수 없는 이벤트로 확정하면 이후 같은 이벤트가 계속 무시될 수 있습니다.
 
-이 exercise는 event와 payload hash를 영속화하되 `unknown_payment`에는 retry 가능한 503을 반환합니다. 같은 event가 다시 도착하면 payload hash를 확인한 뒤 payment identity를 다시 조회합니다. command 결과가 저장된 뒤의 delivery는 최초 업무 효과를 적용할 수 있습니다. 실제 provider가 제한 횟수 뒤 재시도를 멈춘다면 reconciliation이 이 inbox를 다시 처리해야 합니다.
+이 실습에서는 이벤트 ID와 페이로드 해시는 저장하되 `unknown_payment`에는 재시도 가능한 503을 반환합니다. 같은 이벤트가 다시 도착하면 페이로드 해시를 확인한 뒤 결제 식별자를 다시 조회합니다. 명령 결과가 저장된 후의 전달에서 최초 도메인 효과를 적용할 수 있습니다. 실제 제공자가 제한된 횟수 이후 재시도를 중단한다면 대사 작업이 이 이벤트를 다시 처리해야 합니다.
 
-## 서명은 parse 전 raw body를 기준으로 검증합니다
+## 서명은 JSON 파싱 전 원문 본문으로 검증합니다
 
-JSON object를 다시 stringify하면 공백·key 순서·escape가 달라질 수 있습니다. provider가 정의한 원문 byte를 사용합니다.
+JSON 객체를 다시 문자열로 만들면 공백, 키 순서, 이스케이프 방식이 달라질 수 있습니다. 제공자가 정의한 원문 바이트를 사용해야 합니다.
 
 ```text
 signature = HMAC(secret, timestamp + "." + raw_body)
 ```
 
-검증 순서:
+검증 순서는 다음과 같습니다.
 
-1. 전용 content type으로 raw bytes를 읽습니다.
-2. timestamp 형식과 허용 시간창을 검사합니다.
-3. raw body의 HMAC을 계산합니다.
-4. constant-time 비교를 사용합니다.
-5. 서명이 유효한 뒤 JSON을 parse하고 schema를 검증합니다.
+1. 전용 `Content-Type`으로 원문 바이트를 읽습니다.
+2. 타임스탬프 형식과 허용 시간 범위를 검사합니다.
+3. 원문 본문으로 HMAC을 계산합니다.
+4. 일정 시간 비교를 사용합니다.
+5. 서명이 유효한 경우에만 JSON을 파싱하고 스키마를 검증합니다.
 
-오래된 timestamp를 허용하면 탈취한 payload의 replay 시간이 길어집니다. 시간이 맞지 않는 환경에서는 먼저 clock 운영 문제를 해결하지 검증을 끄지 않습니다.
+오래된 타임스탬프를 허용하면 탈취한 페이로드를 재전송할 수 있는 시간이 길어집니다. 시스템 시계가 맞지 않으면 검증을 끄지 말고 시계 동기화 문제를 먼저 해결합니다.
 
-## Event 순서는 계약이 아닐 수 있습니다
+## 이벤트 순서는 보장되지 않을 수 있습니다
 
-다음 순서가 항상 보장된다고 가정하지 않습니다.
+다음 순서가 항상 유지된다고 가정하지 않습니다.
 
 ```text
 payment.created
@@ -273,7 +273,7 @@ payment.succeeded
 payment.refunded
 ```
 
-network와 provider 내부 retry 때문에 늦은 event가 뒤늦게 도착할 수 있습니다. handler는 현재 상태와 event를 함께 보고 transition을 결정합니다.
+네트워크 지연과 제공자 내부 재시도 때문에 이전 이벤트가 나중에 도착할 수 있습니다. 핸들러는 현재 상태와 수신한 이벤트를 함께 보고 허용된 상태 전이인지 판단합니다.
 
 ```text
 current=refunded, event=payment.succeeded
@@ -281,22 +281,22 @@ current=refunded, event=payment.succeeded
 → ignored_invalid_transition 기록
 ```
 
-무시했다고 event를 버리지 않습니다. event ID와 판정 결과를 남겨 reconciliation에서 확인할 수 있게 합니다.
+상태 전이를 적용하지 않더라도 이벤트 자체를 버리지 않습니다. 이벤트 ID와 판정 결과를 남겨 대사 과정에서 확인할 수 있게 합니다.
 
-## HTTP 응답과 업무 commit을 분리해 생각합니다
+## HTTP 응답과 도메인 커밋을 구분합니다
 
-Webhook handler의 성공 응답은 “provider에게 같은 event를 다시 보내지 않아도 된다”는 의미입니다.
+웹훅 핸들러의 성공 응답은 제공자에게 같은 이벤트를 다시 보낼 필요가 없다는 의미입니다.
 
-- 영속 처리 완료: 2xx
-- 일시 DB 장애로 commit 못함: 5xx로 retry 유도
-- 서명 실패: 401/400, 상태 변경 없음
-- 유효하지만 알 수 없는 payment: 제품 정책에 따라 202/2xx로 격리하거나 404로 재시도 유도
+- 영속 처리가 완료됨: 2xx
+- 일시적인 데이터베이스 장애로 커밋하지 못함: 5xx로 재시도 유도
+- 서명 검증 실패: 401 또는 400, 상태 변경 없음
+- 유효하지만 알 수 없는 결제: 제품 정책에 따라 202·2xx로 격리하거나 재시도를 유도하는 오류 반환
 
-무조건 200을 반환하면 처리하지 못한 event를 잃을 수 있습니다. 반대로 영구적인 schema 오류에 계속 500을 반환하면 retry 폭주가 발생합니다.
+무조건 200을 반환하면 처리하지 못한 이벤트를 잃을 수 있습니다. 반대로 영구적인 스키마 오류에 계속 500을 반환하면 재시도 폭주가 발생할 수 있습니다.
 
-## Exactly-once가 아니라 effect-once를 설계합니다
+## 정확히 한 번 전달이 아니라 효과를 한 번만 반영하도록 설계합니다
 
-일반 network delivery에서 “정확히 한 번 도착”을 쉽게 보장할 수 없습니다. 현실적인 목표는 다음 조합입니다.
+일반적인 네트워크 전송에서 메시지가 정확히 한 번 도착하도록 쉽게 보장할 수는 없습니다. 현실적인 목표는 다음 조합입니다.
 
 ```text
 at-least-once delivery
@@ -307,75 +307,75 @@ at-least-once delivery
 = observable effect once
 ```
 
-event는 여러 번 도착할 수 있지만 주문 상태 변경과 재고 반환은 한 번만 발생합니다.
+이벤트가 여러 번 도착하더라도 주문 상태 변경과 재고 반환 같은 도메인 효과는 한 번만 발생해야 합니다.
 
-## Reconciliation은 예외가 아니라 복구 경로입니다
+## 대사는 예외 처리가 아니라 복구 경로입니다
 
-모든 간격을 synchronous request만으로 없앨 수 없습니다. 다음 상태는 주기적으로 찾아야 할 수 있습니다.
+동기 요청만으로 모든 실패 구간을 없앨 수는 없습니다. 다음 상태는 주기적으로 찾아야 할 수 있습니다.
 
-- 오래 `processing`인 command
-- provider operation ID 없이 `sent`로 남은 행
-- `pending_payment`가 지나치게 오래된 주문
-- unknown payment webhook
-- 내부 상태와 provider 조회 결과 불일치
+- 오랫동안 `processing` 상태인 명령
+- 제공자 작업 ID 없이 `sent` 상태로 남은 행
+- 지나치게 오래 `pending_payment` 상태인 주문
+- 알 수 없는 결제의 웹훅
+- 내부 상태와 제공자 조회 결과의 불일치
 
-이 exercise는 별도 scheduler를 구현하지 않지만 query와 상태를 통해 수동 reconciliation이 가능해야 합니다. 실제 운영에서는 metric, alert, 제한된 retry와 관리자 도구가 필요합니다.
+이 실습에서는 별도 스케줄러를 구현하지 않지만 쿼리와 저장 상태만으로 수동 대사가 가능해야 합니다. 실제 운영에서는 메트릭, 알림, 제한된 재시도, 관리자 도구가 필요합니다.
 
 ## 실패 행렬
 
-| 실패 지점 | 남아야 하는 상태 | 안전한 다음 행동 |
+| 실패 지점 | 남아야 하는 상태 | 안전한 다음 작업 |
 |---|---|---|
-| checkout transaction 전 실패 | 아무 주문도 없음 | 같은 key 재시도 |
-| checkout commit 뒤 process 중단 | 주문·재고·pending command 존재 | worker 재개 |
-| provider timeout | command identity와 시도 기록 | 같은 provider key로 재시도 |
-| provider 성공 뒤 DB 저장 전 중단 | command가 다시 보일 수 있음 | 같은 provider key로 재호출 |
-| webhook 중복 | event dedupe 행 존재 | 기존 결과 반환 |
-| webhook 처리 transaction 실패 | event commit 없음 | provider retry |
-| 늦은 성공 event | 현재 상태 유지 또는 허용 transition | 판정 outcome 기록 |
-| 같은 event ID·다른 payload | 상태 변경 없음 | 충돌 기록·조사 |
+| 체크아웃 트랜잭션 전에 실패 | 주문 없음 | 같은 키로 재시도 |
+| 체크아웃 커밋 후 프로세스 중단 | 주문·재고 변경·대기 명령 존재 | 워커 처리 재개 |
+| 제공자 호출 타임아웃 | 명령 식별자와 시도 기록 | 같은 제공자 키로 재시도 |
+| 제공자 성공 후 DB 저장 전 중단 | 명령이 다시 처리 대상이 될 수 있음 | 같은 제공자 키로 재호출 |
+| 웹훅 중복 | 이벤트 중복 제거 행 존재 | 기존 결과 반환 |
+| 웹훅 처리 트랜잭션 실패 | 이벤트 커밋 없음 | 제공자 재시도 |
+| 늦게 도착한 성공 이벤트 | 현재 상태 유지 또는 허용된 전이 | 판정 결과 기록 |
+| 같은 이벤트 ID와 다른 페이로드 | 상태 변경 없음 | 충돌 기록과 조사 |
 
-## 검증
+## 검증 항목
 
-최소 검사는 다음입니다.
+최소한 다음을 테스트합니다.
 
-- 같은 key·같은 body를 순차·동시에 요청해 하나의 주문만 생성
-- 같은 key·다른 body 거부
-- 외부 timeout 뒤 같은 command 재전송 시 provider 효과 하나
-- command claim을 두 worker가 경쟁해 하나만 처리
-- lease 만료 뒤 stale worker가 새 claim 결과를 덮지 못함
-- webhook duplicate 세 번 뒤 상태 전이·재고 변경 한 번
-- payment identity 기록보다 먼저 온 event가 retry 뒤 적용
-- 잘못된 서명과 오래된 timestamp 거부
-- 같은 event ID·다른 payload 거부
-- 순서가 뒤집힌 event가 terminal 상태를 되돌리지 않음
-- DB 오류를 주입한 webhook이 5xx를 반환하고 다음 delivery에서 성공
-- 처리 뒤 server·pool·timer가 종료됨
+- 같은 키·같은 본문을 순차·동시에 요청해 주문 하나만 생성되는지
+- 같은 키·다른 본문을 거부하는지
+- 외부 타임아웃 후 같은 명령을 다시 보내도 제공자 효과가 하나만 남는지
+- 두 워커가 같은 명령을 경쟁할 때 하나만 처리하는지
+- 임대 만료 후 이전 워커가 새 선점 결과를 덮지 못하는지
+- 같은 종료 이벤트를 세 번 받아도 상태 전이와 재고 변경이 한 번만 일어나는지
+- 결제 식별자 저장 전에 도착한 이벤트가 재시도 후 적용되는지
+- 잘못된 서명과 오래된 타임스탬프를 거부하는지
+- 같은 이벤트 ID와 다른 페이로드를 거부하는지
+- 순서가 뒤바뀐 이벤트가 최종 상태를 되돌리지 않는지
+- 데이터베이스 오류를 주입한 웹훅이 5xx를 반환하고 다음 전달에서 성공하는지
+- 처리 후 서버·연결 풀·타이머가 종료되는지
 
-## 실패 조건
+## 흔한 오류
 
-- timeout을 업무 실패로 단정합니다.
-- idempotency key를 메모리에만 저장합니다.
-- 같은 key의 다른 payload를 기존 성공으로 처리합니다.
-- 외부 HTTP를 DB transaction 안에서 기다립니다.
-- command에 안정된 외부 idempotency identity가 없습니다.
-- webhook을 parse한 object를 다시 stringify해 서명합니다.
-- 중복 event마다 activity·재고를 다시 바꿉니다.
-- 현재 상태를 보지 않고 event 이름만으로 값을 덮습니다.
-- 모든 오류를 무한 retry합니다.
-- unknown·stuck 상태를 찾을 query나 기록이 없습니다.
+- 타임아웃을 도메인 작업 실패로 단정합니다.
+- 멱등성 키를 메모리에만 저장합니다.
+- 같은 키의 다른 페이로드를 기존 성공 요청으로 처리합니다.
+- 외부 HTTP 호출을 데이터베이스 트랜잭션 안에서 기다립니다.
+- 외부 제공자 명령에 안정적인 멱등성 식별자가 없습니다.
+- 웹훅 본문을 파싱한 뒤 객체를 다시 문자열로 만들어 서명을 계산합니다.
+- 중복 이벤트마다 활동 기록과 재고를 다시 변경합니다.
+- 현재 상태를 확인하지 않고 이벤트 이름만으로 상태를 덮어씁니다.
+- 모든 오류를 무제한 재시도합니다.
+- 알 수 없거나 멈춘 상태를 찾을 쿼리와 기록이 없습니다.
 
 ## 연결 실습
 
-[`커머스 checkout`](03-commerce-checkout.md)과 [`commerce-checkout exercise`](../../exercises/commerce-checkout/README.md)의 Stage 03–04에서 idempotent checkout, durable payment command, HTTP mock provider와 서명 webhook을 구현합니다.
+[`커머스 체크아웃`](03-commerce-checkout.md)과 [`commerce-checkout 실습`](../../exercises/commerce-checkout/README.md)의 03–04단계에서 멱등성을 갖춘 체크아웃, 영속 결제 명령, HTTP 모의 결제 제공자, 서명된 웹훅을 구현합니다.
 
 ## 완료 기준
 
-- request와 operation identity의 scope를 정의합니다.
-- DB commit과 외부 효과 사이의 실패 간격을 설명합니다.
-- durable command를 claim·retry하고 외부 idempotency로 중복 효과를 막습니다.
-- raw body 서명, timestamp, event dedupe와 상태 전이를 한 handler에서 검증합니다.
-- 중복·지연·순서 역전 뒤에도 observable effect가 한 번만 남음을 자동 검사합니다.
+- 요청과 외부 작업 식별자의 범위를 정의합니다.
+- 데이터베이스 커밋과 외부 효과 사이에서 발생하는 실패 구간을 설명할 수 있습니다.
+- 영속 명령을 선점·재시도하고 외부 멱등성으로 중복 효과를 막습니다.
+- 원문 본문 서명, 타임스탬프, 이벤트 중복 제거, 상태 전이를 하나의 핸들러에서 검증합니다.
+- 중복, 지연, 순서 역전 후에도 관찰 가능한 도메인 효과가 한 번만 남는지 자동으로 테스트합니다.
 
 ## 다음 단계
 
-외부 command의 전달 계약을 이해했다면 [`커머스 업무 불변식`](02-commerce-domain-invariants.md)에서 금액·재고·주문 상태의 내부 정본을 설계합니다.
+외부 명령 전달 규칙을 이해했다면 [`커머스 도메인 불변식`](02-commerce-domain-invariants.md)에서 금액, 재고, 주문 상태의 기준을 설계합니다.

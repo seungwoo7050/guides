@@ -1,51 +1,51 @@
-# Capstone 3: 공유 메모
+# 종합 프로젝트 3: 공유 메모
 
-세 번째 프로젝트는 브라우저·API·DB·세션·권한을 하나의 작은 풀스택 애플리케이션으로 연결합니다. 실시간 기능은 아직 넣지 않습니다. 먼저 요청마다 사용자를 식별하고, 공유된 자원에서 역할별 허용 동작이 일관되게 지켜지는지 완성합니다.
+세 번째 프로젝트는 브라우저, API, 데이터베이스, 세션, 권한을 하나의 작은 풀스택 애플리케이션으로 연결합니다. 실시간 기능은 아직 추가하지 않습니다. 먼저 요청마다 사용자를 식별하고, 공유 리소스에서 역할별 허용 작업이 일관되게 지켜지는지 완성합니다.
 
-> **형태:** 이 문서는 보안 실습 뒤 선택해서 수행하는 self-directed expected-evidence brief입니다. 저장소에는 이 brief 전용 skeleton, 자동 verifier 또는 reference 구현이 없습니다. 저장소 밖의 학습자 소유 프로젝트에서 구현하고 아래 evidence rubric으로 완료를 검토합니다.
+> **과제 형식:** 보안 실습 이후 선택해서 수행하는 증거 기반 자율 과제입니다. 저장소에는 이 과제 전용 `skeleton/`, 자동 검증기, 참조 구현이 없습니다. 저장소 밖에 별도 프로젝트를 만들어 구현하고 아래의 완료 증거 기준으로 검토합니다.
 
 ## 목표
 
-사용자는 다음 일을 할 수 있습니다.
+사용자는 다음 작업을 수행할 수 있습니다.
 
-1. 회원가입·로그인·로그아웃합니다.
-2. 자신의 메모를 만들고 목록·상세를 봅니다.
-3. 다른 사용자를 editor 또는 viewer로 초대합니다.
-4. editor는 내용을 수정하지만 구성원 역할은 바꾸지 못합니다.
-5. viewer는 읽을 수 있지만 수정할 수 없습니다.
-6. 소유자는 구성원의 역할을 바꾸거나 제거합니다.
-7. conflict가 발생하면 최신 내용과 자신의 draft를 비교합니다.
-8. 작은 화면과 keyboard로 핵심 흐름을 사용할 수 있습니다.
+1. 회원가입, 로그인, 로그아웃합니다.
+2. 자신의 메모를 만들고 목록과 상세 내용을 확인합니다.
+3. 다른 사용자를 `editor` 또는 `viewer`로 초대합니다.
+4. `editor`는 내용을 수정할 수 있지만 구성원의 역할은 바꿀 수 없습니다.
+5. `viewer`는 읽을 수 있지만 수정할 수 없습니다.
+6. 소유자는 구성원의 역할을 변경하거나 구성원을 제거합니다.
+7. 충돌이 발생하면 최신 내용과 자신의 초안을 비교합니다.
+8. 작은 화면과 키보드로도 핵심 흐름을 사용할 수 있습니다.
 
-이 프로젝트의 책임 경계는 최종 [`collaboration-board`](../../exercises/collaboration-board/README.md) Stage 01–06과 개념적으로 대응합니다. 그러나 협업 보드 검사기는 board 전용 경로·script·계약을 요구하므로 notes 프로젝트를 검증하지 않습니다. 해당 skeleton이나 verifier를 우회해 재사용하지 말고, 이 문서의 수동 evidence rubric을 사용합니다. WebSocket·Canvas는 다음 capstone의 별도 도메인에서 추가합니다.
+이 프로젝트의 책임 경계는 최종 [`collaboration-board`](../../exercises/collaboration-board/README.md) 실습의 01–06단계와 개념적으로 대응합니다. 그러나 협업 보드 검증기는 보드 전용 경로, 스크립트, 계약을 요구하므로 메모 프로젝트를 검증하지 않습니다. 해당 `skeleton/`이나 검증기를 우회해 재사용하지 말고 이 문서의 수동 완료 증거 기준을 사용합니다. WebSocket과 Canvas는 다음 종합 프로젝트에서 다른 도메인과 함께 추가합니다.
 
 ## 사용자 흐름
 
 ### 로그인
 
 ```text
-로그인 form 제출
-→ API가 password 검증
-→ server session 생성
-→ HttpOnly cookie 발급
+로그인 폼 제출
+→ API가 비밀번호 검증
+→ 서버 세션 생성
+→ HttpOnly 쿠키 발급
 → /me로 현재 사용자 확인
 → 메모 목록 표시
 ```
 
-page가 localStorage token을 직접 읽지 않습니다. 새로고침해도 cookie session으로 사용자를 복원합니다.
+페이지에서 `localStorage`의 토큰을 직접 읽지 않습니다. 새로 고침 후에도 쿠키 세션으로 사용자를 복원합니다.
 
 ### 공유
 
 ```text
-owner가 이메일로 사용자 검색
-→ 초대 또는 membership 생성
+소유자가 이메일로 사용자 검색
+→ 초대 또는 멤버십 생성
 → 대상 사용자의 목록에 메모 표시
-→ 현재 role과 허용 동작 표시
+→ 현재 역할과 허용 작업 표시
 ```
 
-이메일을 body로 보냈다고 해당 사용자와 관계가 자동으로 생기지 않습니다. server가 대상 계정·상태와 중복 membership을 검증합니다.
+요청 본문에 이메일이 포함되었다고 사용자 관계가 자동으로 만들어지는 것은 아닙니다. 서버가 대상 계정의 존재와 상태, 중복 멤버십 여부를 검증합니다.
 
-## HTTP 표면
+## HTTP API
 
 ```text
 POST   /auth/register
@@ -67,23 +67,23 @@ DELETE /notes/:id/members/:userId
 GET    /notes/:id/activity
 ```
 
-모든 상태 변경은 trusted Origin과 CSRF 정책을 통과해야 합니다.
+모든 상태 변경 요청은 허용된 출처 검사와 CSRF 방어 정책을 통과해야 합니다.
 
 ## 역할 불변식
 
-- 메모에는 항상 한 명 이상의 owner가 있어야 합니다.
-- owner만 구성원을 추가·변경·제거할 수 있습니다.
-- 마지막 owner를 제거하거나 강등할 수 없습니다.
-- editor는 title·body를 수정할 수 있습니다.
-- viewer는 읽기만 가능합니다.
-- 정지된 계정은 기존 session으로도 접근할 수 없습니다.
-- role 변경과 activity 기록은 같은 transaction입니다.
+- 메모에는 항상 한 명 이상의 `owner`가 있어야 합니다.
+- `owner`만 구성원을 추가·변경·제거할 수 있습니다.
+- 마지막 `owner`는 제거하거나 다른 역할로 낮출 수 없습니다.
+- `editor`는 제목과 본문을 수정할 수 있습니다.
+- `viewer`는 읽기만 가능합니다.
+- 정지된 계정은 기존 세션으로도 접근할 수 없습니다.
+- 역할 변경과 활동 기록은 같은 트랜잭션에서 처리합니다.
 
-UI는 허용되지 않은 button을 숨기거나 disabled로 안내하되, server 정책이 최종 방어선입니다.
+UI는 허용되지 않은 버튼을 숨기거나 비활성화해 사용 가능 여부를 안내할 수 있지만, 최종 권한 판정은 서버에서 수행합니다.
 
 ## 데이터 모델
 
-기존 `users`, `sessions`, `notes`, `note_activity`에 다음을 추가합니다.
+기존 `users`, `sessions`, `notes`, `note_activity`에 다음 테이블을 추가합니다.
 
 ```sql
 create table note_members (
@@ -95,7 +95,7 @@ create table note_members (
 );
 ```
 
-소유자 정보가 `notes.owner_id`와 `note_members`에 중복되면 두 값이 어긋날 수 있습니다. 하나의 정본을 선택합니다. 기본안은 membership의 `owner` role을 정본으로 사용하고, 생성 transaction에서 첫 owner membership을 함께 만듭니다.
+소유자 정보를 `notes.owner_id`와 `note_members`에 중복 저장하면 두 값이 달라질 수 있습니다. 소유권을 나타낼 기준 위치를 하나만 선택합니다. 기본 설계에서는 멤버십의 `owner` 역할을 기준으로 사용하고, 메모 생성 트랜잭션에서 첫 번째 소유자 멤버십을 함께 만듭니다.
 
 ## 프런트엔드 구조
 
@@ -114,140 +114,140 @@ features/notes/
 └── note-state.ts
 ```
 
-필수 구분:
+다음 상태를 구분합니다.
 
-- URL: 선택된 note와 검색·page
-- server state: note·members·activity
-- component state: form draft·dialog
-- session state: `/me` 결과
+- URL 상태: 선택한 메모, 검색 조건, 페이지
+- 서버 상태: 메모, 구성원, 활동 기록
+- 컴포넌트 상태: 폼 초안, 대화 상자
+- 세션 상태: `/me` 응답
 
-API response는 adapter에서 Zod로 다시 parse합니다.
+API 응답은 어댑터에서 Zod 스키마로 다시 검증합니다.
 
-## Server·Client 경계
+## Server Component와 Client Component 경계
 
-첫 page 데이터는 server component에서 읽을 수 있지만, browser cookie와 API origin, cache 정책을 명확히 합니다. 편집 form, dialog와 낙관적 갱신은 client component입니다.
+첫 페이지의 데이터는 Server Component에서 가져올 수 있지만 브라우저 쿠키 전달 방식, API 출처, 캐시 정책을 명확히 해야 합니다. 편집 폼, 대화 상자, 낙관적 갱신은 Client Component에서 처리합니다.
 
-교육 목적상 모든 요청을 client fetch로 시작해도 되지만, 어떤 파일이 browser에서 실행되고 비밀 환경 변수가 bundle에 들어가지 않는지 설명할 수 있어야 합니다.
+교육 목적으로 모든 요청을 클라이언트의 `fetch`에서 시작해도 됩니다. 다만 각 파일이 서버와 브라우저 중 어디에서 실행되는지, 비밀 환경 변수가 클라이언트 번들에 포함되지 않는지 설명할 수 있어야 합니다.
 
-## 편집과 conflict
+## 편집과 충돌
 
 ```text
-editor가 version 5를 열음
-→ draft 수정
+editor가 버전 5인 메모를 엶
+→ 초안 수정
 → PATCH baseVersion=5
-→ 다른 사용자가 먼저 version 6 저장
+→ 다른 사용자가 먼저 버전 6 저장
 → 409 stale_note + 최신 DTO
-→ 화면에 최신 내용과 draft를 모두 보존
+→ 화면에 최신 내용과 사용자 초안을 모두 보존
 ```
 
-사용자 입력을 조용히 버리거나 마지막 도착 값으로 덮지 않습니다. “최신 내용으로 다시 시작”, “내 draft 복사” 같은 복구 경로를 제공합니다.
+사용자 입력을 조용히 버리거나 마지막으로 도착한 값으로 덮어쓰지 않습니다. “최신 내용으로 다시 시작”, “내 초안 복사”처럼 복구할 수 있는 동작을 제공합니다.
 
 ## 세션과 CSRF
 
-- password hash는 검증된 library 사용
-- session token digest 저장
-- HttpOnly·Secure·SameSite cookie
-- login·password change 시 session 회전
-- logout 시 server session 폐기
-- 상태 변경의 Origin 검증과 CSRF token 정책
-- CORS allowlist와 credential 설정
+- 검증된 라이브러리를 사용한 비밀번호 해싱
+- 세션 토큰의 다이제스트만 저장
+- `HttpOnly`·`Secure`·`SameSite` 쿠키
+- 로그인과 비밀번호 변경 시 세션 토큰 교체
+- 로그아웃 시 서버 세션 폐기
+- 상태 변경 요청의 `Origin` 검증과 CSRF 토큰 정책
+- CORS 허용 목록과 인증 정보 포함 요청 설정
 
-브라우저 E2E에서 실제 cookie jar와 logout 후 접근 거부를 확인합니다.
+브라우저 E2E 테스트에서 실제 쿠키 저장소와 로그아웃 후 접근 거부를 확인합니다.
 
-## 접근성과 반응형
+## 접근성과 반응형 화면
 
-- login·편집 form의 label과 오류 연결
-- 저장 중·완료·conflict 상태 알림
-- member role을 색뿐 아니라 text로 표시
-- dialog focus 진입·복귀
-- keyboard로 저장·취소 가능
-- 320px에서 editor와 member panel 재배치
+- 로그인·편집 폼의 레이블과 오류 설명 연결
+- 저장 중·완료·충돌 상태 알림
+- 구성원 역할을 색뿐 아니라 텍스트로 표시
+- 대화 상자를 열고 닫을 때 포커스 이동과 복귀
+- 키보드로 저장과 취소 가능
+- 320px 화면에서 편집 영역과 구성원 패널 재배치
 
-## 검사 행렬
+## 테스트 행렬
 
 ### 인증
 
 ```text
 잘못된 비밀번호
-로그아웃 뒤 /me
-만료 session
-정지 사용자 기존 session
-cookie 발급·삭제 path
+로그아웃 후 /me 요청
+만료된 세션
+정지된 사용자의 기존 세션
+쿠키 발급·삭제 경로
 ```
 
 ### 권한
 
 ```text
-비구성원 읽기
-viewer 수정
-editor 구성원 관리
-owner 역할 변경
+비구성원의 읽기
+viewer의 수정
+editor의 구성원 관리
+owner의 역할 변경
 마지막 owner 제거
-다른 note ID로 요청
+다른 메모 ID를 사용한 요청
 ```
 
-### 데이터
+### 데이터베이스
 
 ```text
-note 생성 + owner membership
-수정 + activity rollback
-role 변경 + activity rollback
-같은 version 경쟁
+메모 생성 + owner 멤버십
+메모 수정 + 활동 기록 롤백
+역할 변경 + 활동 기록 롤백
+같은 버전을 사용한 경쟁 요청
 ```
 
-### Browser
+### 브라우저
 
 ```text
-login → 목록 → 상세 → 수정 → logout
-owner 초대 → viewer 로그인 → 읽기 성공·수정 거부
-409 conflict에서 draft 보존
-직접 상세 URL 새로고침
-keyboard와 작은 화면
+로그인 → 목록 → 상세 → 수정 → 로그아웃
+`owner` 초대 → `viewer` 로그인 → 읽기 성공·수정 거부
+409 충돌 후 초안 보존
+상세 URL 직접 접근과 새로 고침
+키보드 조작과 작은 화면
 ```
 
 ## 구현 순서
 
-1. 공유 HTTP·response schema를 고정합니다.
-2. session 없는 note UI를 API와 연결합니다.
-3. users·password·sessions migration을 추가합니다.
-4. authentication hook과 `/me`를 연결합니다.
-5. membership과 role policy를 추가합니다.
-6. CSRF·CORS·session 폐기 검사를 추가합니다.
-7. conflict UI와 browser 흐름을 완성합니다.
-8. typecheck·API·DB·build·E2E를 독립 실행합니다.
+1. 공유할 HTTP 요청·응답 스키마를 먼저 확정합니다.
+2. 세션 없이 메모 UI를 API와 연결합니다.
+3. 사용자, 비밀번호, 세션 마이그레이션을 추가합니다.
+4. 인증 훅과 `/me`를 연결합니다.
+5. 멤버십과 역할 정책을 추가합니다.
+6. CSRF, CORS, 세션 폐기 테스트를 추가합니다.
+7. 충돌 UI와 브라우저 사용자 흐름을 완성합니다.
+8. 타입 검사, API 테스트, DB 테스트, 빌드, E2E를 독립적으로 실행합니다.
 
 ## 범위 밖
 
-- WebSocket과 presence
+- WebSocket과 접속 상태 표시
 - Canvas
-- 여러 server instance 사이 실시간 broadcast
-- OAuth provider
+- 여러 서버 인스턴스 사이의 실시간 브로드캐스트
+- OAuth 공급자
 - 이메일 발송 인프라
-- production 배포·TLS
+- 프로덕션 배포와 TLS
 
 ## 완료 기준
 
-- React·Next.js 화면과 Fastify·PostgreSQL을 계약으로 연결합니다.
-- password·session·cookie 수명을 구현하고 logout 뒤 server 상태를 폐기합니다.
-- 역할·소유권을 HTTP와 데이터베이스 transaction에서 보호합니다.
-- 409 conflict에서도 사용자 draft와 최신 상태를 함께 보존합니다.
-- 핵심 인증·권한 흐름을 실제 browser와 DB로 검사합니다.
+- React·Next.js 화면과 Fastify·PostgreSQL을 명시적인 계약으로 연결합니다.
+- 비밀번호, 세션, 쿠키의 수명을 구현하고 로그아웃 후 서버 세션을 폐기합니다.
+- 역할과 소유권을 HTTP 정책과 데이터베이스 트랜잭션으로 보호합니다.
+- 409 충돌 후에도 사용자 초안과 최신 서버 상태를 함께 보존합니다.
+- 핵심 인증·권한 흐름을 실제 브라우저와 데이터베이스로 테스트합니다.
 
-## Expected evidence rubric
+## 완료 증거 기준
 
-학습자 프로젝트에 다음 증거를 남깁니다. 자동 채점 답안이 아니라 명령과 결과를 다시 실행할 수 있는 review record입니다.
+학습자 프로젝트에 다음 증거를 남깁니다. 자동 채점을 위한 답안이 아니라 다른 사람이 명령과 결과를 다시 확인할 수 있는 검토 기록입니다.
 
 | 증거 | 최소 내용 |
 |---|---|
-| state ownership | URL·server·component·session 상태의 정본과 adapter 경계 |
-| security | cookie 속성, session 폐기, Origin/CSRF, 401·403·404 선택 근거 |
-| authorization | owner·editor·viewer 행렬과 마지막 owner·다른 note 거부 결과 |
-| transaction | note·membership·activity의 commit/rollback·경쟁 결과 |
-| browser | 로그인부터 logout, viewer 거부, 409 draft 보존, keyboard·320px 결과 |
-| lifecycle | app·pool·browser와 외부 resource의 시작·종료 명령 |
+| 상태 소유권 | URL·서버·컴포넌트·세션 상태의 기준 위치와 어댑터 경계 |
+| 보안 | 쿠키 속성, 세션 폐기, Origin·CSRF 정책, 401·403·404 선택 근거 |
+| 권한 | `owner`·`editor`·`viewer` 행렬, 마지막 `owner`와 다른 메모 접근 거부 결과 |
+| 트랜잭션 | 메모·멤버십·활동 기록의 커밋·롤백·경쟁 결과 |
+| 브라우저 | 로그인부터 로그아웃, `viewer` 거부, 409 초안 보존, 키보드·320px 결과 |
+| 생명주기 | 애플리케이션·연결 풀·브라우저·외부 자원의 시작과 종료 명령 |
 
-guides 저장소에는 이 결과와 비교할 reference가 없으며 collaboration-board gate 통과를 공유 메모의 완료 증거로 주장할 수 없습니다. 자동 검증이 필요한 기본 경로는 `06-security`에서 Part 05로 이어집니다.
+`guides` 저장소에는 이 결과와 비교할 참조 구현이 없으며, 협업 보드의 품질 게이트를 통과한 결과를 공유 메모의 완료 증거로 대신할 수 없습니다. 자동 검증이 포함된 기본 학습 경로는 `06-security` 이후 파트 05로 이어집니다.
 
 ## 다음 단계
 
-기본 학습 경로의 `07-websocket`과 `08-testing`을 먼저 완료한 뒤, 연결 수명·임시 상태·여러 사용자의 수렴을 통합하는 최종 runnable 프로젝트 [`실시간 협업 보드`](04-collaboration-board.md)로 이동합니다.
+기본 학습 경로의 `07-websocket`과 `08-testing`을 먼저 완료한 뒤 연결 생명주기, 임시 상태, 여러 사용자의 상태 수렴을 통합하는 최종 실행형 프로젝트인 [`실시간 협업 보드`](04-collaboration-board.md)로 이동합니다.

@@ -1,158 +1,125 @@
-# 선택형 최종 문제: 커머스 checkout
+# Commerce Checkout
 
-금액 snapshot, 실제 PostgreSQL 재고 경쟁, idempotent checkout, durable payment command, HTTP mock provider, 서명 webhook, cancel·refund를 하나의 작은 backend에 연결합니다.
+PostgreSQL, Kysely, Fastify로 구성한 checkout 및 payment orchestration 서비스다. 주문 생성 시 상품 가격을 snapshot으로 고정하고, 재고 예약과 주문·결제·payment command 생성을 하나의 transaction으로 처리한다. 외부 payment provider 호출은 durable command와 lease 기반 dispatcher를 통해 수행하며, provider webhook은 raw body HMAC 검증과 event deduplication을 통과한 뒤 주문 상태를 변경한다.
 
-이 exercise는 core `workspace:create` allowlist를 수정하지 않고 추가할 수 있도록 자체 workspace 생성기를 가집니다. `skeleton/`에서 직접 구현하고 Stage 01–06 검사를 통과한 뒤에만 `reference/`와 비교합니다.
+## 주요 기능
 
-## 선행 조건
+- minor unit 정수로 금액을 계산하고 `Number.isSafeInteger` 범위를 강제한다.
+- `Idempotency-Key`와 canonical request hash로 checkout, cancel, refund를 replay-safe하게 처리한다.
+- product row lock과 조건부 재고 감소로 마지막 재고에 대한 경쟁 checkout을 직렬화한다.
+- 주문 생성 transaction 안에서 order snapshot, inventory movement, payment, payment command를 함께 기록한다.
+- `FOR UPDATE SKIP LOCKED`, claim token, lease timeout으로 여러 dispatcher가 command를 안전하게 가져간다.
+- provider 실패를 retryable/non-retryable로 구분하고 bounded exponential backoff를 적용한다.
+- timestamped HMAC, constant-time comparison, raw payload hash로 webhook authenticity와 event ID 재사용을 검증한다.
+- cancel/refund/payment event를 명시적인 order state machine으로 제한한다.
+- 실패·취소·환불에 따른 inventory release를 unique movement와 order marker로 한 번만 수행한다.
 
-최소한 다음 실습의 완료 기준을 이해해야 합니다.
-
-- `04-fastify-zod-api`
-- `05-postgresql-kysely`
-- `06-security`의 외부 입력·오류 경계
-- `08-testing`
-
-권장:
-
-- `collaboration-board` Stage 01–06
-- [`신뢰할 수 있는 command와 webhook`](../../docs/07-domain-practice/01-reliable-commands-and-webhooks.md)
-- [`커머스 업무 불변식`](../../docs/07-domain-practice/02-commerce-domain-invariants.md)
-- [`커머스 checkout capstone`](../../docs/07-domain-practice/03-commerce-checkout.md)
-
-## 작업 공간 만들기
-
-저장소 루트에서 실행합니다.
-
-```sh
-node exercises/commerce-checkout/checks/create-workspace.mjs
-```
-
-다음 경로가 생성됩니다.
+## 구조
 
 ```text
-exercises/commerce-checkout/work/
+commerce-checkout/
+├── migrations/             # relational invariants
+├── src/
+│   ├── domain.ts           # money snapshot and order state machine
+│   ├── repository.ts       # transactional persistence and command leasing
+│   ├── payment-provider.ts # provider port and HTTP adapter
+│   ├── service.ts          # orchestration and retry policy
+│   ├── webhook.ts          # raw-body signature verification
+│   └── app.ts              # HTTP contract and stable failures
+├── fixtures/               # local idempotent payment provider
+└── tests/                  # unit and PostgreSQL integration verification
 ```
 
-기존 `work/`는 덮어쓰지 않고 skeleton이나 destination에 symbolic link가 있으면 중단합니다.
+## 실행
 
-의존성을 설치합니다.
+Node.js 24.19.x와 pnpm 10이 필요하다.
 
 ```sh
-corepack enable
-pnpm --dir exercises/commerce-checkout/work install --ignore-workspace
+pnpm install
+cp .env.example .env
+export $(grep -v '^#' .env | xargs)
+docker compose up -d --wait
+pnpm migrate
+pnpm seed
 ```
 
-## PostgreSQL 시작
+별도 terminal에서 local provider와 API를 실행한다.
 
 ```sh
-POSTGRES_PORT=55433 docker compose \
-  -p guide-commerce-checkout \
-  -f exercises/commerce-checkout/compose.test.yml \
-  up -d --wait
-
-export DATABASE_URL=postgres://postgres:postgres@127.0.0.1:55433/commerce_dev
+pnpm provider
+pnpm dev
 ```
 
-port를 바꾸면 `POSTGRES_PORT`와 `DATABASE_URL`을 함께 바꿉니다.
+## API 흐름
 
-migration을 적용합니다.
+상품 목록과 checkout:
 
 ```sh
-pnpm --dir exercises/commerce-checkout/work migrate
+curl http://127.0.0.1:3001/products
+curl -X POST http://127.0.0.1:3001/checkouts \
+  -H 'content-type: application/json' \
+  -H 'idempotency-key: checkout-demo-0001' \
+  -d '{"items":[{"productId":"product_keyboard","quantity":1}]}'
 ```
 
-## Stage 실행
+생성된 command를 provider에 전달한다.
 
 ```sh
-node exercises/commerce-checkout/checks/verify-work.mjs 1
-node exercises/commerce-checkout/checks/verify-work.mjs 2
-node exercises/commerce-checkout/checks/verify-work.mjs 3
-node exercises/commerce-checkout/checks/verify-work.mjs 4
-node exercises/commerce-checkout/checks/verify-work.mjs 5
-node exercises/commerce-checkout/checks/verify-work.mjs 6
+curl -X POST http://127.0.0.1:3001/internal/payment-commands/dispatch \
+  -H 'content-type: application/json' \
+  -d '{"limit":10}'
 ```
 
-checker는 다음을 확인합니다.
-
-- `work/`가 실제 디렉터리이고 exercise 밖으로 탈출하지 않음
-- baseline `tests/`가 skeleton과 동일함
-- source가 `reference/`를 import하거나 읽지 않음
-- symbolic link가 없음
-- `package.json`에 해당 `verify:0N` script가 있음
-- stage script가 정상 종료함
-
-baseline test는 수정하지 않습니다. 추가 검사는 `tests/extra/`에 둘 수 있습니다.
-
-## Stage 계약
-
-| Stage | 명세 | 핵심 증거 |
-|---:|---|---|
-| 01 | [`Money와 주문 snapshot`](specs/01-money-and-order.md) | pure domain 계산·상태·snapshot |
-| 02 | [`Checkout과 inventory`](specs/02-checkout-inventory.md) | 실제 PostgreSQL lock·경쟁·rollback |
-| 03 | [`Idempotent payment command`](specs/03-idempotent-payment.md) | key replay·payload conflict·claim token·durable command |
-| 04 | [`Payment webhook`](specs/04-payment-webhook.md) | HTTP provider·raw body HMAC·dedupe·unknown retry·순서 |
-| 05 | [`Cancel과 refund`](specs/05-cancel-refund.md) | pending transition·terminal release once |
-| 06 | [`Quality`](specs/06-quality.md) | 전체 실패 주입·cleanup·typecheck |
-
-## Mock payment provider
-
-`fixtures/mock-payment-provider/server.mjs`는 외부 시스템 역할을 하는 dependency-free HTTP process입니다. 학습자 application에서 import하지 않습니다. Stage 04 test가 child process로 시작하고 실제 HTTP adapter를 검증합니다.
-
-직접 실행할 수도 있습니다.
-
-```sh
-PORT=55991 \
-WEBHOOK_URL=http://127.0.0.1:3001/webhooks/payment \
-WEBHOOK_SECRET=guide-commerce-secret \
-node exercises/commerce-checkout/fixtures/mock-payment-provider/server.mjs
-```
-
-Provider API:
+Webhook은 `application/vnd.guide-payment+json` raw body, `x-payment-timestamp`, `x-payment-signature`가 필요하다. signature는 다음 byte sequence의 HMAC-SHA256 hex digest다.
 
 ```text
-POST /operations
-GET  /operations
-POST /test/emit
-POST /test/reset
+<unix timestamp>.<exact raw body>
 ```
 
-같은 `Idempotency-Key`와 같은 body는 동일 operation을 반환하고, 같은 key와 다른 body는 409입니다.
-
-
-## 완료 기준
-
-- Stage 01–06 baseline test를 수정하지 않고 통과합니다.
-- 실제 PostgreSQL에서 동시 checkout 하나만 성공하고 partial state가 남지 않습니다.
-- provider retry와 duplicate webhook 뒤에도 외부·내부 효과가 한 번만 남습니다.
-- webhook이 payment identity 저장보다 먼저 도착해도 503 retry 뒤 같은 event가 적용됩니다.
-- lease가 만료된 worker는 새 claim의 complete/fail 결과를 덮지 못합니다.
-- cancel·refund·late event에서 주문과 재고가 허용된 상태로 수렴합니다.
-- typecheck와 모든 test가 끝난 뒤 app, pool과 provider child process가 종료됩니다.
-
-## Reference 검증
-
-학습자 구현을 완료한 뒤 reference를 별도로 설치합니다.
+## 테스트
 
 ```sh
-pnpm --dir exercises/commerce-checkout/reference install --ignore-workspace
-pnpm --dir exercises/commerce-checkout/reference migrate
-pnpm --dir exercises/commerce-checkout/reference verify
+pnpm typecheck
+pnpm test:unit
 ```
 
-`reference/`는 가능한 설계 하나입니다. 파일 배치가 달라도 public HTTP 계약, DB 불변식과 실패 뒤 상태를 만족하면 올바릅니다.
-
-## 정리
+PostgreSQL integration test:
 
 ```sh
-docker compose \
-  -p guide-commerce-checkout \
-  -f exercises/commerce-checkout/compose.test.yml \
-  down -v
+export TEST_DATABASE_URL="$DATABASE_URL"
+pnpm test:integration
 ```
 
-검사 뒤 Node child process나 DB pool이 남는다면 성공으로 취급하지 않습니다.
+## 주요 설계 결정
 
-## 다음 단계
+가격과 상품명은 주문 시점의 `order_items`에 복사한다. 이후 catalog 값이 바뀌어도 기존 주문 금액은 변하지 않는다. Provider 호출을 checkout transaction 안에서 직접 수행하지 않는다. Database commit과 외부 network 호출을 원자적으로 묶을 수 없으므로, 먼저 durable command를 기록한 뒤 dispatcher가 lease를 획득해 전달한다. Retry limit를 소진한 command는 `dead`로 남기며 자동으로 재고를 해제하지 않는다. Provider가 실제로 요청을 수신했는지 불명확할 수 있으므로 operator reconciliation 없이 business state를 되돌리지 않는 선택이다. Webhook event가 payment linkage보다 먼저 도착하면 `503`을 반환하고 같은 event ID를 나중에 다시 적용할 수 있게 `unknown_payment` 상태로 남긴다.
 
-완료 뒤 실제 제품 요구를 추가할 때는 부분 환불, 예약 만료, 배송·반품, 회계 ledger와 reconciliation을 각각 독립된 상태·실패 계약으로 확장합니다.
+## Implementation Order
+
+| Order | Responsibility | Primary anchor |
+| ----: | --- | --- |
+| 1 | Runtime configuration contract | `src/config.ts` |
+| 2 | External transport contracts | `src/contracts.ts` |
+| 3 | Money and order snapshot invariants | `src/domain.ts` |
+| 3-1 | Order lifecycle state machine | `src/domain.ts` |
+| 4 | Relational consistency model | `migrations/001_initial.sql` |
+| 5 | Database types and numeric boundary | `src/db.ts` |
+| 6 | Checkout and payment repository | `src/repository.ts` |
+| 6-1 | Stock lock and order snapshot transaction | `src/repository.ts` |
+| 6-2 | Durable payment command lease | `src/repository.ts` |
+| 6-3 | Provider event dedup and inventory release | `src/repository.ts` |
+| 7 | Payment provider port and HTTP adapter | `src/payment-provider.ts` |
+| 7-1 | Idempotent local provider fixture | `fixtures/mock-provider.ts` |
+| 8 | Dispatch and retry orchestration | `src/service.ts` |
+| 9 | Webhook authenticity and replay boundary | `src/webhook.ts` |
+| 10 | HTTP application contract | `src/app.ts` |
+| 10-1 | Idempotent checkout and order commands | `src/app.ts` |
+| 10-2 | Command dispatch and webhook ingestion | `src/app.ts` |
+| 11 | Process composition and shutdown | `src/server.ts` |
+| 12 | Domain verification layer | `tests/domain.test.ts` |
+| 12-1 | Webhook authenticity verification | `tests/webhook.test.ts` |
+| 12-2 | Transactional PostgreSQL verification | `tests/repository.integration.test.ts` |
+
+## 범위와 제한
+
+이 프로젝트는 tax, shipping, promotion, authentication을 다루지 않는다. `/internal/payment-commands/dispatch`는 trusted internal network 뒤에서 호출된다는 전제이며 자체 인증을 제공하지 않는다. `dead` command를 조회·재처리하는 operator UI와 reconciliation worker도 범위 밖이다. Local provider는 같은 idempotency key와 같은 payload를 재사용하고, 같은 key를 다른 payload에 재사용하면 `409`를 반환한다. Webhook은 자동으로 전송하지 않는다. 하나의 주문에는 하나의 currency만 허용한다.

@@ -1,42 +1,42 @@
-# Capstone 1: 브라우저 작업 목록
+# 종합 프로젝트 1: 브라우저 작업 목록
 
-첫 프로젝트는 framework와 server 없이 browser만 사용합니다. HTML·CSS·JavaScript·DOM·URL·저장소를 한 기능으로 연결하며, “화면이 보인다”가 아니라 새로고침·뒤로 가기·잘못된 저장값·키보드·작은 화면까지 자동 검증합니다.
+첫 프로젝트는 프레임워크와 서버 없이 브라우저 기능만 사용합니다. HTML, CSS, JavaScript, DOM, URL, 저장소를 하나의 기능으로 연결합니다. 화면이 표시되는지만 확인하지 않고 새로 고침, 뒤로 가기, 잘못된 저장값, 키보드 조작, 작은 화면까지 자동으로 검증합니다.
 
 ## 목표
 
 다음 사용자 흐름을 구현합니다.
 
-1. 사용자가 작업 제목을 입력해 추가합니다.
-2. 작업을 완료·미완료로 전환합니다.
+1. 사용자가 작업 제목을 입력해 새 작업을 추가합니다.
+2. 작업을 완료 또는 미완료 상태로 전환합니다.
 3. 작업을 삭제합니다.
-4. `all`, `open`, `done` filter를 URL에 저장합니다.
-5. 새로고침 뒤 작업과 filter가 복원됩니다.
-6. 뒤로 가기와 앞으로 가기로 이전 filter가 복원됩니다.
-7. keyboard와 320px viewport에서도 모든 기능을 사용할 수 있습니다.
+4. `all`, `open`, `done` 필터를 URL에 저장합니다.
+5. 새로 고침 후 작업과 필터가 복원됩니다.
+6. 뒤로 가기와 앞으로 가기로 이전 필터가 복원됩니다.
+7. 키보드와 320px 뷰포트에서도 모든 기능을 사용할 수 있습니다.
 
-연결 실습은 [`첫 브라우저 애플리케이션`](../../exercises/00-first-web-app/README.md)입니다.
+연결 실습은 [`첫 웹 애플리케이션`](../../exercises/00-first-web-app/README.md)입니다.
 
 ## 범위
 
 사용 기술:
 
-- semantic HTML
-- responsive CSS
-- browser ESM
-- DOM event
+- 시맨틱 HTML
+- 반응형 CSS
+- 브라우저 ESM
+- DOM 이벤트
 - `URLSearchParams`와 History API
 - `localStorage`
-- dependency 없는 실제 Chromium 검증
+- 실제 Chromium을 사용하는 자동 검증
 
-의도적으로 제외:
+의도적으로 제외하는 기술:
 
 - React
-- server·API
-- database
+- 서버와 API
+- 데이터베이스
 - 로그인
-- build tool
+- 빌드 도구
 
-첫 프로젝트에서 framework를 사용하지 않는 이유는 browser가 원래 제공하는 form·URL·storage 계약을 직접 이해하기 위해서입니다.
+첫 프로젝트에서 프레임워크를 사용하지 않는 이유는 브라우저가 기본으로 제공하는 폼, URL, 저장소 동작을 직접 이해하기 위해서입니다.
 
 ## 상태 모델
 
@@ -50,20 +50,20 @@ type Task = {
 type Filter = "all" | "open" | "done";
 ```
 
-정본을 나눕니다.
+각 상태의 기준 위치를 구분합니다.
 
-| 상태 | 정본 |
+| 상태 | 기준 위치 |
 |---|---|
-| 작업 배열 | 메모리, 지속 복사본은 `localStorage` |
-| filter | URL query |
-| 입력 중 제목 | form input |
-| 현재 화면 목록 | 위 상태에서 계산한 결과 |
+| 작업 배열 | 메모리, 영속 복사본은 `localStorage` |
+| 필터 | URL 쿼리 |
+| 입력 중인 제목 | 폼 입력 요소 |
+| 현재 화면의 목록 | 위 상태에서 계산한 결과 |
 
-DOM을 읽어 task 배열을 다시 만들지 않습니다. 상태가 바뀔 때 render하고 저장합니다.
+DOM을 읽어 작업 배열을 다시 만들지 않습니다. 상태가 바뀔 때 해당 상태를 저장하고 화면을 다시 렌더링합니다.
 
-## HTML 계약
+## HTML 요구사항
 
-최소 구조:
+최소 구조는 다음과 같습니다.
 
 ```html
 <a href="#main" class="skip-link">본문으로 건너뛰기</a>
@@ -77,37 +77,37 @@ DOM을 읽어 task 배열을 다시 만들지 않습니다. 상태가 바뀔 때
 </main>
 ```
 
-- 작업 추가는 form submit으로 동작합니다.
-- 입력에는 연결된 `label`이 있습니다.
-- 완료·삭제는 실제 `button`입니다.
+- 작업 추가는 폼의 `submit` 이벤트로 동작합니다.
+- 입력 요소에는 연결된 `label`이 있습니다.
+- 완료와 삭제에는 실제 `button` 요소를 사용합니다.
 - 완료 상태를 색만으로 표현하지 않습니다.
-- 빈 결과와 작업 수를 text로 알립니다.
+- 빈 결과와 작업 수를 텍스트로 알립니다.
 
-## CSS 계약
+## CSS 요구사항
 
-- 모든 요소에 `box-sizing: border-box`
-- focus 표시 유지
+- 모든 요소에 `box-sizing: border-box` 적용
+- 포커스 표시 유지
 - 긴 제목 줄바꿈
-- 320px에서 가로 overflow 없음
-- form과 filter가 좁은 화면에서 재배치
-- `prefers-reduced-motion` 사용자의 불필요한 motion 감소
+- 320px에서 의도하지 않은 가로 스크롤 없음
+- 좁은 화면에서 폼과 필터 재배치
+- `prefers-reduced-motion` 사용자의 불필요한 애니메이션 감소
 
-pixel-perfect 복사보다 content가 변해도 무너지지 않는 layout을 우선합니다.
+특정 화면을 픽셀 단위로 복제하기보다 내용 길이와 화면 크기가 바뀌어도 무너지지 않는 레이아웃을 우선합니다.
 
-## 저장 계약
+## 저장소 요구사항
 
-`localStorage`는 외부 입력입니다. parse 실패와 잘못된 shape를 처리합니다.
+`localStorage`의 값은 신뢰할 수 없는 외부 입력으로 처리합니다. JSON 파싱 실패와 잘못된 데이터 구조를 모두 처리해야 합니다.
 
 ```text
 값 없음         → 빈 배열
-JSON parse 실패 → 빈 배열 + 저장값 정리 또는 안전한 오류
-배열 아님       → 거부
-잘못된 task     → 전체 거부 또는 유효 항목만 정책적으로 선택
+JSON 파싱 실패  → 빈 배열 사용, 필요하면 잘못된 저장값 제거
+배열이 아님     → 거부
+잘못된 작업 값  → 전체 거부 또는 유효한 항목만 선택하는 정책 적용
 ```
 
-`JSON.parse(...) as Task[]`로 끝내지 않습니다. 비밀값은 저장하지 않습니다.
+`JSON.parse(...) as Task[]`처럼 타입 단언만 하고 끝내서는 안 됩니다. 비밀값도 저장하지 않습니다.
 
-## URL 계약
+## URL 요구사항
 
 ```text
 /                         → all
@@ -116,75 +116,75 @@ JSON parse 실패 → 빈 배열 + 저장값 정리 또는 안전한 오류
 /?filter=unknown          → all로 정규화
 ```
 
-filter button을 누르면 `history.pushState`로 URL을 바꾸고, `popstate`에서 URL을 다시 읽어 render합니다. URL과 별도 filter 변수를 각각 임의로 수정하지 않습니다.
+필터 버튼을 누르면 `history.pushState`로 URL을 변경하고, `popstate` 이벤트에서는 URL을 다시 읽어 화면을 렌더링합니다. URL과 별도의 필터 변수를 각각 독립적으로 수정하지 않습니다.
 
 ## 오류와 경계 조건
 
-- 공백 제목 거부
-- 너무 긴 제목 처리
-- 같은 제목 허용 여부 명시
-- 저장소 quota·쓰기 실패 처리
-- 잘못된 URL filter
-- 작업 0개
-- 모두 완료·모두 미완료
-- 여러 번 빠른 클릭
-- 새로고침과 back/forward
+- 공백으로만 이루어진 제목 거부
+- 지나치게 긴 제목 처리
+- 같은 제목의 중복 허용 여부 명시
+- 저장 공간 한도 초과나 쓰기 실패 처리
+- 잘못된 URL 필터
+- 작업이 없는 상태
+- 모든 작업이 완료되거나 모두 미완료인 상태
+- 빠른 연속 클릭
+- 새로 고침과 뒤로 가기·앞으로 가기
 
-이 프로젝트는 server가 없으므로 여러 tab 동기화는 필수가 아닙니다. 확장하려면 `storage` event를 사용하되 충돌 정책을 먼저 정의합니다.
+이 프로젝트에는 서버가 없으므로 여러 탭 사이의 동기화는 필수가 아닙니다. 확장하려면 `storage` 이벤트를 사용하되 먼저 충돌 처리 방식을 정의합니다.
 
 ## 구현 순서
 
-1. 정적 HTML과 CSS만으로 form·목록·filter를 만듭니다.
-2. 메모리 task 배열과 순수 filter 함수를 만듭니다.
-3. submit·toggle·delete event를 연결합니다.
-4. 상태에서 DOM을 render합니다.
-5. localStorage parse·save를 추가합니다.
-6. URL filter와 `popstate`를 연결합니다.
-7. keyboard·320px·잘못된 저장값 검사를 통과합니다.
+1. 정적 HTML과 CSS로 폼, 목록, 필터를 만듭니다.
+2. 메모리의 작업 배열과 순수 필터 함수를 만듭니다.
+3. 제출, 완료 전환, 삭제 이벤트를 연결합니다.
+4. 상태에서 DOM을 렌더링합니다.
+5. `localStorage` 파싱과 저장을 추가합니다.
+6. URL 필터와 `popstate`를 연결합니다.
+7. 키보드, 320px 화면, 잘못된 저장값 테스트를 통과시킵니다.
 
-각 단계마다 동작을 깨뜨린 뒤 관련 검사가 실패하는지 확인합니다.
+각 단계에서는 관련 동작을 의도적으로 깨뜨렸을 때 테스트가 실패하는지도 확인합니다.
 
 ## 자동 검증
 
-저장소 루트에서 안전한 학습자 workspace를 한 번 생성한 뒤 검사합니다.
+저장소 루트에서 학습용 워크스페이스를 한 번 생성한 뒤 검사합니다.
 
 ```sh
 pnpm workspace:create 00-first-web-app
 node exercises/00-first-web-app/tests/verify.mjs exercises/00-first-web-app/work
 ```
 
-`skeleton/`을 복사한 직후의 `work/`는 실패해야 합니다. 구현을 진행하며 같은 명령의 실패 항목을 하나씩 줄이고, 완료 뒤에는 모두 통과시킵니다.
+`skeleton/`을 복사한 직후의 `work/`는 검증에 실패해야 합니다. 구현을 진행하면서 같은 명령이 보고하는 실패 항목을 하나씩 줄이고, 완료한 뒤에는 모두 통과시킵니다.
 
 검증 항목:
 
-- semantic form과 label
-- keyboard focus와 submit
-- 추가·완료·삭제
-- URL filter와 history 복원
-- localStorage 복원·잘못된 값 처리
-- 320px overflow
-- unsafe `innerHTML` 비사용
+- 시맨틱 폼과 레이블
+- 키보드 포커스와 폼 제출
+- 추가·완료 전환·삭제
+- URL 필터와 히스토리 복원
+- `localStorage` 복원과 잘못된 값 처리
+- 320px 화면의 오버플로
+- 사용자 입력에 안전하지 않은 `innerHTML`을 사용하지 않음
 
-완료 후에만 reference를 확인합니다.
+모든 검증을 통과한 뒤에만 `reference/`와 비교합니다.
 
 ## 확장 과제
 
-- inline title 편집과 취소
-- 완료 작업 일괄 삭제
-- `storage` event로 두 tab 동기화
-- import/export JSON과 runtime validation
-- 접근 가능한 drag 없이 keyboard reorder
+- 목록 안에서 제목 편집과 취소
+- 완료한 작업 일괄 삭제
+- `storage` 이벤트로 두 탭 동기화
+- JSON 가져오기·내보내기와 런타임 검증
+- 드래그 없이 키보드로 순서 변경
 
-확장은 기본 계약 검사를 계속 통과해야 합니다.
+확장 후에도 기본 요구사항의 검증은 계속 통과해야 합니다.
 
 ## 완료 기준
 
-- framework 없이 browser 상태·DOM·URL·storage를 연결합니다.
-- semantic HTML과 responsive CSS로 keyboard 사용이 가능합니다.
-- 외부 저장값을 검증하고 실패 후 안전한 상태를 유지합니다.
-- 새로고침·뒤로 가기·작은 화면을 실제 browser로 자동 검사합니다.
-- 상태 정본과 파생된 DOM을 구분합니다.
+- 프레임워크 없이 브라우저 상태, DOM, URL, 저장소를 연결합니다.
+- 시맨틱 HTML과 반응형 CSS를 사용해 키보드로 모든 기능을 조작할 수 있습니다.
+- 외부 저장값을 검증하고 오류가 발생해도 안전한 상태를 유지합니다.
+- 새로 고침, 뒤로 가기, 작은 화면을 실제 브라우저에서 자동으로 검사합니다.
+- 기준 상태와 그 상태에서 파생된 DOM을 구분합니다.
 
 ## 다음 단계
 
-기본 경로는 [`비동기 작업과 fetch`](../01-web-foundations/06-async-fetch-errors.md)부터 Part 01을 마치고 `01-runtime`으로 이어집니다. DB까지 완료한 뒤 선택형 self-directed 프로젝트가 필요할 때만 [`메모 API`](02-notes-api.md)를 수행합니다.
+기본 학습 경로는 [`비동기 작업과 fetch`](../01-web-foundations/06-async-fetch-errors.md)부터 웹 기초 파트를 마친 뒤 `01-runtime` 실습으로 이어집니다. 데이터베이스 단계까지 마친 후 선택형 자율 프로젝트가 필요할 때만 [`메모 API`](02-notes-api.md)를 수행합니다.

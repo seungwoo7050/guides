@@ -1,16 +1,16 @@
-# Next.js 데이터 경계와 adapter
+# Next.js 데이터 경계와 어댑터
 
-프런트엔드가 모든 component에서 `fetch` URL, header, JSON parsing과 오류 문장을 직접 다루면 API 변경과 테스트 비용이 화면 전체로 퍼집니다. 데이터 경계는 전송 세부 사항을 한곳에 모으고, 화면에는 parse된 값과 안정된 오류만 제공합니다.
+모든 프런트엔드 컴포넌트에서 `fetch` URL, 헤더, JSON 파싱, 오류 문장을 직접 다루면 API 변경의 영향과 테스트 비용이 화면 전체로 퍼집니다. 데이터 경계는 전송 계층의 세부 구현을 한곳에 모으고, 화면에는 검증된 값과 일관된 오류만 제공합니다.
 
 ## 목표
 
-- transport, adapter, application state와 component를 분리합니다.
-- server fetch와 client fetch의 선택 기준을 설명합니다.
-- response를 runtime schema로 검증합니다.
-- cache, revalidation과 mutation 후 최신성 계약을 명시합니다.
-- 테스트용 adapter로 loading·오류·충돌을 결정적으로 재현합니다.
+- 전송 계층, 어댑터, 애플리케이션 상태, 컴포넌트를 분리합니다.
+- 서버 요청과 클라이언트 요청의 선택 기준을 설명합니다.
+- 응답을 런타임 스키마로 검증합니다.
+- 캐시, 재검증, 변경 후 최신성 유지 방식을 명시합니다.
+- 테스트용 어댑터로 대기·오류·충돌 상태를 결정적으로 재현합니다.
 
-## adapter 계약
+## 어댑터 계약
 
 ```ts
 export interface BoardApi {
@@ -20,7 +20,7 @@ export interface BoardApi {
 }
 ```
 
-component는 fetch path와 status parsing을 알지 않습니다.
+컴포넌트는 `fetch` 경로와 상태 코드 파싱 방법을 알 필요가 없습니다.
 
 ```ts
 export function createHttpBoardApi(baseUrl: string): BoardApi {
@@ -34,23 +34,23 @@ export function createHttpBoardApi(baseUrl: string): BoardApi {
 }
 ```
 
-adapter는 HTTP 오류와 response validation을 application 오류로 번역합니다.
+어댑터는 HTTP 오류와 응답 검증 실패를 애플리케이션이 이해하는 오류로 변환합니다.
 
-## server에서 가져올 데이터
+## 서버에서 가져올 데이터
 
-초기 page에 필요하고 browser interaction 없이 가져올 수 있는 공개·사용자 data는 Server Component에서 읽을 수 있습니다. 장점은 client bundle 감소와 첫 HTML에 data 포함입니다.
+초기 페이지에 필요하고 브라우저 상호작용 없이 가져올 수 있는 공개 데이터나 사용자 데이터는 Server Component에서 읽을 수 있습니다. 클라이언트 번들 크기를 줄이고 첫 HTML에 데이터를 포함할 수 있다는 장점이 있습니다.
 
-그러나 server component fetch가 browser의 session cookie를 API로 전달하는 경로, deployment network와 cache 정책을 명확히 해야 합니다. 같은 application 내부라면 service를 직접 호출할지 HTTP 경계를 유지할지도 선택입니다. server rendering이 자동으로 모든 보안 문제를 해결하지 않습니다.
+다만 Server Component에서 API를 호출할 때는 브라우저의 세션 쿠키를 전달하는 방식, 배포 환경의 네트워크 경로, 캐시 정책을 명확히 해야 합니다. 같은 애플리케이션 내부라면 서비스를 직접 호출할지 HTTP 경계를 유지할지도 결정해야 합니다. 서버 렌더링을 사용한다고 모든 보안 문제가 자동으로 해결되는 것은 아닙니다.
 
-## client에서 가져올 데이터
+## 클라이언트에서 가져올 데이터
 
-사용자 입력에 따라 자주 바뀌거나 browser API·polling·WebSocket과 결합되는 data는 client 경계가 적합할 수 있습니다. 이 경우 요청 취소, stale response와 화면 상태를 관리합니다.
+사용자 입력에 따라 자주 달라지거나 브라우저 API·폴링·WebSocket과 결합되는 데이터는 클라이언트 경계에서 가져오는 편이 적합할 수 있습니다. 이 경우 요청 취소, 오래된 응답, 화면 상태를 직접 관리해야 합니다.
 
-server와 client에서 같은 data를 각각 가져와 독립 정본을 만들지 않습니다. 초기 server data를 전달하고 이후 client cache가 이어받는 계약을 명시할 수 있습니다.
+서버와 클라이언트가 같은 데이터를 각각 가져와 독립적인 기준값으로 사용해서는 안 됩니다. 서버가 초기 데이터를 전달하고 이후에는 클라이언트 캐시가 이어받도록 계약을 명확하게 정할 수 있습니다.
 
-## response parsing
+## 응답 파싱
 
-TypeScript generic만으로 응답이 안전해지지 않습니다.
+TypeScript 제네릭만으로 외부 응답이 안전해지지는 않습니다.
 
 ```ts
 async function parseResponse<T>(response: Response, schema: ZodType<T>): Promise<T> {
@@ -59,34 +59,34 @@ async function parseResponse<T>(response: Response, schema: ZodType<T>): Promise
 }
 ```
 
-204 response처럼 body가 없는 계약은 별도로 처리합니다. proxy가 HTML을 반환하는 경우의 JSON parsing 실패도 안정된 오류로 바꿉니다.
+204 응답처럼 본문이 없는 계약은 별도로 처리합니다. 프록시가 HTML을 반환해 JSON 파싱에 실패하는 경우도 일관된 애플리케이션 오류로 변환합니다.
 
-## cache는 최신성 계약입니다
+## 캐시는 데이터 최신성 계약입니다
 
-“cache를 쓴다”는 설정이 아니라 다음 질문의 답입니다.
+캐시 사용 여부만 정해서는 부족합니다. 다음 질문에 답할 수 있어야 합니다.
 
-- 어떤 key로 같은 data를 식별하는가?
-- 얼마 동안 오래되어도 되는가?
-- mutation 성공 뒤 어떤 key를 갱신·무효화하는가?
-- 화면에는 이전 data를 유지할 것인가?
-- 권한에 따라 다른 응답이 같은 cache에 섞이지 않는가?
+- 어떤 키로 같은 데이터를 식별하는가?
+- 데이터가 얼마 동안 오래된 상태여도 되는가?
+- 변경 요청이 성공하면 어떤 키를 갱신하거나 무효화하는가?
+- 새 데이터를 가져오는 동안 이전 데이터를 유지할 것인가?
+- 권한별로 다른 응답이 같은 캐시에 섞이지 않는가?
 
-사용자별 data를 public shared cache에 넣지 않습니다. cache key가 user·locale·filter 같은 변형 조건을 포함하는지 확인합니다.
+사용자별 데이터를 공개 공유 캐시에 저장해서는 안 됩니다. 캐시 키에 사용자·로케일·필터처럼 응답을 달라지게 하는 조건이 포함되는지 확인합니다.
 
-## mutation과 conflict
+## 변경 요청과 충돌
 
 ```text
 입력 검증
-→ optimistic 또는 pending UI
-→ mutation 요청
-→ 성공 결과를 정본으로 반영
-→ 409면 최신 값 재조회와 사용자 선택
-→ network 오류면 retry 가능성 판정
+→ 낙관적 UI 또는 대기 UI 표시
+→ 변경 요청 전송
+→ 성공 결과를 기준값으로 반영
+→ 409이면 최신 값 재조회 후 사용자 선택 요청
+→ 네트워크 오류이면 재시도 가능 여부 판단
 ```
 
-409 conflict는 단순 실패 message가 아니라 현재 server version과 사용자의 draft를 조정해야 하는 상태입니다. 모든 오류에서 이전 UI로 조용히 rollback하면 사용자가 입력을 잃을 수 있습니다.
+409 충돌은 단순한 실패 메시지로 끝낼 문제가 아닙니다. 현재 서버 버전과 사용자의 초안을 어떻게 조정할지 정해야 합니다. 모든 오류에서 이전 UI로 조용히 되돌리면 사용자가 입력한 내용을 잃을 수 있습니다.
 
-## 테스트용 adapter
+## 테스트용 어댑터
 
 ```ts
 export function createDeferredBoardApi() {
@@ -94,42 +94,42 @@ export function createDeferredBoardApi() {
 }
 ```
 
-실제 timer와 network에 의존하지 않고 다음을 재현합니다.
+실제 타이머와 네트워크에 의존하지 않고 다음 상태를 재현합니다.
 
-- loading 지속
+- 요청이 계속 대기 중인 상태
 - 빈 목록
-- validation 실패
-- 이전 요청이 늦게 완료
-- 409 conflict
-- mutation 성공 뒤 갱신
+- 검증 실패
+- 이전 요청이 더 늦게 완료되는 상황
+- 409 충돌
+- 변경 성공 후 데이터 갱신
 
-화면 테스트가 HTTP server 전체를 항상 필요로 하지 않게 합니다. 반대로 adapter 자체의 실제 HTTP 계약은 별도 통합 검사로 확인합니다.
+이렇게 하면 화면 테스트를 실행할 때마다 전체 HTTP 서버를 시작할 필요가 없습니다. 반대로 어댑터 자체의 실제 HTTP 계약은 별도의 통합 검사로 확인합니다.
 
-## server action과 route handler
+## Server Action과 Route Handler
 
-framework 기능을 사용하더라도 입력 검증·권한·업무 service 경계는 유지합니다. UI component 안에 DB 쓰기와 권한 판정을 섞지 않습니다. 전송 방식이 server action인지 HTTP route인지보다 application command가 어떤 계약을 갖는지가 중요합니다.
+프레임워크 기능을 사용하더라도 입력 검증·권한 검사·도메인 서비스 경계는 유지합니다. UI 컴포넌트 안에 데이터베이스 쓰기와 권한 판정을 섞어서는 안 됩니다. 전송 방식이 Server Action인지 HTTP Route Handler인지보다 애플리케이션 명령이 어떤 계약을 가지는지가 중요합니다.
 
-## 실패 조건
+## 흔한 오류
 
-- 모든 component가 fetch·status·JSON parsing을 반복합니다.
-- TypeScript generic으로 외부 응답 검증을 대신합니다.
-- server와 client가 같은 data의 독립 정본을 가집니다.
-- cache key에서 사용자·filter·version을 빠뜨립니다.
-- mutation 성공 뒤 관련 cache가 오래된 채 남습니다.
-- 409를 일반 toast로만 처리하고 draft 복구 계약이 없습니다.
+- 모든 컴포넌트에서 `fetch`, 상태 코드 처리, JSON 파싱을 반복합니다.
+- TypeScript 제네릭으로 외부 응답 검증을 대신합니다.
+- 서버와 클라이언트가 같은 데이터의 독립적인 기준값을 가집니다.
+- 캐시 키에서 사용자·필터·버전을 빠뜨립니다.
+- 변경 요청이 성공한 뒤에도 관련 캐시에 오래된 값이 남습니다.
+- 409 충돌을 일반 알림으로만 처리하고 초안 복구 방식을 정하지 않습니다.
 
 ## 연결 실습
 
-[`React와 Next.js`](../../exercises/03-react-nextjs/README.md)의 fake adapter로 요청 수명을 검사한 뒤, [`Fastify와 Zod API`](../../exercises/04-fastify-zod-api/README.md)의 실제 전송 계약과 연결합니다.
+[`React와 Next.js`](../../exercises/03-react-nextjs/README.md)의 가짜 어댑터로 요청 생명주기를 검사한 뒤, [`Fastify와 Zod API`](../../exercises/04-fastify-zod-api/README.md)의 실제 전송 계약과 연결합니다.
 
 ## 완료 기준
 
-- component와 HTTP adapter의 책임을 분리합니다.
-- server·client data loading을 선택한 이유를 설명합니다.
-- response를 runtime schema로 parse합니다.
-- cache key·staleness·mutation 무효화 계약을 정의합니다.
-- 테스트 adapter로 순서 역전·오류·conflict를 재현합니다.
+- 컴포넌트와 HTTP 어댑터의 책임을 분리합니다.
+- 서버와 클라이언트 중 어느 쪽에서 데이터를 가져올지 선택한 이유를 설명합니다.
+- 응답을 런타임 스키마로 파싱합니다.
+- 캐시 키·허용 가능한 오래된 시간·변경 후 무효화 방식을 정의합니다.
+- 테스트용 어댑터로 응답 순서 역전·오류·충돌을 재현합니다.
 
 ## 다음 단계
 
-먼저 [`React와 Next.js`](../../exercises/03-react-nextjs/README.md)의 생성된 `work/`에서 Part 02의 상태·요청 수명·동적 경로 계약을 검증하고 완료 뒤 `reference/`와 비교합니다. 그다음 실제 전송 계약을 설계하려면 [`HTTP API 모델`](../03-backend/01-http-api-model.md)로 이동합니다.
+먼저 [`React와 Next.js`](../../exercises/03-react-nextjs/README.md)의 `work/`에서 파트 02의 상태·요청 생명주기·동적 경로 계약을 검증하고, 완료한 뒤 `reference/`와 비교합니다. 그다음 실제 전송 계약을 설계하려면 [`HTTP API 모델`](../03-backend/01-http-api-model.md)로 이동합니다.

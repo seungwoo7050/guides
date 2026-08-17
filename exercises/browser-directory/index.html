@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Document Search</title>
+  <link rel="stylesheet" href="style.css" />
+  <script type="module" src="app.js"></script>
+</head>
+<body>
+  <!-- [Implementation 1] Fix the semantic structure for search, labels, status, and skip navigation before adding behavior. -->
+  <a class="skip-link" href="#main">Skip to main content</a>
+  <header class="site-header">
+    <strong>Boundary Docs</strong>
+    <nav aria-label="Main menu"><a aria-current="page" href="./">Search</a></nav>
+  </header>
+  <main id="main" tabindex="-1">
+    <h1>Document Search</h1>
+    <form id="search-form" role="search">
+      <label for="query">Search term</label>
+      <div class="form-row">
+        <input id="query" name="q" autocomplete="off" />
+        <button type="submit">Search</button>
+      </div>
+    </form>
+    <p id="status" role="status" aria-live="polite"></p>
+    <section aria-labelledby="result-heading">
+      <h2 id="result-heading">Results</h2>
+      <div id="results" class="cards"></div>
+    </section>
+  </main>
+</body>
+</html>

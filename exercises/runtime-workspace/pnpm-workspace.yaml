@@ -1,0 +1,4 @@
+# [Implementation 1] Define application and library package ownership within one workspace while keeping each public entry point in its package manifest.
+packages:
+  - apps/*
+  - packages/*

@@ -1,4 +1,0 @@
-# [Implementation 1] app과 library package를 한 workspace로 묶되 공개 진입점은 각 package manifest가 소유합니다.
-packages:
-  - apps/*
-  - packages/*

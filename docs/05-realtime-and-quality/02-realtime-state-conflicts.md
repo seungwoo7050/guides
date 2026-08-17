@@ -1,28 +1,28 @@
 # 실시간 상태와 충돌
 
-두 사용자가 같은 항목을 거의 동시에 움직이면 “마지막으로 도착한 좌표를 저장한다”는 규칙만으로는 사용자의 의도와 상태 복구를 설명하기 어렵습니다. 실시간 시스템은 모든 변경이 즉시 같은 순서로 보인다고 가정하지 않고, 임시 상태와 확정 상태, sequence와 version, snapshot과 patch를 조합해 결국 같은 정본으로 수렴해야 합니다.
+두 사용자가 같은 항목을 거의 동시에 움직일 때 단순히 마지막으로 도착한 좌표를 저장하는 규칙만으로는 사용자의 의도와 복구 절차를 설명하기 어렵습니다. 실시간 시스템에서는 모든 변경이 즉시 같은 순서로 보인다고 가정할 수 없습니다. 임시 상태와 확정 상태, 시퀀스와 버전, 스냅샷과 패치를 조합해 모든 클라이언트가 결국 같은 상태로 수렴하게 해야 합니다.
 
 ## 목표
 
-- server를 확정 상태의 권위자로 둡니다.
-- snapshot·patch·sequence·version의 역할을 구분합니다.
-- 임시 움직임과 영속 변경을 다른 계약으로 처리합니다.
-- 오래된 요청, 중복·누락·순서 역전에서 복구합니다.
-- 낙관적 UI가 실패했을 때 사용자에게 되돌림·재시도 경로를 제공합니다.
+- 서버를 확정 상태의 권위 있는 기준으로 둡니다.
+- 스냅샷, 패치, 시퀀스, 버전의 역할을 구분합니다.
+- 이동 중인 임시 상태와 영속적인 변경을 서로 다른 계약으로 처리합니다.
+- 오래된 요청, 중복·누락·순서가 뒤바뀐 메시지에서 복구합니다.
+- 낙관적 UI가 실패했을 때 사용자에게 되돌리기와 재시도 경로를 제공합니다.
 
 ## 상태를 세 종류로 나눕니다
 
 ```text
-영속 상태   → 항목 내용·최종 좌표·version, DB 정본
-임시 상태   → cursor·drag 중 좌표, server memory
-화면 상태   → 선택·hover·dialog·draft, client local
+영속 상태   → 항목 내용·최종 좌표·버전, 데이터베이스에 저장
+임시 상태   → 커서·드래그 중 좌표, 서버 메모리에 저장
+화면 상태   → 선택·호버·대화 상자·초안, 클라이언트에 저장
 ```
 
-모든 pointer move를 DB에 저장하면 write와 활동 기록이 폭증합니다. 반대로 최종 좌표까지 memory에만 두면 reconnect와 server restart 뒤 사라집니다.
+모든 포인터 이동을 데이터베이스에 기록하면 쓰기와 활동 로그가 지나치게 많아집니다. 반대로 최종 좌표까지 메모리에만 두면 재연결이나 서버 재시작 후 상태가 사라집니다.
 
-## snapshot과 patch
+## 스냅샷과 패치
 
-snapshot은 특정 시점의 전체 복구 기준입니다.
+스냅샷은 특정 시점의 전체 상태를 복구하는 기준입니다.
 
 ```ts
 interface BoardSnapshot {
@@ -33,7 +33,7 @@ interface BoardSnapshot {
 }
 ```
 
-patch는 그 이후의 확정 변경입니다.
+패치는 스냅샷 이후 확정된 변경을 나타냅니다.
 
 ```ts
 interface BoardPatch {
@@ -45,23 +45,23 @@ interface BoardPatch {
 }
 ```
 
-client는 snapshot의 `sequence`를 마지막 적용 순서로 저장합니다.
+클라이언트는 스냅샷의 `sequence`를 마지막으로 적용한 순서로 저장합니다.
 
-## sequence로 누락과 중복을 찾습니다
+## 시퀀스로 누락과 중복을 찾습니다
 
-patch의 sequence가 `lastSequence + 1`이면 적용합니다.
+패치의 시퀀스가 `lastSequence + 1`이면 적용합니다.
 
 ```text
-sequence <= lastSequence     → 중복 또는 오래된 patch, 무시
-sequence == lastSequence + 1 → 적용
-sequence > lastSequence + 1  → 누락, patch 적용 중단 후 snapshot 요청
+sequence <= lastSequence     → 중복 또는 오래된 패치이므로 무시
+sequence == lastSequence + 1 → 정상적으로 적용
+sequence > lastSequence + 1  → 중간 패치 누락, 적용을 멈추고 스냅샷 요청
 ```
 
-sequence가 transport 도착 순서가 아니라 server가 확정한 보드 변경 순서여야 합니다. 여러 server instance에서 단조 순서를 어떻게 생성할지는 DB counter, sequence 또는 partition owner 같은 설계가 필요합니다.
+시퀀스는 네트워크 도착 순서가 아니라 서버가 확정한 보드 변경 순서여야 합니다. 서버 인스턴스가 여러 개라면 데이터베이스 카운터, 시퀀스, 파티션 소유자 등 단조 증가 순서를 생성할 방법이 필요합니다.
 
-## version은 자원 충돌을 찾습니다
+## 버전으로 리소스 충돌을 찾습니다
 
-사용자가 item version 4를 보고 수정했다면 `baseVersion: 4`를 보냅니다. server는 DB의 현재 version이 4일 때만 version 5로 갱신합니다.
+사용자가 항목 버전 4를 보고 수정했다면 `baseVersion: 4`를 보냅니다. 서버는 데이터베이스의 현재 버전이 4인 경우에만 버전 5로 갱신합니다.
 
 ```sql
 update board_items
@@ -72,35 +72,35 @@ where id = $3 and version = $4
 returning *;
 ```
 
-행이 없으면 stale write입니다. server가 client 값을 강제로 덮지 않고 conflict code와 최신 snapshot 또는 item을 제공합니다.
+반환된 행이 없다면 오래된 상태를 기준으로 한 쓰기입니다. 서버는 클라이언트 값을 강제로 덮어쓰지 않고 충돌 코드와 최신 스냅샷 또는 항목을 제공합니다.
 
-sequence와 version은 다릅니다.
+시퀀스와 버전은 서로 다른 문제를 해결합니다.
 
-- sequence: 보드 전체 변경 흐름의 누락·순서
-- version: 특정 자원의 stale write
+- 시퀀스: 보드 전체 변경 흐름에서 메시지의 누락과 순서를 판정
+- 버전: 특정 리소스에 대한 오래된 쓰기를 판정
 
-## drag 중과 완료
+## 드래그 중 상태와 완료 상태
 
 ```text
 pointermove
-→ client가 빈도 제한
+→ 클라이언트가 전송 빈도 제한
 → item.move(final=false)
-→ server가 좌표 clamp
-→ 방에 임시 broadcast
+→ 서버가 좌표를 허용 범위로 제한
+→ 방에 임시 상태 브로드캐스트
 
 pointerup
 → item.move(final=true, baseVersion)
-→ DB 조건부 update + event append transaction
-→ 확정 board.patch broadcast
+→ 데이터베이스 조건부 갱신 + 이벤트 추가 트랜잭션
+→ 확정된 board.patch 브로드캐스트
 ```
 
-임시 좌표를 받은 다른 client는 그 항목의 preview만 바꿉니다. 확정 patch가 오면 영속 상태를 갱신하고 preview를 제거합니다.
+임시 좌표를 받은 다른 클라이언트는 해당 항목의 미리보기만 변경합니다. 확정 패치가 도착하면 영속 상태를 갱신하고 미리보기를 제거합니다.
 
-client가 drag 중 disconnect되면 임시 상태는 timeout으로 제거하고 DB의 마지막 확정 좌표가 남습니다.
+드래그 중인 클라이언트의 연결이 끊기면 임시 상태는 제한 시간이 지난 뒤 제거하고 데이터베이스에 저장된 마지막 확정 좌표를 유지합니다.
 
 ## 낙관적 UI
 
-client는 응답 전 자신의 변경을 화면에 적용할 수 있습니다. 각 operation을 추적합니다.
+클라이언트는 서버 응답이 오기 전에 자신의 변경을 화면에 반영할 수 있습니다. 이때 각 작업을 별도로 추적합니다.
 
 ```ts
 interface PendingOperation {
@@ -112,72 +112,72 @@ interface PendingOperation {
 }
 ```
 
-server가 같은 `operationId`의 확정 patch를 보내면 pending을 완료합니다. 거부되면 previous value로 되돌리거나 최신 snapshot을 적용하고 사용자에게 재시도 선택을 제공합니다.
+서버가 같은 `operationId`를 가진 확정 패치를 보내면 대기 중 작업을 완료 처리합니다. 작업이 거부되면 이전 값으로 되돌리거나 최신 스냅샷을 적용하고 사용자에게 다시 시도할 방법을 제공합니다.
 
-낙관적 변경을 단순히 “실패하면 refetch”로만 처리하면 입력 내용이 사라질 수 있습니다. draft와 server state를 분리해 충돌 내용을 보여 줄 수 있습니다.
+낙관적 변경이 실패할 때 단순히 다시 조회하기만 하면 사용자가 입력한 내용이 사라질 수 있습니다. 초안과 서버 상태를 분리해 충돌 내용을 비교할 수 있게 합니다.
 
 ## 중복 작업
 
-network retry나 reconnect로 같은 operation이 다시 올 수 있습니다. operation ID를 일정 범위에서 기억해 같은 업무 효과를 두 번 만들지 않게 할 수 있습니다.
+네트워크 재시도나 재연결로 같은 작업이 다시 전달될 수 있습니다. 일정 범위에서 작업 ID와 결과를 기억해 같은 도메인 효과가 두 번 발생하지 않게 할 수 있습니다.
 
 ```text
-처음 operationId → 처리하고 결과 저장
-같은 operationId → 이전 결과 반환 또는 동일 patch 재전송
-다른 payload와 같은 ID → protocol error
+처음 받은 operationId      → 작업 처리 후 결과 저장
+같은 operationId 재수신   → 이전 결과 반환 또는 같은 패치 재전송
+같은 ID와 다른 페이로드     → 프로토콜 오류
 ```
 
-모든 cursor event에 영구 idempotency 기록이 필요하지는 않습니다. 결제처럼 강한 효과와 달리 board edit의 범위·보존 기간을 명확히 정합니다.
+모든 커서 이벤트에 영구적인 멱등성 기록이 필요한 것은 아닙니다. 결제처럼 강한 부수 효과와 달리 보드 편집은 중복 제거 범위와 보존 기간을 요구사항에 맞게 정합니다.
 
-## 늦은 patch와 재연결
+## 늦은 패치와 재연결
 
-client가 offline 동안 여러 변경이 발생했으면 다음 두 방식이 있습니다.
+클라이언트가 오프라인인 동안 여러 변경이 발생했다면 다음 두 방식 중 하나로 복구할 수 있습니다.
 
-- 마지막 sequence 이후 event를 보관해 gap replay
-- 항상 최신 snapshot 재전송
+- 마지막 시퀀스 이후의 이벤트를 보관하고 누락 구간을 재생
+- 항상 최신 스냅샷을 다시 전송
 
-작은 가이드에서는 snapshot 복구가 단순하고 안전합니다. 데이터가 커지면 snapshot 크기, replay retention과 compaction을 고려합니다.
+작은 애플리케이션에서는 스냅샷 복구가 단순하고 안전합니다. 데이터가 커지면 스냅샷 크기, 이벤트 보존 기간, 압축 정책을 함께 고려합니다.
 
-## 삭제와 tombstone
+## 삭제와 삭제 표식
 
-항목 삭제 patch 뒤 늦은 update가 도착할 수 있습니다. server는 삭제된 항목을 다시 만들지 않게 current state와 version을 확인합니다. replay가 필요하면 tombstone 또는 delete event를 일정 기간 보존할 수 있습니다.
+항목 삭제 패치가 적용된 뒤 오래된 갱신 메시지가 도착할 수 있습니다. 서버는 현재 상태와 버전을 확인해 삭제된 항목이 다시 만들어지지 않게 합니다. 이벤트 재생이 필요하다면 삭제 표식이나 삭제 이벤트를 일정 기간 보존할 수 있습니다.
 
-## 시간은 순서가 아닙니다
+## 타임스탬프는 전체 순서가 아닙니다
 
-client의 `Date.now()`나 서로 다른 server clock으로 전체 변경 순서를 정하지 않습니다. timestamp는 표시·감사에 유용하지만 network 지연과 clock skew가 있습니다. 업무 순서는 server sequence와 transaction 결과를 사용합니다.
+클라이언트의 `Date.now()`나 서로 다른 서버의 시계만으로 전체 변경 순서를 정해서는 안 됩니다. 타임스탬프는 표시와 감사에 유용하지만 네트워크 지연과 시계 오차가 있습니다. 도메인 작업의 순서는 서버 시퀀스와 트랜잭션 결과를 사용합니다.
 
-## 권한 변화
+## 권한 변경
 
-연결 중 사용자의 role이 editor에서 viewer로 바뀔 수 있습니다.
+연결이 유지되는 동안 사용자의 역할이 `editor`에서 `viewer`로 바뀔 수 있습니다.
 
-- membership 변경을 확정 state로 저장합니다.
-- 해당 방에 role change patch 또는 새 snapshot을 보냅니다.
-- 이후 모든 쓰기 message에서 현재 권한을 확인합니다.
-- 진행 중 낙관적 변경은 거부되고 client가 되돌립니다.
+- 멤버십 변경을 확정 상태로 저장합니다.
+- 해당 방에 역할 변경 패치나 새 스냅샷을 보냅니다.
+- 이후 모든 쓰기 메시지에서 현재 권한을 확인합니다.
+- 진행 중인 낙관적 변경은 거부하고 클라이언트가 되돌리게 합니다.
 
-연결 당시 role만 connection context에 영구 고정하지 않습니다.
+연결 시점의 역할을 연결 문맥에 영구적으로 고정해서는 안 됩니다.
 
-## 실패 조건
+## 흔한 오류
 
-- client가 최종 상태의 정본입니다.
-- sequence와 item version을 같은 값으로 사용합니다.
-- drag 중 모든 좌표를 DB와 감사 기록에 저장합니다.
-- gap이 있어도 patch를 계속 적용합니다.
-- stale write를 마지막 도착 값으로 덮습니다.
-- 낙관적 변경 실패 시 사용자 draft를 조용히 버립니다.
-- timestamp를 전체 순서로 사용합니다.
+- 클라이언트를 최종 상태의 기준으로 사용합니다.
+- 시퀀스와 항목 버전을 같은 값으로 사용합니다.
+- 드래그 중 모든 좌표를 데이터베이스와 감사 기록에 저장합니다.
+- 패치가 누락되었는데도 이후 패치를 계속 적용합니다.
+- 오래된 쓰기를 마지막으로 도착한 값이라는 이유로 덮어씁니다.
+- 낙관적 변경 실패 시 사용자 초안을 알리지 않고 버립니다.
+- 타임스탬프를 전체 변경의 순서로 사용합니다.
 
 ## 연결 실습
 
-[`WebSocket 스냅숏과 패치`](../../exercises/07-websocket/README.md)에서 두 연결, snapshot, patch와 reconnect를 확인하고, [`실시간 협업 보드`](../06-capstones/04-collaboration-board.md)에서 DB version과 결합합니다.
+[`WebSocket 스냅샷과 패치`](../../exercises/07-websocket/README.md)에서 두 연결, 스냅샷, 패치, 재연결을 확인하고, [`실시간 협업 보드`](../06-capstones/04-collaboration-board.md)에서 데이터베이스 버전과 결합합니다.
 
 ## 완료 기준
 
-- 영속·임시·화면 상태의 정본을 구분합니다.
-- snapshot·patch·sequence·version의 서로 다른 역할을 설명합니다.
-- 누락·중복·순서 역전과 stale write에서 복구합니다.
-- drag preview와 최종 transaction을 분리합니다.
-- 낙관적 UI의 승인·거부·되돌림 상태를 모델링합니다.
+- 영속 상태, 임시 상태, 화면 상태의 저장 위치와 기준을 구분합니다.
+- 스냅샷, 패치, 시퀀스, 버전의 서로 다른 역할을 설명할 수 있습니다.
+- 누락, 중복, 순서 역전, 오래된 쓰기에서 복구합니다.
+- 드래그 미리보기와 최종 트랜잭션을 분리합니다.
+- 낙관적 UI의 승인, 거부, 되돌리기 상태를 모델링합니다.
 
 ## 다음 단계
 
-확정 상태를 고성능의 imperative 화면에 그리되 소유권을 섞지 않는 방법은 [`Canvas 렌더링`](03-canvas-rendering.md)에서 다룹니다.
+확정된 상태를 명령형 렌더링 방식으로 화면에 그리되 상태 소유권을 섞지 않는 방법은 [`Canvas 렌더링`](03-canvas-rendering.md)에서 다룹니다.

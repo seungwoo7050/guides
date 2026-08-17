@@ -1,39 +1,39 @@
 # 테스트와 품질
 
-모든 기능을 브라우저 시나리오 하나로 검사하면 느리고 실패 원인을 찾기 어렵습니다. 반대로 순수 함수 단위 검사만 많으면 실제 route, DB, browser와 WebSocket 경계가 깨져도 통과합니다. 각 위험이 처음 드러나는 가장 짧은 경계에 검사를 두고, 소수의 종단 간 흐름으로 조립 상태를 확인합니다.
+모든 기능을 하나의 브라우저 시나리오로 검사하면 실행이 느리고 실패 원인을 찾기 어렵습니다. 반대로 순수 함수의 단위 테스트만 많으면 실제 라우트, 데이터베이스, 브라우저, WebSocket 경계가 깨져도 발견하지 못합니다. 각 위험이 처음 드러나는 가장 짧은 경계에 테스트를 두고, 소수의 종단 간 시나리오로 전체 조립 상태를 확인합니다.
 
 ## 목표
 
-- 단위·계약·컴포넌트·API·DB·WebSocket·browser 검사의 역할을 구분합니다.
+- 단위·계약·컴포넌트·API·데이터베이스·WebSocket·브라우저 테스트의 역할을 구분합니다.
 - 정상·실패·경계 조건을 결정적으로 재현합니다.
-- test double과 실제 infrastructure 검사의 한계를 설명합니다.
-- typecheck, test와 production build를 독립된 증거로 실행합니다.
-- 품질 검사가 잘못된 구현을 실제로 거부하는지 확인합니다.
+- 테스트 대역과 실제 인프라 테스트가 각각 증명하지 못하는 범위를 설명합니다.
+- 타입 검사, 테스트, 프로덕션 빌드를 서로 독립된 근거로 실행합니다.
+- 테스트가 잘못된 구현을 실제로 거부하는지 확인합니다.
 
-## 위험에서 검사 경계를 선택합니다
+## 위험에 맞는 테스트 경계를 선택합니다
 
-| 위험 | 가장 짧은 유효 검사 |
+| 위험 | 가장 짧고 유효한 테스트 |
 |---|---|
-| 좌표 clamp·상태 전이 | 순수 단위 검사 |
-| Zod schema가 잘못된 값 거부 | 계약 검사 |
-| label·button·오류 알림 | 컴포넌트 또는 browser 검사 |
-| Fastify hook·status·serialization | `app.inject` API 검사 |
-| unique·foreign key·rollback | 실제 PostgreSQL 검사 |
-| room broadcast·reconnect | 실제 WebSocket 두 연결 검사 |
-| routing·hydration·keyboard·history | 실제 browser 검사 |
-| server/client bundle 경계 | Next.js production build |
+| 좌표 제한·상태 전이 | 순수 단위 테스트 |
+| Zod 스키마가 잘못된 값 거부 | 계약 테스트 |
+| 레이블·버튼·오류 알림 | 컴포넌트 또는 브라우저 테스트 |
+| Fastify 훅·상태 코드·직렬화 | `app.inject` API 테스트 |
+| 고유·외래 키 제약·롤백 | 실제 PostgreSQL 테스트 |
+| 방 브로드캐스트·재연결 | 실제 WebSocket 연결 두 개를 사용하는 테스트 |
+| 라우팅·하이드레이션·키보드·히스토리 | 실제 브라우저 테스트 |
+| 서버·클라이언트 번들 경계 | Next.js 프로덕션 빌드 |
 
-검사 이름은 구현 함수보다 업무 결과를 표현합니다.
+테스트 이름은 구현 함수보다 도메인 결과를 표현합니다.
 
 ```text
 viewer는 메모 내용을 수정할 수 없다
-같은 version의 두 저장 요청 중 하나만 성공한다
+같은 버전의 두 저장 요청 중 하나만 성공한다
 뒤로 가면 이전 검색 조건과 결과가 복원된다
 ```
 
-## 단위 검사
+## 단위 테스트
 
-부수 효과가 없는 규칙은 빠르고 다양한 입력으로 검사합니다.
+부수 효과가 없는 규칙은 빠르게 실행하면서 다양한 입력을 검사할 수 있습니다.
 
 ```ts
 it("보드 밖 좌표를 범위 안으로 제한한다", () => {
@@ -42,25 +42,25 @@ it("보드 밖 좌표를 범위 안으로 제한한다", () => {
 });
 ```
 
-현재 시각과 ID가 필요하면 `Clock`, `IdGenerator`를 입력으로 전달해 고정합니다. 내부 private 함수만 직접 검사하기 위해 구조를 깨지 말고 공개 업무 동작을 통해 확인합니다.
+현재 시각이나 식별자가 필요하면 `Clock`, `IdGenerator`를 입력으로 전달해 고정합니다. 내부 비공개 함수만 직접 검사하려고 구조를 깨지 말고 공개된 도메인 동작을 통해 확인합니다.
 
-## 계약 검사
+## 계약 테스트
 
-외부 입력과 출력 schema를 예시 몇 개로만 확인하지 않습니다.
+외부 입력과 출력 스키마는 정상 예시 몇 개만으로 충분하지 않습니다.
 
-- 필수 field 누락
-- 잘못된 type
+- 필수 필드 누락
+- 잘못된 타입
 - 빈 문자열과 최대 길이
-- 알 수 없는 discriminator
-- non-finite number
-- 추가 field 정책
-- 이전·새 버전 payload의 호환성
+- 알 수 없는 판별자
+- 유한하지 않은 숫자
+- 추가 필드 처리 정책
+- 이전 버전과 새 버전 페이로드의 호환성
 
-response DTO도 parse해 비밀 열이 빠졌는지 확인합니다.
+응답 DTO도 스키마로 검증해 비밀 필드가 포함되지 않았는지 확인합니다.
 
-## 컴포넌트 검사
+## 컴포넌트 테스트
 
-React Testing Library 계열에서는 역할과 이름으로 조작합니다.
+React Testing Library 계열의 도구에서는 역할과 접근 가능한 이름으로 요소를 조작합니다.
 
 ```ts
 await user.type(screen.getByLabelText("제목"), "회의 기록");
@@ -68,161 +68,161 @@ await user.click(screen.getByRole("button", { name: "저장" }));
 expect(await screen.findByRole("status")).toHaveTextContent("저장됨");
 ```
 
-CSS class와 component 내부 state를 직접 찾지 않습니다. 사용자가 접근할 수 없는 요소는 검사도 찾기 어렵게 만듭니다.
+CSS 클래스나 컴포넌트 내부 상태를 직접 찾지 않습니다. 사용자가 접근할 수 없는 요소는 테스트에서도 찾기 어려워야 합니다.
 
-loading·empty·success·error를 각각 독립적으로 재현합니다. 느린 adapter, 거부되는 Promise와 빈 배열을 주입해 `sleep` 없이 상태를 고정합니다.
+로딩, 빈 결과, 성공, 오류 상태를 각각 독립적으로 재현합니다. 완료 시점을 제어할 수 있는 느린 어댑터, 거부되는 Promise, 빈 배열을 주입해 고정된 지연 없이 상태를 만듭니다.
 
-## API 검사
+## API 테스트
 
-Fastify `app.inject`는 실제 listen port 없이 plugin, hook, route와 serialization을 실행합니다.
+Fastify의 `app.inject`는 실제 포트를 열지 않고도 플러그인, 훅, 라우트, 직렬화를 실행합니다.
 
-검사할 행렬:
+다음 응답 행렬을 검사합니다.
 
-- 올바른 요청과 status·body
-- validation 400
-- 인증 없음 401
+- 올바른 요청의 상태 코드와 본문
+- 입력 검증 실패 400
+- 인증 정보 없음 401
 - 권한 부족 403 또는 정책상 404
-- 자원 없음 404
-- uniqueness·version conflict 409
-- 내부 오류 500과 stack 비노출
-- request ID와 cookie header
+- 리소스 없음 404
+- 고유성·버전 충돌 409
+- 내부 오류 500과 스택 정보 비노출
+- 요청 ID와 쿠키 헤더
 
-각 검사마다 app을 만들고 종료하거나 suite 수명에 맞춰 명확히 close합니다.
+각 테스트에서 애플리케이션을 만들고 종료하거나 테스트 스위트의 수명에 맞춰 종료 시점을 명확히 관리합니다.
 
-## 실제 데이터베이스 검사
+## 실제 데이터베이스 테스트
 
-다음은 SQLite나 메모리 repository로 대체하지 않습니다.
+다음 항목은 SQLite나 메모리 리포지터리로 대체할 수 없습니다.
 
-- PostgreSQL migration 문법
-- unique·foreign key·check constraint
-- transaction rollback
-- lock·isolation·concurrent update
-- timestamp·JSON·numeric representation
+- PostgreSQL 마이그레이션 문법
+- 고유·외래 키·검사 제약 조건
+- 트랜잭션 롤백
+- 잠금·격리 수준·동시 갱신
+- 타임스탬프·JSON·숫자 표현
 
-전용 DB를 띄우고 migration을 빈 schema에 적용합니다. 검사 데이터는 고유 ID로 격리하고, transaction rollback 또는 명시적 cleanup을 사용합니다. process 종료 전에 pool을 닫습니다.
+전용 데이터베이스를 실행하고 빈 스키마에 마이그레이션을 적용합니다. 테스트 데이터는 고유한 식별자로 격리하고, 트랜잭션 롤백이나 명시적인 정리를 사용합니다. 프로세스를 종료하기 전에 연결 풀을 닫습니다.
 
-## WebSocket 검사
+## WebSocket 테스트
 
-실제 server와 두 client를 사용합니다.
+실제 서버와 두 클라이언트 연결을 사용합니다.
 
 ```text
-client A·B 연결
-→ 같은 board.join
-→ 둘 다 snapshot
-→ A가 item.move(final=true)
-→ A·B가 같은 sequence patch
-→ B reconnect
-→ B가 최신 snapshot
+클라이언트 A·B 연결
+→ 같은 board.join 전송
+→ 둘 다 스냅샷 수신
+→ A가 item.move(final=true) 전송
+→ A·B가 같은 시퀀스의 패치 수신
+→ B 재연결
+→ B가 최신 스냅샷 수신
 ```
 
-메시지 배열의 첫 번째 값이라고 가정하지 말고 원하는 `type`, `operationId`, `sequence`를 기다리는 helper를 사용합니다. listener와 timeout은 성공·실패 양쪽에서 제거합니다.
+메시지 배열의 첫 번째 값이 원하는 메시지라고 가정하지 않습니다. 특정 `type`, `operationId`, `sequence`를 기다리는 도우미 함수를 사용합니다. 이벤트 리스너와 타임아웃은 성공과 실패 양쪽에서 모두 정리합니다.
 
-잘못된 JSON, join 전 쓰기, viewer 쓰기, heartbeat timeout과 server shutdown도 검사합니다.
+잘못된 JSON, 방 참가 전 쓰기, `viewer`의 쓰기, 하트비트 타임아웃, 서버 종료도 검사합니다.
 
-## Browser 검사
+## 브라우저 테스트
 
-실제 browser만 증명할 수 있는 항목:
+실제 브라우저에서만 확인할 수 있는 항목이 있습니다.
 
-- keyboard focus와 native form 동작
-- history와 URL
-- CSS overflow와 viewport
-- Next.js 직접 경로 접근·새로고침
-- hydration과 client event
-- cookie·CORS의 browser 동작
-- Canvas pointer 좌표
+- 키보드 포커스와 네이티브 폼 동작
+- 히스토리와 URL
+- CSS 오버플로와 뷰포트
+- Next.js 경로 직접 접근과 새로 고침
+- 하이드레이션과 클라이언트 이벤트
+- 쿠키와 CORS의 브라우저 동작
+- Canvas 포인터 좌표
 
-Playwright 선택자는 role·label·text를 우선하고 고정 sleep을 사용하지 않습니다.
+Playwright 선택자는 역할, 레이블, 텍스트를 우선하며 고정된 대기 시간을 사용하지 않습니다.
 
 ```ts
 await expect(page.getByRole("heading", { name: "내 메모" })).toBeVisible();
 ```
 
-브라우저 하나의 긴 시나리오보다 핵심 사용자 흐름을 독립적으로 만듭니다. 실패 시 trace·screenshot·server log를 남기되 cookie와 비밀값을 가립니다.
+브라우저 하나에 긴 시나리오를 몰아넣기보다 핵심 사용자 흐름을 독립적인 테스트로 나눕니다. 실패 시 추적 파일, 스크린샷, 서버 로그를 남기되 쿠키와 비밀값은 마스킹합니다.
 
-## 요청 순서 역전 검사
+## 응답 순서가 뒤바뀌는 상황의 테스트
 
-두 응답의 지연을 제어합니다.
+두 응답의 지연 시간을 테스트에서 직접 제어합니다.
 
 ```text
 query=a     → 500ms
 query=beta  → 100ms
 ```
 
-사용자가 `a` 뒤 `beta`를 입력하면 최종 화면은 `beta` 결과여야 합니다. source에 `AbortController` 문자열이 있는지 찾지 말고 실제 화면 결과를 검사합니다.
+사용자가 `a`를 입력한 뒤 `beta`를 입력했다면 최종 화면에는 `beta`의 결과가 보여야 합니다. 소스에 `AbortController`라는 문자열이 있는지 찾지 말고 실제 사용자 화면의 결과를 검사합니다.
 
-## 낙관적 변경 검사
+## 낙관적 변경 테스트
 
-- UI가 즉시 바뀝니다.
-- server 승인 patch로 pending이 해제됩니다.
-- 409 conflict에서 이전 값 또는 최신 snapshot으로 복구합니다.
-- 사용자가 입력한 draft를 잃지 않습니다.
-- 중복 operation 응답이 효과를 두 번 적용하지 않습니다.
+- 사용자 인터페이스가 즉시 변경됩니다.
+- 서버의 승인 패치를 받으면 대기 상태가 해제됩니다.
+- 409 충돌 시 이전 값이나 최신 스냅샷으로 복구합니다.
+- 사용자가 입력한 초안을 잃지 않습니다.
+- 중복된 작업 응답이 같은 효과를 두 번 적용하지 않습니다.
 
-## Typecheck와 build
+## 타입 검사와 빌드
 
-각 명령은 다른 문제를 잡습니다.
-
-```text
-typecheck → 정적 type·import 계약
-test      → 실행 중 업무 동작
-build     → framework compile·bundle·server/client 경계
-E2E       → 실제 process와 browser 조립
-```
-
-`tsc --noEmit`이 통과해도 Next.js dynamic route와 server-only import가 production build에서 실패할 수 있습니다. build가 성공해도 권한과 rollback이 올바른 것은 아닙니다.
-
-## 테스트의 품질을 검사합니다
-
-검사가 항상 통과하는지 확인하려면 알려진 잘못된 구현을 주입합니다.
+각 명령은 서로 다른 문제를 찾습니다.
 
 ```text
-label 제거
-popstate handler 제거
-version 조건 제거
-logout session 폐기 제거
-viewer write 허용
-WebSocket listener cleanup 제거
+타입 검사 → 정적 타입·import 계약
+테스트    → 실행 중 도메인 동작
+빌드      → 프레임워크 컴파일·번들·서버/클라이언트 경계
+E2E       → 실제 프로세스와 브라우저의 조립 상태
 ```
 
-각 mutation이 관련 검사를 실패시켜야 합니다. source 정규식만 검사하는 test보다 실제 외부 동작을 망가뜨린 fixture가 더 강한 근거입니다.
+`tsc --noEmit`이 통과해도 Next.js 동적 경로나 서버 전용 import가 프로덕션 빌드에서 실패할 수 있습니다. 빌드가 성공해도 권한 검사와 롤백이 올바르다는 뜻은 아닙니다.
+
+## 테스트 자체의 품질을 검사합니다
+
+테스트가 항상 통과하기만 하는지 확인하려면 의도적으로 잘못된 구현을 주입합니다.
+
+```text
+레이블 제거
+popstate 처리기 제거
+버전 조건 제거
+로그아웃 시 서버 세션 폐기 제거
+`viewer` 쓰기 허용
+WebSocket 리스너 정리 제거
+```
+
+각 변경은 관련 테스트를 실패시켜야 합니다. 소스 코드를 정규식으로 검사하는 테스트보다 실제 외부 동작을 깨뜨린 변형 구현을 거부하는 테스트가 더 강한 근거가 됩니다.
 
 ## 간헐적 실패 줄이기
 
-- 고정 sleep 대신 관찰 가능한 결과를 기다립니다.
-- clock·random·network 지연을 제어합니다.
-- port 3000 같은 고정 공유 자원보다 빈 port를 할당합니다.
-- 검사마다 고유 데이터 namespace를 사용합니다.
-- server·timer·socket·DB pool·browser를 `finally`에서 정리합니다.
-- 실패 메시지에 기대한 상태와 관찰한 상태를 포함합니다.
+- 고정된 대기 시간 대신 관찰 가능한 결과가 나타날 때까지 기다립니다.
+- 시각, 난수, 네트워크 지연을 제어합니다.
+- 3000번 같은 고정 포트를 공유하지 말고 사용 가능한 포트를 할당합니다.
+- 테스트마다 고유한 데이터 네임스페이스를 사용합니다.
+- 서버, 타이머, 소켓, 데이터베이스 풀, 브라우저를 `finally`에서 정리합니다.
+- 실패 메시지에 기대한 상태와 실제 관찰한 상태를 포함합니다.
 
-실패를 단순 재실행으로 숨기지 말고 재현 seed, trace와 resource leak를 찾습니다.
+실패를 단순 재실행으로 숨기지 말고 재현용 시드, 추적 정보, 자원 누수를 확인합니다.
 
-## 검증 피라미드보다 검증 포트폴리오
+## 고정된 피라미드보다 위험 기반 구성
 
-모든 프로젝트에 같은 비율을 강제하지 않습니다. 업무 위험에 맞게 구성합니다. DB 불변식이 핵심이면 실제 DB 검사가 많아지고, 접근성이 핵심이면 browser 검사가 중요합니다. 느린 검사 수를 줄이되 없어서는 안 될 경계를 mock으로 대체하지 않습니다.
+모든 프로젝트에 같은 비율의 테스트를 강제할 필요는 없습니다. 도메인 위험에 따라 테스트 구성을 정합니다. 데이터베이스 불변식이 핵심이면 실제 데이터베이스 테스트가 많아지고, 접근성이 핵심이면 브라우저 테스트가 중요해집니다. 느린 테스트 수는 줄일 수 있지만 반드시 필요한 경계를 모킹으로 대체해서는 안 됩니다.
 
-## 실패 조건
+## 흔한 오류
 
 - 모든 기능을 하나의 E2E 시나리오로만 검사합니다.
-- 구현 세부 class·CSS selector에 검사 계약을 묶습니다.
-- 실제 PostgreSQL·WebSocket 대신 mock만 사용합니다.
-- 고정 `waitForTimeout`으로 동기화합니다.
-- typecheck 하나를 runtime 검증으로 간주합니다.
-- 검사 뒤 server·timer·socket·pool이 남습니다.
+- 구현 클래스나 CSS 선택자에 테스트 계약을 결합합니다.
+- 실제 PostgreSQL과 WebSocket 대신 모킹만 사용합니다.
+- 고정된 `waitForTimeout`으로 동기화합니다.
+- 타입 검사 하나를 런타임 검증으로 간주합니다.
+- 테스트 후 서버, 타이머, 소켓, 연결 풀이 남습니다.
 - 잘못된 구현도 통과하는지 확인하지 않습니다.
 
 ## 연결 실습
 
-[`테스트 경계 비교`](../../exercises/08-testing/README.md)에서 같은 기능을 단위·API·browser에서 검사하고, 전체 계약은 [`실시간 협업 보드`](../06-capstones/04-collaboration-board.md)에서 조립합니다.
+[`테스트 경계 비교`](../../exercises/08-testing/README.md)에서 같은 기능을 단위·API·브라우저 테스트로 나누어 검사하고, 전체 계약은 [`실시간 협업 보드`](../06-capstones/04-collaboration-board.md)에서 조립합니다.
 
 ## 완료 기준
 
-- 위험별로 가장 짧은 유효 검사 경계를 선택합니다.
-- 정상·실패·경계·경쟁 조건을 결정적으로 재현합니다.
-- 실제 DB·WebSocket·browser 검사가 필요한 항목을 구분합니다.
-- typecheck·test·build·E2E를 독립된 증거로 실행합니다.
-- 알려진 잘못된 구현이 검사를 실패시키는지 확인합니다.
+- 위험별로 가장 짧고 유효한 테스트 경계를 선택합니다.
+- 정상, 실패, 경계, 경쟁 조건을 결정적으로 재현합니다.
+- 실제 데이터베이스, WebSocket, 브라우저 테스트가 필요한 항목을 구분합니다.
+- 타입 검사, 테스트, 빌드, E2E를 서로 독립된 근거로 실행합니다.
+- 의도적으로 잘못된 구현이 관련 테스트를 실패시키는지 확인합니다.
 
 ## 다음 단계
 
-먼저 [`테스트 경계 비교`](../../exercises/08-testing/README.md)의 생성된 `work/`에서 unit·API·browser 검사가 서로 다른 위험을 증명하는지 확인하고 완료 뒤 `reference/`와 비교합니다. Part 01에서 이미 브라우저 작업 목록을 수행했고 중간 notes brief는 선택 사항이므로, 다음 필수 단계는 runnable Stage 01–08의 최종 [`실시간 협업 보드`](../06-capstones/04-collaboration-board.md)입니다.
+먼저 [`테스트 경계 비교`](../../exercises/08-testing/README.md)의 `work/`에서 단위·API·브라우저 테스트가 서로 다른 위험을 검증하는지 확인하고 완료 후 `reference/`와 비교합니다. 파트 01의 브라우저 작업 목록은 이미 수행했고 중간 메모 과제는 선택 사항이므로, 다음 필수 단계는 01–08단계로 구성된 최종 [`실시간 협업 보드`](../06-capstones/04-collaboration-board.md)입니다.

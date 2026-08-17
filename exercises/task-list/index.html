@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>My Task List</title>
+  <link rel="stylesheet" href="style.css" />
+  <script type="module" src="app.js"></script>
+</head>
+<body>
+  <!-- [Implementation 1] Establish the semantic and accessibility boundary before behavior and presentation depend on the DOM. -->
+  <a class="skip-link" href="#main">Skip to main content</a>
+  <header class="site-header">
+    <strong>Task List</strong>
+    <nav aria-label="Main menu"><a aria-current="page" href="./">Tasks</a></nav>
+  </header>
+  <main id="main" tabindex="-1">
+    <h1>My Task List</h1>
+    <form id="task-form">
+      <label for="task-title">New task</label>
+      <div class="form-row">
+        <input id="task-title" name="title" maxlength="120" autocomplete="off" />
+        <button type="submit">Add</button>
+      </div>
+    </form>
+
+    <div class="toolbar">
+      <label for="filter">Show tasks</label>
+      <select id="filter" name="filter">
+        <option value="all">All</option>
+        <option value="open">Open</option>
+        <option value="done">Completed</option>
+      </select>
+    </div>
+
+    <p id="error" role="alert"></p>
+    <p id="status" role="status" aria-live="polite"></p>
+    <ul id="task-list" class="task-list" aria-label="Task list"></ul>
+  </main>
+</body>
+</html>

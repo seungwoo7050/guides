@@ -1,8 +1,8 @@
-# Capstone 2: 메모 API
+# 종합 프로젝트 2: 메모 API
 
-두 번째 프로젝트는 화면을 제외하고 HTTP API와 PostgreSQL에 집중합니다. Fastify route, Zod 전송 계약, application service, Kysely repository와 실제 transaction을 연결해 **한 요청이 어디서 검증되고 어떤 상태를 남기는지** 추적합니다.
+두 번째 프로젝트는 화면을 제외하고 HTTP API와 PostgreSQL에 집중합니다. Fastify 라우트, Zod 전송 계약, 애플리케이션 서비스, Kysely 리포지터리, 실제 트랜잭션을 연결해 **한 요청이 어느 경계에서 검증되고 어떤 상태를 남기는지** 추적합니다.
 
-> **형태:** 이 문서는 DB 실습 뒤 선택해서 수행하는 self-directed expected-evidence brief입니다. 저장소에는 이 brief 전용 skeleton, Compose, 자동 verifier 또는 reference 구현이 없습니다. `04-fastify-zod-api`와 `05-postgresql-kysely`를 통과한 뒤 저장소 밖의 새 학습자 소유 프로젝트에서 구현하며, 아래 evidence rubric으로 스스로 검토합니다.
+> **과제 형식:** 데이터베이스 실습 이후 선택해서 수행하는 증거 기반 자율 과제입니다. 저장소에는 이 과제 전용 `skeleton/`, Compose 구성, 자동 검증기, 참조 구현이 없습니다. `04-fastify-zod-api`와 `05-postgresql-kysely`를 통과한 뒤 저장소 밖에 새 프로젝트를 만들어 구현하고, 아래의 완료 증거 기준으로 직접 검토합니다.
 
 ## 목표
 
@@ -18,14 +18,14 @@ DELETE /notes/:id
 GET    /notes/:id/activity
 ```
 
-이 단계에는 로그인 대신 고정된 개발 actor를 application composition에서 주입할 수 있습니다. 인증을 생략하더라도 route가 owner ID를 client body에서 신뢰하지 않게 합니다.
+이 단계에서는 로그인 대신 애플리케이션 조립 코드에서 고정된 개발 사용자 문맥을 주입할 수 있습니다. 인증을 생략하더라도 라우트가 클라이언트 본문의 소유자 ID를 신뢰해서는 안 됩니다.
 
 연결 실습:
 
 - [`Fastify와 Zod API`](../../exercises/04-fastify-zod-api/README.md)
 - [`PostgreSQL과 Kysely`](../../exercises/05-postgresql-kysely/README.md)
 
-두 실습의 reference를 복사해 합치는 것이 아니라, 이 문서의 계약을 보고 저장소 밖의 새 디렉터리에서 직접 조립합니다. 이 디렉터리의 위치·package manager·Git 수명은 학습자가 소유하며 guides verifier는 그 경로를 읽거나 변경하지 않습니다.
+두 실습의 참조 구현을 그대로 합치지 말고 이 문서의 요구사항을 바탕으로 별도 디렉터리에서 직접 조립합니다. 디렉터리 위치, 패키지 관리자, Git 이력은 학습자가 관리하며 `guides`의 검증기는 해당 경로를 읽거나 변경하지 않습니다.
 
 ## 데이터 모델
 
@@ -49,18 +49,18 @@ note_activity
 - created_at
 ```
 
-필수 제약:
+필수 제약 조건:
 
-- 모든 primary key
+- 모든 테이블의 기본 키
 - `notes.owner_id → users.id`, `note_activity.note_id → notes.id`, `note_activity.actor_id → users.id` 외래 키
-- 제목 trim 후 1~120자
-- version 0 이상
-- activity action 허용 목록
-- `(note_id, note_version, action)` 또는 제품 계약에 맞는 중복 방지
+- 앞뒤 공백을 제거한 제목이 1~120자
+- 버전이 0 이상
+- 허용된 활동 유형만 저장
+- `(note_id, note_version, action)` 또는 제품 요구사항에 맞는 중복 방지 제약
 
-activity 구조는 단순 감사 예제입니다. event sourcing으로 사용하지 않습니다.
+활동 테이블은 간단한 감사 기록 예제입니다. 이벤트 소싱의 원장으로 사용하지 않습니다.
 
-## HTTP 계약
+## HTTP 요구사항
 
 ### 생성
 
@@ -74,7 +74,7 @@ Content-Type: application/json
 }
 ```
 
-성공은 `201 Created`와 공개 DTO를 반환합니다. 잘못된 JSON·빈 제목·길이 초과는 400입니다.
+성공하면 `201 Created`와 공개 가능한 DTO를 반환합니다. 잘못된 JSON, 빈 제목, 길이 초과는 400으로 처리합니다.
 
 ### 수정
 
@@ -88,15 +88,15 @@ PATCH /notes/{id}
 }
 ```
 
-- 자원 없음: 404
-- version 충돌: 409
-- 성공: version 3의 DTO
+- 리소스 없음: 404
+- 버전 충돌: 409
+- 성공: 버전 3인 DTO 반환
 
-update와 activity insert는 한 transaction으로 성공해야 합니다.
+메모 갱신과 활동 기록 삽입은 하나의 트랜잭션에서 함께 성공해야 합니다.
 
-### 삭제
+### 삭제 또는 보관
 
-물리 삭제 또는 archive 중 하나를 선택하고 계약을 문서화합니다. 이 capstone 기본안은 `archived_at`을 두는 보관 방식을 사용해 activity를 유지할 수 있습니다. 보관된 메모는 일반 목록에서 빠지고 수정할 수 없습니다.
+물리 삭제와 보관 중 하나를 선택하고 외부 동작을 문서화합니다. 기본 설계는 `archived_at`을 사용하는 보관 방식으로 활동 기록을 유지합니다. 보관된 메모는 일반 목록에서 제외하고 더 이상 수정할 수 없게 합니다.
 
 ## 디렉터리 구조
 
@@ -120,9 +120,9 @@ src/
     └── migrations/
 ```
 
-파일 수 자체가 목표는 아닙니다. route·업무 조정·DB adapter·composition의 의존 방향을 보이게 합니다.
+파일 수 자체는 목표가 아닙니다. 라우트, 도메인 작업 조정, 데이터베이스 어댑터, 의존성 조립의 방향이 드러나야 합니다.
 
-## App factory
+## 애플리케이션 팩터리
 
 ```ts
 export async function buildApp(dependencies?: Partial<Dependencies>) {
@@ -136,9 +136,9 @@ export async function buildApp(dependencies?: Partial<Dependencies>) {
 }
 ```
 
-검사는 실제 port 없이 `app.inject`를 사용하고, production entrypoint만 `listen`합니다.
+테스트에서는 실제 포트를 열지 않고 `app.inject`를 사용합니다. 프로덕션 진입점에서만 `listen`을 호출합니다.
 
-## 오류 계약
+## 오류 응답
 
 ```json
 {
@@ -148,100 +148,100 @@ export async function buildApp(dependencies?: Partial<Dependencies>) {
 }
 ```
 
-client가 의존할 안정된 `code`와 사용자 message를 구분할 수 있습니다. validation detail은 허용된 field path만 제공합니다. DB 오류·stack·SQL을 노출하지 않습니다.
+클라이언트가 분기에 사용하는 안정적인 `code`와 사용자에게 보여 주는 메시지를 구분합니다. 입력 검증 상세 정보에는 공개를 허용한 필드 경로만 포함합니다. 데이터베이스 오류, 스택, SQL은 노출하지 않습니다.
 
-## Transaction
+## 트랜잭션
 
-수정 use case:
+메모 수정 유스 케이스의 순서는 다음과 같습니다.
 
 ```text
-조건부 note update(version 일치)
-→ 실패하면 409
-→ activity insert
-→ 둘 다 commit
+버전이 일치하는 경우에만 메모 갱신
+→ 갱신되지 않으면 409
+→ 활동 기록 삽입
+→ 두 쓰기 모두 커밋
 → DTO 반환
 ```
 
-activity insert 전에 의도적으로 예외를 발생시키는 검사로 note update도 rollback되는지 확인합니다.
+활동 기록을 삽입하기 전에 의도적으로 예외를 발생시키는 테스트를 작성해 메모 갱신도 함께 롤백되는지 확인합니다.
 
-## Migration
+## 마이그레이션
 
-- 빈 PostgreSQL에 전체 migration 적용
-- 두 번째 실행의 정책 확인
-- application 시작과 migration 명령 분리
-- schema type과 Kysely `Database` type 일치
-- test DB마다 깨끗한 schema 또는 고유 database 사용
+- 빈 PostgreSQL 데이터베이스에 전체 마이그레이션 적용
+- 두 번째 실행 시의 처리 방식 확인
+- 애플리케이션 시작과 마이그레이션 명령 분리
+- 실제 스키마와 Kysely `Database` 타입 일치
+- 테스트 데이터베이스마다 깨끗한 스키마 또는 고유한 데이터베이스 사용
 
-PostgreSQL 실행 방식과 resource cleanup도 프로젝트 계약의 일부입니다. 기존 `05-postgresql-kysely`의 Compose 구성을 이해한 뒤 새 프로젝트에 필요한 구성을 직접 만들고, 고유 project name·port·volume과 종료 명령을 evidence에 기록합니다.
+PostgreSQL 실행 방식과 자원 정리도 프로젝트 요구사항에 포함됩니다. 기존 `05-postgresql-kysely`의 Compose 구성을 이해한 뒤 새 프로젝트에 필요한 구성을 직접 만들고, 고유한 프로젝트 이름·포트·볼륨과 종료 명령을 완료 증거에 기록합니다.
 
-## 검사 목록
+## 테스트 목록
 
-### 단위
+### 단위 테스트
 
-- title normalization
-- archived note 수정 거부
-- version 증가 계산
+- 제목 정규화
+- 보관된 메모 수정 거부
+- 버전 증가 계산
 
-### API
+### API 테스트
 
 - 생성 201
-- validation 400
-- 없는 note 404
-- stale update 409
-- 내부 오류 500과 detail 비노출
-- stable pagination order
+- 입력 검증 실패 400
+- 없는 메모 404
+- 오래된 버전으로 수정 시 409
+- 내부 오류 500과 상세 정보 비노출
+- 안정적인 페이지네이션 정렬
 
-### DB
+### 데이터베이스 테스트
 
-- migration
-- constraint
-- 수정+activity rollback
-- 같은 version의 동시 update 중 하나만 성공
-- pool cleanup
+- 마이그레이션
+- 제약 조건
+- 메모 수정과 활동 기록의 롤백
+- 같은 버전으로 동시에 갱신할 때 하나만 성공
+- 연결 풀 정리
 
 ## 구현 순서
 
-1. request·response schema와 error code를 먼저 적습니다.
-2. 메모리 repository로 route·service 흐름을 통과시킵니다.
-3. migration과 Kysely type을 작성합니다.
-4. PostgreSQL repository를 연결합니다.
-5. transaction·concurrency 검사를 추가합니다.
-6. production server entrypoint와 shutdown을 연결합니다.
-7. typecheck·test를 깨끗한 DB에서 반복합니다.
+1. 요청·응답 스키마와 오류 코드를 먼저 정의합니다.
+2. 메모리 리포지터리로 라우트와 서비스 흐름을 완성합니다.
+3. 마이그레이션과 Kysely 타입을 작성합니다.
+4. PostgreSQL 리포지터리를 연결합니다.
+5. 트랜잭션과 동시성 테스트를 추가합니다.
+6. 프로덕션 서버 진입점과 정상 종료를 연결합니다.
+7. 깨끗한 데이터베이스에서 타입 검사와 테스트를 반복 실행합니다.
 
 ## 범위 밖
 
-- 로그인·cookie
-- 여러 사용자 공유
+- 로그인과 쿠키
+- 여러 사용자 사이의 공유
 - React 화면
 - WebSocket
-- 고급 검색·전문 index tuning
-- Docker production 배포
+- 고급 검색과 전문적인 인덱스 튜닝
+- Docker 기반 프로덕션 배포
 
-이 제한 덕분에 API와 DB 경계를 독립적으로 완성할 수 있습니다.
+이 범위를 제한해야 API와 데이터베이스 경계를 독립적으로 완성할 수 있습니다.
 
 ## 완료 기준
 
-- Fastify app factory와 server entrypoint를 분리합니다.
-- 모든 외부 입력과 response를 runtime schema로 검증합니다.
-- route·service·repository 책임과 error translation을 설명합니다.
-- 실제 PostgreSQL에서 migration·constraint·rollback·경쟁을 검사합니다.
-- 프로세스 종료 시 server와 DB pool을 닫습니다.
+- Fastify 애플리케이션 팩터리와 서버 진입점을 분리합니다.
+- 모든 외부 입력과 응답을 런타임 스키마로 검증합니다.
+- 라우트, 서비스, 리포지터리의 책임과 오류 변환 과정을 설명할 수 있습니다.
+- 실제 PostgreSQL에서 마이그레이션, 제약 조건, 롤백, 경쟁 상황을 테스트합니다.
+- 프로세스 종료 시 서버와 데이터베이스 연결 풀을 닫습니다.
 
-## Expected evidence rubric
+## 완료 증거 기준
 
-자동 정답 비교 대신 학습자 프로젝트에 다음 증거를 남깁니다. 형식은 자유지만 각 항목의 명령, 종료 코드, 관찰 결과와 실패 주입 결과를 재현할 수 있어야 합니다.
+자동 정답 비교 대신 학습자 프로젝트에 다음 증거를 남깁니다. 형식은 자유지만 각 항목의 명령, 종료 코드, 관찰 결과, 실패 주입 결과를 다시 확인할 수 있어야 합니다.
 
 | 증거 | 최소 내용 |
 |---|---|
-| contract | endpoint·status·공개 DTO·stable error code와 범위 밖 기능 |
-| ownership | route·service·repository·pool의 책임과 close owner |
-| database | 빈 DB migration, 제약 위반, update+activity rollback, 두 update 경쟁 |
-| verification | typecheck·API·DB 명령과 성공 결과, known-bad 하나 이상의 거부 결과 |
-| cleanup | server·pool·Compose project·volume을 종료하는 명령과 종료 후 상태 |
+| API 계약 | 엔드포인트·상태 코드·공개 DTO·안정적인 오류 코드·범위 밖 기능 |
+| 책임과 소유권 | 라우트·서비스·리포지터리·연결 풀의 책임과 종료 책임자 |
+| 데이터베이스 | 빈 데이터베이스 마이그레이션, 제약 위반, 갱신+활동 기록 롤백, 두 갱신의 경쟁 결과 |
+| 검증 | 타입 검사·API·DB 테스트 명령과 성공 결과, 하나 이상의 잘못된 구현 거부 결과 |
+| 자원 정리 | 서버·연결 풀·Compose 프로젝트·볼륨 종료 명령과 종료 후 상태 |
 
-guides 저장소에는 이 결과와 비교할 하나의 prose answer가 없습니다. 위 계약을 만족하는 여러 구조가 가능하며, 자동 검증이 필요한 기본 경로는 `05-postgresql-kysely`에서 끝납니다.
+`guides` 저장소에는 이 결과와 비교할 단일 모범 답안이 없습니다. 위 요구사항을 만족하는 구조는 여러 가지일 수 있으며, 자동 검증이 포함된 기본 학습 경로는 `05-postgresql-kysely`에서 끝납니다.
 
 ## 다음 단계
 
-선택 프로젝트를 계속 확장하려면 [`공유 메모`](03-shared-notes.md)로 이동합니다. 기본 runnable 경로로 돌아가려면 [`비밀번호, 세션과 cookie`](../04-data-and-security/04-passwords-sessions-cookies.md)를 읽고 `06-security`를 시작합니다.
+선택 프로젝트를 계속 확장하려면 [`공유 메모`](03-shared-notes.md)로 이동합니다. 자동 검증이 포함된 기본 경로로 돌아가려면 [`비밀번호, 세션과 쿠키`](../04-data-and-security/04-passwords-sessions-cookies.md)를 읽고 `06-security` 실습을 시작합니다.

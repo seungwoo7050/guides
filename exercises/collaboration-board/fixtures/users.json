@@ -1,6 +1,0 @@
-[
-  { "handle": "owner", "displayName": "보드 소유자", "role": "owner" },
-  { "handle": "editor", "displayName": "편집자", "role": "editor" },
-  { "handle": "viewer", "displayName": "읽기 전용 사용자", "role": "viewer" },
-  { "handle": "admin", "displayName": "운영자", "role": "admin" }
-]
