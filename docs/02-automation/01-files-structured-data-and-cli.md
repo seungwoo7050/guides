@@ -2,13 +2,16 @@
 
 ## 학습 목표
 
-이 장은 파일과 외부 입력을 검증해 명령줄 프로그램의 계약으로 바꾸는 방법을 다룹니다. 연결 실습은 [`command-checker` 4단계](../../exercises/command-checker/README.md#4단계-json-명세와-실행-시-검증)입니다.
+이 장에서는 파일과 외부 입력을 검증해 명령줄 프로그램이 사용할 내부 데이터로 변환하는 방법을 다룹니다. 연결 실습은 [`command-checker` 4단계](../../exercises/command-checker/README.md#4단계-json-명세와-실행-시-검증)입니다.
 
 ## 선행 개념
 
-- `pathlib`·context manager·예외 category와 JSON 문법/계약 검증의 차이
+- `pathlib`로 경로를 다룰 수 있어야 합니다.
+- 컨텍스트 관리자로 파일을 열고 닫을 수 있어야 합니다.
+- 예외 유형을 구분할 수 있어야 합니다.
+- JSON 문법 검증과 애플리케이션 데이터 검증이 다른 작업임을 이해해야 합니다.
 
-## `pathlib`로 경로 의미를 보존합니다
+## `pathlib`로 경로 의미 보존하기
 
 ```python
 from pathlib import Path
@@ -17,7 +20,7 @@ root = Path(__file__).resolve().parent
 config = root / "fixtures" / "cases.json"
 ```
 
-문자열 덧셈으로 경로를 조립하지 않습니다.
+경로를 문자열 덧셈으로 조립하지 않습니다. `Path`를 사용하면 운영체제별 경로 구분자를 직접 처리하지 않아도 되고, 경로가 문자열 데이터와 구분됩니다.
 
 ```python
 path = Path("notes.txt")
@@ -25,27 +28,30 @@ path.write_text("hello\n", encoding="utf-8")
 content = path.read_text(encoding="utf-8")
 ```
 
-작은 설정 파일에는 편리하지만 큰 로그는 줄 단위로 처리합니다.
+`read_text()`와 `write_text()`는 작은 설정 파일을 처리할 때 편리합니다. 큰 로그 파일은 한 번에 읽지 말고 줄 단위로 처리합니다.
 
 ```python
-def error_lines(path: Path):
+from collections.abc import Iterator
+
+
+def error_lines(path: Path) -> Iterator[str]:
     with path.open("r", encoding="utf-8") as stream:
         for line in stream:
             if "ERROR" in line:
                 yield line.rstrip("\n")
 ```
 
-## 텍스트 경계를 명시합니다
+## 텍스트와 바이트 경계 명시하기
 
-파일과 프로세스 경계에서는 bytes와 str 중 하나를 선택해야 합니다.
+파일이나 프로세스에서 데이터를 읽을 때는 `bytes`와 `str` 중 어떤 형태로 처리할지 정해야 합니다.
 
 ```python
-path.read_text(encoding="utf-8")
+content = path.read_text(encoding="utf-8")
 ```
 
-인코딩을 생략해 운영체제 기본값에 기대지 않습니다. 디코딩할 수 없는 입력을 대체할지 거부할지도 계약으로 정합니다.
+텍스트를 읽을 때 인코딩을 생략해 운영체제 기본값에 의존하지 않습니다. 잘못된 바이트를 만나면 오류로 처리할지 대체 문자로 바꿀지도 프로그램의 입력 규칙으로 정합니다.
 
-## JSON은 파싱 뒤 다시 검증합니다
+## JSON은 파싱한 뒤 다시 검증하기
 
 ```python
 import json
@@ -53,7 +59,7 @@ import json
 raw: object = json.loads(path.read_text(encoding="utf-8"))
 ```
 
-JSON 형식이 맞다고 애플리케이션 계약까지 맞는 것은 아닙니다.
+JSON 문법이 올바르다는 사실은 애플리케이션이 요구하는 데이터 구조까지 올바르다는 뜻이 아닙니다.
 
 ```python
 def require_object(value: object) -> dict[str, object]:
@@ -62,24 +68,24 @@ def require_object(value: object) -> dict[str, object]:
     return value
 ```
 
-검증해야 할 항목:
+외부 JSON에서 일반적으로 확인해야 할 항목은 다음과 같습니다.
 
-- 최상위 형태
-- 필수 필드와 알 수 없는 필드
+- 최상위 값의 형태
+- 필수 필드와 허용하지 않은 필드
 - 각 필드의 실제 타입
-- 숫자 범위와 유한성
+- 숫자의 범위와 유한성
 - 중복 이름
-- 경로 존재와 기준 디렉터리
-- 운영체제가 허용하지 않는 NUL
+- 경로의 존재 여부와 기준 디렉터리
+- 운영체제 API가 허용하지 않는 NUL 문자
 
-Python에서 `bool`은 `int`의 하위 타입이므로 엄격한 숫자 필드에서는 별도로 제외합니다.
+Python에서 `bool`은 `int`의 하위 타입입니다. 따라서 정수나 실수를 엄격하게 받아야 하는 필드에서는 `bool`을 별도로 제외해야 합니다.
 
 ```python
 if isinstance(timeout, bool) or not isinstance(timeout, (int, float)):
     raise SpecificationError("timeout은 숫자여야 합니다.")
 ```
 
-## CSV는 `csv` 모듈에 맡깁니다
+## CSV는 `csv` 모듈로 처리하기
 
 ```python
 import csv
@@ -89,11 +95,12 @@ with path.open("r", encoding="utf-8", newline="") as stream:
         print(row["name"])
 ```
 
-쉼표로 직접 `split()`하면 따옴표, 줄바꿈과 이스케이프를 잘못 처리합니다.
+CSV 한 줄을 쉼표로 직접 `split()`하면 따옴표 안의 쉼표, 여러 줄 필드, 이스케이프 규칙을 올바르게 처리할 수 없습니다. CSV 형식은 표준 라이브러리의 `csv` 모듈에 맡깁니다.
 
-## 임시 디렉터리로 작업을 격리합니다
+## 임시 디렉터리로 작업 격리하기
 
 ```python
+from pathlib import Path
 from tempfile import TemporaryDirectory
 
 with TemporaryDirectory() as directory:
@@ -102,30 +109,40 @@ with TemporaryDirectory() as directory:
     ...
 ```
 
-테스트는 사용자의 실제 파일을 수정하지 않아야 합니다.
+테스트나 중간 작업은 사용자의 실제 파일을 수정하지 않도록 임시 디렉터리에서 수행합니다. 컨텍스트가 끝나면 임시 디렉터리와 내부 파일이 정리됩니다.
 
 ## 원자적 결과 교체
 
-기존 보고서 경로에 직접 쓰면 중간 실패에서 파일이 잘릴 수 있습니다.
+기존 보고서 파일에 직접 덮어쓰면 기록 도중 실패했을 때 파일이 일부만 남을 수 있습니다. 같은 파일 시스템 안에서 다음 순서를 사용하면 불완전한 결과가 최종 경로에 노출되는 일을 줄일 수 있습니다.
 
 ```text
-같은 디렉터리에 임시 파일 생성
-→ 전체 내용 기록
-→ flush와 fsync
-→ os.replace로 최종 경로 교체
+최종 파일과 같은 디렉터리에 임시 파일을 만든다
+→ 전체 내용을 기록한다
+→ flush와 fsync로 파일 내용을 반영한다
+→ os.replace로 최종 경로를 교체한다
 ```
 
 ```python
 import os
 import tempfile
+from pathlib import Path
 
 
 def atomic_write_text(path: Path, data: str) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
-    descriptor, name = tempfile.mkstemp(dir=path.parent, prefix=f".{path.name}.")
+    descriptor, name = tempfile.mkstemp(
+        dir=path.parent,
+        prefix=f".{path.name}.",
+    )
     temporary = Path(name)
+
     try:
-        with os.fdopen(descriptor, "w", encoding="utf-8", newline="") as stream:
+        with os.fdopen(
+            descriptor,
+            "w",
+            encoding="utf-8",
+            newline="",
+        ) as stream:
             stream.write(data)
             stream.flush()
             os.fsync(stream.fileno())
@@ -135,41 +152,51 @@ def atomic_write_text(path: Path, data: str) -> None:
         raise
 ```
 
-이 방식은 동일 파일시스템의 이름 교체를 이용해 부분 내용 노출을 줄입니다. 데이터베이스 수준의 전체 내구성을 자동 보장하는 것은 아닙니다.
+`os.replace()`는 같은 파일 시스템 안에서 완성된 임시 파일을 최종 이름으로 교체합니다. 이 방식은 중간 내용이 보이는 문제를 줄이지만, 디렉터리 항목까지 포함한 데이터베이스 수준의 트랜잭션이나 모든 장애 상황에서의 내구성을 자동으로 보장하지는 않습니다.
 
-## CLI는 네 채널을 계약으로 가집니다
+## CLI에서 관찰해야 할 요소
+
+명령줄 프로그램의 외부 동작은 다음 다섯 요소로 나누어 확인합니다.
 
 ```text
-인자와 stdin
+명령줄 인자
+stdin
 stdout
 stderr
 종료 상태
 ```
 
-일반 규약:
+일반적인 규칙은 다음과 같습니다.
 
-- 정상 결과는 stdout
-- 오류와 진단은 stderr
-- 성공은 0
-- 사용법·명세 오류는 별도 non-zero 상태
+- 정상 결과는 `stdout`에 출력한다.
+- 오류와 진단 메시지는 `stderr`에 출력한다.
+- 성공은 종료 상태 0으로 나타낸다.
+- 사용법 오류나 입력 명세 오류는 별도의 0이 아닌 종료 상태로 나타낸다.
 
 ```python
 import argparse
+from pathlib import Path
 
 
 def build_parser() -> argparse.ArgumentParser:
-    parser = argparse.ArgumentParser(description="JSON 사례로 명령을 검사합니다.")
+    parser = argparse.ArgumentParser(
+        description="JSON 사례로 명령을 검사합니다."
+    )
     parser.add_argument("--cases", required=True, type=Path)
     parser.add_argument("--jobs", type=int, default=1)
     parser.add_argument("command", nargs=argparse.REMAINDER)
     return parser
 ```
 
-`argparse`의 타입 변환은 모든 실행 시 검증을 대신하지 않습니다. `--jobs 0` 같은 값은 파싱 뒤 계약을 확인해야 합니다.
+`argparse`가 타입을 변환해 준다고 해서 모든 값이 유효해지는 것은 아닙니다. 예를 들어 `--jobs 0`은 정수로 파싱되지만 허용 가능한 작업자 수는 아니므로 파싱 후 추가 검증이 필요합니다.
 
-## `main()`에서 오류를 변환합니다
+## `main()`에서 예외를 사용자 오류로 변환하기
 
 ```python
+import sys
+from collections.abc import Sequence
+
+
 def main(argv: Sequence[str] | None = None) -> int:
     arguments = build_parser().parse_args(argv)
     try:
@@ -180,19 +207,19 @@ def main(argv: Sequence[str] | None = None) -> int:
     ...
 ```
 
-파일 모듈은 사용자 메시지 형식을 몰라도 됩니다. 예외를 최종 진입점에서 진단과 종료 상태로 바꿉니다.
+파일 파싱 모듈이나 검증 모듈은 터미널 출력 형식까지 알 필요가 없습니다. 하위 모듈은 의미 있는 예외를 발생시키고, 최상위 CLI 진입점에서 오류 메시지와 종료 상태로 변환합니다.
 
 ## 연결 실습
 
-- [command-checker 4단계](../../exercises/command-checker/README.md#4단계-json-명세와-실행-시-검증)에서 JSON 명세, 상대 `cwd`, environment와 usage error를 검증합니다.
-- 원자적 결과 교체 절은 [8단계](../../exercises/command-checker/README.md#8단계-병렬-실행과-원자적-보고서)에서 JSON·JUnit writer에 다시 적용합니다.
+- [command-checker 4단계](../../exercises/command-checker/README.md#4단계-json-명세와-실행-시-검증)에서 JSON 명세, 상대 `cwd`, 환경 변수, 사용법 오류를 검증합니다.
+- 이 문서의 원자적 파일 교체 방식은 [8단계](../../exercises/command-checker/README.md#8단계-병렬-실행과-원자적-보고서)에서 JSON·JUnit 보고서를 저장할 때 다시 사용합니다.
 
 ## 완료 기준
 
-- 경로의 기준 디렉터리를 명시했습니다.
-- 외부 JSON을 `object`로 보고 필드마다 검증합니다.
-- 파일 인코딩을 지정합니다.
-- 기존 결과를 부분 내용으로 바꾸지 않는 저장 절차가 있습니다.
-- CLI의 stdout, stderr와 종료 상태를 구분합니다.
+- 상대 경로를 어떤 디렉터리 기준으로 해석하는지 명시했습니다.
+- 외부 JSON을 `object`로 받은 뒤 필드별로 실행 시 검증합니다.
+- 텍스트 파일의 인코딩을 명시합니다.
+- 기존 결과 파일을 불완전한 내용으로 덮어쓰지 않는 저장 절차가 있습니다.
+- CLI의 인자, 표준 입력, 표준 출력, 표준 오류, 종료 상태를 구분합니다.
 
 다음은 [외부 프로세스와 수명 관리](02-subprocess-and-process-lifecycle.md)입니다.

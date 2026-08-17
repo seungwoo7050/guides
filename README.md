@@ -1,44 +1,127 @@
-# Python 언어, 자동화와 검증 가이드
+# Python
 
-Python을 처음 사용하는 개발자가 언어의 실행 모델을 이해하고, 파일·프로세스·구조화된 데이터를 다루는 자동화 도구를 만들며, 그 동작을 재현 가능한 검사로 고정하는 과정입니다.
+Python의 언어 특성부터 CLI automation, subprocess lifecycle, concurrency, testing, packaging까지 단계적으로 정리한 가이드입니다.
 
-이 저장소는 Python 문법 사전이 아닙니다. 작은 프로그램을 직접 실행하고 실패 경계를 확인한 뒤, 누적 실습 `command-checker`에 같은 원리를 적용합니다. Python으로 웹 애플리케이션이나 데이터 분석을 만드는 과정은 범위에 포함하지 않으며, 알고리즘 이론과 문제 해결은 별도의 알고리즘 가이드가 소유합니다.
+문법 자체를 폭넓게 나열하기보다 실제 프로그램을 작성할 때 필요한 **runtime model, data ownership, error boundary, resource lifecycle, automation, verification**에 초점을 둡니다.
 
-## 지원 환경
+`docs/`는 개념과 설계를 설명하고, `exercises/`는 해당 내용을 실제 구현으로 통합한 완성형 standalone project를 제공합니다.
 
-- Python 3.12 이상
-- 학습 문서와 1~6단계의 Python 개념: Python 3.12가 실행되는 환경
-- 공식 `prepare`·workspace·`make`·`verify` 흐름: macOS 또는 Linux
-- 7~8단계의 프로세스 수명 구현: POSIX 프로세스 그룹과 non-blocking descriptor를 지원하는 macOS 또는 Linux
-- Windows native workflow와 process-tree 종료: 지원 범위 밖
-- 제3자 Python 패키지: 없음
+## 구성
 
-## 적용과 전체 검증
-
-Overlay ZIP을 저장소 루트에 압축 해제한 뒤 다음 두 명령을 순서대로 실행합니다.
-
-```sh
-./prepare.sh
-./verify.sh
+```text
+.
+├── docs
+│   ├── 00-roadmap.md
+│   ├── 01-language-and-runtime
+│   │   ├── 01-runtime-and-environment.md
+│   │   ├── 02-objects-and-collections.md
+│   │   ├── 03-functions-errors-and-types.md
+│   │   └── 04-iterators-generators-and-context-managers.md
+│   ├── 02-automation
+│   │   ├── 01-files-structured-data-and-cli.md
+│   │   ├── 02-subprocess-and-process-lifecycle.md
+│   │   └── 03-concurrency-and-cancellation.md
+│   └── 03-quality
+│       ├── 01-testing.md
+│       ├── 02-project-structure-packaging-and-typing.md
+│       └── 03-cli-test-runner.md
+└── exercises
+    └── command-checker
 ```
 
-`prepare.sh`는 source tree나 Git index를 변경하지 않고 `.guide/python/venv`와 fingerprint marker를 준비합니다. 학습자의 `workspace/`는 삭제하거나 덮어쓰지 않습니다. `make clean`도 workspace 전체를 보존하고 source cache와 `.guide/`만 정리합니다. `verify.sh`는 격리 복제본에서 저장소 전체를 검사하며, 알려진 결함을 주입해 공개 테스트가 실제로 거부하는지도 확인합니다.
+## Documentation
 
-## 누적 학습 순서
+전체 흐름은 [Roadmap](docs/00-roadmap.md)에서 확인할 수 있습니다.
 
-전체 선행지식과 종료 능력은 [`docs/00-roadmap.md`](docs/00-roadmap.md), 세부 구현 계약은 [`exercises/command-checker`](exercises/command-checker/README.md)에 있습니다. 문서를 전부 읽은 뒤 실습을 시작하지 않고, 아래처럼 관련 문서와 단계를 교차해 진행합니다. `examples/`는 의도적으로 없으며 문서의 inline snippet은 독립 실행 예제가 아닙니다. `fixtures/`는 검사 입력과 프로세스 재현 도구이지 예제나 답안이 아닙니다.
+### 1. Language and Runtime
 
-| 순서 | 문서 | 관찰 예제 | 직접 수행 | 수정 위치 | 검증 | 완료 뒤 비교·다음 |
-|---:|---|---|---|---|---|---|
-| 0 | [로드맵](docs/00-roadmap.md), [실습 계약](exercises/command-checker/README.md) | — | baseline을 확인하고 skeleton을 처음 한 번만 workspace로 복사 | 이후에는 `exercises/command-checker/workspace/`만 수정 | `./prepare.sh`<br>`./verify.sh`<br>`scripts/new-workspace.sh exercises/command-checker` | `reference/`는 열지 않고 1단계 |
-| 1 | [실행 환경과 모듈](docs/01-language-and-runtime/01-runtime-and-environment.md) | — | parser와 module/console-script가 공유하는 CLI 계약 구현 | `workspace/command_checker/cli.py`<br>나머지 packaging 파일은 제공 scaffold | `make stage-01 EXERCISE_IMPL=workspace` | 누적 통과를 기록하고 2단계 |
-| 2 | [객체와 컬렉션](docs/01-language-and-runtime/02-objects-and-collections.md) | — | 불변 `Case`·`Result`와 환경 표현 구현 | `workspace/command_checker/model.py` | `make stage-02 EXERCISE_IMPL=workspace` | 누적 통과를 기록하고 3단계 |
-| 3 | [함수, 예외와 타입 경계](docs/01-language-and-runtime/03-functions-errors-and-types.md) | — | 세 결과 채널의 순수 비교와 실패 표현 구현 | `workspace/command_checker/comparison.py` | `make stage-03 EXERCISE_IMPL=workspace` | 타입 경계는 8단계에서 다시 보고 4단계 |
-| 4 | [파일, 구조화된 데이터와 CLI](docs/02-automation/01-files-structured-data-and-cli.md)의 JSON·경로·CLI 부분 | — | JSON을 검증된 사례로 변환 | `workspace/command_checker/specification.py` | `make stage-04 EXERCISE_IMPL=workspace` | 원자적 저장 부분은 8단계에서 다시 보고 5단계 |
-| 5 | [반복자, 생성기와 컨텍스트 관리자](docs/01-language-and-runtime/04-iterators-generators-and-context-managers.md), [외부 프로세스와 수명 관리](docs/02-automation/02-subprocess-and-process-lifecycle.md)의 실행 부분 | — | 외부 프로세스 한 건과 세 결과 채널 수집 | `workspace/command_checker/process.py`의 `run_case()` | `make stage-05 EXERCISE_IMPL=workspace` | 같은 reference 파일에 7단계 답도 있으므로 아직 비교하지 않고 6단계 |
-| 6 | [실습 6단계](exercises/command-checker/README.md#6단계-전체-사례와-종료-정책) | — | 전체 사례 집계, 표시와 종료 정책 연결 | `workspace/command_checker/runner.py`, `cli.py` | `make stage-06 EXERCISE_IMPL=workspace` | 같은 reference 파일에 8단계 답도 있으므로 아직 비교하지 않고 7단계 |
-| 7 | [외부 프로세스와 수명 관리](docs/02-automation/02-subprocess-and-process-lifecycle.md)의 timeout·파이프·프로세스 그룹 부분과 [자원 수명](docs/01-language-and-runtime/04-iterators-generators-and-context-managers.md) 재검토 | — | bounded I/O, timeout, 출력 상한과 프로세스 그룹 정리 | `workspace/command_checker/process.py` | `make stage-07 EXERCISE_IMPL=workspace` | 누적 통과를 기록하고 8단계 |
-| 8 | [동시성, 취소와 자원 한계](docs/02-automation/03-concurrency-and-cancellation.md), [재현 가능한 테스트](docs/03-quality/01-testing.md), [프로젝트 구조·패키징·타입](docs/03-quality/02-project-structure-packaging-and-typing.md), [CLI 검사기 설계](docs/03-quality/03-cli-test-runner.md), 파일 문서의 원자적 저장 부분 | — | 제한된 병렬 실행, 보고서, 공개 타입과 설치 계약 완성 | `workspace/command_checker/runner.py`, `reports.py`, `cli.py`와 공개 API | `make stage-08 EXERCISE_IMPL=workspace` | reference를 보기 전에 전체 workspace 검사 |
-| 9 | [완료 기준](exercises/command-checker/README.md#완료-기준) | — | 자기 설명과 통합 검사를 마침 | 실패가 드러난 workspace 파일만 수정 | `make exercise-check EXERCISE_IMPL=workspace` | 성공 뒤 처음으로 최종 `reference/`와 비교 → `make install-workspace` → `./verify.sh`; 여기서 종료 |
+Python 프로그램이 실행되고 객체와 상태가 다뤄지는 기본 모델을 정리합니다.
 
-각 `stage-N`은 1단계부터 N단계까지 다시 검사합니다. `EXERCISE_IMPL`을 생략한 learner-facing `make` 명령도 `workspace`를 선택하며, 정답 검사는 `make reference-check`만 명시적으로 `reference`를 사용합니다. 단계별 expected evidence는 누적 검사 결과와 실패 원인 설명입니다. `reference/`는 단계별 snapshot이 아니라 최종 구현이므로 전체 workspace 검사가 성공한 뒤 비교합니다.
+| 문서                                                                                                                         | 내용                              |
+| -------------------------------------------------------------------------------------------------------------------------- | ------------------------------- |
+| [Runtime and Environment](docs/01-language-and-runtime/01-runtime-and-environment.md)                                      | Python 실행 환경과 module/runtime 경계 |
+| [Objects and Collections](docs/01-language-and-runtime/02-objects-and-collections.md)                                      | 객체와 collection의 동작 및 데이터 모델     |
+| [Functions, Errors and Types](docs/01-language-and-runtime/03-functions-errors-and-types.md)                               | 함수 경계, 예외 처리, type contract     |
+| [Iterators, Generators and Context Managers](docs/01-language-and-runtime/04-iterators-generators-and-context-managers.md) | iteration과 resource lifecycle   |
+
+### 2. Automation
+
+파일과 외부 프로세스를 다루는 CLI automation을 중심으로 구성합니다.
+
+| 문서                                                                                            | 내용                                                  |
+| --------------------------------------------------------------------------------------------- | --------------------------------------------------- |
+| [Files, Structured Data and CLI](docs/02-automation/01-files-structured-data-and-cli.md)      | 파일 I/O, structured data, CLI boundary               |
+| [Subprocess and Process Lifecycle](docs/02-automation/02-subprocess-and-process-lifecycle.md) | subprocess 실행과 process/resource lifecycle           |
+| [Concurrency and Cancellation](docs/02-automation/03-concurrency-and-cancellation.md)         | concurrent execution, cancellation, resource limits |
+
+### 3. Quality
+
+구현을 검증하고 독립적인 Python project로 구성하기 위한 내용을 다룹니다.
+
+| 문서                                                                                                      | 내용                        |
+| ------------------------------------------------------------------------------------------------------- | ------------------------- |
+| [Testing](docs/03-quality/01-testing.md)                                                                | 재현 가능한 테스트와 검증 경계         |
+| [Project Structure, Packaging and Typing](docs/03-quality/02-project-structure-packaging-and-typing.md) | package 구조, 배포 경계, typing |
+| [CLI Test Runner](docs/03-quality/03-cli-test-runner.md)                                                | 앞선 내용을 통합한 CLI 검사기 설계     |
+
+## Exercise
+
+### [`command-checker`](exercises/command-checker)
+
+JSON으로 정의한 case contract에 따라 외부 CLI program을 실행하고 결과를 검증하는 standalone project입니다.
+
+주요 책임은 다음과 같습니다.
+
+* JSON specification validation
+* immutable case/result model
+* executable resolution
+* `stdin`, `stdout`, `stderr`, `returncode` verification
+* timeout과 output limit
+* POSIX process group lifecycle 관리
+* non-blocking pipe I/O
+* bounded concurrent execution
+* deterministic result ordering
+* atomic JSON/JUnit report generation
+* Python package 및 console-script 구성
+
+구현은 학습용 skeleton이나 reference answer 형태가 아니라 완성된 project 자체로 제공됩니다.
+
+자세한 사용법과 설계는 [`exercises/command-checker/README.md`](exercises/command-checker/README.md)를 참조하세요.
+
+## 권장 순서
+
+문서는 다음 순서로 읽는 것을 권장합니다.
+
+```text
+00-roadmap
+    ↓
+01-language-and-runtime
+    ↓
+02-automation
+    ↓
+03-quality
+    ↓
+exercises/command-checker
+```
+
+각 문서를 모두 암기하는 것이 목적은 아닙니다. 먼저 Python의 execution/data/error model을 이해하고, 이후 file·process·concurrency 같은 operational concern을 확장한 뒤 testing과 packaging을 통해 하나의 project로 완성하는 흐름을 기준으로 구성되어 있습니다.
+
+## Requirements
+
+주요 예제와 `command-checker`는 Python 3.12 이상을 기준으로 합니다.
+
+`command-checker`의 process lifecycle 구현은 POSIX process group과 non-blocking file descriptor를 사용하므로 macOS와 Linux를 대상으로 합니다.
+
+## Repository Model
+
+이 저장소에서 두 영역의 역할은 명확히 분리됩니다.
+
+```text
+docs/
+    concepts, reasoning, design
+
+exercises/
+    completed standalone implementations
+```
+
+`docs/`는 구현에 필요한 개념을 설명하고, `exercises/`는 그 개념들이 실제 source code와 project boundary 안에서 어떻게 결합되는지를 보여줍니다.
