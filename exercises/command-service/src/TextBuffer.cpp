@@ -1,0 +1,93 @@
+#include "TextBuffer.hpp"
+
+#include <algorithm>
+#include <cstring>
+#include <new>
+#include <stdexcept>
+
+int TextBuffer::allocationCountdown_ = -1;
+int TextBuffer::liveCount_ = 0;
+
+// [Implementation 2-1] Allocation and object lifetime
+// Allocation, construction, and destruction keep object and memory lifetimes aligned.
+char *TextBuffer::allocate(std::size_t count)
+{
+    if (allocationCountdown_ == 0)
+        throw std::bad_alloc();
+    if (allocationCountdown_ > 0)
+        --allocationCountdown_;
+    return new char[count];
+}
+
+TextBuffer::TextBuffer()
+    : data_(allocate(1)), size_(0)
+{
+    data_[0] = '\0';
+    ++liveCount_;
+}
+
+TextBuffer::TextBuffer(const char *text)
+    : data_(0), size_(text == 0 ? 0 : std::strlen(text))
+{
+    data_ = allocate(size_ + 1);
+    if (size_ != 0)
+        std::memcpy(data_, text, size_);
+    data_[size_] = '\0';
+    ++liveCount_;
+}
+
+TextBuffer::TextBuffer(const TextBuffer &other)
+    : data_(0), size_(other.size_)
+{
+    data_ = allocate(size_ + 1);
+    std::memcpy(data_, other.data_, size_ + 1);
+    ++liveCount_;
+}
+
+TextBuffer::~TextBuffer()
+{
+    delete[] data_;
+    --liveCount_;
+}
+
+// [Implementation 2-2] Strong copy assignment
+// Copy-and-swap preserves the previous value on self-assignment and allocation failure.
+TextBuffer &TextBuffer::operator=(const TextBuffer &other)
+{
+    TextBuffer candidate(other);
+    swap(candidate);
+    return *this;
+}
+
+const char *TextBuffer::c_str() const
+{
+    return data_;
+}
+
+std::size_t TextBuffer::size() const
+{
+    return size_;
+}
+
+void TextBuffer::set(std::size_t index, char value)
+{
+    if (index >= size_)
+        throw std::out_of_range("TextBuffer::set");
+    data_[index] = value;
+}
+
+void TextBuffer::swap(TextBuffer &other) throw()
+{
+    std::swap(data_, other.data_);
+    std::swap(size_, other.size_);
+}
+
+void TextBuffer::failAfter(int allocations)
+{
+    allocationCountdown_ = allocations;
+}
+
+int TextBuffer::liveCount()
+{
+    return liveCount_;
+}

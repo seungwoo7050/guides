@@ -2,49 +2,49 @@
 
 ## 목표
 
-C++ 소스가 실행 파일이 되는 경로를 이해하고, 빈 디렉터리에서 target 기반 CMake 프로젝트를 시작합니다. CMake 문법을 많이 외우는 것이 아니라 다음 질문에 답할 수 있어야 합니다.
+C++ 소스가 실행 파일이 되는 과정을 이해하고, 빈 디렉터리에서 타깃 중심의 CMake 프로젝트를 시작합니다. CMake 문법을 많이 암기하는 것이 아니라 다음 질문에 답할 수 있어야 합니다.
 
-- 어느 `.cpp`가 어느 target에 들어가는가
+- 각 `.cpp` 파일은 어느 타깃에 포함되는가
 - 공개 헤더와 구현 전용 헤더의 경계는 어디인가
-- C++ 표준, 경고와 의존성이 어느 target에 적용되는가
-- compile 오류, link 오류와 test 실패가 각각 어느 단계의 문제인가
+- C++ 표준, 경고 옵션, 의존성은 어느 타깃에 적용되는가
+- 컴파일 오류, 링크 오류, 테스트 실패는 각각 어느 단계에서 발생하는가
 
 ## 시작하기 전에
 
-터미널에서 현재 디렉터리를 확인하고 파일을 만들 수 있어야 합니다. CMake 3.20 이상과 C++20을 지원하는 compiler가 필요합니다. 저장소의 preset 경로는 Ninja generator를 사용하므로 preset을 그대로 실행하려면 Ninja도 필요합니다. Ninja가 없다면 뒤에 나오는 `cmake -S ... -B ...` 직접 configure 경로를 사용할 수 있습니다.
+터미널에서 현재 디렉터리를 확인하고 파일을 만들 수 있어야 합니다. CMake 3.20 이상과 C++20을 지원하는 컴파일러가 필요합니다. 저장소의 프리셋은 Ninja 생성기를 사용하므로 그대로 실행하려면 Ninja도 설치되어 있어야 합니다. Ninja가 없다면 뒤에서 설명하는 `cmake -S ... -B ...` 방식으로 직접 구성할 수 있습니다.
 
 ```sh
 c++ --version
 cmake --version
-ninja --version # preset 경로를 사용할 때
+ninja --version # 프리셋을 사용할 때만 필요
 ```
 
-## 1. 소스에서 실행 파일까지
+## 1. 소스 파일에서 실행 파일까지
 
-C++ compiler는 프로젝트 전체를 하나의 문서처럼 읽지 않습니다. 각 `.cpp`는 자신이 포함한 헤더와 함께 독립된 번역 단위가 됩니다.
+C++ 컴파일러는 프로젝트 전체를 하나의 문서처럼 읽지 않습니다. 각 `.cpp` 파일과 그 파일이 포함한 헤더는 하나의 번역 단위로 처리되어 독립적으로 컴파일됩니다.
 
 ```text
-main.cpp + 포함된 헤더    → main.o
-job_store.cpp + 헤더      → job_store.o
-job_runner.cpp + 헤더     → job_runner.o
+main.cpp + 포함한 헤더       → main.o
+job_store.cpp + 포함한 헤더  → job_store.o
+job_runner.cpp + 포함한 헤더 → job_runner.o
 
 main.o + job_store.o + job_runner.o
-    → linker
+    → 링커
     → 실행 파일
 ```
 
-이 과정에서 실패 위치가 갈립니다.
+실패 지점에 따라 오류의 성격도 달라집니다.
 
-- preprocess·compile 실패: 현재 번역 단위의 문법, 이름 또는 타입이 잘못됐습니다.
-- link 실패: 선언된 정의를 찾지 못했거나 같은 정의가 여러 번 생겼습니다.
-- 실행 실패: 프로그램 계약, 수명, 입력 또는 환경의 문제입니다.
-- test 실패: 예상한 계약과 관찰된 결과가 다릅니다.
+- 전처리·컴파일 실패: 현재 번역 단위의 문법, 이름, 타입이 잘못됐습니다.
+- 링크 실패: 선언에 대응하는 정의를 찾지 못했거나 같은 정의가 중복됐습니다.
+- 실행 중 실패: 프로그램의 로직, 객체 수명, 입력, 실행 환경에 문제가 있습니다.
+- 테스트 실패: 명시한 기대 결과와 실제 결과가 다릅니다.
 
-오류 종류를 먼저 분류하면 검색 범위가 줄어듭니다. `undefined reference`를 보고 헤더 문법만 고치거나, compile 오류를 runtime debugger로 찾지 않습니다.
+오류 유형을 먼저 분류하면 확인할 범위를 줄일 수 있습니다. `undefined reference`가 발생했는데 헤더 문법만 수정하거나, 컴파일 오류를 실행 중 디버거로 찾으려 해서는 안 됩니다.
 
 ## 2. 선언·정의와 헤더 경계
 
-헤더는 다른 번역 단위가 컴파일하는 데 필요한 계약을 제공합니다.
+헤더는 다른 번역 단위가 코드를 컴파일하는 데 필요한 인터페이스를 제공합니다.
 
 ```cpp
 // include/task_store.hpp
@@ -67,7 +67,7 @@ public:
 #endif
 ```
 
-구현은 `.cpp`에 둡니다.
+구현은 `.cpp` 파일에 둡니다.
 
 ```cpp
 // src/task_store.cpp
@@ -82,18 +82,18 @@ void TaskStore::put(int id, std::string value)
 }
 ```
 
-헤더에는 다음만 둡니다.
+헤더에는 다음과 같이 사용하는 코드가 알아야 하는 내용만 둡니다.
 
 - 공개 타입과 함수 선언
-- caller가 크기 또는 template 정의를 알아야 하는 타입
-- 실제로 inline이어야 하는 짧은 함수
-- template 정의
+- 사용자가 객체의 크기를 알아야 하는 완전한 타입 정의
+- 실제로 인라인 정의가 필요한 짧은 함수
+- 템플릿 정의
 
-구현 전용 helper와 무거운 의존성을 공개 헤더에 넣으면 모든 caller가 다시 컴파일되고 결합도가 높아집니다.
+구현 전용 도우미와 불필요하게 무거운 의존성을 공개 헤더에 넣으면 해당 헤더를 사용하는 소스가 함께 다시 컴파일되고 결합도도 높아집니다.
 
-## 3. CMake는 target의 관계를 기록합니다
+## 3. CMake에는 타깃 간 관계를 기록합니다
 
-최소 프로젝트는 다음과 같습니다.
+최소 프로젝트는 다음과 같이 구성할 수 있습니다.
 
 ```cmake
 cmake_minimum_required(VERSION 3.20)
@@ -115,21 +115,21 @@ add_executable(task_app src/main.cpp)
 target_link_libraries(task_app PRIVATE task_core)
 ```
 
-핵심은 전역 변수처럼 flag를 뿌리는 대신 **사용 요구사항을 target에 붙이는 것**입니다.
+핵심은 전역 옵션을 모든 대상에 일괄 적용하는 대신 **빌드 요구사항을 해당 타깃에 연결하는 것**입니다.
 
 ### `PUBLIC`, `PRIVATE`, `INTERFACE`
 
-`target_link_libraries`와 `target_include_directories`의 범위를 다음처럼 판단합니다.
+`target_link_libraries`와 `target_include_directories`의 범위는 다음 기준으로 선택합니다.
 
-- `PRIVATE`: 현재 target을 빌드할 때만 필요합니다.
-- `PUBLIC`: 현재 target과 이를 사용하는 caller 모두 필요합니다.
-- `INTERFACE`: 현재 target 자체보다 caller에게만 필요합니다.
+- `PRIVATE`: 현재 타깃을 빌드할 때만 필요합니다.
+- `PUBLIC`: 현재 타깃과 이 타깃을 사용하는 다른 타깃 모두에 필요합니다.
+- `INTERFACE`: 현재 타깃 자체에는 필요하지 않고 사용하는 타깃에만 필요합니다.
 
-예를 들어 공개 헤더가 `std::filesystem`만 사용한다면 별도 link 의존성이 없습니다. 공개 헤더에 외부 라이브러리 타입이 노출된다면 caller에도 그 include 경계가 전달될 수 있습니다.
+예를 들어 공개 헤더가 표준 라이브러리의 `std::filesystem`만 사용한다면 별도 링크 의존성은 필요하지 않습니다. 반면 공개 헤더에 외부 라이브러리의 타입이 노출되면 그 헤더를 사용하는 타깃에도 해당 include 경로와 관련 요구사항을 전달해야 할 수 있습니다.
 
-## 4. 소스 파일을 glob으로 숨기지 않습니다
+## 4. 소스 목록을 glob으로 숨기지 않습니다
 
-초기 학습 프로젝트에서는 source 목록을 명시합니다.
+초기 학습 프로젝트에서는 소스 목록을 명시합니다.
 
 ```cmake
 add_library(job_core
@@ -139,9 +139,9 @@ add_library(job_core
 )
 ```
 
-새 파일을 추가했는데 build graph에 넣지 않은 실수를 즉시 볼 수 있습니다. 대규모 생성 파일에는 다른 선택이 있을 수 있지만, 작은 프로젝트에서 `file(GLOB ...)`이 명료함을 높인다고 가정하지 않습니다.
+이렇게 하면 새 파일을 만들고도 빌드 그래프에 추가하지 않은 실수를 쉽게 확인할 수 있습니다. 생성 파일이 매우 많은 프로젝트에서는 다른 방식을 선택할 수 있지만, 작은 프로젝트에서 `file(GLOB ...)`이 반드시 구성을 더 명확하게 만드는 것은 아닙니다.
 
-## 5. 경고와 표준은 한곳에서 관리합니다
+## 5. 언어 표준과 경고 정책을 한곳에서 관리합니다
 
 ```cmake
 add_library(project_options INTERFACE)
@@ -162,15 +162,15 @@ else()
     )
 endif()
 
-# 공개 헤더가 C++20 타입·문법을 사용하므로 caller에도 표준 요구사항을 전달합니다.
+# 공개 헤더가 C++20 타입·문법을 사용하므로 사용하는 타깃에도 표준 요구사항을 전달합니다.
 target_link_libraries(task_core PUBLIC project_options PRIVATE project_warnings)
 ```
 
-언어 표준처럼 caller가 공개 헤더를 컴파일할 때도 필요한 요구사항과, 현재 저장소 소스에만 적용할 경고 정책을 분리합니다. 소스에 compiler별 pragma를 무분별하게 넣지 않고 빌드 정책은 target 경계에 모읍니다. 이 저장소의 실습은 `CMAKE_CXX_EXTENSIONS=OFF`로 GNU 확장 대신 표준 C++20 모드를 사용합니다.
+공개 헤더를 컴파일하는 타깃에도 필요한 언어 표준과, 현재 저장소의 소스에만 적용할 경고 정책을 분리합니다. 컴파일러별 pragma를 소스 곳곳에 추가하기보다 빌드 정책을 타깃 경계에 모읍니다. 이 저장소의 실습은 `CMAKE_CXX_EXTENSIONS=OFF`를 사용해 GNU 확장이 아닌 표준 C++20 모드로 빌드합니다.
 
-이 저장소의 공식 실습은 `GUIDE_WARNINGS_AS_ERRORS=ON`을 기본으로 두어 reference와 skeleton이 경고 없이 빌드되는지 확인합니다. 새로운 compiler 경고 때문에 이식성 조사가 먼저 필요할 때만 configure에서 `-DGUIDE_WARNINGS_AS_ERRORS=OFF`로 낮추고, 경고 원인과 결정 내용을 기록합니다. 무조건 끄는 것은 해결이 아닙니다.
+공식 실습은 `GUIDE_WARNINGS_AS_ERRORS=ON`을 기본값으로 사용하여 참조 구현과 스켈레톤이 경고 없이 빌드되는지 검사합니다. 새 컴파일러 경고의 이식성 영향을 먼저 조사해야 할 때만 구성 단계에서 `-DGUIDE_WARNINGS_AS_ERRORS=OFF`를 지정하고, 경고의 원인과 판단 근거를 기록합니다. 단순히 옵션을 끄는 것은 해결이 아닙니다.
 
-## 6. configure·build·test를 구분합니다
+## 6. 구성·빌드·테스트를 구분합니다
 
 ```sh
 cmake -S . -B build -DCMAKE_BUILD_TYPE=Debug
@@ -178,24 +178,26 @@ cmake --build build
 ctest --test-dir build --output-on-failure
 ```
 
-각 명령의 책임은 다릅니다.
+각 명령의 역할은 다릅니다.
 
-- configure: CMake 파일과 환경을 읽고 build graph를 생성합니다.
-- build: graph에 따라 compiler와 linker를 실행합니다.
-- test: 빌드된 test executable을 실행합니다.
+- 구성(configure): CMake 파일과 환경을 읽어 빌드 그래프를 생성합니다.
+- 빌드(build): 빌드 그래프에 따라 컴파일러와 링커를 실행합니다.
+- 테스트(test): 빌드된 테스트 실행 파일을 실행합니다.
 
-`CMAKE_BUILD_TYPE`은 Ninja·Unix Makefiles 같은 single-config generator에서 사용합니다. Visual Studio·Xcode 같은 multi-config generator에서는 configure 뒤 `cmake --build build --config Debug`와 `ctest --test-dir build -C Debug`처럼 구성을 선택합니다.
+`CMAKE_BUILD_TYPE`은 Ninja와 Unix Makefiles 같은 단일 구성 생성기에서 사용합니다. Visual Studio와 Xcode 같은 다중 구성 생성기에서는 구성 단계 이후 `cmake --build build --config Debug`와 `ctest --test-dir build -C Debug`처럼 빌드 구성을 선택합니다.
 
-CMake 파일을 고쳤는데 compile 명령만 직접 반복하면 build graph의 문제를 놓칠 수 있습니다.
+CMake 파일을 수정하고도 컴파일 명령만 직접 반복하면 빌드 그래프의 변경 사항을 반영하지 못할 수 있습니다.
 
-## 7. Debug·Release와 preset
+## 7. Debug·Release와 프리셋
 
-Debug와 Release는 단순히 “느림·빠름”의 차이가 아닙니다.
+Debug와 Release는 단순히 실행 속도만 다른 구성이 아닙니다.
 
-- Debug: debugger, assertion과 sanitizer에 적합합니다.
-- Release: 최적화가 적용된 실제 배치 조건을 확인합니다.
+- Debug: 일반적으로 디버그 심볼을 포함하며 디버거, assertion, Sanitizer를 사용한 검증에 적합합니다.
+- Release: 최적화가 적용된 코드에서도 동작과 성능 특성이 유지되는지 확인하는 데 사용합니다.
 
-반복되는 configure 옵션은 `CMakePresets.json`에 기록할 수 있습니다.
+정확한 옵션은 사용하는 툴체인과 프로젝트 설정에 따라 달라집니다.
+
+반복되는 구성 옵션은 `CMakePresets.json`에 기록할 수 있습니다.
 
 ```json
 {
@@ -213,7 +215,7 @@ Debug와 Release는 단순히 “느림·빠름”의 차이가 아닙니다.
 }
 ```
 
-source directory에서 실행은 다음과 같습니다.
+소스 디렉터리에서 다음과 같이 실행합니다.
 
 ```sh
 cd exercises/01-modern-cpp
@@ -222,11 +224,11 @@ cmake --build --preset debug
 ctest --preset debug
 ```
 
-preset은 사람이 기억한 shell history가 아니라 저장소에 기록된 실행 계약입니다.
+프리셋은 개인의 셸 기록에 의존하지 않고 저장소에 재현 가능한 빌드 구성을 남기는 방법입니다.
 
 ## 8. 라이브러리·실행 파일·테스트를 분리합니다
 
-`main.cpp`에 모든 로직을 넣으면 테스트가 process 실행과 문자열 비교에만 의존하게 됩니다. 핵심 로직을 library target으로 분리합니다.
+`main.cpp`에 모든 로직을 넣으면 테스트가 프로세스를 실행하고 문자열 출력을 비교하는 방식에 지나치게 의존하게 됩니다. 핵심 로직은 라이브러리 타깃으로 분리합니다.
 
 ```cmake
 add_library(job_core
@@ -244,62 +246,62 @@ target_link_libraries(job_core_tests PRIVATE job_core)
 add_test(NAME job.core COMMAND job_core_tests)
 ```
 
-이 구조에서 command-line parsing과 process 종료 코드는 얇게 유지하고, 상태·오류·소유권 계약은 library 수준에서 검사할 수 있습니다.
+이 구조에서는 명령행 인자 처리와 프로세스 종료 코드를 얇게 유지하면서 상태, 오류, 소유권 규칙을 라이브러리 수준에서 직접 테스트할 수 있습니다.
 
-## 9. 설치와 package manager는 첫 조건이 아닙니다
+## 9. 설치와 패키지 관리자는 시작 조건이 아닙니다
 
-작은 학습 프로젝트를 시작하기 위해 package manager 전체를 먼저 배울 필요는 없습니다. 표준 라이브러리만으로 core 계약을 만들고, 실제 외부 의존성이 생겼을 때 다음을 결정합니다.
+작은 학습 프로젝트를 시작하기 위해 패키지 관리자 전체를 먼저 배울 필요는 없습니다. 표준 라이브러리만으로 핵심 인터페이스를 구성하고, 실제 외부 의존성이 생겼을 때 다음 항목을 결정합니다.
 
-- 의존성을 source로 포함하는가
-- system package를 사용하는가
-- CMake package config를 사용하는가
-- Conan·vcpkg 같은 package manager를 사용하는가
-- 버전과 lock을 어디에 기록하는가
+- 의존성 소스를 저장소에 포함할 것인가
+- 운영체제 패키지를 사용할 것인가
+- CMake package config를 사용할 것인가
+- Conan이나 vcpkg 같은 패키지 관리자를 사용할 것인가
+- 버전과 잠금 정보를 어디에 기록할 것인가
 
-도구 선택보다 먼저 “어떤 target이 무엇을 필요로 하는가”가 명확해야 합니다.
+도구를 선택하기 전에 어느 타깃이 무엇을 필요로 하는지부터 명확히 해야 합니다.
 
 ## 연결 실습
 
-[강한 타입과 target 기반 CMake](../../exercises/01-modern-cpp/01-strong-types-and-cmake/README.md)를 진행합니다.
+[강한 타입과 타깃 중심 CMake](../../exercises/01-modern-cpp/01-strong-types-and-cmake/README.md)를 진행합니다.
 
-다음 순서로 관찰합니다.
+다음 순서로 구조를 확인합니다.
 
-1. top-level CMake가 exercise 하위 target을 조립합니다.
-2. reference와 skeleton이 같은 공개 헤더 계약을 제공합니다.
-3. 같은 test source가 서로 다른 구현 library에 연결됩니다.
-4. CTest에는 reference test만 등록됩니다.
-5. skeleton test executable은 컴파일되지만 TODO가 남아 있어 실행 시 실패합니다.
+1. 최상위 CMake에서 각 실습의 하위 타깃을 구성합니다.
+2. `reference/`와 `skeleton/`은 같은 공개 헤더 인터페이스를 제공합니다.
+3. 같은 테스트 소스가 서로 다른 구현 라이브러리에 연결됩니다.
+4. CTest에는 참조 구현 테스트만 등록됩니다.
+5. 스켈레톤 테스트 실행 파일은 컴파일되지만 TODO가 남아 있으므로 실행하면 실패합니다.
 
-## 자주 발생하는 실패
+## 자주 발생하는 문제
 
-### 헤더에서 `using namespace`
+### 헤더에서 `using namespace` 사용
 
-모든 caller의 이름 탐색 결과를 바꿉니다. 공개 헤더에서는 사용하지 않습니다.
+공개 헤더의 `using namespace`는 해당 헤더를 포함하는 모든 코드의 이름 탐색에 영향을 줍니다. 공개 헤더에서는 사용하지 않습니다.
 
-### include 경로를 소스에 상대 경로로 박음
+### include 경로를 소스에 상대 경로로 직접 지정
 
 ```cpp
 #include "../../../include/task.hpp"
 ```
 
-build target이 include 경계를 제공하도록 수정합니다.
+타깃이 올바른 include 경로를 제공하도록 수정합니다.
 
-### 모든 target에 전역 flag 사용
+### 모든 타깃에 전역 옵션 적용
 
-외부 library나 다른 표준 target까지 같은 flag를 강제할 수 있습니다. target별 사용 요구사항으로 옮깁니다.
+외부 라이브러리나 다른 언어 표준을 사용하는 타깃에도 같은 옵션을 강제할 수 있습니다. 타깃별 사용 요구사항으로 옮깁니다.
 
-### source 파일을 추가했지만 target에 연결하지 않음
+### 소스 파일을 만들었지만 타깃에 추가하지 않음
 
-compile은 일부 성공해도 link에서 정의를 찾지 못합니다. source 목록과 link graph를 확인합니다.
+일부 번역 단위는 컴파일되더라도 링크 단계에서 정의를 찾지 못할 수 있습니다. 소스 목록과 링크 관계를 확인합니다.
 
 ## 완료 기준
 
-- compile·link·test 실패를 구분합니다.
-- library, executable과 test target을 직접 만듭니다.
-- `PUBLIC`, `PRIVATE`, `INTERFACE`를 사용 이유와 함께 선택합니다.
-- C++20 요구사항과 경고를 target에 연결합니다.
-- Debug·Release와 sanitizer build를 서로 다른 디렉터리에서 재현합니다.
+- 컴파일·링크·테스트 실패를 구분합니다.
+- 라이브러리, 실행 파일, 테스트 타깃을 직접 구성합니다.
+- `PUBLIC`, `PRIVATE`, `INTERFACE`를 각각의 사용 이유와 함께 선택합니다.
+- C++20 요구사항과 경고 정책을 적절한 타깃에 연결합니다.
+- Debug·Release·Sanitizer 빌드를 서로 다른 빌드 디렉터리에서 재현합니다.
 
 ## 다음 문서
 
-[값·수명·복사·이동](02-values-lifetimes-and-move.md)에서 target 안의 객체가 언제 생성되고 파괴되며, 값 전달이 복사 또는 이동으로 이어지는지 다룹니다.
+[값·수명·복사·이동](02-values-lifetimes-and-move.md)에서 타깃 안의 객체가 언제 생성되고 파괴되는지, 값을 전달할 때 복사와 이동이 어떻게 선택되는지 다룹니다.
