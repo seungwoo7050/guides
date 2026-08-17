@@ -1,168 +1,259 @@
 # C와 POSIX 프로그래밍 가이드
 
-이 저장소는 프로그래밍을 처음 시작하는 단계부터 여러 파일로 구성된 C 프로그램, 작은 라이브러리, POSIX 프로세스 프로그램과 동시성 프로그램을 독립적으로 만들 수 있는 단계까지 안내합니다.
-
-학습의 목표는 문법을 한 번에 암기하는 것이 아닙니다. 각 단계에서 다음 반복을 스스로 수행하는 능력을 만드는 것입니다.
-
-```text
-문제를 작은 계약으로 정한다
-→ 코드를 작성한다
-→ 컴파일하고 실행한다
-→ 정상·경계·실패 사례를 검사한다
-→ 오류 원인을 분류하고 수정한다
-```
-
-## 저장소 준비와 전체 검증
-
-저장소 루트에서 다음 두 명령을 순서대로 실행합니다.
-
-```sh
-./prepare.sh
-./verify.sh
-```
-
-`prepare.sh`는 검증 전에 필요한 상태만 준비합니다.
-
-- 이전 구조의 파일과 생성 로그를 제거합니다.
-- 남아 있는 빌드 산출물을 정리합니다.
-- 필수 도구와 Python 버전을 확인합니다.
-- C99·POSIX, AddressSanitizer, ThreadSanitizer와 Readline 사용 가능 여부를 실제 컴파일·실행으로 확인합니다.
-- 확인한 선택 기능과 빌드 플래그를 `.guide-prepare.env`에 기록합니다.
-
-운영체제 패키지를 관리자 권한으로 임의 설치하지는 않습니다. 필수 도구가 없으면 필요한 항목을 정확히 출력하고 실패합니다. Readline과 sanitizer처럼 플랫폼에 따라 제공되지 않을 수 있는 검사는 선택 기능으로 기록합니다.
-
-`verify.sh`는 준비가 끝난 저장소 전체를 임시 작업 디렉터리에서 검사합니다.
-
-- 계획한 파일 구조와 구형 경로 부재
-- Markdown 문서와 내부 링크
-- 모든 예제와 기준 구현
-- 모든 skeleton의 컴파일 성공과 동작 검사 실패
-- 지원 환경의 sanitizer와 Readline 빌드
-- 깨끗한 상태에서의 반복 빌드
-- 검사 뒤 빌드 산출물 정리
-
-전체 로그는 성공·실패와 관계없이 저장소 밖의 임시 디렉터리에 남고 마지막에 `VERIFY LOG` 경로가 출력됩니다. 다른 위치가 필요하면 저장소 밖의 절대 경로를 지정합니다.
-
-```sh
-VERIFY_LOG=/tmp/guide-c.log ./verify.sh
-```
-
-선택 기능까지 반드시 요구하려면 다음처럼 실행합니다.
-
-```sh
-VERIFY_REQUIRE_OPTIONAL=1 ./verify.sh
-```
-
-## 시작 위치
-
-전체 학습 경로와 선택 경로는 [`docs/00-roadmap.md`](docs/00-roadmap.md)에서 확인합니다.
-
-- 프로그래밍이 처음이면 `docs/01-foundations/`부터 시작합니다.
-- 다른 언어로 작은 프로그램을 작성해 본 경험이 있으면 `docs/02-c-language/`부터 시작할 수 있습니다.
-- 파일, 파이프, 프로세스와 시그널이 필요하면 `docs/03-unix-programming/`을 읽습니다.
-- 공유 상태와 스레드를 다루려면 `docs/04-concurrency/`로 진행합니다.
-- 디버거, Readline, Unix 텍스트 검사법은 `docs/90-appendix/`에서 필요할 때 찾아봅니다.
-
-문서 전체를 먼저 읽은 뒤 실습을 몰아서 하지 않습니다. 아래 표의 한 행마다 관련 문서를 읽고, 이름이 있는 관찰 예제만 선택적으로 실행한 뒤, 해당 workspace를 구현·검증합니다. `number-report`는 첫 세 문서에서 수동 실행으로 조금씩 확장하고 네 번째 문서에서 전체 자동 검사를 통과시킵니다.
-
-## 학습 순서
-
-| 순서 | 문서 | 관찰 예제 | 직접 수행 | 수정 위치 | 검증 | 완료 뒤 비교·다음 |
-|---:|---|---|---|---|---|---|
-| 1 | [편집·컴파일·실행](docs/01-foundations/01-edit-compile-run.md) | — | [number-report](exercises/01-foundations/01-number-report/README.md) 시작 | `workspace/number_report.c` | 직접 컴파일하고 usage·종료 상태 확인 | 값·분기·반복으로 확장 |
-| 2 | [값·분기·반복](docs/01-foundations/02-values-branches-loops.md) | — | number-report 누적·경계 상태 추가 | 같은 workspace | 정상·잘못된 입력을 직접 실행 | 함수로 책임 분리 |
-| 3 | [함수·배열·텍스트](docs/01-foundations/03-functions-arrays-text.md) | — | number-report 함수 계약 분리 | 같은 workspace | 함수별 성공·실패 상태 직접 확인 | 입력 오류와 전체 검사 |
-| 4 | [입력 오류와 디버깅](docs/01-foundations/04-input-errors-debugging.md) | — | number-report 완성 | 같은 workspace | `make exercise-test && make sanitize` | `reference/` 비교 후 Part 2 |
-| 5 | [C 프로그램 모델](docs/02-c-language/01-c-program-model.md) | — | [textkit](exercises/02-c-language/01-textkit/README.md) | `workspace/src/textkit.c` | `make exercise-test && make sanitize` | `reference/` 비교 후 메모리 모델 |
-| 6 | [메모리·포인터·문자열](docs/02-c-language/02-memory-pointers-strings.md) | — | [owned-string](exercises/02-c-language/02-owned-string/README.md) | `workspace/src/owned_string.c` | `make exercise-test && make sanitize` | `reference/` 비교 후 API 설계 |
-| 7 | [자료구조와 API 계약](docs/02-c-language/03-data-structures-api-design.md) | — | [int-vector](exercises/02-c-language/03-int-vector/README.md) | `workspace/src/int_vector.c` | `make exercise-test && make sanitize` | `reference/` 비교 후 빌드 관찰 |
-| 8 | [빌드·링크·테스트](docs/02-c-language/04-build-link-test.md) | — | textkit의 제공된 build graph 재관찰 | textkit workspace와 shared `Makefile` | `make exercise-build`, `ar t build/exercise/libtextkit.a` | 가변 인자 API로 진행 |
-| 9 | [가변 인자와 포맷 API](docs/02-c-language/05-variadic-format-api.md) | — | [diagnostic-formatter](exercises/02-c-language/04-diagnostic-formatter/README.md) | `workspace/src/diagnostic_formatter.c` | `make exercise-test && make sanitize` | `reference/` 비교 후 Part 3 |
-| 10 | [POSIX I/O와 스트림 상태](docs/03-unix-programming/01-posix-io-streams.md) | — | [record-stream](exercises/03-unix-programming/01-record-stream/README.md) | `workspace/src/record_stream.c` | `make exercise-test && make sanitize` | `reference/` 비교 후 프로세스 |
-| 11 | [프로세스·FD·파이프](docs/03-unix-programming/02-process-fd-pipe.md) | [fd-redirection](examples/fd-redirection/README.md) | [command-pipeline](exercises/03-unix-programming/02-command-pipeline/README.md) | `workspace/src/command_pipeline.c` | `make exercise-test && make sanitize` | `reference/` 비교 후 시그널 |
-| 12 | [시그널과 사건 전달](docs/03-unix-programming/03-signals-events.md) | — | [signal-loop](exercises/03-unix-programming/03-signal-loop/README.md) | `workspace/signal_loop.c` | `make exercise-test && make sanitize` | `reference/` 비교 후 셸 경계 |
-| 13 | [셸 파서와 실행기](docs/03-unix-programming/04-shell-parser-executor.md) | 완료 뒤 [process-group-forwarding](examples/process-group-forwarding/README.md) | [command-runner](exercises/03-unix-programming/04-command-runner/README.md) | `workspace/command_runner.c` | `make exercise-test && make sanitize` | `reference/` 비교, 예제 관찰 후 Part 4 |
-| 14 | [스레드·동기화·시간](docs/04-concurrency/01-threads-time.md) | — | [account-simulator](exercises/04-concurrency/01-account-simulator/README.md) | `workspace/src/account.c` | `make exercise-test && make sanitize`; 지원 시 `make thread-sanitize` | `reference/` 비교 후 필수 경로 종료 |
-
-부록은 막힌 문제나 선택 기능이 있을 때 사용합니다.
-
-| 순서 | 문서 | 관찰 예제 | 직접 수행 | 수정 위치 | 검증 | 완료 뒤 비교·다음 |
-|---:|---|---|---|---|---|---|
-| 선택 A | [디버거 참고](docs/90-appendix/01-debugger-reference.md) | — | 현재 실패를 debugger로 재현 | 현재 workspace | 문서의 관찰 기록 | 필수 경로로 복귀 |
-| 선택 B | [Readline 통합](docs/90-appendix/02-readline-integration.md) | [readline-repl](examples/readline-repl/README.md) | plain/Readline 입력 경계 비교 | 예제는 읽기 전용 | `make -C examples/readline-repl readline-check` | 필수 경로로 복귀 |
-| 선택 C | [Unix 텍스트 검사](docs/90-appendix/03-unix-text-testing.md) | [text-checks](examples/text-checks/README.md) | 검사 도구별 evidence 비교 | 예제는 읽기 전용 | `make -C examples/text-checks check` | 필수 경로로 복귀 |
-
-## 예제와 연습문제
-
-`examples/`와 `exercises/`는 역할이 다릅니다.
-
-- `examples/`는 한 개념의 완성된 동작을 작게 관찰하는 프로그램입니다.
-- `exercises/`는 제공된 공개 계약과 테스트를 바탕으로 학습자가 직접 구현하는 과정입니다.
-
-최종적으로 남긴 예제는 exercise 답안이 아니라 다음 네 개의 좁은 관찰 단위입니다.
-
-- `fd-redirection`: 한 명령의 stdout FD 소유권과 truncate/append
-- `process-group-forwarding`: 고정 argv 실행과 process-group signal 전달
-- `readline-repl`: plain 입력과 선택적 Readline adapter
-- `text-checks`: Unix 텍스트 도구로 evidence와 known-bad를 판별하는 검사
-
-각 연습문제는 다음 구성을 기본으로 합니다.
+C 언어의 기초부터 메모리와 API 설계, build와 test, POSIX I/O·process·signal, `pthread` 기반 concurrency까지 다루는 실전형 가이드입니다.  
+이 repository는 하나의 거대한 tutorial이나 단계별 starter project를 제공하지 않습니다. 대신 다음 세 종류의 자료를 분리합니다.
 
 ```text
-README.md       문제와 완료 조건
-include/        바꾸지 않는 공개 계약
-skeleton/       변경하지 않는 초기 실패 기준
-workspace/      학습자가 구현할 코드(생성 뒤 Git 비추적)
-reference/      검사와 비교를 위한 기준 구현
-tests/          정상·경계·실패 계약 검사
-Makefile        일관된 실행 명령
+docs/
+    개념, 원리, 설계 기준과 기술 설명
+
+examples/
+    특정 동작이나 시스템 경계를 좁게 보여 주는 완성 예제
+
+exercises/
+    독립적으로 build·run·test할 수 있는 완성된 standalone project
 ```
 
-기준 구현 전체를 검사합니다.
+학습 순서는 문서를 처음부터 끝까지 암기하는 방식보다, 필요한 개념을 읽고 실제 구현을 확인하고 실행하면서 검증하는 흐름을 권장합니다.
 
-```sh
-make exercises-check
+```text
+개념 이해
+→ 작은 example로 동작 확인
+→ standalone project의 구현과 contract 확인
+→ 직접 build·test
+→ 필요한 부분을 다시 docs에서 보강
 ```
 
-저장소 루트에서 연습문제별 workspace를 한 번만 만듭니다. 기존 workspace나 symlink가 있으면 덮어쓰지 않고 실패합니다.
+## Repository structure
 
-```sh
-scripts/new-workspace.sh exercises/02-c-language/02-owned-string
+최종 repository는 다음 네 항목만을 top-level entry로 사용합니다.
+
+```text
+.
+├── README.md
+├── docs/
+├── examples/
+└── exercises/
 ```
 
-생성된 workspace를 구현한 뒤 해당 연습문제 디렉터리에서 검사합니다. 위 ordered mapping의 `make exercise-*`와 `make sanitize`도 같은 위치에서 실행합니다.
+### `docs/`
 
-```sh
-make -C exercises/02-c-language/02-owned-string exercise-test
+C와 POSIX programming의 개념적 기반을 설명합니다.
+
+주요 범위는 다음과 같습니다.
+
+```text
+01-foundations/
+    편집·컴파일·실행
+    값·분기·반복
+    함수·배열·텍스트
+    입력 검증·오류 처리·디버깅
+
+02-c-language/
+    C program model
+    memory·pointer·string
+    data structure와 API design
+    build·link·test
+    variadic formatting API
+
+03-unix-programming/
+    POSIX I/O와 stream state
+    process·file descriptor·pipe
+    signal과 event 전달
+    shell parser와 executor
+
+04-concurrency/
+    thread·synchronization·time
+
+90-appendix/
+    debugger
+    Readline integration
+    Unix text testing
 ```
 
-`make exercise-test`와 `make sanitize`는 기본적으로 workspace를 검사합니다. 초기 skeleton은 공식 품질 검사에서 경고 없이 컴파일되어야 하지만 동작 검사는 실패해야 합니다. 구현을 완료한 뒤에만 `reference/README.md`의 권장 구현 순서와 source를 비교합니다.
+전체 경로와 각 문서의 관계는 [`docs/00-roadmap.md`](docs/00-roadmap.md)에서 확인할 수 있습니다.
 
-workspace는 공식 `prepare.sh`, `make clean`, `verify.sh`가 삭제하거나 기준 source로 검사하지 않습니다. 따라서 학습 완료 상태와 canonical skeleton의 초기 실패 계약이 충돌하지 않습니다.
+### `examples/`
 
-## 부분 검사
+한 가지 기술적 동작이나 시스템 경계를 작은 완성 프로그램으로 보여 줍니다.
 
-전체 검증보다 좁은 범위를 반복할 때는 Make target을 직접 사용할 수 있습니다.
+현재 예제는 다음과 같습니다.
+
+| Example | Focus |
+| --- | --- |
+| [`fd-redirection`](examples/fd-redirection/)                     | stdout file descriptor ownership, truncate/append redirection |
+| [`process-group-forwarding`](examples/process-group-forwarding/) | child process group과 signal forwarding                       |
+| [`readline-repl`](examples/readline-repl/)                       | plain input loop와 optional Readline adapter                  |
+| [`text-checks`](examples/text-checks/)                           | Unix text tools를 이용한 output verification                  |
+
+`examples/`는 exercise의 정답이나 intermediate stage가 아닙니다. 특정 mechanism을 독립적으로 관찰하거나 검증하기 위한 작은 runnable artifact입니다.
+
+### `exercises/`
+
+완성된 standalone implementation project collection입니다.
+
+각 project는 learner skeleton이나 reference answer 구조를 사용하지 않으며, 자신의 디렉터리만 복사해 별도 repository처럼 사용할 수 있도록 구성되어 있습니다.
+
+현재 project는 다음과 같습니다.
+
+| Project | Focus |
+| --- | --- |
+| [`number-report`](exercises/number-report/)               | strict integer parsing, statistics, overflow handling |
+| [`textkit`](exercises/textkit/)                           | byte-string traversal과 word counting                 |
+| [`owned-string`](exercises/owned-string/)                 | dynamic string ownership과 alias-safe append          |
+| [`int-vector`](exercises/int-vector/)                     | dynamic container growth와 failure-state preservation |
+| [`diagnostic-formatter`](exercises/diagnostic-formatter/) | bounded variadic formatting                           |
+| [`record-stream`](exercises/record-stream/)               | stateful record framing over POSIX file descriptors   |
+| [`command-pipeline`](exercises/command-pipeline/)         | `pipe`·`fork`·`dup2`·`execvp` lifecycle               |
+| [`signal-loop`](exercises/signal-loop/)                   | self-pipe 기반 signal event 전달                      |
+| [`command-runner`](exercises/command-runner/)             | quoting·parsing·pipeline execution                    |
+| [`account-simulator`](exercises/account-simulator/)       | mutex ordering과 concurrent state consistency         |
+
+Collection 전체 설명은 [`exercises/README.md`](exercises/README.md)에서 확인할 수 있습니다.
+
+각 project README에는 다음 내용이 포함됩니다.
+
+* project overview와 purpose
+* public contract
+* architecture와 ownership
+* build와 usage
+* project-local tests
+* 주요 design decision
+* scope와 limitation
+* source annotation과 일치하는 global **Implementation Order**
+
+## Recommended path
+
+처음부터 학습한다면 다음 순서를 권장합니다.
+
+| Order | Documentation | Related artifact |
+| ---: | --- | --- |
+|  1 | [`01-edit-compile-run.md`](docs/01-foundations/01-edit-compile-run.md)                    | [`number-report`](exercises/number-report/)                                                                     |
+|  2 | [`02-values-branches-loops.md`](docs/01-foundations/02-values-branches-loops.md)          | [`number-report`](exercises/number-report/)                                                                     |
+|  3 | [`03-functions-arrays-text.md`](docs/01-foundations/03-functions-arrays-text.md)          | [`textkit`](exercises/textkit/)                                                                                 |
+|  4 | [`04-input-errors-debugging.md`](docs/01-foundations/04-input-errors-debugging.md)        | [`number-report`](exercises/number-report/)                                                                     |
+|  5 | [`01-c-program-model.md`](docs/02-c-language/01-c-program-model.md)                       | [`textkit`](exercises/textkit/)                                                                                 |
+|  6 | [`02-memory-pointers-strings.md`](docs/02-c-language/02-memory-pointers-strings.md)       | [`owned-string`](exercises/owned-string/)                                                                       |
+|  7 | [`03-data-structures-api-design.md`](docs/02-c-language/03-data-structures-api-design.md) | [`int-vector`](exercises/int-vector/)                                                                           |
+|  8 | [`04-build-link-test.md`](docs/02-c-language/04-build-link-test.md)                       | project-local `Makefile`과 tests                                                                                |
+|  9 | [`05-variadic-format-api.md`](docs/02-c-language/05-variadic-format-api.md)               | [`diagnostic-formatter`](exercises/diagnostic-formatter/)                                                       |
+| 10 | [`01-posix-io-streams.md`](docs/03-unix-programming/01-posix-io-streams.md)               | [`record-stream`](exercises/record-stream/)                                                                     |
+| 11 | [`02-process-fd-pipe.md`](docs/03-unix-programming/02-process-fd-pipe.md)                 | [`fd-redirection`](examples/fd-redirection/), [`command-pipeline`](exercises/command-pipeline/)                 |
+| 12 | [`03-signals-events.md`](docs/03-unix-programming/03-signals-events.md)                   | [`signal-loop`](exercises/signal-loop/)                                                                         |
+| 13 | [`04-shell-parser-executor.md`](docs/03-unix-programming/04-shell-parser-executor.md)     | [`process-group-forwarding`](examples/process-group-forwarding/), [`command-runner`](exercises/command-runner/) |
+| 14 | [`01-threads-time.md`](docs/04-concurrency/01-threads-time.md)                            | [`account-simulator`](exercises/account-simulator/)                                                             |
+
+부록은 순차적으로 읽기보다 필요할 때 참조합니다.
+
+| Appendix | Related example |
+| --- | --- |
+| [`01-debugger-reference.md`](docs/90-appendix/01-debugger-reference.md)     | 현재 debugging 대상 project                |
+| [`02-readline-integration.md`](docs/90-appendix/02-readline-integration.md) | [`readline-repl`](examples/readline-repl/) |
+| [`03-unix-text-testing.md`](docs/90-appendix/03-unix-text-testing.md)       | [`text-checks`](examples/text-checks/)     |
+
+이미 C 경험이 있다면 foundations를 반드시 순서대로 진행할 필요는 없습니다. 필요한 topic의 문서와 artifact를 직접 선택해도 됩니다.
+
+## Building and testing
+
+Repository 전체를 하나의 root build system으로 묶지 않습니다.
+
+`examples/`와 `exercises/`의 각 artifact가 자신의 build와 verification boundary를 소유합니다.
+
+예를 들어:
 
 ```sh
-make check
-make quality-check
+cd exercises/owned-string
+
+make
+make test
 make sanitize
-make thread-sanitize
-make readline-check
-make clean
 ```
 
-- `make check`는 구조, 문서, 예제와 모든 기준 구현을 검사합니다.
-- `make quality-check`는 기준 구현 통과, skeleton 빌드 성공과 초기 동작 실패를 확인합니다.
-- sanitizer와 Readline target은 해당 기능을 제공하는 환경에서 사용합니다.
-- 저장소를 전달하거나 커밋하기 전의 정본 검사는 항상 `./prepare.sh`와 `./verify.sh` 조합입니다.
+또는:
 
-## 기준과 범위
+```sh
+cd examples/fd-redirection
 
-- 언어 기준: C99
-- Unix API 기준: POSIX.1-2008
-- 기본 도구: POSIX shell, `make`, C 컴파일러, Python 3.10 이상
-- 주요 대상: Linux와 macOS의 명령행 환경
+make
+make test
+```
 
-이 가이드는 C 표준 라이브러리와 POSIX를 이용한 단일 호스트 프로그램을 다룹니다. GUI, 임베디드 하드웨어, 커널 개발, 네트워크 프로토콜 구현과 분산 시스템은 별도 과정의 범위입니다.
+정확한 command와 optional verification은 각 디렉터리의 `README.md`와 `Makefile`을 기준으로 합니다.
+
+Standalone project는 parent repository에 의존하지 않아야 합니다. 예를 들어 다음처럼 project 하나만 복사해도 build와 test가 가능해야 합니다.
+
+```sh
+cp -R exercises/command-pipeline /tmp/command-pipeline
+cd /tmp/command-pipeline
+
+make
+make test
+```
+
+## Implementation annotations
+
+`exercises/`의 completed source에는 project-wide construction sequence를 나타내는 `[Implementation N]` annotation이 있습니다.
+
+이 번호는 source file 순서나 function 순서를 뜻하지 않습니다. Architecture, state dependency, ownership, failure handling과 integration 관계를 기준으로 재구성한 구현 순서입니다.
+
+예를 들면 다음과 같은 흐름을 표현합니다.
+
+```text
+data model
+→ invariant and ownership
+→ core operation
+→ failure boundary
+→ resource lifecycle
+→ integration
+```
+
+각 project의 `README.md`에 있는 **Implementation Order** table과 source annotation은 동일한 global numbering을 사용합니다.
+
+Project끼리는 서로 독립된 artifact이므로 collection 전체를 관통하는 Implementation Order는 두지 않습니다.
+
+## Design principles
+
+이 repository의 code와 project 구조는 다음 원칙을 우선합니다.
+
+### Explicit contracts
+
+함수와 program의 success, failure, output, ownership과 lifetime을 명시적으로 구분합니다.
+
+### Failure before mutation
+
+Parsing, allocation, size calculation이나 system call처럼 실패 가능한 작업은 가능한 한 public state를 변경하기 전에 검증합니다.
+
+### Resource ownership
+
+Heap memory, file descriptor, process, mutex와 같은 resource의 owner와 release point를 명확하게 유지합니다.
+
+### Observable verification
+
+정상 case뿐 아니라 boundary condition, invalid input, overflow, allocation failure, descriptor cleanup, signal termination과 concurrent invariant를 tests로 확인합니다.
+
+### Standalone boundaries
+
+한 project가 다른 exercise나 repository-level helper에 기대지 않도록 project-local source, build configuration과 tests를 유지합니다.
+
+## Environment and scope
+
+주요 기준은 다음과 같습니다.
+
+* Language: C99
+* Unix API: POSIX.1-2008
+* Primary environment: Linux와 macOS의 command-line environment
+* Common tools: POSIX shell, `make`, C compiler
+* 일부 verification: Python 3
+* Optional features: AddressSanitizer, UndefinedBehaviorSanitizer, ThreadSanitizer, Readline
+
+Platform이나 compiler가 특정 sanitizer 또는 Readline을 지원하지 않을 수 있습니다. Optional 기능의 사용 가능 여부는 각 artifact의 README와 build target을 확인합니다.
+
+이 가이드는 C standard library와 POSIX를 이용한 single-host user-space programming을 중심으로 합니다.
+
+다음 영역은 주요 범위가 아닙니다.
+
+* GUI application
+* embedded hardware
+* kernel development
+* network protocol implementation
+* distributed systems
