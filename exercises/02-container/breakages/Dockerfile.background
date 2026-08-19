@@ -1,7 +1,0 @@
-# syntax=docker/dockerfile:1
-FROM python:3.12-slim-bookworm
-ENV APP_HOST=0.0.0.0 APP_PORT=8080 PYTHONUNBUFFERED=1
-WORKDIR /app
-COPY reference/app/server.py /app/server.py
-COPY breakages/start-background.sh /usr/local/bin/start-background.sh
-ENTRYPOINT ["/usr/local/bin/start-background.sh"]

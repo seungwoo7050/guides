@@ -1,6 +1,6 @@
-# 웹 인프라 가이드 학습 지도
+# 웹 인프라 가이드 학습 로드맵
 
-이 가이드는 웹 서버 한 개를 실행하는 법에서 시작해, **공개 도메인으로 접근할 수 있는 단일 Linux 호스트 서비스를 배포하고 운영·복구하는 법**까지 연결합니다. 도구 명령을 많이 외우는 것이 목표가 아닙니다. 요청, 프로세스, 컨테이너, 네트워크, 데이터, 배포 산출물과 운영 증거의 경계를 구분하고, 문제가 생겼을 때 어느 계약이 깨졌는지 확인할 수 있어야 합니다.
+이 가이드는 웹 서버 하나를 실행하는 기초부터 시작해, **공개 도메인으로 접근할 수 있는 단일 Linux 호스트 서비스를 배포·운영·복구하는 방법**까지 다룹니다. 목표는 도구별 명령을 많이 외우는 것이 아닙니다. 요청, 프로세스, 컨테이너, 네트워크, 데이터, 배포 산출물, 운영 증거 사이의 경계를 구분하고 문제가 생겼을 때 어느 계약이 깨졌는지 확인할 수 있어야 합니다.
 
 최종적으로 다음 작업을 직접 수행할 수 있어야 합니다.
 
@@ -9,10 +9,10 @@
 → 검증된 컨테이너 이미지 배포
 → 공개 DNS와 TLS 연결
 → 상태·로그·지표 확인
-→ 새 버전 배포와 실패 시 rollback
+→ 새 버전 배포와 실패 시 롤백
 → 데이터 백업과 별도 위치 복원
-→ 장애 runbook 실행
-→ 기존 호스트를 버리고 새 호스트에 서비스 재구축
+→ 장애 런북 실행
+→ 기존 호스트를 폐기하고 새 호스트에 서비스 재구축
 ```
 
 ## 1. 대상 독자
@@ -21,29 +21,29 @@
 
 - 터미널에서 디렉터리를 이동하고 파일을 편집할 수 있습니다.
 - 셸 명령의 종료 코드가 성공과 실패를 전달한다는 사실을 압니다.
-- 웹 애플리케이션을 직접 만들지 않아도 되지만, HTTP 요청과 응답이 있다는 사실은 알고 있습니다.
+- 웹 애플리케이션을 직접 만들지 않아도 되지만 HTTP 요청과 응답의 존재는 알고 있습니다.
 - 개인 실습 환경에서는 Docker를 설치하고 실행할 권한이 있습니다.
 
-Docker, Compose, Nginx, TLS, 데이터베이스 운영 경험은 요구하지 않습니다. 01장부터 순서대로 읽으면 필요한 개념을 구축합니다.
+Docker, Compose, Nginx, TLS, 데이터베이스 운영 경험은 필요하지 않습니다. 01장부터 순서대로 읽으면 필요한 개념을 단계적으로 익힐 수 있습니다.
 
-공개 운영 실습인 08장 이후에는 추가로 다음이 필요합니다.
+공개 운영을 다루는 08장 이후에는 추가로 다음이 필요합니다.
 
 - 테스트용 도메인 또는 DNS를 변경할 수 있는 하위 도메인
 - 폐기해도 되는 Linux 가상 머신이나 VPS
 - 호스트의 관리자 권한
 - 외부에서 80·443 포트에 접근할 수 있는 환경
 
-실제 서비스나 중요한 데이터가 있는 서버에서 처음 연습하지 않습니다.
+처음부터 실제 서비스나 중요한 데이터가 있는 서버에서 연습하지 않습니다.
 
 ## 2. 이 가이드의 운영 기준선
 
-이 가이드가 완성하는 기준선은 다음과 같습니다.
+이 가이드가 목표로 하는 운영 기준선은 다음과 같습니다.
 
-> 하나의 Linux 호스트에서 Docker Engine과 Compose를 사용해 공개 웹 서비스를 운영한다. 이미지는 CI에서 빌드한 변경 불가능한 산출물로 배포하고, 공개 TLS, 제한된 비밀값, 상태 확인, 로그·지표·경보, 외부 백업, rollback과 호스트 재구축 절차를 갖춘다.
+> 하나의 Linux 호스트에서 Docker Engine과 Compose를 사용해 공개 웹 서비스를 운영한다. 이미지는 CI에서 빌드한 불변 산출물로 배포하고, 공개 TLS, 제한된 비밀값, 상태 확인, 로그·지표·경보, 외부 백업, 롤백과 호스트 재구축 절차를 갖춘다.
 
-이 기준선은 작은 개인 서비스, 학습 프로젝트와 초기 MVP에 적합합니다. 단일 호스트이므로 호스트 전체가 고장 나면 서비스가 중단됩니다. 이 한계를 숨기지 않고, 대신 **복구 가능성**을 검증합니다.
+이 기준선은 작은 개인 서비스, 학습 프로젝트, 초기 MVP에 적합합니다. 단일 호스트 구조에서는 호스트 전체가 고장 나면 서비스가 중단됩니다. 이 한계를 감추지 않고 **복구 가능성**을 실제로 검증합니다.
 
-다음은 본 과정의 기본 범위가 아닙니다.
+다음은 이 가이드의 기본 범위가 아닙니다.
 
 - 여러 호스트에 걸친 고가용성
 - Kubernetes 운영
@@ -53,7 +53,7 @@ Docker, Compose, Nginx, TLS, 데이터베이스 운영 경험은 요구하지 �
 - 조직 전체의 보안·감사 체계
 - 24시간 교대 운영 조직 설계
 
-이런 요구가 생기면 단일 호스트 기준선을 먼저 완성한 뒤 별도의 분산·플랫폼 과정으로 확장합니다.
+이런 요구가 생기면 단일 호스트 기준선을 먼저 완성한 뒤 별도의 분산 시스템·플랫폼 운영 과정으로 확장합니다.
 
 ## 3. 읽는 순서
 
@@ -63,13 +63,13 @@ Docker, Compose, Nginx, TLS, 데이터베이스 운영 경험은 요구하지 �
 |---|---|---|
 | [01 웹 요청과 서버](01-web-request-and-server.md) | 연결 실패와 HTTP 오류는 어떻게 다른가? | [`01-request-and-process`](../exercises/01-request-and-process/) |
 | [02 이미지와 컨테이너](02-docker-image-and-container.md) | 이미지, 컨테이너와 PID 1의 수명은 어떻게 연결되는가? | [`02-container`](../exercises/02-container/) |
-| [03 Compose·네트워크·저장소](03-compose-network-and-storage.md) | 서비스 이름, 게시 포트와 volume은 어떤 경계를 만드는가? | [`03-compose`](../exercises/03-compose/) |
-| [04 Nginx·TLS·PHP-FPM](04-nginx-tls-and-php-fpm.md) | HTTP gateway와 FastCGI runtime은 어떻게 협력하는가? | [`04-gateway-runtime`](../exercises/04-gateway-runtime/) |
+| [03 Compose·네트워크·저장소](03-compose-network-and-storage.md) | 서비스 이름, 게시 포트와 볼륨은 어떤 경계를 만드는가? | [`03-compose`](../exercises/03-compose/) |
+| [04 Nginx·TLS·PHP-FPM](04-nginx-tls-and-php-fpm.md) | HTTP 게이트웨이와 FastCGI 런타임은 어떻게 협력하는가? | [`04-gateway-runtime`](../exercises/04-gateway-runtime/) |
 | [05 데이터베이스 생명주기](05-database-lifecycle.md) | 빈 저장소 초기화와 기존 데이터 재사용을 어떻게 구분하는가? | [`05-database`](../exercises/05-database/) |
 | [06 멱등 애플리케이션 초기화](06-idempotent-app-bootstrap.md) | 반복 시작과 부분 실패 뒤에도 상태를 수렴시킬 수 있는가? | [`06-app-bootstrap`](../exercises/06-app-bootstrap/) |
 | [07 운영·진단·복구](07-operations-debugging-and-recovery.md) | 증상에서 최초 실패 계층을 어떻게 좁히는가? | [`07-troubleshooting`](../exercises/07-troubleshooting/) |
 
-01–07장을 마치면 로컬 Compose 스택을 구성하고, 정상 상태와 설정 오류를 구분하며, 데이터가 남는 위치를 설명할 수 있어야 합니다.
+01–07장을 마치면 로컬 Compose 스택을 구성하고, 정상 상태와 설정 오류를 구분하며, 데이터가 어느 위치에 남는지 설명할 수 있어야 합니다.
 
 ### Part II. 공개 운영 기준선
 
@@ -77,25 +77,25 @@ Docker, Compose, Nginx, TLS, 데이터베이스 운영 경험은 요구하지 �
 |---|---|---|
 | [08 운영 계약과 위협 모델](08-production-contract-and-threat-model.md) | 무엇을 어느 수준까지 지키고 복구해야 하는가? | [`08-production-contract`](../exercises/08-production-contract/) |
 | [09 Linux 호스트 준비와 강화](09-linux-host-provisioning-and-hardening.md) | 공개 호스트의 신뢰 경계와 관리 경로를 어떻게 제한하는가? | [`09-host-hardening`](../exercises/09-host-hardening/) |
-| [10 DNS·ACME·공개 TLS](10-dns-acme-and-public-tls.md) | 사용자가 도메인의 올바른 서버와 안전하게 연결했음을 어떻게 확인하는가? | [`10-public-tls`](../exercises/10-public-tls/) |
-| [11 이미지·registry·release 산출물](11-image-registry-and-release-artifacts.md) | 소스가 아니라 정확히 어떤 산출물을 배포했는지 증명할 수 있는가? | [`11-release-artifact`](../exercises/11-release-artifact/) |
-| [12 CI/CD·배포·rollback](12-ci-cd-deployment-and-rollback.md) | 후보 버전을 검증하고 실패 시 이전 버전으로 되돌리는 경계는 무엇인가? | [`12-deployment-rollback`](../exercises/12-deployment-rollback/) |
+| [10 DNS·ACME·공개 TLS](10-dns-acme-and-public-tls.md) | 사용자가 올바른 서버에 안전하게 연결했음을 어떻게 확인하는가? | [`10-public-tls`](../exercises/10-public-tls/) |
+| [11 이미지·레지스트리·릴리스 산출물](11-image-registry-and-release-artifacts.md) | 소스가 아니라 정확히 어떤 산출물을 배포했는지 증명할 수 있는가? | [`11-release-artifact`](../exercises/11-release-artifact/) |
+| [12 CI/CD·배포·롤백](12-ci-cd-deployment-and-rollback.md) | 후보 버전을 검증하고 실패 시 이전 버전으로 되돌리는 경계는 무엇인가? | [`12-deployment-rollback`](../exercises/12-deployment-rollback/) |
 | [13 운영 비밀값과 설정](13-production-secrets-and-configuration.md) | 비밀값을 이미지·로그·Git 이력에 남기지 않고 교체할 수 있는가? | [`13-secret-rotation`](../exercises/13-secret-rotation/) |
 | [14 관측성과 경보](14-observability-and-alerting.md) | 사용자 영향과 내부 원인을 어떤 신호로 연결하는가? | [`14-observability`](../exercises/14-observability/) |
 | [15 백업·복원·재해 복구](15-backup-restore-and-disaster-recovery.md) | 백업 파일이 아니라 복구 가능한 시스템을 보유했는가? | [`15-disaster-recovery`](../exercises/15-disaster-recovery/) |
 | [16 용량·자원 제한·업데이트](16-capacity-resource-limits-and-updates.md) | 자원 고갈과 오래된 구성요소를 장애 전에 발견할 수 있는가? | [`16-capacity-and-updates`](../exercises/16-capacity-and-updates/) |
-| [17 사고 대응과 runbook](17-incident-response-and-runbooks.md) | 불확실한 상황에서 피해를 키우지 않고 복구할 수 있는가? | [`17-incident-response`](../exercises/17-incident-response/) |
+| [17 사고 대응과 런북](17-incident-response-and-runbooks.md) | 불확실한 상황에서 피해를 키우지 않고 복구할 수 있는가? | [`17-incident-response`](../exercises/17-incident-response/) |
 | [18 공개 서비스 재구축](18-production-rebuild-capstone.md) | 기존 호스트가 사라져도 정해진 시간 안에 서비스를 되살릴 수 있는가? | [`18-production-rebuild`](../exercises/18-production-rebuild/) |
 
-운영 중에는 [Runbook 색인](runbooks/00-index.md)에서 증상별 절차를 시작합니다. Runbook은 장의 설명을 반복하는 부록이 아니라, 실제 사고 중 안전한 검사·완화·복구 순서를 제공하는 운영 자산입니다.
+운영 중에는 [런북 색인](runbooks/00-index.md)에서 증상별 절차를 시작합니다. 런북은 각 장의 설명을 반복하는 부록이 아니라 실제 사고 중 안전한 검사·완화·복구 순서를 제공하는 운영 문서입니다.
 
 ## 4. 문서와 실습을 사용하는 방법
 
 각 실습은 다음 중 일부를 포함합니다.
 
 ```text
-README.md   문제 계약과 완료 조건
-skeleton/   검증기가 보존하는 canonical 시작 상태
+README.md   문제의 요구사항과 완료 조건
+skeleton/   검증기가 기준으로 사용하는 시작 상태
 workspace/  skeleton/template에서 만든 학습자 수정 위치
 reference/  비교 가능한 완성 상태
 verify.sh   자동 검증 진입점
@@ -108,12 +108,12 @@ verify.sh   자동 검증 진입점
 3. 저장소 루트에서 `python3 scripts/new-workspace.py exercises/NN-name`을 실행합니다.
 4. `workspace`만 수정합니다. 기존 workspace는 자동으로 덮어쓰지 않습니다.
 5. 해당 실습에서 `./verify.sh workspace`를 실행합니다.
-6. 결과와 자기 설명을 완성한 뒤에만 `reference`와 비교합니다.
-7. 구현이 다른 경우 결과 계약이 같은지 설명하고 다음 장으로 이동합니다.
+6. 결과와 자신의 설명을 완성한 뒤에만 `reference`와 비교합니다.
+7. 구현이 다르다면 결과 계약이 같은지 설명하고 다음 장으로 이동합니다.
 
-인자를 생략한 exercise verifier도 learner `workspace`를 선택합니다. `skeleton`과 `reference` mode는 repository 검증기가 방향성을 확인할 때 명시적으로 사용합니다. Root `reference/`는 exercise 답안이 아니라 빠른 참고 문서입니다.
+실습 검증기에서 인자를 생략해도 학습자 `workspace`를 대상으로 합니다. `skeleton`과 `reference` 모드는 저장소 검증기가 검증 방향을 확인할 때 명시적으로 사용합니다. 저장소 루트의 `reference/`는 실습 정답이 아니라 빠르게 참고할 수 있는 자료입니다.
 
-07 장애 진단은 code reference가 없는 분석형 예외입니다. `template/evidence.md`에서 workspace를 만들고 scenario 실행 결과를 기록한 뒤 구조 검사와 수동 인과 검토를 수행합니다. 08·17·18의 reference는 유일한 문장 정답이 아니라 자동 계약을 만족하는 expected evidence 예시입니다.
+07장의 장애 진단은 코드 정답 예시가 없는 분석형 실습입니다. `template/evidence.md`에서 workspace를 만들고 시나리오 실행 결과를 기록한 뒤 구조 검사와 수동 인과 검토를 수행합니다. 08·17·18장의 `reference`는 유일한 문장 정답이 아니라 자동 검증 조건을 만족하는 증거 예시입니다.
 
 저장소를 처음 받은 뒤에는 루트에서 다음 두 명령을 순서대로 실행합니다.
 
@@ -122,23 +122,23 @@ verify.sh   자동 검증 진입점
 ./verify.sh
 ```
 
-`prepare.sh`는 구형 상태 정리, 실행 권한, 전용 Python 환경, Docker image와 Buildx 준비까지만 담당합니다. 소스나 학습자 구현을 고치지 않고, 시스템 패키지를 관리자 권한으로 설치하지도 않습니다.
+`prepare.sh`는 구형 상태 정리, 실행 권한 설정, 전용 Python 환경, Docker 이미지와 Buildx 준비까지만 담당합니다. 소스나 학습자 구현을 고치지 않으며 시스템 패키지를 관리자 권한으로 설치하지도 않습니다.
 
-`verify.sh`는 준비가 끝난 최종 저장소를 임시 작업공간에서 전체 검사합니다. reference가 통과하는 것뿐 아니라 skeleton이 같은 검사에 거부되는지, 정적 검증기 자체가 알려진 구조 결함을 찾는지, 상태형 실습을 다시 실행할 수 있는지와 Docker 자원이 남지 않는지도 확인합니다.
+`verify.sh`는 준비가 끝난 최종 저장소를 임시 작업공간에서 전체 검사합니다. `reference`가 통과하는 것뿐 아니라 `skeleton`이 같은 검사에서 거부되는지, 정적 검증기가 의도적으로 넣은 구조적 결함을 찾는지, 상태를 가지는 실습을 다시 실행할 수 있는지, Docker 리소스가 남지 않는지도 확인합니다.
 
 문제를 좁힐 때만 다음 내부 target을 사용합니다.
 
 ```sh
-make static              # 구조·문서·설정·스크립트 정적 검사
-make meta                # 정적 검증기의 known-bad mutation 검사
-make verify-production   # Docker 없이 08–18 운영 실습 검사
-make verify-foundations  # Docker를 사용하는 01–07 검사
+make static               # 구조·문서·설정·스크립트 정적 검사
+make meta                 # 정적 검증기의 known-bad mutation 검사
+make verify-production    # Docker 없이 08–18 운영 실습 검사
+make verify-foundations   # Docker를 사용하는 01–07 검사
 make verify-repeatability # 대표 상태형 실습 재실행
 ```
 
-Repository 자료의 정식 판정은 `./verify.sh`의 최종 `RESULT`를 사용합니다. 학습 완료에는 workspace와 자기 설명이 필요합니다. 실제 공개 DNS, 공인 인증서와 VPS의 상태는 로컬 검증기가 대신 증명할 수 없으므로, 18단계의 폐기 가능한 실제 환경 절차와 repository 밖 redacted evidence까지 별도로 남깁니다.
+저장소 전체의 정식 판정은 `./verify.sh`의 최종 `RESULT`를 사용합니다. 학습 완료에는 workspace와 자신의 설명이 필요합니다. 실제 공개 DNS, 공인 인증서, VPS 상태는 로컬 검증기로 대신 증명할 수 없으므로 18단계의 폐기 가능한 실제 환경 절차를 실행하고, 민감 정보를 제거한 증거는 저장소 밖에 별도로 남깁니다.
 
-완성 예제를 그대로 복사해 통과시키는 것은 학습 완료가 아닙니다. 특히 운영 과정에서는 “파일이 존재한다”보다 다음 증거가 중요합니다.
+완성 예제를 그대로 복사해 검증을 통과시키는 것은 학습 완료가 아닙니다. 특히 운영 과정에서는 “파일이 존재한다”보다 다음 증거가 중요합니다.
 
 - 어떤 입력으로 검사했는가?
 - 실패를 실제로 재현했는가?
@@ -147,50 +147,50 @@ Repository 자료의 정식 판정은 `./verify.sh`의 최종 `RESULT`를 사용
 
 ## 5. 운영 문서에서 사용하는 네 종류의 상태
 
-혼동을 줄이기 위해 다음을 구분합니다.
+혼동을 줄이기 위해 다음 상태를 구분합니다.
 
 ### 선언된 상태
 
-Compose 파일, 설정 파일, release manifest와 runbook에 적힌 기대 상태입니다.
+Compose 파일, 설정 파일, 릴리스 매니페스트, 런북에 적힌 기대 상태입니다.
 
 ### 실행 상태
 
-현재 프로세스, 컨테이너, 네트워크, 파일과 데이터베이스가 실제로 가진 상태입니다.
+현재 프로세스, 컨테이너, 네트워크, 파일, 데이터베이스가 실제로 가진 상태입니다.
 
 ### 관측 상태
 
-로그, 지표, 상태 검사, 외부 요청과 운영 명령이 보여 주는 상태입니다.
+로그, 지표, 상태 검사, 외부 요청, 운영 명령으로 확인되는 상태입니다.
 
 ### 복구 상태
 
-백업, registry, 비밀값 원본, DNS 권한과 절차를 사용해 다시 만들 수 있는 상태입니다.
+백업, 레지스트리, 비밀값 원본, DNS 권한과 절차를 사용해 다시 만들 수 있는 상태입니다.
 
-선언 파일이 올바르다고 실행 상태가 자동으로 맞는 것은 아닙니다. 실행 중이라고 사용자 요청이 성공하는 것도 아닙니다. 백업이 존재한다고 복원 가능한 것도 아닙니다. 각 상태를 별도의 증거로 확인합니다.
+선언 파일이 올바르다고 실행 상태가 자동으로 맞는 것은 아닙니다. 프로세스가 실행 중이라고 사용자 요청이 성공하는 것도 아닙니다. 백업이 존재한다고 복원 가능한 것도 아닙니다. 각 상태를 별도의 증거로 확인합니다.
 
 ## 6. 학습용 스택과 실제 애플리케이션의 경계
 
-실습은 Nginx, PHP-FPM과 MariaDB를 사용해 프로토콜과 상태 경계를 눈에 보이게 만듭니다. 실제 서비스가 Node.js, Java, Go 또는 다른 데이터베이스를 사용해도 다음 원리는 그대로 적용됩니다.
+실습은 Nginx, PHP-FPM, MariaDB를 사용해 프로토콜과 상태 경계를 눈에 보이게 만듭니다. 실제 서비스가 Node.js, Java, Go 또는 다른 데이터베이스를 사용해도 다음 원리는 그대로 적용됩니다.
 
-- 외부에 공개할 gateway와 내부 runtime을 구분합니다.
-- 데이터의 정본과 임시 상태를 구분합니다.
+- 외부에 공개할 게이트웨이와 내부 런타임을 구분합니다.
+- 데이터의 기준 원본과 임시 상태를 구분합니다.
 - 이미지와 실행 시점 설정을 구분합니다.
 - 준비 상태와 사용자 경로 검사를 구분합니다.
 - 배포 가능한 산출물과 현재 소스 디렉터리를 구분합니다.
 - 백업 생성과 복원 성공을 구분합니다.
 
-애플리케이션 코드의 인증, 업무 규칙, API 설계와 데이터 모델은 웹 애플리케이션 가이드가 소유합니다. 이 가이드는 그 애플리케이션을 **실행·노출·교체·관찰·복구하는 경계**를 소유합니다.
+애플리케이션 코드의 인증, 업무 규칙, API 설계, 데이터 모델은 웹 애플리케이션 가이드에서 다룹니다. 이 가이드에서는 애플리케이션을 **실행·노출·교체·관찰·복구하는 경계**를 다룹니다.
 
 ## 7. 버전과 환경 차이 다루기
 
-운영 명령은 Linux 배포판, Docker Engine, Compose, 방화벽 backend와 인증서 도구 버전에 따라 달라질 수 있습니다. 문서는 변하지 않는 계약과 한 가지 구현 예를 분리합니다.
+운영 명령은 Linux 배포판, Docker Engine, Compose, 방화벽 백엔드, 인증서 도구 버전에 따라 달라질 수 있습니다. 문서에서는 변하지 않는 계약과 한 가지 구현 예를 구분합니다.
 
-예를 들어 목표는 “SSH 비밀번호 로그인을 반드시 특정 한 줄로 끈다”가 아니라 다음입니다.
+예를 들어 목표는 “SSH 비밀번호 로그인을 반드시 특정 한 줄로 끈다”가 아니라 다음과 같습니다.
 
 ```text
 관리자 로그인 경로를 키 기반으로 검증
 → 별도 세션으로 재접속 확인
 → 그 뒤 불필요한 인증 경로 비활성화
-→ 잠금 사고에 대비한 공급자 console 경로 확인
+→ 잠금 사고에 대비해 공급자 콘솔 경로 확인
 ```
 
 명령을 복사하기 전에 현재 환경의 공식 문서와 실제 설정 결과를 확인합니다.
@@ -200,8 +200,8 @@ Compose 파일, 설정 파일, release manifest와 runbook에 적힌 기대 상�
 다음 질문에 파일 경로와 실행 증거를 제시할 수 있으면 과정을 마친 것입니다.
 
 1. 외부에 공개된 포트는 무엇이며 누가 소유하는가?
-2. 배포된 이미지의 digest와 원본 commit은 무엇인가?
-3. 현재 release가 실패하면 어떤 정확한 release로 돌아가는가?
+2. 배포된 이미지의 다이제스트와 원본 커밋은 무엇인가?
+3. 현재 릴리스가 실패하면 정확히 어떤 릴리스로 되돌아가는가?
 4. 애플리케이션과 호스트의 비밀값은 어디에서 주입되며 누가 읽을 수 있는가?
 5. 사용자 영향이 발생했을 때 어떤 경보가 울리는가?
 6. 데이터의 RPO와 서비스의 RTO는 얼마이며 실제 복구 시험 결과가 있는가?
@@ -210,4 +210,4 @@ Compose 파일, 설정 파일, release manifest와 runbook에 적힌 기대 상�
 9. 호스트가 완전히 사라졌을 때 어떤 순서로 재구축하는가?
 10. 자동화가 실패할 때 운영자가 멈춰야 하는 경계는 무엇인가?
 
-이 질문에 답하지 못하는 부분은 아직 운영 계약이 아니라 희망 사항입니다.
+이 질문에 답하지 못하는 부분은 아직 운영 계약이 아니라 희망 사항에 가깝습니다.

@@ -1,0 +1,37 @@
+# [Implementation 6] Compose service ownership
+services:
+  app:
+    build:
+      context: ./app
+    environment:
+      COUNTER_FILE: /data/counter.txt
+    ports:
+      - "127.0.0.1:${COUNTER_PORT:-18083}:8080"
+    volumes:
+      - counter-data:/data
+    networks:
+      - counter-net
+    healthcheck:
+      test: ["CMD", "python", "/app/healthcheck.py"]
+      interval: 2s
+      timeout: 1s
+      retries: 20
+      start_period: 2s
+
+  # [Implementation 6-1] Service DNS client
+  client:
+    image: curlimages/curl:8.10.1
+    command: ["-fsS", "http://app:8080/healthz"]
+    depends_on:
+      app:
+        condition: service_healthy
+    networks:
+      - counter-net
+
+# [Implementation 6-2] Named resource lifecycle
+networks:
+  counter-net:
+    driver: bridge
+
+volumes:
+  counter-data:

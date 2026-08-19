@@ -1,0 +1,94 @@
+schema_version: 1
+service:
+  name: notes
+  user_capability: Users can read and create notes through a public HTTPS endpoint.
+  owner: service-owner
+endpoints:
+  public:
+    - name: http-redirect
+      port: 80
+      protocol: http
+      owner: gateway-owner
+    - name: public-https
+      port: 443
+      protocol: https
+      owner: gateway-owner
+  management:
+    - name: ssh
+      port: 22
+      protocol: ssh
+      source_restriction: admin-vpn-cidr
+      owner: operations-owner
+data:
+  - name: notes-database
+    classification: business
+    source_of_truth: database-volume
+    recovery_source: encrypted-offsite-backup
+    external_recovery_copy: true
+    owner: data-owner
+    rpo_minutes: 1440
+  - name: runtime-secrets
+    classification: secret
+    source_of_truth: password-manager
+    recovery_source: password-manager-and-reissuance
+    external_recovery_copy: true
+    owner: operations-owner
+    rpo_minutes: 0
+  - name: release-configuration
+    classification: configuration
+    source_of_truth: deployment-repository
+    recovery_source: signed-release-bundle
+    external_recovery_copy: true
+    owner: release-owner
+    rpo_minutes: 0
+objectives:
+  rto_minutes: 240
+  rpo_minutes: 1440
+  availability:
+    path: /api/notes
+    measurement_location: external-probe
+    target_percent: 99.5
+    window_days: 30
+threat_model:
+  trust_boundaries:
+    - internet-to-gateway
+    - administrator-device-to-ssh
+    - ci-to-registry
+    - host-to-backup-storage
+    - application-to-database
+  risks:
+    - id: mutable-image-tag
+      scenario: A mutable tag resolves to a different image after verification.
+      prevention: Deploy exact image digests.
+      detection: Compare running digests with the release manifest.
+      recovery: Roll back to the previous compatible digest.
+      owner: release-owner
+    - id: host-and-local-backup-loss
+      scenario: A host disk failure destroys both the database and local backups.
+      prevention: Replicate encrypted backups to an independent account.
+      detection: Alert on backup age and remote-object verification.
+      recovery: Restore the latest verified external backup on a clean host.
+      owner: operations-owner
+    - id: docker-control-plane-access
+      scenario: A compromised workload controls the host through the Docker socket.
+      prevention: Do not mount the Docker socket into workloads.
+      detection: Audit socket mounts and privileged group membership.
+      recovery: Isolate and rebuild the host, then rotate credentials.
+      owner: operations-owner
+    - id: dns-credential-theft
+      scenario: A stolen DNS token redirects the public hostname.
+      prevention: Use a scoped token limited to required records.
+      detection: Monitor DNS changes and external DNS/TLS probes.
+      recovery: Revoke the token and restore verified records and certificates.
+      owner: operations-owner
+residual_risks:
+  - id: single-host-outage
+    statement: Service remains unavailable while the single host is rebuilt.
+    accepted_by: service-owner
+    mitigation: Maintain an external recovery source and a tested four-hour rebuild runbook.
+readiness:
+  immutable_release: true
+  external_backup: true
+  rollback_tested: true
+  certificate_monitored: true
+  restore_drill_tested: true
