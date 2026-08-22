@@ -1,0 +1,23 @@
+# Operating system and editor files
+.DS_Store
+*.swp
+*.swo
+
+# Logs and temporary process state
+*.log
+*.pid
+*.tmp
+
+# Environment files and secrets
+.env
+.env.*
+!.env.example
+
+# Node.js, Next.js, and verification output
+node_modules/
+.next/
+coverage/
+playwright-report/
+test-results/
+*.tsbuildinfo
+next-env.d.ts

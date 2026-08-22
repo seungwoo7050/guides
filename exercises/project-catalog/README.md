@@ -1,145 +1,226 @@
-# 프로젝트 목록 실습
+# Project Catalog
 
-검색 가능한 프로젝트 목록을 하나의 코드베이스에서 다섯 단계로 완성한다. URL에서 첫 화면을 복원하고, 외부 응답을 검증하며, 늦은 요청과 낙관적 변경 충돌을 수렴시킨다. 마지막에는 실제 production server를 browser와 standalone smoke test로 검증한다.
+`Project Catalog`는 Next.js App Router 기반의 검색·편집 애플리케이션입니다. URL query로 검색 조건을 공유하고, Server Component가 첫 결과를 렌더링하며, Client Component가 이후 검색과 제목 변경을 처리합니다. 외부 JSON은 runtime contract를 통과한 뒤에만 화면 상태에 반영되고, 제목 변경은 version 기반 optimistic concurrency control로 충돌을 감지합니다.
 
-## 학습 계약
+## 주요 기능
 
-이 실습은 `skeleton/`의 미완성 파일을 `reference/` 프로젝트 위에 덮어쓴 `workspace/`에서 진행한다.
+- `q`, `status`, `page` query를 정규화하고 첫 화면과 URL을 같은 조건으로 복원합니다.
+- 검색 조건을 browser history에 기록하고 back/forward 탐색에서 입력과 결과를 다시 동기화합니다.
+- `AbortController`와 monotonic generation을 함께 사용해 늦은 검색 응답이 최신 결과를 덮지 못하게 합니다.
+- 검색 실패 또는 malformed response에서도 마지막으로 검증된 결과를 유지합니다.
+- 제목을 먼저 화면에 반영하고, 저장 실패에서는 이전 server value로 rollback합니다.
+- `409 Conflict`에서는 최신 server value와 사용자가 입력한 local draft를 동시에 보존합니다.
+- keyboard 편집, focus 복구, `aria-live`, `focus-visible`, reduced motion, 좁은 viewport를 지원합니다.
+- health endpoint, test-only reset boundary, browser E2E, 성능 예산, production smoke 검증을 포함합니다.
 
-- `skeleton/`은 각 단계의 실제 미완성 상태다.
-- `reference/`는 검사 체계 자체를 검증하는 완성 구현이다.
-- `workspace/`는 학습자가 수정하는 유일한 작업 공간이다.
-- 각 Stage 검사는 현재 단계와 이전 단계의 계약을 함께 확인한다.
-- 구현 표시를 지우는 것만으로는 행동 검사를 통과할 수 없다.
-
-생성기는 package·설정·공개 test·build/browser/smoke harness를 `reference/`에서 제공하고, 다음 일곱 source를 `skeleton/`의 미완성 파일로 교체한다.
+## 구조
 
 ```text
-app/page.tsx
-app/project-catalog.tsx
-app/styles.css
-app/api/health/route.ts
-lib/catalog-contract.ts
-lib/catalog-model.ts
-lib/request-coordinator.ts
+project-catalog/
+├── app/
+│   ├── api/
+│   │   ├── health/route.ts
+│   │   ├── projects/route.ts
+│   │   ├── projects/[id]/route.ts
+│   │   └── test/reset/route.ts
+│   ├── layout.tsx
+│   ├── page.tsx
+│   ├── project-catalog.tsx
+│   └── styles.css
+├── lib/
+│   ├── catalog-contract.ts
+│   ├── catalog-model.ts
+│   ├── project-types.ts
+│   ├── projects.ts
+│   └── request-coordinator.ts
+├── scripts/
+│   ├── run-playwright.mjs
+│   └── smoke-production.mjs
+├── tests/
+│   ├── e2e/
+│   └── *.test.ts
+├── package.json
+├── performance-budget.json
+├── playwright.config.ts
+├── tsconfig.json
+└── vitest.config.ts
 ```
 
-위 source는 분리하거나 새 `app/`·`lib/` 모듈로 확장해도 된다. 반면 제공된 package script, 설정, 공개 test와 검증 harness는 검사 신뢰 경계이므로 수정하지 않는다. Stage 검사는 실행 전에 이 보호 파일들이 기준본과 같은지 확인한다.
+## 구성 요소 책임
 
-`reference/`는 처음부터 읽지 않는다. 요구사항, compiler와 test의 실패 출력을 먼저 사용하고, 해당 Stage를 통과한 뒤 아래의 Stage별 범위만 비교한다.
+- `lib/project-types.ts`는 server, Server Component, client가 공유하는 직렬화 가능한 domain type을 정의합니다.
+- `lib/projects.ts`는 process-local store와 검색·version 검사를 소유합니다. 반환값은 clone이므로 caller가 store entry를 직접 변경할 수 없습니다.
+- `lib/catalog-contract.ts`는 URL과 `unknown` JSON을 내부 canonical data로 변환하는 신뢰 경계입니다.
+- `lib/catalog-model.ts`는 `ready`, `empty`, `pending`, `error` 상태와 마지막 검증 결과 보존 규칙을 정의합니다.
+- `app/page.tsx`는 한 URL snapshot에서 초기 query와 결과를 계산합니다.
+- `app/project-catalog.tsx`는 browser history, request lifetime, optimistic update, editor focus를 소유합니다.
+- Route Handler는 검색, version 기반 수정, health, E2E data reset을 각각 분리합니다.
+- `tests/`, Playwright, production smoke script는 state transition부터 실제 production process까지 다른 검증 계층을 담당합니다.
 
-## 준비
+## 요구 환경
 
-저장소 루트에서 실행한다.
+- Node.js `24.19.0` 이상
+- npm
+- Playwright Chromium은 browser test 실행 전에 별도로 설치해야 합니다.
+
+`.nvmrc`를 사용하는 경우 다음과 같이 준비합니다.
 
 ```sh
 nvm use
-./prepare.sh
-pnpm exercise:create
+npm install
+npx playwright install chromium
 ```
 
-이미 `workspace/`가 있으면 생성기는 종료 코드 2로 중단한다. 기존 작업을 보존하거나 직접 삭제한 뒤 다시 실행한다.
+## 실행
 
-## 단계
+개발 server를 시작합니다.
 
-| Stage | 요구사항 | 검증 계층 |
+```sh
+npm run dev
+```
+
+기본 주소는 `http://localhost:3000`입니다. 검색 조건은 URL로 직접 전달할 수 있습니다.
+
+```text
+/?q=Storage&status=active&page=1
+```
+
+production server는 build 뒤 실행합니다.
+
+```sh
+npm run build
+APP_RELEASE=local-build npm run start
+```
+
+## HTTP API
+
+| Method | Path | 역할 |
 | --- | --- | --- |
-| [01](specs/01-project-onboarding.md) | URL query를 server 첫 화면에 복원 | typecheck, unit |
-| [02](specs/02-ui-state-architecture.md) | runtime contract와 discriminated state | typecheck, unit |
-| [03](specs/03-data-effects-concurrency.md) | history, abort, generation, optimistic recovery | unit, build, browser |
-| [04](specs/04-testing-accessibility-performance.md) | keyboard, focus, responsive, reduced motion, budget | build, browser |
-| [05](specs/05-production-runtime-contract.md) | health·release 구현, 제공된 test boundary·standalone smoke 분석·실행 | unit, build, browser, process |
+| `GET` | `/api/projects` | `q`, `status`, `page`를 적용한 project search result를 반환합니다. |
+| `PATCH` | `/api/projects/:id` | `{ "title": string, "version": number }`를 받아 현재 version일 때만 제목을 갱신합니다. |
+| `GET` | `/api/health` | 정확히 `{ "status", "release" }`만 `no-store`로 반환합니다. |
+| `POST` | `/api/test/reset` | 명시적인 test mode와 정확한 token이 모두 있을 때만 in-memory data를 초기화합니다. |
 
-순서대로 실행한다.
+`PATCH`의 version이 오래되면 `409`와 최신 project를 반환합니다. 존재하지 않는 project는 `404`, 잘못된 body는 `400`입니다.
 
-```sh
-pnpm exercise:verify:01
-pnpm exercise:verify:02
-pnpm exercise:verify:03
-pnpm exercise:verify:04
-pnpm exercise:verify:05
-```
+## 환경 변수
 
-전체 구현을 한 번에 검증한다.
+| 이름 | 용도 | 기본값 |
+| --- | --- | --- |
+| `APP_RELEASE` | health response에 노출할 release identifier | `local` |
+| `PLAYWRIGHT` | `1`일 때 test reset route를 허용하는 test mode 중 하나 | 없음 |
+| `CATALOG_TEST_RESET_TOKEN` | test reset request와 비교할 secret token | 없음 |
 
-```sh
-pnpm exercise:verify
-```
+`/api/test/reset`은 `NODE_ENV=test` 또는 `PLAYWRIGHT=1`이면서 `x-catalog-test-token` header가 `CATALOG_TEST_RESET_TOKEN`과 일치할 때만 열립니다. 그 외에는 endpoint 존재 여부를 노출하지 않도록 `404`를 반환합니다.
 
-필요한 계층만 다시 실행할 수도 있다.
+## 검증
+
+TypeScript와 framework route type을 검사합니다.
 
 ```sh
-pnpm exercise:check
-pnpm exercise:build
-pnpm exercise:test:e2e
-pnpm exercise:smoke
+npm run typecheck
 ```
 
-## 권장 구현 순서
+Vitest unit·route test를 실행합니다.
 
-아래 번호는 Git history나 파일의 위아래 순서가 아니라, 완성된 `reference/`를 다시 구성할 때 권장하는 학습용 구현 순서다. 번호 scope는 `exercises/project-catalog/reference/` 전체 하나이며 파일마다 다시 시작하지 않는다. Stage는 학습 checkpoint이고, 이 표의 번호는 파일 사이를 오가는 construction dependency이므로 서로 같은 번호 체계가 아니다.
+```sh
+npm test
+```
 
-| 순서 | 파일·symbol | 먼저 고정할 책임 |
+production build 뒤 Playwright browser test를 실행합니다. runner는 사용 가능한 port를 선택하고 Playwright가 production server를 소유하도록 전달합니다.
+
+```sh
+npm run test:e2e
+```
+
+production smoke는 실제 `next start` process를 띄워 health, root HTML, project API, 초기 JavaScript artifact와 server-only secret 비노출을 검사한 뒤 process tree를 정리합니다.
+
+```sh
+npm run smoke
+```
+
+전체 검증을 순서대로 실행합니다.
+
+```sh
+npm run verify
+```
+
+## 성능 예산
+
+`performance-budget.json`은 browser test가 측정하는 두 한계를 정의합니다.
+
+- 초기 route가 받은 JavaScript response body 합계: `800000` bytes 이하
+- 첫 화면 DOM element 수: `180` 이하
+
+예산 파일 자체의 key와 값도 unit test로 고정합니다.
+
+## 주요 설계 결정
+
+### 마지막으로 확인된 결과 보존
+
+`pending`과 `error`가 별도 result를 소유하지 않고 `previous`를 보존합니다. 따라서 재조회 중이거나 응답이 잘못되어도 화면에는 마지막으로 contract를 통과한 결과만 남습니다.
+
+### 취소와 generation의 이중 경계
+
+`AbortController`만으로는 transport가 이미 완료되었거나 abort를 무시한 경우의 state commit을 막을 수 없습니다. 각 요청에 증가하는 generation을 부여하고 commit 직전에 최신 generation인지 다시 검사합니다.
+
+### optimistic value와 local draft 분리
+
+목록에는 optimistic title을 즉시 반영하지만 editor의 `draftTitle`은 별도로 유지합니다. 일반 실패에서는 목록을 이전 server value로 되돌리고, conflict에서는 최신 server project를 반영하면서 input draft를 유지합니다.
+
+### process-local store
+
+이 프로젝트는 별도 database 없이 서버 동작과 concurrency contract를 재현하기 위해 process-local `Map`을 사용합니다. test reset도 같은 owner를 초기화하므로 검증을 위한 두 번째 store가 생기지 않습니다.
+
+## Implementation Order
+
+아래 순서는 파일 배치나 Git history가 아니라, 완성된 시스템을 처음부터 구성할 때의 architecture dependency를 나타냅니다. 번호는 프로젝트 전체에서 한 번만 이어집니다.
+
+| Order | Responsibility | Primary anchor |
 | ---: | --- | --- |
-| 1 | `lib/catalog-contract.ts` · `ContractError`와 parser | URL query와 `unknown` 응답을 신뢰 경계에서 canonical data로 바꾼다. |
-| 2 | `lib/catalog-model.ts` · `CatalogState` | 화면 상태의 단일 owner와 마지막으로 확인된 결과 보존 invariant를 정한다. |
-| 3 | `app/page.tsx` · `Page` | 같은 query에서 server 첫 결과와 직렬화 가능한 client props를 만든다. |
-| 3-1 | `app/project-catalog.tsx` · `ProjectCatalog` | draft, 확인된 결과, 알림과 요청 수명의 owner를 분리한다. |
-| 4 | `lib/request-coordinator.ts` · `createRequestCoordinator` | transport abort와 monotonic generation으로 오래된 작업을 무효화한다. |
-| 4-1 | `app/project-catalog.tsx` · `runSearch` | history 기록과 탐색을 분리하고 최신의 검증된 응답만 commit한다. |
-| 4-2 | `app/project-catalog.tsx` · `rename` | optimistic 값, 이전 server 값과 local draft를 성공·실패·충돌별로 수렴시킨다. |
-| 5 | `app/project-catalog.tsx` · `ProjectEditor` | 조건부 editor의 저장 상태, draft와 focus lifecycle을 소유한다. |
-| 5-1 | `app/styles.css` | 작은 viewport, 긴 값, focus 표시와 reduced motion을 하나의 layout 계약으로 고정한다. |
-| 6 | `app/api/health/route.ts` · `GET` | release만 노출하는 exact health 응답과 no-store 경계를 제공한다. |
-| 6-1 | `app/api/health/route.ts` · `pnpm typecheck` / `next typegen` | route가 존재한 뒤 framework route type을 생성하고 `tsc` 검사로 연결한다. 생성물은 직접 수정하지 않는다. |
+| 1 | Project domain model | `lib/project-types.ts` |
+| 2 | Process-local catalog store | `lib/projects.ts` |
+| 2-1 | Filtered paginated search | `lib/projects.ts` |
+| 2-2 | Version-checked rename | `lib/projects.ts` |
+| 2-3 | Deterministic store reset | `lib/projects.ts` |
+| 3 | External-data contract boundary | `lib/catalog-contract.ts` |
+| 3-1 | URL query normalization | `lib/catalog-contract.ts` |
+| 3-2 | API response validation | `lib/catalog-contract.ts` |
+| 4 | Catalog state machine | `lib/catalog-model.ts` |
+| 5 | Application document shell | `app/layout.tsx` |
+| 6 | Server-rendered query bootstrap | `app/page.tsx` |
+| 7 | Monotonic request coordination | `lib/request-coordinator.ts` |
+| 8 | Client catalog state ownership | `app/project-catalog.tsx` |
+| 8-1 | History-aware search convergence | `app/project-catalog.tsx` |
+| 8-2 | Optimistic rename convergence | `app/project-catalog.tsx` |
+| 9 | Editor focus and save lifecycle | `app/project-catalog.tsx` |
+| 10 | Search HTTP boundary | `app/api/projects/route.ts` |
+| 10-1 | Rename HTTP boundary | `app/api/projects/[id]/route.ts` |
+| 11 | Test-only reset boundary | `app/api/test/reset/route.ts` |
+| 12 | Production health contract | `app/api/health/route.ts` |
+| 12-1 | Framework route type generation | `app/api/health/route.ts` |
+| 13 | Responsive accessibility contract | `app/styles.css` |
+| 14 | Unit verification configuration | `vitest.config.ts` |
+| 14-1 | Query and bootstrap verification | `tests/query-and-bootstrap.test.ts` |
+| 14-2 | Runtime contract verification | `tests/catalog-contract.test.ts` |
+| 14-3 | Catalog state verification | `tests/catalog-model.test.ts` |
+| 14-4 | Request-lifetime verification | `tests/request-coordinator.test.ts` |
+| 14-5 | Store and route verification | `tests/projects-api.test.ts` |
+| 14-6 | Production-boundary verification | `tests/production-contract.test.ts` |
+| 14-7 | Performance-budget verification | `tests/performance-budget.test.ts` |
+| 15 | Browser verification runtime | `playwright.config.ts` |
+| 15-1 | Isolated Playwright port orchestration | `scripts/run-playwright.mjs` |
+| 15-2 | URL and concurrency browser verification | `tests/e2e/catalog-concurrency.spec.ts` |
+| 15-3 | Accessibility and performance browser verification | `tests/e2e/accessibility-performance.spec.ts` |
+| 16 | Production smoke verification | `scripts/smoke-production.mjs` |
 
-이 저장소에는 검증된 application generator나 package/framework 초기화 기록이 없으므로 Implementation 0은 없다. `nvm use`, 의존성 설치와 `exercise:create`는 repository 준비 또는 learner workspace materialization이며 application construction 번호에 포함하지 않는다.
+`Implementation 12-1`은 route가 존재한 뒤 `npm run typecheck`가 실행하는 `next typegen` 단계입니다. 생성된 `.next/types`는 build artifact이므로 배포 source에 포함하지 않습니다. 검증된 framework scaffold 생성 기록이 없으므로 `Implementation 0`은 사용하지 않습니다.
 
-`project-types.ts`, in-memory project store, API adapter, layout, reset route, package/TypeScript 설정, public test, Playwright와 smoke script는 제공된 baseline 또는 검증 infrastructure다. `performance-budget.json`은 구현 답안이 아니라 Stage 04의 machine-readable 검증 정책이다. 이 파일들은 위 numbered source annotation의 대상이 아니다. `next typegen`은 package 설정을 변경하는 bootstrap이 아니라 route 구현 뒤 실행하는 중간 code generation이므로 6-1에 둔다.
+## 범위와 제한
 
-## 구현 표시
-
-미완성 위치에는 다음 형식의 표시가 있다.
-
-```text
-TODO(stage-01)
-TODO(stage-02)
-...
-TODO(stage-05)
-```
-
-현재 Stage 이하의 표시는 구현 뒤 제거한다. 이후 Stage 표시는 남아 있어도 현재 검사가 통과할 수 있다. 표시 문구만 지우지 말고 연결된 동작을 구현한다.
-
-## 완료 증거
-
-Stage를 통과한 뒤 다음을 짧게 기록한다.
-
-```text
-사용자 결과:
-막으려는 실패:
-선택한 상태·실행 경계:
-실행한 검증:
-남은 범위:
-```
-
-## Reference 비교
-
-Stage를 통과한 뒤에만 아래 범위의 reference를 읽는다. 여러 Stage가 공유하는 파일은 symbol 단위로 범위를 제한하여 다음 Stage의 완성 구현을 미리 노출하지 않는다.
-
-| Stage | 통과 뒤 비교할 범위 |
-| --- | --- |
-| 01 | `reference/app/page.tsx`의 `Page` |
-| 02 | `reference/lib/catalog-contract.ts`, `reference/lib/catalog-model.ts` |
-| 03 | `reference/lib/request-coordinator.ts` 전체, `reference/app/project-catalog.tsx`의 `ProjectCatalog` state owner·`runSearch`·`rename`; `ProjectEditor`는 읽지 않음 |
-| 04 | `reference/app/project-catalog.tsx`의 `ProjectEditor`, `reference/app/styles.css` |
-| 05 | `reference/app/api/health/route.ts`의 `GET` |
-
-비교할 질문:
-
-- 같은 상태에 서로 다른 정본을 만들지 않았는가?
-- stale result를 취소와 generation 중 어느 경계에서 막았는가?
-- conflict에서 최신 server value와 local draft를 함께 보존했는가?
-- focus transition이 사용자 흐름과 맞는가?
-- production build와 smoke가 실제 배포 산출물을 검사하는가?
-
-reference와 모양이 달라도 계약과 검증을 만족하면 유효한 해법이다.
+- data는 process memory에만 존재하므로 재시작하면 초기 상태로 돌아갑니다.
+- 여러 server instance 사이에서 version이나 변경 사항을 공유하지 않습니다.
+- 인증과 사용자별 권한은 구현하지 않습니다.
+- API는 page query를 지원하지만 UI에는 pagination control이 없습니다. 검색 제출은 항상 page `1`로 돌아갑니다.
+- test reset route는 test automation을 위한 내부 경계이며 일반 운영 API가 아닙니다.
+- production 실행 전에 같은 project directory에서 `npm run build`가 완료되어야 합니다.
